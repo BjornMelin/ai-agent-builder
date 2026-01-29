@@ -1,0 +1,20 @@
+name: CI Setup
+description: "Shared CI setup: Bun + dependency install (requires checkout)"
+
+inputs:
+  bun-version:
+    description: "Bun version to install (default: latest)"
+    required: false
+    default: "latest"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: ${{ inputs.bun-version }}
+
+    - name: Install dependencies
+      run: bun install --frozen-lockfile
+      shell: bash

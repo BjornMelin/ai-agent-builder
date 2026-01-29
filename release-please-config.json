@@ -1,0 +1,11 @@
+{
+  "packages": {
+    ".": {
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "changelog-path": "CHANGELOG.md",
+      "package-name": "ai-agent-builder"
+    }
+  },
+  "release-type": "node"
+}
