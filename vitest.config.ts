@@ -26,8 +26,8 @@ export default defineConfig({
     ],
     passWithNoTests: true,
     typecheck: {
-      exclude: ["opensrc/**", ".next-docs/**"],
       enabled: true,
+      exclude: ["opensrc/**", ".next-docs/**"],
       include: [
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
