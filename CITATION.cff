@@ -1,0 +1,7 @@
+cff-version: 1.2.0
+title: ai-agent-builder
+message: >-
+  If you use this software, please cite it using the metadata in this file.
+type: software
+authors:
+  - name: Bjorn Melin
