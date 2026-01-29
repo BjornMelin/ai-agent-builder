@@ -1,6 +1,6 @@
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [
@@ -17,7 +17,7 @@ export default defineConfig({
       reportsDirectory: "./coverage",
     },
     environment: "jsdom",
-    exclude: ["opensrc/**", ".next-docs/**"],
+    exclude: [...configDefaults.exclude, "opensrc/**", ".next-docs/**"],
     include: [
       "src/**/*.test.ts",
       "src/**/*.test.tsx",
@@ -27,7 +27,11 @@ export default defineConfig({
     passWithNoTests: true,
     typecheck: {
       enabled: true,
-      exclude: ["opensrc/**", ".next-docs/**"],
+      exclude: [
+        ...configDefaults.typecheck.exclude,
+        "opensrc/**",
+        ".next-docs/**",
+      ],
       include: [
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
