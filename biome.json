@@ -31,7 +31,9 @@
       "!**/dist",
       "!**/node_modules",
       "!**/out",
-      "!**/.build"
+      "!**/.build",
+      "!**/opensrc",
+      "!**/.next-docs"
     ]
   },
   "formatter": {

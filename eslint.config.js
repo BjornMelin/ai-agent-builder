@@ -14,6 +14,8 @@ module.exports = [
       "dist/**",
       "node_modules/**",
       "out/**",
+      "opensrc/**",
+      ".next-docs/**",
     ],
   },
 

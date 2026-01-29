@@ -105,3 +105,5 @@ vitest.config.js.timestamp-*
 .gemini/
 .claude/
 opensrc/
+# next-agents-md
+.next-docs/

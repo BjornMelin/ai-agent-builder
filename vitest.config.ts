@@ -3,7 +3,13 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [react(), tsconfigPaths()],
+  plugins: [
+    react(),
+    tsconfigPaths({
+      ignoreConfigErrors: true,
+      projects: ["./tsconfig.json"],
+    }),
+  ],
   test: {
     coverage: {
       provider: "v8",
@@ -11,6 +17,7 @@ export default defineConfig({
       reportsDirectory: "./coverage",
     },
     environment: "jsdom",
+    exclude: ["opensrc/**", ".next-docs/**"],
     include: [
       "src/**/*.test.ts",
       "src/**/*.test.tsx",
@@ -19,7 +26,14 @@ export default defineConfig({
     ],
     passWithNoTests: true,
     typecheck: {
+      exclude: ["opensrc/**", ".next-docs/**"],
       enabled: true,
+      include: [
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+        "tests/**/*.test.ts",
+        "tests/**/*.test.tsx",
+      ],
       tsconfig: "tsconfig.json",
     },
   },
