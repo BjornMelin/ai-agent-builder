@@ -61,9 +61,10 @@
     "lint:biome": "biome check .",
     "lint:eslint": "eslint .",
     "start": "bun --bun next start",
-    "test": "vitest run",
+    "test": "bun --bun next typegen && vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "bun --bun next typegen && tsc -p tsconfig.json --noEmit",
+    "typegen": "bun --bun next typegen"
   },
   "trustedDependencies": [
     "sharp",

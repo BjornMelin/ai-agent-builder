@@ -21,6 +21,7 @@ bun run lint                   # Run Biome and ESLint
 bun run typecheck              # Run TypeScript compiler checks
 bun run test                   # Run tests with Vitest
 bun run ci                     # Run format/lint/typecheck/test/build
+bun run typegen                # Generate Next.js route/types without build
 bun run db:generate            # Generate database migrations
 bun run db:migrate             # Apply database migrations
 bun run db:studio              # Open Drizzle Studio (requires DATABASE_URL)

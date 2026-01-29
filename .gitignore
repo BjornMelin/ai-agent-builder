@@ -78,6 +78,7 @@ desktop.ini
 
 # TypeScript
 *.tsbuildinfo
+next-env.d.ts
 
 # Testing
 /test-results/
