@@ -6,7 +6,7 @@
     "@upstash/redis": "~1.36.1",
     "@upstash/vector": "~1.2.2",
     "@vercel/blob": "~2.0.1",
-    "ai": "~6.0.63",
+    "ai": "~6.0.64",
     "argon2": "~0.44.0",
     "drizzle-orm": "~0.45.1",
     "lucide-react": "^0.563.0",
