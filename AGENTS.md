@@ -20,7 +20,7 @@ bun run format                 # Format code with Biome
 bun run lint                   # Run Biome and ESLint
 bun run typecheck              # Run TypeScript compiler checks
 bun run test                   # Run tests with Vitest
-bun run ci                     # Run format/lint/typecheck/test/build
+bun run ci                     # Run lint/typecheck/test/build
 bun run typegen                # Generate Next.js route/types without build
 bun run db:generate            # Generate database migrations
 bun run db:migrate             # Apply database migrations
@@ -50,6 +50,19 @@ bun run fetch:models           # Update AI model catalog (requires AI_GATEWAY_AP
 - Prefer `ai` package `gateway(...)` usage for model routing.
 - OpenAI-compatible base URL is `https://ai-gateway.vercel.sh/v1`.
 - `bun run fetch:models` writes a model catalog JSON (default: `docs/ai-gateway-models.json`).
+
+## Documentation standards
+
+- Product requirements: `PRD.md` is the canonical PRD; keep it aligned with `docs/specs/requirements.md`.
+- Specs: add/extend `docs/architecture/spec/SPEC-*.md` for implementable designs; update `docs/architecture/spec/index.md`.
+- ADRs: add `docs/architecture/adr/ADR-*.md` for durable decisions; update `docs/architecture/adr/index.md`.
+- Requirement IDs: reference `FR-*`, `NFR-*`, `PR-*`, `IR-*` from `docs/specs/requirements.md` in specs/ADRs.
+- Web claims: any externally sourced factual claim in generated artifacts must include citations (see `docs/architecture/spec/SPEC-0007-*`).
+
+## Commit conventions
+
+- Use Conventional Commits (Release Please relies on this).
+- Prefer narrow scopes: `docs(adr): ...`, `docs(spec): ...`, `docs(prd): ...`, `docs(agents): ...`.
 
 ## Definition of done (for any PR)
 
