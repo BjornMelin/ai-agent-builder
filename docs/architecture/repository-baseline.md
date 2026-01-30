@@ -23,8 +23,8 @@ Key paths present now:
 ### Bun
 
 - `package.json` has `engines.bun >= 1.2.0`.
-- Scripts execute Next via Bun (`bun --bun next ...`).
-- CI installs dependencies with `bun install --frozen-lockfile` via
+- Scripts execute Next via Bun (`bun --bun next …`).
+- CI installs dependencies with `bun install --frozen-lockfile` via GitHub Actions
   `.github/actions/ci-setup`.
 
 Why this matters:
@@ -48,7 +48,7 @@ Why this matters:
   - Dependency Review: `.github/workflows/dependency-review.yml`
   - Scorecard: `.github/workflows/scorecard.yml`
   - Release Please: `.github/workflows/release-please.yml`
-- Dependabot is configured for the Bun ecosystem: `.github/dependabot.yml`.
+- GitHub Dependabot is configured for the Bun ecosystem: `.github/dependabot.yml`.
 
 ## Gaps between baseline and target system
 

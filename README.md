@@ -51,14 +51,9 @@ flowchart LR
 
 ## Documentation
 
+- Start here: [`docs/README.md`](./docs/README.md)
 - Product requirements: [`PRD.md`](./PRD.md)
-- Docs entrypoint: [`docs/README.md`](./docs/README.md)
 - Architecture overview: [`docs/architecture/overview.md`](./docs/architecture/overview.md)
-- Requirements catalog: [`docs/specs/requirements.md`](./docs/specs/requirements.md)
-- SPEC index: [`docs/architecture/spec/index.md`](./docs/architecture/spec/index.md)
-- ADR index: [`docs/architecture/adr/index.md`](./docs/architecture/adr/index.md)
-- Security model: [`docs/architecture/security.md`](./docs/architecture/security.md)
-- Operations/runbook: [`docs/architecture/runbook.md`](./docs/architecture/runbook.md)
 - Agent/contribution standards: [`AGENTS.md`](./AGENTS.md)
 
 ## Local development

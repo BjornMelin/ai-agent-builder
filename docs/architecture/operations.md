@@ -18,7 +18,7 @@ Functions.
   manages minor/patch). ([Bun runtime docs](https://vercel.com/docs/functions/runtimes/bun))
 - **Build/install:** commit a Bun lockfile so Vercel auto-detects Bun installs.
   ([Package managers](https://vercel.com/docs/package-managers))
-- **Next.js scripts:** use `bun --bun next ...` for `dev`, `build`, `start`.
+- **Next.js scripts:** use `bun --bun next …` for `dev`, `build`, `start`.
   ([Bun on Vercel guide](https://bun.com/docs/guides/deployment/vercel))
 
 Operational note: Bun runtime on Vercel is in public beta; keep rollback path

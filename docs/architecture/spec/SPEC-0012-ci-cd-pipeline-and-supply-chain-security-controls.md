@@ -63,7 +63,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 | Maintenance & cognitive load | 0.25 | 9.1 | 2.27 |
 | Architectural adaptability | 0.10 | 9.1 | 0.91 |
 
-**Total:** 9.11 / 10.0
+**Total:** 9.10 / 10.0
 
 ## Design
 

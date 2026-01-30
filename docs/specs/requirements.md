@@ -67,7 +67,7 @@ components.
 
 - **PR-001:** Streaming begins within 1.5s (p95) for warm paths.
 - **PR-002:** Retrieval top-k query within 250ms (p95) for warm paths.
-- **PR-003:** Ingest 10MB PDF within 2 minutes (p95) excluding queue delay.
+- **PR-003:** Ingest 10 MB PDF within 2 minutes (p95) excluding queue delay.
 - **PR-004:** Runs complete despite client disconnects.
 - **PR-005:** Workflow steps are idempotent and safe to retry.
 - **PR-006:** CI completes within 10 minutes for typical PRs (p95).

@@ -46,7 +46,7 @@ The current repo includes Vitest and a CI job for tests. UI and run workflows wi
 | Maintenance & cognitive load | 0.25 | 9.0 | 2.25 |
 | Architectural adaptability | 0.10 | 9.2 | 0.92 |
 
-**Total:** 9.12 / 10.0
+**Total:** 9.11 / 10.0
 
 ## Decision
 
