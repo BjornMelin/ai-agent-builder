@@ -98,6 +98,8 @@ vitest.config.js.timestamp-*
 *.pid.lock
 .vercel
 
+# Generated
+repomix-output.md
 
 # Agents
 .agents/
@@ -105,3 +107,5 @@ vitest.config.js.timestamp-*
 .gemini/
 .claude/
 opensrc/
+# next-agents-md
+.next-docs/

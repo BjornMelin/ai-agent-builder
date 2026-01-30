@@ -49,6 +49,13 @@ flowchart LR
 - Typing/Schema: Zod v4
 - Releases: Release Please (semver via Conventional Commits)
 
+## Documentation
+
+- Start here: [`docs/README.md`](./docs/README.md)
+- Product requirements: [`PRD.md`](./PRD.md)
+- Architecture overview: [`docs/architecture/overview.md`](./docs/architecture/overview.md)
+- Agent/contribution standards: [`AGENTS.md`](./AGENTS.md)
+
 ## Local development
 
 ### Prerequisites
@@ -57,6 +64,7 @@ flowchart LR
 - A Neon database URL in `DATABASE_URL`
 - Upstash credentials (Redis/Vector/QStash)
 - Vercel AI Gateway API key (`AI_GATEWAY_API_KEY`)
+- `argon2` builds natively via `node-gyp-build` if no prebuilt binary is available; ensure C/C++ build tools (GCC >=5 or Clang >=3.3), Python, and `make` are available on Linux (see the [node-argon2 README](https://github.com/ranisalt/node-argon2#before-installing) for prebuilt binaries and build prerequisites).
 
 ### Setup
 

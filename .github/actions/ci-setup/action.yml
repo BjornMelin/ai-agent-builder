@@ -10,8 +10,24 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Cache apt packages
+      id: apt-cache
+      uses: actions/cache@v5.0.3
+      with:
+        path: |
+          /var/cache/apt/archives
+          /var/lib/apt/lists
+        key: apt-${{ runner.os }}-build-essential-python3
+
+    - name: Install build tools (argon2)
+      if: steps.apt-cache.outputs.cache-hit != 'true'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential python3
+      shell: bash
+
     - name: Setup Bun
-      uses: oven-sh/setup-bun@v2
+      uses: oven-sh/setup-bun@v2.1.2
       with:
         bun-version: ${{ inputs.bun-version }}
 
