@@ -55,7 +55,7 @@ components.
   usage.
 - **NFR-007 (Data retention):** Project deletion removes DB records, vector
   entries, and blob refs.
-- **NFR-008 (Accessibility):** Keyboard-accessible and screen-reader friendly UI.
+- **NFR-008 (Accessibility):** Keyboard-accessible and screen-reader-friendly UI.
 - **NFR-009 (Supply chain):** Automated scanning and dependency governance
   (Dependabot, Dependency Review, CodeQL, Scorecard).
 - **NFR-010 (Quality gates):** CI enforces format/lint/typecheck/test/build with

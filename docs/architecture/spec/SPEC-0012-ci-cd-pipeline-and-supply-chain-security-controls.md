@@ -5,7 +5,7 @@ version: 0.2.0
 date: 2026-01-30
 owners: ["you"]
 status: Proposed
-related_requirements: ["NFR-009", "NFR-010", "PR-006"]
+related_requirements: ["NFR-009", "NFR-010", "PR-006", "IR-010"]
 related_adrs: ["ADR-0018", "ADR-0017"]
 notes: "Documents CI workflow and security scanning as required architecture."
 ---
