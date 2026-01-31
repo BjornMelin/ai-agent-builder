@@ -63,18 +63,53 @@ describe("env feature gates", () => {
     );
   });
 
-  it("trims secrets/tokens before validation and output", async () => {
-    const secret = "a".repeat(32);
-
+  it("requires AUTH_ALLOWED_EMAILS when AUTH_ACCESS_MODE is restricted", async () => {
     await withEnv(
       {
-        ADMIN_PASSWORD_HASH: "  hash  ",
-        APP_SESSION_SECRET: `  ${secret}  `,
+        AUTH_ACCESS_MODE: "restricted",
+        AUTH_ALLOWED_EMAILS: undefined,
+        NEON_AUTH_BASE_URL: "https://example.neon.tech/neondb/auth",
+        NEON_AUTH_COOKIE_SECRET: "a".repeat(32),
       },
       async () => {
         const { env } = await loadEnv();
-        expect(env.auth.adminPasswordHash).toBe("hash");
-        expect(env.auth.sessionSecret).toBe(secret);
+        expect(() => env.auth).toThrowError(/AUTH_ALLOWED_EMAILS/i);
+      },
+    );
+  });
+
+  it("does not require AUTH_ALLOWED_EMAILS when AUTH_ACCESS_MODE is open", async () => {
+    await withEnv(
+      {
+        AUTH_ACCESS_MODE: "open",
+        AUTH_ALLOWED_EMAILS: undefined,
+        NEON_AUTH_BASE_URL: "https://example.neon.tech/neondb/auth",
+        NEON_AUTH_COOKIE_SECRET: "a".repeat(32),
+      },
+      async () => {
+        const { env } = await loadEnv();
+        expect(env.auth.allowedEmails).toEqual([]);
+      },
+    );
+  });
+
+  it("trims secrets/tokens before validation and output", async () => {
+    await withEnv(
+      {
+        AUTH_ACCESS_MODE: "restricted",
+        AUTH_ALLOWED_EMAILS:
+          "  Alice@Example.com, bob@example.com, alice@example.com  ",
+        NEON_AUTH_BASE_URL: "  https://example.neon.tech/neondb/auth  ",
+        NEON_AUTH_COOKIE_SECRET: `  ${"a".repeat(32)}  `,
+      },
+      async () => {
+        const { env } = await loadEnv();
+        expect(env.auth.baseUrl).toBe("https://example.neon.tech/neondb/auth");
+        expect(env.auth.cookieSecret).toBe("a".repeat(32));
+        expect(env.auth.allowedEmails).toEqual([
+          "alice@example.com",
+          "bob@example.com",
+        ]);
       },
     );
   });

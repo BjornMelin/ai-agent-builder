@@ -35,6 +35,20 @@ function parseFeatureEnv<S extends z.ZodTypeAny>(
 
 const envNonEmpty = z.string().trim().min(1);
 const envUrl = z.string().trim().pipe(z.url());
+const envOptionalTrimmed = z.string().trim().min(1).optional();
+
+function parseCommaSeparatedList(value: string): string[] {
+  return value
+    .split(",")
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0);
+}
+
+function normalizeEmail(value: string): string {
+  // Lowercasing is sufficient for allowlist matching (domain-part is case-insensitive;
+  // local-part case sensitivity is rarely enforced in practice and not worth the complexity here).
+  return value.trim().toLowerCase();
+}
 
 const runtimeSchema = z
   .looseObject({
@@ -52,13 +66,44 @@ const dbSchema = z
 
 const authSchema = z
   .looseObject({
-    ADMIN_PASSWORD_HASH: envNonEmpty,
-    APP_SESSION_SECRET: envNonEmpty.min(32),
+    // App access control (cost control): restrict who can access the app even if they can authenticate.
+    AUTH_ACCESS_MODE: z.enum(["restricted", "open"]).default("restricted"),
+    AUTH_ALLOWED_EMAILS: envOptionalTrimmed,
+    // Neon Auth
+    NEON_AUTH_BASE_URL: envUrl,
+    NEON_AUTH_COOKIE_DOMAIN: envOptionalTrimmed,
+    NEON_AUTH_COOKIE_SECRET: envNonEmpty.min(32),
   })
-  .transform((v) => ({
-    adminPasswordHash: v.ADMIN_PASSWORD_HASH,
-    sessionSecret: v.APP_SESSION_SECRET,
-  }));
+  .superRefine((v, ctx) => {
+    if (v.AUTH_ACCESS_MODE === "restricted" && !v.AUTH_ALLOWED_EMAILS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "AUTH_ALLOWED_EMAILS is required when AUTH_ACCESS_MODE is 'restricted'.",
+        path: ["AUTH_ALLOWED_EMAILS"],
+      });
+    }
+  })
+  .transform((v) => {
+    const allowedEmails =
+      v.AUTH_ACCESS_MODE === "restricted" && v.AUTH_ALLOWED_EMAILS
+        ? Array.from(
+            new Set(
+              parseCommaSeparatedList(v.AUTH_ALLOWED_EMAILS).map(
+                normalizeEmail,
+              ),
+            ),
+          )
+        : [];
+
+    return {
+      accessMode: v.AUTH_ACCESS_MODE,
+      allowedEmails,
+      baseUrl: v.NEON_AUTH_BASE_URL,
+      cookieDomain: v.NEON_AUTH_COOKIE_DOMAIN,
+      cookieSecret: v.NEON_AUTH_COOKIE_SECRET,
+    };
+  });
 
 const upstashSchema = z
   .looseObject({
@@ -164,7 +209,7 @@ export const env = {
   },
 
   /**
-   * Authentication / session secrets.
+   * Authentication / access control.
    *
    * @returns Auth env.
    */
