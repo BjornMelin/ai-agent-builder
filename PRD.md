@@ -6,14 +6,15 @@ Owner: you
 
 ## Executive summary
 
-ai-agent-builder is a single-user system for turning rough product inputs (docs,
-decks, spreadsheets, notes) into an implementation-ready documentation pack:
+ai-agent-builder is a private, production-focused system for turning rough
+product inputs (docs, decks, spreadsheets, notes) into an implementation-ready
+documentation pack:
 market research, competitive analysis, differentiation, PRD, architecture,
 ADRs/SPECs, security notes, roadmap, and Codex-ready implementation prompts.
 
 The product is optimized for:
 
-- fast iteration by one builder
+- fast iteration by one builder (with a path to additional users later)
 - auditable research (citations)
 - durable workflows that continue after disconnects
 - deterministic exports for handoff/versioning
@@ -38,7 +39,7 @@ plan” without redoing analysis.
 
 ### Non-goals
 
-- Multi-tenant accounts, orgs, billing, or collaboration features.
+- Multi-tenant product constructs (org-level billing, collaboration, marketplace).
 - A generic “agent framework” for third parties (this is an end-user product).
 - Long-running compute jobs beyond bounded research/spec generation workflows.
 
@@ -52,7 +53,8 @@ plan” without redoing analysis.
 
 ### Journey A: From uploads to a full documentation pack
 
-1. User logs in (single password).
+1. User signs in via Neon Auth (GitHub OAuth, Vercel OAuth, and/or credentials),
+   and must be allowlisted to access the app.
 2. User creates a project.
 3. User uploads files (PDF/DOCX/PPTX/XLSX/TXT/MD).
 4. System extracts text and structure, chunks content, and indexes it for
@@ -76,13 +78,15 @@ implementation.
 
 ### Epic 1: Authentication and access control
 
-- Single-user password login with secure session cookie. (FR-001, NFR-001, NFR-002)
+- Managed authentication via Neon Auth with secure cookies. (FR-001, NFR-001, NFR-002)
+- Default restricted access via allowlist to prevent unintended API spend. (NFR-002, NFR-006, NFR-012)
 - Protect all sensitive routes and keep provider keys server-only. (NFR-001)
 
 Primary spec/ADR references:
 
 - `docs/architecture/spec/SPEC-0002-authentication-access-control.md`
-- `docs/architecture/adr/ADR-0002-authentication-single-password-signed-cookie-session.md`
+- `docs/architecture/adr/ADR-0022-authentication-neon-auth-oauth-allowlist.md`
+- `docs/architecture/adr/ADR-0023-public-signup-deferred-until-byok.md`
 
 ### Epic 2: Projects and workspace
 
@@ -173,7 +177,7 @@ Primary spec/ADR references:
 The system must be:
 
 - Secure by default; no client exposure of provider keys. (NFR-001)
-- Single-user by design. (NFR-002)
+- Private access mode by default (restricted allowlist; no multi-tenant constructs). (NFR-002, NFR-012)
 - Maintainable with strict TypeScript + modular boundaries. (NFR-003)
 - Observable with persisted, queryable telemetry. (NFR-004)
 - Deterministic for exports and artifact version selection. (NFR-005)
@@ -235,4 +239,3 @@ Guardrail metrics:
 - Architecture overview: `docs/architecture/overview.md`
 - ADR index: `docs/architecture/adr/index.md`
 - SPEC index: `docs/architecture/spec/index.md`
-

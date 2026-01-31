@@ -8,8 +8,9 @@ components.
 
 ## Functional Requirements
 
-- **FR-001:** Single-user password login with secure session cookie (httpOnly,
-  Secure in prod).
+- **FR-001:** Managed authentication via Neon Auth (GitHub/Vercel OAuth and/or
+  credentials) with secure, server-managed session cookies (httpOnly; Secure in
+  prod) and app-level access control.
 - **FR-002:** Project CRUD (create, view, edit, archive, delete).
 - **FR-003:** Upload files (PDF, DOCX, PPTX, XLSX, TXT/MD) to a project.
 - **FR-004:** Store original files durably and associate to a project.
@@ -44,7 +45,8 @@ components.
 
 - **NFR-001 (Security):** Protect all sensitive routes, server-only keys, secure
   cookies.
-- **NFR-002 (Single-user):** No multi-tenant assumptions or user tables required.
+- **NFR-002 (Private access mode):** Default to restricted access (allowlist);
+  do not require multi-tenant constructs (orgs, billing, collaboration).
 - **NFR-003 (Maintainability):** Strict TS, Zod v4, modular architecture, low
   boilerplate.
 - **NFR-004 (Observability):** Persist logs, latency, token usage, tool calls,
@@ -62,6 +64,8 @@ components.
   Bun-only commands.
 - **NFR-011 (Agent-first DX):** Repository conventions optimized for AI coding
   agents (AGENTS.md, strict doc requirements, deterministic scripts).
+- **NFR-012 (BYOK gating):** Public sign-up must remain disabled until the app
+  supports BYOK for any metered third-party provider keys.
 
 ## Performance & Reliability Requirements
 

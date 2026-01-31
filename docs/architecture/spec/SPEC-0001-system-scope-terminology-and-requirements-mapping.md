@@ -96,7 +96,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ## Constraints
 
-- Single-user operation (no user tables required)
+- Private access mode by default (allowlist) and no multi-tenant constructs
+  required (org billing, collaboration)
 - Server-only secrets and tool execution
 - Bun-only scripts and installs
 

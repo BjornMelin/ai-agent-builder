@@ -20,15 +20,28 @@ This project centralizes environment access in `src/lib/env.ts`.
 
 ## Variables
 
-### Auth (single-user)
+### Auth (Neon Auth + app access control)
 
-- `ADMIN_PASSWORD_HASH` (required for `env.auth`)
-  - Argon2id password hash for the admin user.
-  - Used by: login Route Handler (see `docs/architecture/spec/SPEC-0002-*`).
-- `APP_SESSION_SECRET` (required for `env.auth`)
-  - Secret used to sign/encrypt session cookies.
-  - Rotation invalidates existing sessions.
-  - Used by: session cookie helpers (see `docs/architecture/spec/SPEC-0002-*`).
+- `NEON_AUTH_BASE_URL` (required for `env.auth`)
+  - Neon Auth base URL from the Neon Console.
+  - Used by: `src/lib/auth/server.ts` and Neon Auth API proxy route.
+- `NEON_AUTH_COOKIE_SECRET` (required for `env.auth`)
+  - App-side HMAC secret used to sign cached session data cookies (minimum 32
+    characters).
+  - Rotation invalidates cached session data.
+- `NEON_AUTH_COOKIE_DOMAIN` (optional)
+  - Cookie domain for sharing session cookies across subdomains (e.g.
+    `.example.com`).
+
+App-level access control (cost control):
+
+- `AUTH_ACCESS_MODE` (optional, default: `restricted`)
+  - `restricted`: only allow authenticated users whose email is in
+    `AUTH_ALLOWED_EMAILS`.
+  - `open`: allow any authenticated user (only after BYOK is implemented).
+- `AUTH_ALLOWED_EMAILS` (required when `AUTH_ACCESS_MODE=restricted`)
+  - Comma-separated list of allowed emails (case-insensitive).
+  - The app denies access to authenticated users who are not allowlisted.
 
 ### Database (Neon Postgres)
 

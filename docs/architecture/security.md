@@ -10,10 +10,13 @@
 
 ## Authentication
 
-- Argon2id password hash in env var.
-- Signed httpOnly cookie session.
-- Rate limiting on login and sensitive endpoints.
-  ([Upstash Ratelimit](https://upstash.com/docs/redis/sdks/ratelimit-ts/overview))
+- Managed authentication via Neon Auth (GitHub OAuth, Vercel OAuth, and/or
+  credentials).
+- Next.js `proxy.ts` ensures unauthenticated users are redirected to
+  `/auth/sign-in`.
+- App-level access control denies authenticated users who are not allowlisted
+  (see `AUTH_ACCESS_MODE` + `AUTH_ALLOWED_EMAILS`) to prevent unintended API
+  spend until BYOK is implemented.
 
 ## Workflow security
 

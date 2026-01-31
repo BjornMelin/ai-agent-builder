@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0015
 title: Environment configuration contracts
-version: 0.1.0
-date: 2026-01-30
+version: 0.2.0
+date: 2026-01-31
 owners: ["you"]
 status: Implemented
 related_requirements:
@@ -113,7 +113,9 @@ Feature gates are accessed through `env.<feature>`:
 - `env.webResearch` (`EXA_API_KEY`, `FIRECRAWL_API_KEY`)
 - `env.blob` (`BLOB_READ_WRITE_TOKEN`)
 - `env.sandbox` (`VERCEL_OIDC_TOKEN`)
-- `env.auth` (`ADMIN_PASSWORD_HASH`, `APP_SESSION_SECRET`)
+- `env.auth`
+  - Neon Auth: `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `NEON_AUTH_COOKIE_DOMAIN`
+  - App access control: `AUTH_ACCESS_MODE`, `AUTH_ALLOWED_EMAILS`
 
 ## Acceptance criteria
 
@@ -145,10 +147,11 @@ Feature gates are accessed through `env.<feature>`:
 ## References
 
 - Next.js environment variables:
-  https://nextjs.org/docs/app/guides/environment-variables
+  <https://nextjs.org/docs/app/guides/environment-variables>
 - Zod:
-  https://zod.dev/
+  <https://zod.dev/>
 
 ## Changelog
 
 - **0.1 (2026-01-30)**: Implemented typed env feature gates and ops docs.
+- **0.2 (2026-01-31)**: Migrated `env.auth` to Neon Auth + allowlist access control.

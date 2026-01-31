@@ -8,9 +8,9 @@
 ![Postgres](https://img.shields.io/badge/DB-Neon_Postgres-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Cache-Upstash-00E9A3?logo=redis&logoColor=white)
 
-A single-user, production-focused system for turning rough product ideas
-(pitch decks, docs, spreadsheets, notes) into a complete, implementation-ready
-spec set: market research, competitive analysis, differentiation, PRD, ADRs,
+A private, production-focused system for turning rough product ideas (pitch
+decks, docs, spreadsheets, notes) into a complete, implementation-ready spec
+set: market research, competitive analysis, differentiation, PRD, ADRs,
 architecture, and Codex-ready implementation prompts.
 
 ## What it does
@@ -42,6 +42,7 @@ flowchart LR
 - Runtime + tooling: Bun
 - Web: Next.js 16 (App Router), React 19
 - Styling/UI: TailwindCSS v4, shadcn/ui, Lucide
+- Auth: Neon Auth (managed auth + UI components)
 - AI: Vercel AI SDK v6 + AI Gateway
 - DB: Neon Postgres + Drizzle ORM
 - Infra helpers: Upstash (Redis, QStash, Vector)
@@ -62,9 +63,13 @@ flowchart LR
 
 - Bun v1.2+ (uses `bun.lock`)
 - A Neon database URL in `DATABASE_URL`
+- Neon Auth configured for this project:
+  - Enable Neon Auth in the Neon Console and configure OAuth providers (GitHub, Vercel)
+  - `NEON_AUTH_BASE_URL`
+  - `NEON_AUTH_COOKIE_SECRET` (32+ chars)
+  - `AUTH_ALLOWED_EMAILS` (when `AUTH_ACCESS_MODE=restricted`)
 - Upstash credentials (Redis/Vector/QStash)
 - Vercel AI Gateway API key (`AI_GATEWAY_API_KEY`)
-- `argon2` builds natively via `node-gyp-build` if no prebuilt binary is available; ensure C/C++ build tools (GCC >=5 or Clang >=3.3), Python, and `make` are available on Linux (see the [node-argon2 README](https://github.com/ranisalt/node-argon2#before-installing) for prebuilt binaries and build prerequisites).
 
 ### Setup
 

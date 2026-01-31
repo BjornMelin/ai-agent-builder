@@ -5,6 +5,7 @@
 1. Provision services:
    - Vercel AI Gateway
    - Neon Postgres
+   - Neon Auth (enable in Neon Console and configure OAuth providers)
    - Upstash Redis, Vector, QStash
    - Vercel Blob store (for file uploads)
    - Exa and Firecrawl API keys
@@ -17,7 +18,11 @@
      - `QSTASH_CURRENT_SIGNING_KEY`
      - `QSTASH_NEXT_SIGNING_KEY`
    - Research: `EXA_API_KEY`, `FIRECRAWL_API_KEY`
-   - Auth: `ADMIN_PASSWORD_HASH`, `APP_SESSION_SECRET`
+   - Auth (Neon Auth + access control):
+     - `NEON_AUTH_BASE_URL`
+     - `NEON_AUTH_COOKIE_SECRET`
+     - `AUTH_ACCESS_MODE`
+     - `AUTH_ALLOWED_EMAILS` (required when restricted)
 
 3. DB migrations (current scripts exist now):
    - `bun run db:generate`

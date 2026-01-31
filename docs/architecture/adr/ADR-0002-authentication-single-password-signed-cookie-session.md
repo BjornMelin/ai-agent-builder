@@ -1,11 +1,11 @@
 ---
 ADR: 0002
 Title: Authentication: single-password + signed cookie session
-Status: Accepted
+Status: Superseded
 Version: 0.3
 Date: 2026-01-30
 Supersedes: []
-Superseded-by: []
+Superseded-by: [ADR-0022]
 Related: [ADR-0013, ADR-0016]
 Tags: [security, dx]
 References:
@@ -15,7 +15,8 @@ References:
 
 ## Status
 
-Accepted — 2026-01-30.
+Superseded — 2026-01-31 (replaced by Neon Auth; see ADR-0022). Originally
+accepted on 2026-01-30.
 
 ## Description
 
