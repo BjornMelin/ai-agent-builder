@@ -45,6 +45,13 @@ bun run fetch:models           # Update AI model catalog (requires AI_GATEWAY_AP
 - Drizzle schema: `src/db/schema.ts`
 - Migrations: `src/db/migrations`
 
+## Authentication
+
+- Auth is **Neon Auth only** (`@neondatabase/auth`).
+- Route protection uses **Next.js `proxy.ts`** (see `src/proxy.ts`); do not add
+  `middleware.ts`.
+- Public sign-up is intentionally disabled until BYOK exists (see ADR-0023).
+
 ## AI Gateway
 
 - Prefer `ai` package `gateway(...)` usage for model routing.
