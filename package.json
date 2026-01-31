@@ -1,12 +1,37 @@
 {
+  "name": "ai-agent-builder",
+  "version": "0.1.1",
+  "private": true,
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "scripts": {
+    "build": "bun --bun next build",
+    "ci": "bun run lint && bun run typecheck && bun run test && bun run build",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "dev": "bun --bun next dev",
+    "fetch:models": "bash scripts/fetch-models.sh",
+    "format": "biome check --write .",
+    "lint": "bun run lint:biome && bun run lint:eslint",
+    "lint:biome": "biome check .",
+    "lint:eslint": "eslint .",
+    "start": "bun --bun next start",
+    "test": "bun --bun next typegen && vitest run",
+    "test:watch": "vitest",
+    "typecheck": "bun --bun next typegen && tsc -p tsconfig.json --noEmit",
+    "typegen": "bun --bun next typegen"
+  },
   "dependencies": {
+    "@neondatabase/auth": "^0.2.0-beta.1",
     "@neondatabase/serverless": "~1.0.2",
     "@upstash/qstash": "~2.9.0",
     "@upstash/ratelimit": "~2.0.8",
     "@upstash/redis": "~1.36.1",
     "@upstash/vector": "~1.2.2",
     "@vercel/blob": "~2.0.1",
-    "ai": "~6.0.63",
+    "ai": "~6.0.64",
     "argon2": "~0.44.0",
     "drizzle-orm": "~0.45.1",
     "lucide-react": "^0.563.0",
@@ -42,36 +67,12 @@
     "vite-tsconfig-paths": "^6.0.5",
     "vitest": "^4.0.18"
   },
-  "engines": {
-    "bun": ">=1.2.0"
-  },
-  "ignoreScripts": [
-    "sharp",
-    "unrs-resolver"
-  ],
-  "name": "ai-agent-builder",
-  "private": true,
-  "scripts": {
-    "build": "bun --bun next build",
-    "ci": "bun run lint && bun run typecheck && bun run test && bun run build",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio",
-    "dev": "bun --bun next dev",
-    "fetch:models": "bash scripts/fetch-models.sh",
-    "format": "biome check --write .",
-    "lint": "bun run lint:biome && bun run lint:eslint",
-    "lint:biome": "biome check .",
-    "lint:eslint": "eslint .",
-    "start": "bun --bun next start",
-    "test": "bun --bun next typegen && vitest run",
-    "test:watch": "vitest",
-    "typecheck": "bun --bun next typegen && tsc -p tsconfig.json --noEmit",
-    "typegen": "bun --bun next typegen"
-  },
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
   ],
-  "version": "0.1.1"
+  "ignoreScripts": [
+    "sharp",
+    "unrs-resolver"
+  ]
 }
