@@ -42,18 +42,6 @@
     "indentWidth": 2,
     "lineWidth": 80
   },
-  "overrides": [
-    {
-      "files": ["package.json"],
-      "assist": {
-        "actions": {
-          "source": {
-            "useSortedKeys": "off"
-          }
-        }
-      }
-    }
-  ],
   "linter": {
     "enabled": true,
     "rules": {
@@ -63,6 +51,18 @@
       }
     }
   },
+  "overrides": [
+    {
+      "assist": {
+        "actions": {
+          "source": {
+            "useSortedKeys": "off"
+          }
+        }
+      },
+      "includes": ["package.json"]
+    }
+  ],
   "vcs": {
     "clientKind": "git",
     "enabled": true,
