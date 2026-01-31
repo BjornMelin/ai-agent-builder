@@ -1,7 +1,9 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { Providers } from "./providers";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -14,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  description: "Build AI agents for your business",
+  description: "Build AI-powered products, applications, and workflows",
   title: "AI Agent Builder",
 };
 
@@ -31,11 +33,12 @@ export default function RootLayout(
 ) {
   const { children } = props;
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
+        <Analytics mode="production" />
       </body>
     </html>
   );
