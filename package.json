@@ -24,7 +24,7 @@
     "typegen": "bun --bun next typegen"
   },
   "dependencies": {
-    "@neondatabase/auth": "^0.2.0-beta.1",
+    "@neondatabase/auth": "0.2.0-beta.1",
     "@neondatabase/serverless": "~1.0.2",
     "@upstash/qstash": "~2.9.0",
     "@upstash/ratelimit": "~2.0.8",

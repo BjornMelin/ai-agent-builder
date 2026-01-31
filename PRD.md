@@ -53,7 +53,7 @@ plan” without redoing analysis.
 
 ### Journey A: From uploads to a full documentation pack
 
-1. User signs in via Neon Auth (GitHub OAuth, Vercel OAuth, and/or credentials),
+1. User signs in via Neon Auth (GitHub OAuth, Vercel OAuth, or credentials)
    and must be allowlisted to access the app.
 2. User creates a project.
 3. User uploads files (PDF/DOCX/PPTX/XLSX/TXT/MD).

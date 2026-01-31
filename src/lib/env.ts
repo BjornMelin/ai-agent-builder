@@ -55,8 +55,12 @@ const runtimeSchema = z
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    VERCEL: z.string().optional(),
   })
-  .transform((v) => ({ nodeEnv: v.NODE_ENV }));
+  .transform((v) => ({
+    isVercel: v.VERCEL === "1",
+    nodeEnv: v.NODE_ENV,
+  }));
 
 const dbSchema = z
   .looseObject({

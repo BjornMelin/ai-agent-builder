@@ -1,6 +1,9 @@
 import { AuthView } from "@neondatabase/auth/react";
 import { authViewPaths } from "@neondatabase/auth/react/ui/server";
 
+/**
+ * Disables dynamic route params for auth views.
+ */
 export const dynamicParams = false;
 
 /**
@@ -29,12 +32,12 @@ export function generateStaticParams() {
  * @param props - Next.js page props.
  * @returns The auth page UI.
  */
-export default async function AuthPage(
+export default function AuthPage(
   props: Readonly<{
-    params: Promise<{ path: string }>;
+    params: { path: string };
   }>,
 ) {
-  const { path } = await props.params;
+  const { path } = props.params;
 
   return (
     <main className="container mx-auto flex grow flex-col items-center justify-center p-4 md:p-6">

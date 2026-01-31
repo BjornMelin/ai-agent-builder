@@ -3,7 +3,13 @@ import { accountViewPaths } from "@neondatabase/auth/react/ui/server";
 
 import { requireAppUser } from "@/lib/auth/access";
 
+/**
+ * Forces dynamic rendering for the account route.
+ */
 export const dynamic = "force-dynamic";
+/**
+ * Disables dynamic route params for this page.
+ */
 export const dynamicParams = false;
 
 /**
@@ -25,10 +31,10 @@ export function generateStaticParams() {
  */
 export default async function AccountPage(
   props: Readonly<{
-    params: Promise<{ path: string }>;
+    params: { path: string };
   }>,
 ) {
-  const { path } = await props.params;
+  const { path } = props.params;
   await requireAppUser();
 
   return (

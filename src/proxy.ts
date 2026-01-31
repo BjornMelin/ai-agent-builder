@@ -19,6 +19,9 @@ export default async function proxy(request: NextRequest) {
   return cachedMiddleware(request);
 }
 
+/**
+ * Next.js middleware matcher configuration.
+ */
 export const config = {
   matcher: [
     // Protect all app routes except:

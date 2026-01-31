@@ -22,4 +22,4 @@
 - [ADR-0020](./ADR-0020-next-js-dev-build-strategy-turbopack-react-compiler-typegen.md) — Next.js dev/build strategy: Turbopack + React Compiler + typegen
 - [ADR-0021](./ADR-0021-environment-configuration-contracts-and-secret-handling.md) — Environment configuration contracts and secret handling
 - [ADR-0022](./ADR-0022-authentication-neon-auth-oauth-allowlist.md) — Authentication: Neon Auth (OAuth + UI) + allowlist access control
-- [ADR-0023](./ADR-0023-public-signup-deferred-until-byok.md) — Public sign-up deferred until BYOK
+- [ADR-0023](./ADR-0023-public-signup-deferred-until-byok.md) — Public sign-up deferred until BYOK (deferred)

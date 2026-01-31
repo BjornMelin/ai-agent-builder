@@ -2,8 +2,10 @@
 
 This project centralizes environment access in `src/lib/env.ts`.
 
-- Do not read `process.env` directly in `src/**` (tooling configs may be the
-  exception, e.g. `drizzle.config.ts`).
+- Do not read `process.env` directly in non-test files under `src/**` (tooling
+  configs may be the exception, e.g. `drizzle.config.ts`). Unit test files
+  (e.g. `*.test.ts` / `*.test.tsx`) may read and mutate `process.env` as part of
+  their test setup.
 - Do not import `@/lib/env` into Client Components (it is server-only).
 - Required variables are validated lazily (on first access to a feature gate)
   so optional features do not break builds.

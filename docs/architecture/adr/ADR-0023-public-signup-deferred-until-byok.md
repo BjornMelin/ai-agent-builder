@@ -35,6 +35,11 @@ correct first.
 - Keep production posture simple while the app is still stabilizing
 - Preserve a clear, auditable rollout path to public access later
 
+## Related Requirements
+
+- **NFR-002:** Default to restricted access (allowlist).
+- **NFR-012:** Public sign-up remains disabled until BYOK is implemented.
+
 ## Decision
 
 Until BYOK is implemented:

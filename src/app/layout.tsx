@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { env } from "@/lib/env";
 import { Providers } from "./providers";
 
 const geistSans = Geist({
@@ -46,7 +47,7 @@ export default function RootLayout(
   }>,
 ) {
   const { children } = props;
-  const enableAnalytics = process.env.VERCEL === "1";
+  const enableAnalytics = env.runtime.isVercel;
   return (
     <html lang="en" suppressHydrationWarning>
       <body

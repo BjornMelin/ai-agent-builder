@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Notes
+
+* document rationale for the beta `@neondatabase/auth` dependency and pin the version.
+
 ## [0.1.1](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.0...ai-agent-builder-v0.1.1) (2026-01-30)
 
 

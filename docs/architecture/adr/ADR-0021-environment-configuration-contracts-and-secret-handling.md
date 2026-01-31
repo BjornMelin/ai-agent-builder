@@ -36,6 +36,11 @@ optional features or leaking secrets to client bundles.
 - Feature-gated validation to keep optional features optional
 - Consistent error behavior for Route Handlers and Server Actions
 
+## Related Requirements
+
+- **NFR-001:** Protect server-only keys and secrets.
+- **NFR-003:** Strict TypeScript and modular configuration contracts.
+
 ## Alternatives
 
 - A: Read `process.env` directly everywhere

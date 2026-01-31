@@ -50,6 +50,12 @@ flowchart LR
 - Typing/Schema: Zod v4
 - Releases: Release Please (semver via Conventional Commits)
 
+### Auth dependency note
+
+`@neondatabase/auth` is currently a beta package. We pin the version and treat
+it as intentional: access is allowlisted, auth flows are covered by tests, and
+we monitor upstream releases before upgrading.
+
 ## Documentation
 
 - Start here: [`docs/README.md`](./docs/README.md)

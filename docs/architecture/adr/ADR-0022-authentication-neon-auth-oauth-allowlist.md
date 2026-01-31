@@ -42,6 +42,12 @@ must remain limited to a known set of users.
 - Next.js App Router best practices (RSC boundaries, build-time behavior)
 - Clear upgrade path to additional users later
 
+## Related Requirements
+
+- **FR-001:** Managed authentication via Neon Auth.
+- **NFR-002:** Private access mode (allowlist).
+- **NFR-012:** BYOK gating (sign-up deferred).
+
 ## Alternatives
 
 - A: Single-password + signed cookie session (ADR-0002)
