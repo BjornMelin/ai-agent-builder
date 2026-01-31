@@ -14,3 +14,4 @@
 - [SPEC-0012](./SPEC-0012-ci-cd-pipeline-and-supply-chain-security-controls.md) — CI/CD pipeline and supply chain security controls
 - [SPEC-0013](./SPEC-0013-release-management-and-versioning.md) — Release management and versioning
 - [SPEC-0014](./SPEC-0014-next-js-build-type-generation-and-react-compiler-constraints.md) — Next.js build, type generation, and React Compiler constraints
+- [SPEC-0015](./SPEC-0015-environment-configuration-contracts.md) — Environment configuration contracts

@@ -17,7 +17,7 @@
      - `QSTASH_CURRENT_SIGNING_KEY`
      - `QSTASH_NEXT_SIGNING_KEY`
    - Research: `EXA_API_KEY`, `FIRECRAWL_API_KEY`
-   - Auth: `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`
+   - Auth: `ADMIN_PASSWORD_HASH`, `APP_SESSION_SECRET`
 
 3. DB migrations (current scripts exist now):
    - `bun run db:generate`

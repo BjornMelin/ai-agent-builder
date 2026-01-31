@@ -20,3 +20,4 @@
 - [ADR-0018](./ADR-0018-ci-supply-chain-security-automation-codeql-dependency-review-scorecard-dependabot.md) — CI + supply chain security automation (CodeQL, Dependency Review, Scorecard, Dependabot)
 - [ADR-0019](./ADR-0019-release-automation-release-please-conventional-commits.md) — Release automation: Release Please + Conventional Commits
 - [ADR-0020](./ADR-0020-next-js-dev-build-strategy-turbopack-react-compiler-typegen.md) — Next.js dev/build strategy: Turbopack + React Compiler + typegen
+- [ADR-0021](./ADR-0021-environment-configuration-contracts-and-secret-handling.md) — Environment configuration contracts and secret handling

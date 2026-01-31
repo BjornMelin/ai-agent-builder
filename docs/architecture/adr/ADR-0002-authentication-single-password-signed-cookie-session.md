@@ -2,7 +2,7 @@
 ADR: 0002
 Title: Authentication: single-password + signed cookie session
 Status: Accepted
-Version: 0.2
+Version: 0.3
 Date: 2026-01-30
 Supersedes: []
 Superseded-by: []
@@ -103,7 +103,7 @@ sequenceDiagram
 ### Implementation Details
 
 - Store only a session identifier and issued-at timestamp in cookie.
-- Rotate session secret via env var.
+- Rotate session secret via env var (`APP_SESSION_SECRET`).
 - Optional: lockout after N failures per IP/time window.
 
 ### File locations (target)
@@ -148,3 +148,4 @@ sequenceDiagram
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-01-30)**: Renamed session secret var to `APP_SESSION_SECRET`.

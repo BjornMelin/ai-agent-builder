@@ -1,7 +1,7 @@
 ---
 spec: SPEC-0002
 title: Authentication & access control
-version: 0.2.0
+version: 0.3.0
 date: 2026-01-30
 owners: ["you"]
 status: Proposed
@@ -104,7 +104,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ## Operational notes
 
-- Rotate `SESSION_SECRET` safely (invalidate sessions)
+- Rotate `APP_SESSION_SECRET` safely (invalidate sessions)
 
 ## Failure modes and mitigation
 
@@ -125,3 +125,4 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-01-30)**: Renamed session secret var to `APP_SESSION_SECRET`.

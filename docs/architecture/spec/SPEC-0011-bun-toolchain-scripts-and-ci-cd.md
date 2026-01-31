@@ -1,22 +1,26 @@
 ---
 spec: SPEC-0011
 title: Bun toolchain, scripts, and CI/CD
-version: 0.2.0
+version: 0.3.0
 date: 2026-01-30
 owners: ["you"]
-status: Proposed
+status: Implemented
 related_requirements: ["NFR-010", "IR-010", "PR-006"]
 related_adrs: ["ADR-0015"]
-notes: "Defines Bun-first local development, CI workflows, and Vercel runtime configuration."
+notes:
+  "Defines Bun-first local development, CI workflows, and Vercel runtime
+  configuration."
 ---
 
 ## Summary
 
-Defines the Bun-first toolchain for installs, scripts, CI, and Vercel Functions runtime selection.
+Defines the Bun-first toolchain for installs, scripts, CI, and Vercel Functions
+runtime selection.
 
 ## Context
 
-The repo is already Bun-first. This spec documents required invariants so later work does not regress to Node+pnpm assumptions.
+The repo is already Bun-first. This spec documents required invariants so later
+work does not regress to Node+pnpm assumptions.
 
 ## Goals / Non-goals
 
@@ -83,13 +87,14 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ## Acceptance criteria
 
-- All scripts run with Bun
-- CI uses deterministic installs
-- Vercel deployment uses Bun runtime
+- [x] All scripts run with Bun
+- [x] CI uses deterministic installs
+- [x] Vercel deployment uses Bun runtime
 
 ## Testing
 
-- CI builds and tests run successfully under Bun
+- CI builds and tests run successfully under Bun.
+- Run: `bun run ci`
 
 ## Operational notes
 
@@ -115,4 +120,6 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ## Changelog
 
 - **0.1 (2026-01-29)**: Initial draft.
-- **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout,
+  CI).
+- **0.3 (2026-01-30)**: Marked as implemented (repo already Bun-first).
