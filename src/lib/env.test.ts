@@ -123,4 +123,39 @@ describe("env feature gates", () => {
       expect(env.db.databaseUrl).toBe("postgresql://a/a");
     });
   });
+
+  it("throws on first access when GitHub token is missing", async () => {
+    await withEnv({ GITHUB_TOKEN: undefined }, async () => {
+      const { env } = await loadEnv();
+      expect(() => env.github).toThrowError(/GITHUB_TOKEN/i);
+    });
+  });
+
+  it("parses GitHub env when required vars exist", async () => {
+    await withEnv({ GITHUB_TOKEN: "ghp_test" }, async () => {
+      const { env } = await loadEnv();
+      expect(env.github.token).toBe("ghp_test");
+    });
+  });
+
+  it("parses Vercel API env when required vars exist", async () => {
+    await withEnv(
+      { VERCEL_TEAM_ID: "team_123", VERCEL_TOKEN: "vercel_test" },
+      async () => {
+        const { env } = await loadEnv();
+        expect(env.vercelApi.token).toBe("vercel_test");
+        expect(env.vercelApi.teamId).toBe("team_123");
+      },
+    );
+  });
+
+  it("validates Upstash Developer API email", async () => {
+    await withEnv(
+      { UPSTASH_API_KEY: "k", UPSTASH_EMAIL: "not-an-email" },
+      async () => {
+        const { env } = await loadEnv();
+        expect(() => env.upstashDeveloper).toThrowError(/UPSTASH_EMAIL/i);
+      },
+    );
+  });
 });

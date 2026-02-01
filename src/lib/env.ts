@@ -177,6 +177,42 @@ const context7Schema = z
   })
   .transform((v) => ({ apiKey: v.CONTEXT7_API_KEY }));
 
+const githubSchema = z
+  .looseObject({
+    GITHUB_TOKEN: envNonEmpty,
+    GITHUB_WEBHOOK_SECRET: envOptionalTrimmed,
+  })
+  .transform((v) => ({
+    token: v.GITHUB_TOKEN,
+    webhookSecret: v.GITHUB_WEBHOOK_SECRET,
+  }));
+
+const vercelApiSchema = z
+  .looseObject({
+    VERCEL_TEAM_ID: envOptionalTrimmed,
+    VERCEL_TOKEN: envNonEmpty,
+  })
+  .transform((v) => ({
+    teamId: v.VERCEL_TEAM_ID,
+    token: v.VERCEL_TOKEN,
+  }));
+
+const neonApiSchema = z
+  .looseObject({
+    NEON_API_KEY: envNonEmpty,
+  })
+  .transform((v) => ({ apiKey: v.NEON_API_KEY }));
+
+const upstashDeveloperSchema = z
+  .looseObject({
+    UPSTASH_API_KEY: envNonEmpty,
+    UPSTASH_EMAIL: z.string().trim().pipe(z.email()),
+  })
+  .transform((v) => ({
+    apiKey: v.UPSTASH_API_KEY,
+    email: v.UPSTASH_EMAIL,
+  }));
+
 let cachedRuntimeEnv: Readonly<z.output<typeof runtimeSchema>> | undefined;
 let cachedDbEnv: Readonly<z.output<typeof dbSchema>> | undefined;
 let cachedAuthEnv: Readonly<z.output<typeof authSchema>> | undefined;
@@ -194,6 +230,12 @@ let cachedWebResearchEnv:
 let cachedBlobEnv: Readonly<z.output<typeof blobSchema>> | undefined;
 let cachedSandboxEnv: Readonly<z.output<typeof sandboxSchema>> | undefined;
 let cachedContext7Env: Readonly<z.output<typeof context7Schema>> | undefined;
+let cachedGithubEnv: Readonly<z.output<typeof githubSchema>> | undefined;
+let cachedVercelApiEnv: Readonly<z.output<typeof vercelApiSchema>> | undefined;
+let cachedNeonApiEnv: Readonly<z.output<typeof neonApiSchema>> | undefined;
+let cachedUpstashDeveloperEnv:
+  | Readonly<z.output<typeof upstashDeveloperSchema>>
+  | undefined;
 
 /**
  * Typed, validated environment access for server code.
@@ -253,6 +295,26 @@ export const env = {
   },
 
   /**
+   * GitHub API access (RepoOps).
+   *
+   * @returns GitHub env.
+   */
+  get github(): Readonly<z.output<typeof githubSchema>> {
+    cachedGithubEnv ??= parseFeatureEnv("github", githubSchema);
+    return cachedGithubEnv;
+  },
+
+  /**
+   * Neon API (optional provisioning).
+   *
+   * @returns Neon API env.
+   */
+  get neonApi(): Readonly<z.output<typeof neonApiSchema>> {
+    cachedNeonApiEnv ??= parseFeatureEnv("neonApi", neonApiSchema);
+    return cachedNeonApiEnv;
+  },
+
+  /**
    * QStash publish token (enqueue).
    *
    * @returns QStash publish env.
@@ -305,6 +367,29 @@ export const env = {
   get upstash(): Readonly<z.output<typeof upstashSchema>> {
     cachedUpstashEnv ??= parseFeatureEnv("upstash", upstashSchema);
     return cachedUpstashEnv;
+  },
+
+  /**
+   * Upstash Developer API (optional provisioning; native accounts only).
+   *
+   * @returns Upstash Developer env.
+   */
+  get upstashDeveloper(): Readonly<z.output<typeof upstashDeveloperSchema>> {
+    cachedUpstashDeveloperEnv ??= parseFeatureEnv(
+      "upstashDeveloper",
+      upstashDeveloperSchema,
+    );
+    return cachedUpstashDeveloperEnv;
+  },
+
+  /**
+   * Vercel REST API / SDK (deployment automation).
+   *
+   * @returns Vercel API env.
+   */
+  get vercelApi(): Readonly<z.output<typeof vercelApiSchema>> {
+    cachedVercelApiEnv ??= parseFeatureEnv("vercelApi", vercelApiSchema);
+    return cachedVercelApiEnv;
   },
 
   /**
