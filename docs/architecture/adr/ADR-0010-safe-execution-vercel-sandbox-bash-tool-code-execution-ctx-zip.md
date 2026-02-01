@@ -10,6 +10,8 @@ Related: [ADR-0005, ADR-0006, ADR-0024]
 Tags: [security, execution]
 References:
   - [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)
+  - [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication)
+  - [Vercel Sandbox local development](https://vercel.com/docs/vercel-sandbox/guides/local-development)
   - [Vercel Sandbox system specs](https://vercel.com/docs/vercel-sandbox/sandbox-system-specs)
   - [bash-tool](https://ai-sdk.dev/tools-registry/bash-tool)
   - [code-execution tool](https://ai-sdk.dev/tools-registry/code-execution)
@@ -124,6 +126,25 @@ flowchart LR
 - Default deny: only allow predefined commands.
 - Provide `ctx-zip` to compress context artifacts deterministically.
 - Persist execution logs in `run_steps`.
+
+### Configuration
+
+- Authentication:
+  - On Vercel: use platform-provided OIDC for Sandbox requests. See
+    [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication).
+  - For local development / external CI: use the documented env-based auth
+    methods (OIDC token or access token), plus the Vercel project/team context
+    as required. See
+    [Vercel Sandbox local development](https://vercel.com/docs/vercel-sandbox/guides/local-development).
+- Environment variables (feature-gated; see
+  [ADR-0021](ADR-0021-environment-configuration-contracts-and-secret-handling.md)):
+  - `VERCEL_PROJECT_ID` (local dev / access-token auth paths)
+  - `VERCEL_OIDC_TOKEN` (local dev OIDC token path)
+  - `VERCEL_TOKEN` (access token path)
+  - `VERCEL_TEAM_ID` (optional; needed for team-owned resources)
+- Operational config:
+  - Default timeouts and resource limits must be enforced consistently for all
+    sandbox jobs (analysis and verification).
 
 ## Testing
 

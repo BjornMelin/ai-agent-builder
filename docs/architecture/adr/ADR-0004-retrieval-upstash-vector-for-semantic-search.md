@@ -133,6 +133,15 @@ Planned implementation module:
 - Metadata filters: `projectId`, `fileId`, `type`.
 - Keep top-k small and rerank in-model if needed.
 
+### Configuration
+
+- Runtime env (server-only; see [ADR-0021](ADR-0021-environment-configuration-contracts-and-secret-handling.md)):
+  - `UPSTASH_VECTOR_REST_URL`
+  - `UPSTASH_VECTOR_REST_TOKEN`
+- Index provisioning:
+  - Prefer provisioning **HYBRID** indexes for new projects when supported by the
+    account/plan. See [Upstash Vector: Hybrid indexes](https://upstash.com/docs/vector/features/hybridindexes).
+
 ## Testing
 
 - Integration: upsert then query returns expected items.
