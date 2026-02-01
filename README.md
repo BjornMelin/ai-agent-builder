@@ -8,22 +8,22 @@
 ![Postgres](https://img.shields.io/badge/DB-Neon_Postgres-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Cache-Upstash-00E9A3?logo=redis&logoColor=white)
 
-A private, production-focused system for turning rough product ideas (pitch
-decks, docs, spreadsheets, notes) into a complete, implementation-ready spec
-set: market research, competitive analysis, differentiation, PRD, ADRs,
-architecture, and Codex-ready implementation prompts.
+A private, production-focused system for turning rough product inputs (pitch
+decks, docs, spreadsheets, notes) into a complete **implementation engine**:
+research → specs → plan → code → verify → deploy (with a deterministic audit
+trail).
 
 ## What it does
 
 - Ingests source material: PDFs, slides, docs, markdown, spreadsheets.
-- Runs deep research and validation:
-  - competitors, positioning, pricing signals, go-to-market constraints
-  - feature gaps, differentiation opportunities, risk analysis
-- Produces formal, versioned outputs:
-  - PRD, architecture, ADRs, roadmap, build plan
-  - Codex prompts structured for end-to-end production implementation
-- Keeps an iterative project workspace so you can upload more material and
-  re-run or refine outputs over time.
+- Runs deep research and validation (with citations).
+- Produces formal, versioned artifacts (PRD, ADRs, specs, security, roadmap).
+- Supports an implementation/deployment phase (spec’d) to:
+  - connect a target GitHub repo
+  - plan changes traceable to artifacts
+  - apply patches + open PRs
+  - run verification in Vercel Sandbox
+  - provision/connect infra and deploy
 
 ## High-level architecture
 
@@ -33,8 +33,9 @@ flowchart LR
   B --> C[Research Agents]
   C --> D[Gap + Differentiation]
   D --> E[PRD + ADR + Architecture]
-  E --> F[Codex Implementation Prompts]
-  F --> G[Export + Versioned Artifacts]
+  E --> F[Export + Versioned Artifacts]
+  E --> G[Implementation Runs]
+  G --> H[PRs + Verification + Deployments]
 ```
 
 ## Tech stack
@@ -49,6 +50,17 @@ flowchart LR
 - Quality: Biome (format/lint) + ESLint (TSDoc/JSDoc enforcement) + Vitest
 - Typing/Schema: Zod v4
 - Releases: Release Please (semver via Conventional Commits)
+
+## Implementation engine (specs)
+
+- End-to-end implementation runs: [`docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md`](./docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md)
+- RepoOps (GitHub): [`docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md`](./docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md)
+- Provisioning + deploy automation: [`docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md`](./docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)
+- Sandbox verification jobs: [`docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`](./docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
+- Workspace + search UX: [`docs/architecture/spec/SPEC-0020-project-workspace-and-search.md`](./docs/architecture/spec/SPEC-0020-project-workspace-and-search.md)
+- GitOps + deploy ADRs:
+  - [`docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md`](./docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md)
+  - [`docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md`](./docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md)
 
 ### Auth dependency note
 
@@ -82,10 +94,11 @@ we monitor upstream releases before upgrading.
 ```bash
 cp .env.example .env.local
 bun install
-bun run db:generate
-bun run db:migrate
 bun run dev
 ```
+
+Optional: implementation/deploy automation variables (GitHub/Vercel/Neon/Upstash)
+are documented in [`docs/ops/env.md`](./docs/ops/env.md).
 
 ## Fetch AI Gateway model catalog
 

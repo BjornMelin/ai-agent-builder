@@ -1,15 +1,23 @@
 # API Surface (Route Handlers)
 
-The system uses Next.js Route Handlers under `src/app/api/*`.
+The system uses Next.js Route Handlers under `src/app/api/*` plus Server Actions
+for authenticated UI mutations.
 
-Chat and agent output are streamed using AI SDK v6 streaming helpers.
-([createAgentUIStreamResponse](https://ai-sdk.dev/docs/reference/ai-sdk-core/create-agent-ui-stream-response))
+Chat and agent output are streamed using AI SDK v6 streaming helpers:
+
+- [createAgentUIStreamResponse](https://ai-sdk.dev/docs/reference/ai-sdk-core/create-agent-ui-stream-response)
 
 ## Auth
 
-- `GET /login`
-- `POST /api/auth/login` (rate-limited)
-- `POST /api/auth/logout`
+- Neon Auth UI routes:
+  - `GET /auth/*`
+  - `GET /account/*`
+- Neon Auth API proxy:
+  - `GET|POST /api/auth/*`
+
+See:
+
+- [SPEC-0002](./spec/SPEC-0002-authentication-access-control.md)
 
 ## Projects
 
@@ -23,10 +31,13 @@ Chat and agent output are streamed using AI SDK v6 streaming helpers.
 
 - `POST /api/upload`
   - stores original in Vercel Blob ([Vercel Blob](https://vercel.com/docs/vercel-blob))
-  - extracts text
+  - extracts text (PDF/DOCX/PPTX/XLSX/TXT/MD)
   - chunks
   - embeds via AI Gateway
   - indexes in Upstash Vector
+
+- `POST /api/jobs/ingest-file` (QStash-secured)
+  - runs extraction/chunking/embedding/indexing asynchronously
 
 ## Chat
 
@@ -34,14 +45,81 @@ Chat and agent output are streamed using AI SDK v6 streaming helpers.
   - input: `projectId`, `threadId?`, `agentMode`, `message`, `model`
   - output: streaming UI message parts
 
+## Search
+
+- `GET /api/search?q=...&projectId?=...&types=...`
+  - merges DB metadata matches and vector-based content matches
+  - supports deep links to artifacts/files/run steps/repo paths
+
+## Artifacts
+
+- `GET /api/projects/:projectId/artifacts`
+- `GET /api/projects/:projectId/artifacts/:artifactId`
+- `POST /api/projects/:projectId/artifacts/:artifactId/regenerate`
+
 ## Runs (durable workflows)
 
-- `POST /api/runs` (creates run + enqueues workflow via QStash)
-- `GET /api/runs/:runId`
-- `POST /api/jobs/run-step` (QStash secured step execution)
+Runs are durable state machines driven by QStash.
 
-Reference: [QStash Next.js Quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs).
+- `POST /api/runs`
+  - creates run
+  - enqueues first step via QStash
+- `GET /api/runs/:runId`
+
+### Worker endpoints (QStash secured)
+
+- `POST /api/jobs/run-step`
+  - executes a single run step (research or implementation)
+
+Reference:
+
+- [QStash Next.js Quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
 
 ## Export
 
-- `GET /api/export/:projectId` (deterministic zip)
+- `POST /api/projects/:projectId/export`
+  - produces deterministic zip of latest artifacts + citations + manifests
+  - stores zip in blob and returns download URL
+
+## Implementation: RepoOps
+
+- `POST /api/projects/:projectId/repo/connect`
+  - connect an existing GitHub repo
+- `POST /api/projects/:projectId/repo/create`
+  - create a new GitHub repo and connect it
+- `POST /api/projects/:projectId/repo/index`
+  - triggers repo indexing job and writes to a vector namespace
+- `GET /api/projects/:projectId/repo`
+  - returns repo connection status + metadata
+
+## Implementation: Approvals
+
+- `GET /api/runs/:runId/approvals`
+- `POST /api/runs/:runId/approvals/:approvalId/approve`
+- `POST /api/runs/:runId/approvals/:approvalId/reject`
+
+Approvals unblock approval-gated steps (push/merge/provision/deploy).
+
+## Implementation: Provisioning and deployments
+
+- `POST /api/projects/:projectId/provision`
+  - triggers infra provisioning step(s) (approval-gated)
+- `POST /api/projects/:projectId/deploy`
+  - triggers deployment step(s) (approval-gated)
+
+## Webhooks (optional)
+
+Webhooks reduce polling and improve responsiveness.
+
+- `POST /api/webhooks/github`
+  - PR status updates, check completion, etc.
+- `POST /api/webhooks/vercel`
+  - deployment status updates
+
+All webhook endpoints must verify signatures and be idempotent.
+
+## Sandbox execution
+
+- `POST /api/sandbox/jobs`
+  - starts a sandbox job (Code Mode and implementation verification)
+  - streams logs or provides polling handles
