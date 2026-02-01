@@ -148,9 +148,10 @@ configured with **per-integration feature gates** and **normalized errors**.
 - GitHub: `GITHUB_TOKEN` (fine-grained PAT recommended)
 - GitHub webhooks (optional): `GITHUB_WEBHOOK_SECRET`
 - Vercel API: `VERCEL_TOKEN` (and optional `VERCEL_TEAM_ID`)
-- Vercel Sandbox (local dev / access token paths):
-  - `VERCEL_PROJECT_ID`
-  - `VERCEL_OIDC_TOKEN`
+- Vercel Sandbox (Code Mode):
+  - `VERCEL_OIDC_TOKEN` (preferred)
+  - `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (access-token auth fallback)
+  - `VERCEL_TEAM_ID` (optional; used in both modes when applicable)
 - Optional auto-provisioning:
   - Neon: `NEON_API_KEY`
   - Upstash Developer API (native accounts only): `UPSTASH_EMAIL`, `UPSTASH_API_KEY`
@@ -245,7 +246,7 @@ flowchart LR
 - Prefer adding small, isolated schemas per integration rather than one global
   “mega schema”.
 
-## Dependencies
+### Dependencies
 
 - **Added**: server-only
 

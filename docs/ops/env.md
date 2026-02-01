@@ -116,12 +116,22 @@ export const POST = verifyQstashSignatureAppRouter(async (req) => {
 
 ### Vercel Sandbox (Code Mode)
 
-- `VERCEL_OIDC_TOKEN` (required for `env.sandbox`)
-  - Token used for sandbox execution (provider-specific).
-  - For local development, use `vercel env pull` to fetch environment variables
-    for a Vercel project.
-  - See: [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) and
-    [Vercel Sandbox reference](https://vercel.com/docs/vercel-sandbox/reference/readme)
+Supported auth modes:
+
+- **OIDC token (preferred):**
+  - `VERCEL_OIDC_TOKEN` (required for `env.sandbox`)
+    - Token used for sandbox execution (provider-specific).
+    - For local development, use `vercel env pull` to fetch environment
+      variables for a Vercel project.
+- **Access token (fallback):**
+  - `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (required for `env.sandbox`)
+  - `VERCEL_TEAM_ID` (optional; needed for team-owned resources)
+
+Docs:
+
+- [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)
+- [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication)
+- [Vercel Sandbox reference](https://vercel.com/docs/vercel-sandbox/reference/readme)
 
 ### MCP / Context7
 

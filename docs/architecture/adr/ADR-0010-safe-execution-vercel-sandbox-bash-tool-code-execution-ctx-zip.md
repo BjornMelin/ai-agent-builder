@@ -138,9 +138,9 @@ flowchart LR
     [Vercel Sandbox local development](https://vercel.com/docs/vercel-sandbox/guides/local-development).
 - Environment variables (feature-gated; see
   [ADR-0021](ADR-0021-environment-configuration-contracts-and-secret-handling.md)):
-  - `VERCEL_PROJECT_ID` (local dev / access-token auth paths)
-  - `VERCEL_OIDC_TOKEN` (local dev OIDC token path)
-  - `VERCEL_TOKEN` (access token path)
+  - `VERCEL_OIDC_TOKEN` (preferred; required for `env.sandbox` OIDC mode)
+  - `VERCEL_TOKEN` (access-token auth fallback for `env.sandbox`)
+  - `VERCEL_PROJECT_ID` (required for access-token auth fallback)
   - `VERCEL_TEAM_ID` (optional; needed for team-owned resources)
 - Operational config:
   - Default timeouts and resource limits must be enforced consistently for all
@@ -179,7 +179,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: @vercel/sandbox, bash-tool, code-execution, ctx-zip
-- **Removed**: []
 
 ## Changelog
 

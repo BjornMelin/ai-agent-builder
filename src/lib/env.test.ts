@@ -149,6 +149,60 @@ describe("env feature gates", () => {
     );
   });
 
+  it("parses Sandbox env with OIDC token (preferred)", async () => {
+    await withEnv({ VERCEL_OIDC_TOKEN: "oidc_test" }, async () => {
+      const { env } = await loadEnv();
+      expect(env.sandbox.auth).toBe("oidc");
+      if (env.sandbox.auth === "oidc") {
+        expect(env.sandbox.oidcToken).toBe("oidc_test");
+      }
+    });
+  });
+
+  it("parses Sandbox env with access token + project id (fallback)", async () => {
+    await withEnv(
+      { VERCEL_PROJECT_ID: "prj_test", VERCEL_TOKEN: "vercel_test" },
+      async () => {
+        const { env } = await loadEnv();
+        expect(env.sandbox.auth).toBe("token");
+        if (env.sandbox.auth === "token") {
+          expect(env.sandbox.token).toBe("vercel_test");
+          expect(env.sandbox.projectId).toBe("prj_test");
+        }
+      },
+    );
+  });
+
+  it("throws on sandbox env when no auth vars exist", async () => {
+    await withEnv(
+      {
+        VERCEL_OIDC_TOKEN: undefined,
+        VERCEL_PROJECT_ID: undefined,
+        VERCEL_TEAM_ID: undefined,
+        VERCEL_TOKEN: undefined,
+      },
+      async () => {
+        const { env } = await loadEnv();
+        expect(() => env.sandbox).toThrowError(/VERCEL_(OIDC_TOKEN|TOKEN)/i);
+      },
+    );
+  });
+
+  it("throws on sandbox env when access token is missing project id", async () => {
+    await withEnv(
+      {
+        VERCEL_OIDC_TOKEN: undefined,
+        VERCEL_PROJECT_ID: undefined,
+        VERCEL_TEAM_ID: undefined,
+        VERCEL_TOKEN: "vercel_test",
+      },
+      async () => {
+        const { env } = await loadEnv();
+        expect(() => env.sandbox).toThrowError(/VERCEL_PROJECT_ID/i);
+      },
+    );
+  });
+
   it("validates Upstash Developer API email", async () => {
     await withEnv(
       { UPSTASH_API_KEY: "k", UPSTASH_EMAIL: "not-an-email" },

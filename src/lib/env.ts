@@ -167,9 +167,62 @@ const blobSchema = z
 
 const sandboxSchema = z
   .looseObject({
-    VERCEL_OIDC_TOKEN: envNonEmpty,
+    VERCEL_OIDC_TOKEN: envOptionalTrimmed,
+    VERCEL_PROJECT_ID: envOptionalTrimmed,
+    VERCEL_TEAM_ID: envOptionalTrimmed,
+    VERCEL_TOKEN: envOptionalTrimmed,
   })
-  .transform((v) => ({ oidcToken: v.VERCEL_OIDC_TOKEN }));
+  .superRefine((v, ctx) => {
+    const hasOidcToken = Boolean(v.VERCEL_OIDC_TOKEN);
+    const hasAccessToken = Boolean(v.VERCEL_TOKEN);
+    const hasProjectId = Boolean(v.VERCEL_PROJECT_ID);
+
+    if (!hasOidcToken && !hasAccessToken) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Provide either VERCEL_OIDC_TOKEN (preferred) or VERCEL_TOKEN + VERCEL_PROJECT_ID for Sandbox auth.",
+        path: ["VERCEL_OIDC_TOKEN"],
+      });
+    }
+
+    if (!hasOidcToken && hasAccessToken && !hasProjectId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "VERCEL_PROJECT_ID is required when using VERCEL_TOKEN for Sandbox auth.",
+        path: ["VERCEL_PROJECT_ID"],
+      });
+    }
+  })
+  .transform((v) => {
+    if (v.VERCEL_OIDC_TOKEN) {
+      return {
+        auth: "oidc" as const,
+        oidcToken: v.VERCEL_OIDC_TOKEN,
+        teamId: v.VERCEL_TEAM_ID,
+      };
+    }
+
+    const token = v.VERCEL_TOKEN;
+    const projectId = v.VERCEL_PROJECT_ID;
+
+    if (!token || !projectId) {
+      // This should be unreachable due to the schema refinement above.
+      throw new AppError(
+        "env_invalid",
+        500,
+        'Invalid environment for feature "sandbox": missing VERCEL_TOKEN or VERCEL_PROJECT_ID. See docs/ops/env.md.',
+      );
+    }
+
+    return {
+      auth: "token" as const,
+      projectId,
+      teamId: v.VERCEL_TEAM_ID,
+      token,
+    };
+  });
 
 const context7Schema = z
   .looseObject({
@@ -350,7 +403,7 @@ export const env = {
   },
 
   /**
-   * Vercel Sandbox (OIDC token).
+   * Vercel Sandbox (OIDC token preferred; access token fallback supported).
    *
    * @returns Sandbox env.
    */

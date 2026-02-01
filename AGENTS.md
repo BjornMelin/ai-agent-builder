@@ -65,7 +65,7 @@ bun run fetch:models           # Update AI model catalog (requires AI_GATEWAY_AP
 - ADRs: add `docs/architecture/adr/ADR-*.md` for durable decisions; update `docs/architecture/adr/index.md`.
 - Requirement IDs: reference `FR-*`, `NFR-*`, `PR-*`, `IR-*` from `docs/specs/requirements.md` in specs/ADRs.
 - Web claims: any externally sourced factual claim in generated artifacts must include citations (see `docs/architecture/spec/SPEC-0007-*`).
-- **Env var contract**: if an ADR/spec/docs mention an env var used by the app, it must be implemented in `src/lib/env.ts` (feature-gated), listed in `docs/ops/env.md`, and present in `.env.example` (and tests updated when applicable). Do not document unsupported env vars.
+- **Env var contract**: ADRs/specs are the source of truth. If an ADR/spec/docs mention an env var used by the app, implement it in `src/lib/env.ts` (feature-gated), list it in `docs/ops/env.md`, and include it in `.env.example` (and update tests when applicable).
 
 ## Commit conventions
 
