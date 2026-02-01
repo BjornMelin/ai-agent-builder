@@ -141,7 +141,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: @upstash/qstash
-- **Removed**: []
 
 ## Changelog
 

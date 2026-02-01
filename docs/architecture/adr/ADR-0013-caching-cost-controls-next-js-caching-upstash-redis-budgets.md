@@ -134,7 +134,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: @upstash/redis, @upstash/ratelimit
-- **Removed**: []
 
 ## Changelog
 

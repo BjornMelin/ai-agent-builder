@@ -125,8 +125,7 @@ flowchart TB
 
 ### Dependencies
 
-- **Added**: []
-- **Removed**: []
+- None
 
 ## Changelog
 

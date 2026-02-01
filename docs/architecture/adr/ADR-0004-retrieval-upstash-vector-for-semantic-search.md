@@ -173,7 +173,6 @@ Planned implementation module:
 ### Dependencies
 
 - **Added**: @upstash/vector
-- **Removed**: []
 
 ## Changelog
 

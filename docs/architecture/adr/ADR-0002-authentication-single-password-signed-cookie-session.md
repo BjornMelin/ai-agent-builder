@@ -143,7 +143,6 @@ sequenceDiagram
 ### Dependencies
 
 - **Added**: argon2, @upstash/ratelimit, @upstash/redis
-- **Removed**: []
 
 ## Changelog
 

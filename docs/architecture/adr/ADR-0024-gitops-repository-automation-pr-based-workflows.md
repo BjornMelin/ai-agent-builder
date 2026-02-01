@@ -202,6 +202,13 @@ flowchart LR
 - Integration: run against a dedicated test repository with branch protections.
 - Security: ensure tokens never enter logs, DB artifacts, or PR bodies.
 
+## Implementation Notes
+
+- Run any repo checkout, patch application, or verification in Vercel Sandbox;
+  avoid running untrusted code in the app runtime.
+- Use GitHub APIs (via Octokit) for PR creation/merge and status polling.
+- Map approval gates to explicit UI actions, not hidden “agent discretion”.
+
 ## Consequences
 
 ### Positive Outcomes
@@ -231,17 +238,9 @@ flowchart LR
   debugging and trust-building.
 - Persist all repo actions and external IDs in run step logs.
 
-## Implementation Notes
-
-- Run any repo checkout, patch application, or verification in Vercel Sandbox;
-  avoid running untrusted code in the app runtime.
-- Use GitHub APIs (via Octokit) for PR creation/merge and status polling.
-- Map approval gates to explicit UI actions, not hidden “agent discretion”.
-
 ### Dependencies
 
 - **Added**: @octokit/rest
-- **Removed**: []
 
 ## Changelog
 

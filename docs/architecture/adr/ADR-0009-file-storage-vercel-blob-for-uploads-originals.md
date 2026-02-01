@@ -131,7 +131,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: @vercel/blob
-- **Removed**: []
 
 ## Changelog
 

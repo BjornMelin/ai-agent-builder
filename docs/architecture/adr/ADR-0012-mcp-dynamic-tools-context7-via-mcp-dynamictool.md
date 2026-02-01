@@ -127,7 +127,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: @modelcontextprotocol/sdk, context7 tools
-- **Removed**: []
 
 ## Changelog
 
