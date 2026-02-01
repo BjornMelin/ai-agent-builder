@@ -2,14 +2,15 @@
 ADR: 0010
 Title: Safe execution: Vercel Sandbox + bash-tool + code-execution + ctx-zip
 Status: Accepted
-Version: 0.2
-Date: 2026-01-30
+Version: 0.3
+Date: 2026-02-01
 Supersedes: []
 Superseded-by: []
-Related: [ADR-0005, ADR-0006]
+Related: [ADR-0005, ADR-0006, ADR-0024]
 Tags: [security, execution]
 References:
   - [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)
+  - [Vercel Sandbox system specs](https://vercel.com/docs/vercel-sandbox/sandbox-system-specs)
   - [bash-tool](https://ai-sdk.dev/tools-registry/bash-tool)
   - [code-execution tool](https://ai-sdk.dev/tools-registry/code-execution)
   - [ctx-zip tool](https://ai-sdk.dev/tools-registry/ctx-zip)
@@ -17,15 +18,28 @@ References:
 
 ## Status
 
-Accepted — 2026-01-30.
+Accepted — 2026-01-30.  
+Updated — 2026-02-01 (explicit support for implementation verification jobs).
 
 ## Description
 
-Run untrusted code and heavy analysis tasks in isolated Sandbox VMs.
+Run untrusted code and heavy tasks in isolated Sandbox VMs.
+
+This includes:
+
+- analysis tasks (“Code Mode”)
+- ingestion helpers for unusual formats (if needed)
+- **implementation verification jobs** (lint/typecheck/test/build/migrations) for
+  end-to-end Implementation Runs
 
 ## Context
 
-Some steps require code execution (e.g., data analysis, parsing weird formats, validating generated artifacts). Running arbitrary code in server functions is unsafe. Vercel Sandbox provides isolated execution environments with time and resource controls, and AI SDK tools reduce custom implementation.
+Some steps require code execution (e.g., data analysis, parsing unusual formats,
+validating generated artifacts, running repo verification).
+
+Running arbitrary code in server functions is unsafe. Vercel Sandbox provides
+isolated execution environments with time and resource controls, and AI SDK tools
+reduce the need to build custom exec infrastructure.
 
 ## Decision Drivers
 
@@ -53,7 +67,14 @@ Some steps require code execution (e.g., data analysis, parsing weird formats, v
 
 ## Decision
 
-We will implement “Code Mode” using **Vercel Sandbox**, exposing `bash-tool`, `code-execution`, and `ctx-zip` via AI SDK tools with strict budgets and allowlists.
+We will use **Vercel Sandbox** as the canonical execution environment for any
+command/code execution in the product.
+
+Use AI SDK tools where it reduces implementation effort:
+
+- `bash-tool` for shell commands
+- `ai-sdk-tool-code-execution` for Python execution
+- `ctx-zip` for context packaging and summarization of large directories
 
 ## Constraints
 
@@ -113,6 +134,9 @@ flowchart LR
 ## Implementation Notes
 
 - Prefer using Sandbox for CPU-bound transformations and parsing edge cases.
+- For implementation runs, treat verification as first-class sandbox jobs
+  (see
+  [SPEC-0019](../spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)).
 
 ## Consequences
 
@@ -140,3 +164,4 @@ flowchart LR
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-01)**: Updated for implementation verification jobs.

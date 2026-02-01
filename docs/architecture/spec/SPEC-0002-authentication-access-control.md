@@ -122,7 +122,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ## Operational notes
 
-- See `docs/ops/env.md` for environment variables.
+- See [docs/ops/env.md](../../ops/env.md) for environment variables.
 - Neon Console configuration:
   - Enable Neon Auth and configure OAuth providers (GitHub, Vercel).
   - Copy the Auth Base URL into `NEON_AUTH_BASE_URL`.
@@ -144,10 +144,10 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ## References
 
-- <https://neon.com/docs/auth/quick-start/nextjs>
-- <https://neon.com/docs/auth/reference/nextjs-server>
-- <https://neon.com/docs/auth/production-checklist>
-- <https://nextjs.org/docs/app/api-reference/file-conventions/proxy>
+- [Neon Auth Next.js quickstart (UI Components)](https://neon.com/docs/auth/quick-start/nextjs)
+- [Neon Auth Next.js server SDK reference](https://neon.com/docs/auth/reference/nextjs-server)
+- [Neon Auth production checklist](https://neon.com/docs/auth/production-checklist)
+- [Next.js proxy file convention](https://nextjs.org/docs/app/api-reference/file-conventions/proxy)
 
 ## Changelog
 

@@ -118,17 +118,69 @@ export const POST = verifyQstashSignatureAppRouter(async (req) => {
 
 - `VERCEL_OIDC_TOKEN` (required for `env.sandbox`)
   - Token used for sandbox execution (provider-specific).
+  - For local development, use `vercel env pull` to fetch environment variables
+    for a Vercel project.
+  - See: [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) and
+    [Vercel Sandbox reference](https://vercel.com/docs/vercel-sandbox/reference/readme)
 
 ### MCP / Context7
 
 - `CONTEXT7_API_KEY` (required for `env.context7`)
   - Only needed if your MCP transport for Context7 requires an API key.
 
+## Implementation / deploy automation (optional)
+
+These variables are only required if you want the app to automate repo changes,
+provisioning, and deployments. Without them, Implementation Runs can still
+generate plans and manual instructions.
+
+### GitHub (RepoOps)
+
+- `GITHUB_TOKEN` (required for `env.github`)
+  - Fine-grained PAT recommended.
+- `GITHUB_WEBHOOK_SECRET` (optional)
+  - Shared secret for webhook signature verification.
+
+Docs:
+
+- [GitHub REST API](https://docs.github.com/en/rest)
+- [Managing personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+
+### Vercel API (deployment automation)
+
+- `VERCEL_TOKEN` (required for `env.vercelApi`)
+  - Access token used to create/configure projects and env vars.
+- `VERCEL_TEAM_ID` (optional)
+  - If you operate under a Vercel team account.
+
+Docs:
+
+- [Vercel REST API](https://vercel.com/docs/rest-api)
+- [Vercel SDK (GitHub)](https://github.com/vercel/sdk)
+
+### Neon API (optional auto-provisioning)
+
+- `NEON_API_KEY` (required for `env.neonApi` if using auto-provisioning)
+
+Docs:
+
+- [Neon API](https://neon.com/docs/api)
+
+### Upstash Developer API (optional auto-provisioning)
+
+> Important: Upstash Developer API is only available for native Upstash accounts;
+> accounts created via some third-party platforms may not support it.
+
+- `UPSTASH_EMAIL` (required for `env.upstashDeveloper` if using auto-provisioning)
+- `UPSTASH_API_KEY` (required for `env.upstashDeveloper` if using auto-provisioning)
+
+Docs:
+
+- [Upstash Developer API](https://upstash.com/docs/common/account/developerapi)
+
 ## References
 
-- Next.js env vars:
-  `https://nextjs.org/docs/app/guides/environment-variables`
+- Next.js env vars: [Environment variables](https://nextjs.org/docs/app/guides/environment-variables)
 - Next.js Route Handlers:
-  `https://nextjs.org/docs/app/building-your-application/routing/route-handlers`
-- Zod:
-  `https://zod.dev/`
+  [Route Handlers](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)
+- Zod: [Zod](https://zod.dev/)

@@ -2,7 +2,7 @@
 spec: SPEC-0015
 title: Environment configuration contracts
 version: 0.2.0
-date: 2026-01-31
+date: 2026-02-01
 owners: ["you"]
 status: Implemented
 related_requirements:
@@ -10,6 +10,8 @@ related_requirements:
     "NFR-001",
     "NFR-003",
     "NFR-010",
+    "NFR-013",
+    "NFR-015",
     "IR-001",
     "IR-002",
     "IR-003",
@@ -18,6 +20,10 @@ related_requirements:
     "IR-007",
     "IR-008",
     "IR-009",
+    "IR-011",
+    "IR-012",
+    "IR-013",
+    "IR-014",
   ]
 related_adrs: ["ADR-0021"]
 notes:
@@ -35,6 +41,9 @@ Defines environment variable contracts and a single typed access module
 This system integrates multiple external providers (DB, caching, workflows,
 storage, research, sandbox). Secrets must remain server-only, and configuration
 errors must be explicit and easy to debug without breaking optional features.
+
+The implementation engine adds optional integrations (GitHub/Vercel APIs and
+optional provisioning APIs), which must remain feature-gated.
 
 ## Goals / Non-goals
 
@@ -70,6 +79,10 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - **IR-007**
 - **IR-008**
 - **IR-009**
+- **IR-011**
+- **IR-012**
+- **IR-013**
+- **IR-014**
 
 ## Constraints
 
@@ -117,6 +130,13 @@ Feature gates are accessed through `env.<feature>`:
   - Neon Auth: `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `NEON_AUTH_COOKIE_DOMAIN`
   - App access control: `AUTH_ACCESS_MODE`, `AUTH_ALLOWED_EMAILS`
 
+Implementation/deploy automation (optional feature gates):
+
+- `env.github` (`GITHUB_TOKEN`, optional `GITHUB_WEBHOOK_SECRET`)
+- `env.vercelApi` (`VERCEL_TOKEN`, optional `VERCEL_TEAM_ID`)
+- `env.neonApi` (`NEON_API_KEY`)
+- `env.upstashDeveloper` (`UPSTASH_EMAIL`, `UPSTASH_API_KEY`)
+
 ## Acceptance criteria
 
 - [x] `src/lib/env.ts` is the single typed env access module.
@@ -147,9 +167,9 @@ Feature gates are accessed through `env.<feature>`:
 ## References
 
 - Next.js environment variables:
-  <https://nextjs.org/docs/app/guides/environment-variables>
+  [Environment variables](https://nextjs.org/docs/app/guides/environment-variables)
 - Zod:
-  <https://zod.dev/>
+  [Zod](https://zod.dev/)
 
 ## Changelog
 
