@@ -34,8 +34,7 @@ export default async function AccountPage(
     params: { path: string };
   }>,
 ) {
-  const { path } = props.params;
-  await requireAppUser();
+  const [{ path }] = await Promise.all([props.params, requireAppUser()]);
 
   return (
     <main className="container mx-auto p-4 md:p-6">
