@@ -67,10 +67,10 @@ require per-branch callback URL allowlisting in the Vercel OAuth app
    ([Vercel OAuth callback setup](https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard)).
 3. In Neon Auth, ensure the Vercel provider is enabled and configured with the
    same client ID/secret as the Vercel OAuth app
-   ([Neon Auth OAuth providers](https://neon.tech/docs/neon-auth/oauth-authentication)).
+   ([Neon Auth OAuth setup](https://neon.com/docs/auth/guides/setup-oauth)).
 4. In Neon Auth “Domains”, whitelist the app domain(s) that Neon Auth redirects
    back to after login
-   ([Neon Auth domains allowlist](https://neon.com/docs/neon-auth/best-practices-and-faq#domains)):
+   ([Neon Auth trusted domains](https://neon.com/docs/auth/guides/configure-domains)):
    - Local: `http://localhost:3000`
    - Preview: the Vercel preview deployment domain(s)
    - Production: the primary production domain

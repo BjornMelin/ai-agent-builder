@@ -151,13 +151,19 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - See [docs/ops/env.md](../../ops/env.md) for environment variables.
 - Neon Console configuration:
   - Enable Neon Auth and configure OAuth providers (GitHub, Vercel).
-    [Neon Auth](https://neon.tech/docs/ai/ai-rules-neon-auth) and
-    [OAuth providers](https://neon.tech/docs/neon-auth/concepts/oauth)
+    [Neon Auth](https://neon.com/docs/auth/overview) and
+    [OAuth setup](https://neon.com/docs/auth/guides/setup-oauth)
   - For local development, copy the Auth Base URL into `NEON_AUTH_BASE_URL`.
-    [Neon Auth](https://neon.tech/docs/ai/ai-rules-neon-auth)
+    [Neon Auth](https://neon.com/docs/auth/overview)
   - For Vercel Preview deployments, prefer the Neon ↔ Vercel integration with
     Preview Branching enabled; it injects `NEON_AUTH_BASE_URL` per Preview
     branch automatically.
+
+- Environment policy:
+  - Local/development: set `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS=vercel`.
+  - Preview: set `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` to an empty string (disable social providers).
+  - Production: set `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS=github,vercel`.
+  - See `docs/ops/env.md`.
 
 ## Failure modes and mitigation
 

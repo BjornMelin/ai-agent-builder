@@ -79,7 +79,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - Firecrawl extracts clean content [Firecrawl](https://ai-sdk.dev/tools-registry/firecrawl).
 - Redis caches extraction results [Upstash Redis REST API](https://upstash.com/docs/redis/restapi).
 - Citations persisted in Neon and referenced by artifacts
-  [Neon connection guide](https://neon.tech/docs/connect/connect-from-any-app).
+  [Neon connection guide](https://neon.com/docs/connect/connect-from-any-app).
 
 ### Data contracts
 
@@ -120,7 +120,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - [Exa tool](https://ai-sdk.dev/tools-registry/exa)
 - [Firecrawl tool](https://ai-sdk.dev/tools-registry/firecrawl)
 - [Upstash Redis REST API](https://upstash.com/docs/redis/restapi)
-- [Neon connection guide](https://neon.tech/docs/connect/connect-from-any-app)
+- [Neon connection guide](https://neon.com/docs/connect/connect-from-any-app)
 
 ## Changelog
 

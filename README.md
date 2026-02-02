@@ -86,7 +86,10 @@ we monitor upstream releases before upgrading.
   - `NEON_AUTH_BASE_URL`
   - `NEON_AUTH_COOKIE_SECRET` (32+ chars; generate with `openssl rand -base64 32`)
   - `AUTH_ALLOWED_EMAILS` (when `AUTH_ACCESS_MODE=restricted`)
-  - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` (optional; defaults to `github,vercel`)
+  - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` (optional; if unset defaults to `github,vercel`)
+    - Local/development: `vercel`
+    - Preview: *(empty)* (disable social providers)
+    - Production: `github,vercel`
 - Upstash credentials (Redis/Vector/QStash)
 - Vercel AI Gateway API key (`AI_GATEWAY_API_KEY`)
 
@@ -109,8 +112,11 @@ branch per Vercel Preview branch and injects the branch-scoped Preview env vars
 (`DATABASE_URL`, and (if Neon Auth is enabled) `NEON_AUTH_BASE_URL`).
 
 To avoid GitHub OAuth’s “single callback URL per app” limitation on Preview
-deployments, set `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS=vercel` for the Vercel
-Preview environment (global Preview default).
+deployments, **disable** social providers on Preview deployments by setting
+`NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` to an empty string for the Vercel Preview
+environment (global Preview default). Preview branches get a unique Neon Auth
+URL, and Vercel OAuth requires exact callback URL allowlisting (not practical
+per preview).
 
 Optional: `.github/workflows/neon-auth-trusted-domains.yml` can automatically
 add the Preview deployment domain to Neon Auth trusted domains for the matching

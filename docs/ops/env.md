@@ -68,7 +68,7 @@ Auth UI / OAuth providers:
       ([Vercel OAuth callback URL formats](https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard)).
   - Ensure each provider is configured in Neon Auth and that the provider's
     callback URL (e.g. Vercel) matches the Neon Auth callback derived above
-    ([Neon Auth OAuth providers](https://neon.tech/docs/neon-auth/oauth-authentication)).
+    ([Neon Auth OAuth setup](https://neon.com/docs/auth/guides/setup-oauth)).
 
 App-level access control (cost control):
 
@@ -230,11 +230,11 @@ Docs:
 ### Neon API (optional auto-provisioning)
 
 - `NEON_API_KEY` (required for `env.neonApi` if using auto-provisioning)
-  ([Neon API keys](https://neon.tech/docs/manage/api-keys))
+  ([Neon API keys](https://neon.com/docs/manage/api-keys))
 
 Docs:
 
-- [Neon API](https://neon.com/docs/api)
+- [Neon API](https://neon.com/docs/reference/api-reference)
 
 ### Upstash Developer API (optional auto-provisioning)
 

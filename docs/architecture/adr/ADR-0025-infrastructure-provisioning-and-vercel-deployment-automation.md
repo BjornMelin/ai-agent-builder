@@ -15,7 +15,7 @@ References:
   - [Vercel API: Retrieve project environment variables](https://vercel.com/docs/rest-api/reference/endpoints/projects/retrieve-the-environment-variables-of-a-project-by-id-or-name)
   - [Vercel TypeScript SDK](https://github.com/vercel/sdk)
   - [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)
-  - [Neon API](https://neon.tech/docs/reference/api-reference)
+  - [Neon API](https://neon.com/docs/reference/api-reference)
   - [Neon API Reference: Create project](https://api-docs.neon.tech/reference/createproject)
   - [Upstash Developer API](https://upstash.com/docs/common/account/developerapi)
   - [Upstash Redis REST API](https://upstash.com/docs/redis/features/restapi)
@@ -52,7 +52,7 @@ Provider constraints differ:
   [Vercel REST API](https://vercel.com/docs/rest-api) and
   [Vercel TypeScript SDK](https://github.com/vercel/sdk).)
 - Neon provides an API for projects/branches/databases. (See
-  [Neon API](https://neon.tech/docs/reference/api-reference).)
+  [Neon API](https://neon.com/docs/reference/api-reference).)
 - Upstash provides per-database REST tokens for runtime access, but the Upstash
   Developer API (provisioning) is only available to native Upstash accounts
   (Upstash Developer API — native accounts only: <https://upstash.com/docs/common/account/developerapi>).
