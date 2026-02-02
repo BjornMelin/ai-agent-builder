@@ -122,7 +122,8 @@ This spec’s design details are captured in the following sections:
 
 ### Configuration
 
-- See `docs/ops/env.md`:
+- See `docs/ops/env.md` (see
+  [QStash env vars](https://upstash.com/docs/qstash/howto/local-development)):
   - QStash publish: `QSTASH_TOKEN`
   - QStash verify: `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`
   - Optional: budgets/caching via Upstash Redis (`UPSTASH_REDIS_*`)

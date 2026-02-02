@@ -23,7 +23,7 @@ trail).
   - plan changes traceable to artifacts
   - apply patches + open PRs
   - run verification in Vercel Sandbox
-  - provision/connect infra and deploy
+  - provision/connect infra and deploy.
 
 ## High-level architecture
 

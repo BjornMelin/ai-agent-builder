@@ -4,11 +4,9 @@ message: >-
   If you use this software, please cite it using the metadata from this file.
 type: software
 authors:
-  - name: Bjorn Melin
-    family-names: Melin
+  - family-names: Melin
     given-names: Bjorn
 repository-code: 'https://github.com/bjornmelin/ai-agent-builder'
-url: 'https://github.com/bjornmelin/ai-agent-builder'
 abstract: >-
   A private, production-focused system for turning rough product inputs (pitch
   decks, docs, spreadsheets, notes) into a complete implementation engine:

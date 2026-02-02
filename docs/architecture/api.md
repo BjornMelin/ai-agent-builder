@@ -47,7 +47,7 @@ See:
 
 ## Search
 
-- `GET /api/search?q=...&projectId?=...&types=...`
+- `GET /api/search?q=...&projectId=... (optional)&types=...`
   - merges DB metadata matches and vector-based content matches
   - supports deep links to artifacts/files/run steps/repo paths
 

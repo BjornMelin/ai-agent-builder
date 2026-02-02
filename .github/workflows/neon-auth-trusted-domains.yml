@@ -112,7 +112,16 @@ jobs:
           echo "Found Neon branch id: ${NEON_BRANCH_ID}"
 
           # Ensure Neon Auth is enabled for the branch (should be handled by the integration).
-          neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth" >/dev/null
+          AUTH_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth" 2>&1)"
+          AUTH_STATUS=$?
+          if [ ${AUTH_STATUS} -ne 0 ]; then
+            echo "::error::Failed to fetch Neon Auth status for project ${NEON_PROJECT_ID} branch ${NEON_BRANCH_ID}. Output: ${AUTH_JSON}"
+            exit ${AUTH_STATUS}
+          fi
+          if ! printf '%s' "${AUTH_JSON}" | jq -e '.enabled == true' >/dev/null; then
+            echo "::error::Neon Auth is not enabled for project ${NEON_PROJECT_ID} branch ${NEON_BRANCH_ID}. Enable Neon Auth for the branch to proceed."
+            exit 1
+          fi
 
           # Find a stable Vercel preview alias (prefer the branch alias ending in .vercel.app).
           ENCODED_BRANCH="$(jq -nr --arg v "$GIT_BRANCH" '$v|@uri')"

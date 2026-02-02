@@ -217,6 +217,9 @@ Accessibility and UX:
 - Track search latency and error rates (see SPEC-0010).
 - Treat “missing provenance” (result without deep link) as a bug; it breaks
   traceability.
+- When using IR-005 (Upstash Vector HYBRID indexes), upserts must include both
+  dense and sparse vectors or the operation fails (see
+  [Upstash Vector Hybrid Indexes](https://upstash.com/docs/vector/features/hybridindexes)).
 
 ## Failure modes and mitigation
 

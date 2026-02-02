@@ -209,6 +209,8 @@ Blocked by default:
 - Truncate logs above configured size; persist tail.
 - Redact:
   - tokens in URLs (e.g., `https://x-access-token:...@github.com/...`)
+    The `...` is intentional in examples for copy/paste safety; do not replace
+    it with a typographical ellipsis.
   - known env var values
   - Authorization headers
 

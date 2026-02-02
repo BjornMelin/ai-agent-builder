@@ -322,7 +322,7 @@ let cachedUpstashDeveloperEnv:
  */
 export const env = {
   /**
-   * Vercel AI Gateway.
+   * Returns the Vercel AI Gateway configuration used by server code.
    *
    * @returns AI Gateway env.
    */
@@ -332,7 +332,7 @@ export const env = {
   },
 
   /**
-   * Authentication / access control.
+   * Returns the authentication/access control configuration.
    *
    * @returns Auth env.
    */
@@ -342,7 +342,7 @@ export const env = {
   },
 
   /**
-   * Auth UI configuration (public behavior only; no secrets).
+   * Returns the public auth UI configuration (no secrets).
    *
    * @returns Auth UI env.
    */
@@ -352,7 +352,7 @@ export const env = {
   },
 
   /**
-   * Vercel Blob access token.
+   * Returns the Vercel Blob configuration used for uploads.
    *
    * @returns Blob env.
    */
@@ -362,7 +362,9 @@ export const env = {
   },
 
   /**
-   * Context7 key (only required if the chosen MCP transport needs it).
+   * Returns the Context7 configuration for MCP access.
+   *
+   * Context7 key is only required if the chosen MCP transport needs it.
    *
    * @returns Context7 env.
    */
@@ -372,7 +374,7 @@ export const env = {
   },
 
   /**
-   * Database access.
+   * Returns the database configuration for server access.
    *
    * @returns Database env.
    */
@@ -382,7 +384,7 @@ export const env = {
   },
 
   /**
-   * GitHub API access (RepoOps).
+   * Returns the GitHub API configuration for RepoOps.
    *
    * @returns GitHub env.
    */
@@ -392,7 +394,7 @@ export const env = {
   },
 
   /**
-   * Neon API (optional provisioning).
+   * Returns the Neon API configuration for optional provisioning.
    *
    * @returns Neon API env.
    */
@@ -402,7 +404,7 @@ export const env = {
   },
 
   /**
-   * QStash publish token (enqueue).
+   * Returns the QStash publish configuration for enqueueing requests.
    *
    * @returns QStash publish env.
    */
@@ -415,7 +417,7 @@ export const env = {
   },
 
   /**
-   * QStash signature verification keys (verify incoming requests).
+   * Returns the QStash verification configuration for incoming requests.
    *
    * @returns QStash verify env.
    */
@@ -427,7 +429,7 @@ export const env = {
     return cachedQstashVerifyEnv;
   },
   /**
-   * Runtime information (safe to use for branching logic).
+   * Returns runtime information used for branching logic.
    *
    * @returns Runtime env.
    */
@@ -437,7 +439,7 @@ export const env = {
   },
 
   /**
-   * Vercel Sandbox (OIDC token preferred; access token fallback supported).
+   * Returns the Vercel Sandbox configuration (OIDC preferred; access token fallback supported).
    *
    * @returns Sandbox env.
    */
@@ -447,7 +449,7 @@ export const env = {
   },
 
   /**
-   * Upstash Redis + Vector.
+   * Returns the Upstash Redis/Vector configuration for server access.
    *
    * @returns Upstash env.
    */
@@ -457,7 +459,9 @@ export const env = {
   },
 
   /**
-   * Upstash Developer API (optional provisioning; native accounts only).
+   * Returns the Upstash Developer API configuration for optional provisioning.
+   *
+   * Native Upstash accounts only.
    *
    * @returns Upstash Developer env.
    */
@@ -470,7 +474,7 @@ export const env = {
   },
 
   /**
-   * Vercel REST API / SDK (deployment automation).
+   * Returns the Vercel API configuration for deployment automation.
    *
    * @returns Vercel API env.
    */
@@ -480,7 +484,7 @@ export const env = {
   },
 
   /**
-   * Web research providers.
+   * Returns the web research provider configuration.
    *
    * @returns Web research env.
    */

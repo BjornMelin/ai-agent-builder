@@ -91,10 +91,13 @@ const redis = getRedis();
 
 ### Upstash QStash (durable workflows)
 
-- `QSTASH_TOKEN` (required for `env.qstashPublish`)
+- `QSTASH_TOKEN` (required for `env.qstashPublish`) (see
+  [QStash env vars](https://upstash.com/docs/qstash/howto/local-development))
   - Used by: publishing/enqueueing QStash workflow requests.
-- `QSTASH_CURRENT_SIGNING_KEY` (required for `env.qstashVerify`)
-- `QSTASH_NEXT_SIGNING_KEY` (required for `env.qstashVerify`)
+- `QSTASH_CURRENT_SIGNING_KEY` (required for `env.qstashVerify`) (see
+  [QStash env vars](https://upstash.com/docs/qstash/howto/local-development))
+- `QSTASH_NEXT_SIGNING_KEY` (required for `env.qstashVerify`) (see
+  [QStash env vars](https://upstash.com/docs/qstash/howto/local-development))
   - Used by: verifying QStash request signatures on inbound webhooks.
 
 #### QStash usage
@@ -213,3 +216,5 @@ Docs:
 - Next.js Route Handlers:
   [Route Handlers](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)
 - Zod: [Zod](https://zod.dev/)
+- Upstash QStash env vars:
+  [QStash local development](https://upstash.com/docs/qstash/howto/local-development)

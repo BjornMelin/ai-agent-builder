@@ -59,7 +59,7 @@ optional provisioning APIs), which must remain feature-gated.
 - Client-side env secrets or broad client config surfaces. The only allowed
   `NEXT_PUBLIC_*` values are explicitly non-secret and documented (currently:
   `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS`).
-- Supporting multiple variable aliases for the same secret
+- Supporting multiple variable aliases for the same secret.
 
 ## Requirements
 
@@ -222,3 +222,5 @@ Implementation/deploy automation (optional feature gates):
 
 - **0.1 (2026-01-30)**: Implemented typed env feature gates and ops docs.
 - **0.2 (2026-01-31)**: Migrated `env.auth` to Neon Auth + allowlist access control.
+- **0.3 (2026-02-01)**: Documented public auth UI env and client
+  `NEXT_PUBLIC_*` exception; aligned env ops references.
