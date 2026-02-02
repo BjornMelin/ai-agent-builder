@@ -212,7 +212,7 @@ Blocked by default:
     The `...` is intentional in examples for copy/paste safety; do not replace
     it with a typographical ellipsis.
   - known env var values
-  - Authorization headers
+  - Authorization headers.
 
 Persist:
 

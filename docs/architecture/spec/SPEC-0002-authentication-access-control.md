@@ -179,4 +179,5 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **1.1.0 (2026-02-02)**: Clarified allowlist enforcement details and test/env validation coverage.
 - **1.0 (2026-01-31)**: Migrated to Neon Auth + allowlist access control.

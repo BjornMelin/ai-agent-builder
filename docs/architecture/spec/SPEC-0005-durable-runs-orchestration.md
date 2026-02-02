@@ -6,7 +6,7 @@ date: 2026-02-01
 owners: ["you"]
 status: Proposed
 related_requirements:
-  ["FR-010", "FR-011", "FR-023", "FR-029", "FR-031", "PR-004", "PR-005", "PR-007", "IR-004"]
+  ["FR-010", "FR-011", "FR-023", "FR-029", "FR-031", "PR-004", "PR-005", "PR-007", "IR-004", "NFR-004", "NFR-013", "NFR-014", "NFR-015"]
 related_adrs: ["ADR-0005", "ADR-0024"]
 notes: "Defines durable run execution, step graph, retries, and QStash integration."
 ---

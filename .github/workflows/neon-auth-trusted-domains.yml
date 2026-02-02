@@ -112,8 +112,13 @@ jobs:
           echo "Found Neon branch id: ${NEON_BRANCH_ID}"
 
           # Ensure Neon Auth is enabled for the branch (should be handled by the integration).
-          AUTH_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth" 2>&1)"
-          AUTH_STATUS=$?
+          AUTH_JSON=""
+          AUTH_STATUS=0
+          if AUTH_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth" 2>&1)"; then
+            AUTH_STATUS=0
+          else
+            AUTH_STATUS=$?
+          fi
           if [ ${AUTH_STATUS} -ne 0 ]; then
             echo "::error::Failed to fetch Neon Auth status for project ${NEON_PROJECT_ID} branch ${NEON_BRANCH_ID}. Output: ${AUTH_JSON}"
             exit ${AUTH_STATUS}

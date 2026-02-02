@@ -1,7 +1,8 @@
 # API Surface (Route Handlers)
 
-The system uses Next.js Route Handlers under `src/app/api/*` plus Server Actions
-for authenticated UI mutations.
+The system uses Next.js Route Handlers under `src/app/api/*` as the public HTTP
+API, plus Server Actions — invoked only from the authenticated UI, not exposed
+as public HTTP endpoints.
 
 Chat and agent output are streamed using AI SDK v6 streaming helpers:
 
