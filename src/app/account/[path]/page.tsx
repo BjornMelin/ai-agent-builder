@@ -31,7 +31,7 @@ export function generateStaticParams() {
  */
 export default async function AccountPage(
   props: Readonly<{
-    params: { path: string };
+    params: Promise<{ path: string }>;
   }>,
 ) {
   const [{ path }] = await Promise.all([props.params, requireAppUser()]);

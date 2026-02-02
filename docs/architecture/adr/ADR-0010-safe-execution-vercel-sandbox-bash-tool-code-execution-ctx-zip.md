@@ -11,8 +11,8 @@ Tags: [security, execution]
 References:
   - [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)
   - [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication)
-  - [Vercel Sandbox local development](https://vercel.com/docs/vercel-sandbox/guides/local-development)
-  - [Vercel Sandbox system specs](https://vercel.com/docs/vercel-sandbox/sandbox-system-specs)
+  - [Vercel Sandbox quickstart](https://vercel.com/docs/vercel-sandbox/quickstart)
+  - [Vercel Sandbox system specs](https://vercel.com/docs/vercel-sandbox/system-specifications)
   - [bash-tool](https://ai-sdk.dev/tools-registry/bash-tool)
   - [code-execution tool](https://ai-sdk.dev/tools-registry/code-execution)
   - [ctx-zip tool](https://ai-sdk.dev/tools-registry/ctx-zip)
@@ -135,7 +135,7 @@ flowchart LR
   - For local development / external CI: use the documented env-based auth
     methods (OIDC token or access token), plus the Vercel project/team context
     as required. See
-    [Vercel Sandbox local development](https://vercel.com/docs/vercel-sandbox/guides/local-development).
+    [Vercel Sandbox quickstart](https://vercel.com/docs/vercel-sandbox/quickstart).
 - Environment variables (feature-gated; see
   [ADR-0021](ADR-0021-environment-configuration-contracts-and-secret-handling.md)):
   - `VERCEL_OIDC_TOKEN` (preferred; required for `env.sandbox` OIDC mode)
@@ -157,7 +157,7 @@ flowchart LR
 - Prefer using Sandbox for CPU-bound transformations and parsing edge cases.
 - For implementation runs, treat verification as first-class sandbox jobs
   (see
-  [SPEC-0009](../spec/SPEC-0009-sandbox-code-mode.md)).
+  [SPEC-0019](../spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)).
 
 ## Consequences
 

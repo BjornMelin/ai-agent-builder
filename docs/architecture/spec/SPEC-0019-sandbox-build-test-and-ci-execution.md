@@ -23,8 +23,10 @@ is also reused by Code Mode for safe analysis execution.
 
 Implementation Runs must run verification commands (lint/typecheck/test/build and
 optional migrations) against potentially large repos without executing untrusted
-code in the app runtime. Vercel Sandbox provides isolated compute and supports
-long-running jobs with logs and resource controls.
+code in the app runtime. Vercel Sandbox provides isolated compute (see
+[Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)) and supports
+long-running jobs with logs and resource controls (see
+[Vercel Sandbox system specs](https://vercel.com/docs/vercel-sandbox/system-specifications)).
 
 ## Goals / Non-goals
 

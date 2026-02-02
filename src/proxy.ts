@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 import { getAuth } from "@/lib/auth/neon-auth.server";
 
-let cachedMiddleware:
-  | ReturnType<ReturnType<typeof getAuth>["middleware"]>
-  | undefined;
+type NeonAuthMiddleware = ReturnType<ReturnType<typeof getAuth>["middleware"]>;
+
+let cachedMiddleware: NeonAuthMiddleware | undefined;
 
 /**
  * Next.js request proxy for Neon Auth.

@@ -112,12 +112,6 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - Extraction fails → retry and/or fall back to summarizing snippet
 
-## Key files
-
-- `src/lib/ai/tools/web-search.ts`
-- `src/lib/ai/tools/firecrawl.ts`
-- `src/lib/citations/normalize.ts`
-
 ## References
 
 - [Exa tool](https://ai-sdk.dev/tools-registry/exa)

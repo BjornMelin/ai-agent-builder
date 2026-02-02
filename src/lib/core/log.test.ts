@@ -53,6 +53,7 @@ describe("log", () => {
   });
 
   it("truncates very long strings", async () => {
+    vi.resetModules();
     const { log } = await import("@/lib/core/log");
     const spy = vi.spyOn(console, "info").mockImplementation(() => {});
 

@@ -48,8 +48,11 @@ That includes:
 
 Provider constraints differ:
 
-- Vercel provides a REST API and a typed TypeScript SDK.
-- Neon provides an API for projects/branches/databases.
+- Vercel provides a REST API and a typed TypeScript SDK. (See
+  [Vercel REST API](https://vercel.com/docs/rest-api) and
+  [Vercel TypeScript SDK](https://github.com/vercel/sdk).)
+- Neon provides an API for projects/branches/databases. (See
+  [Neon API](https://neon.tech/docs/reference/api-reference).)
 - Upstash provides per-database REST tokens for runtime access, but the Upstash
   Developer API (provisioning) is only available to native Upstash accounts
   (Upstash Developer API — native accounts only: <https://upstash.com/docs/common/account/developerapi>).

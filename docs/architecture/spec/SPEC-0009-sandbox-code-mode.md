@@ -5,7 +5,7 @@ version: 0.2.0
 date: 2026-02-01
 owners: ["you"]
 status: Proposed
-related_requirements: ["FR-018", "NFR-014", "IR-009"]
+related_requirements: ["FR-018", "FR-031", "NFR-014", "IR-009"]
 related_adrs: ["ADR-0010"]
 notes: "Defines the user-facing safe code execution mode for analysis tasks."
 ---
@@ -13,7 +13,8 @@ notes: "Defines the user-facing safe code execution mode for analysis tasks."
 ## Summary
 
 Defines “Code Mode”: an agent capability to execute code/commands in an isolated
-Vercel Sandbox environment for **analysis** and bounded utility tasks.
+Vercel Sandbox environment for **analysis** and bounded utility tasks
+(see [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)).
 
 Code Mode is distinct from the sandbox job runner used by Implementation Runs
 (see [SPEC-0019](./SPEC-0019-sandbox-build-test-and-ci-execution.md)): Code Mode
@@ -25,7 +26,8 @@ Runs use sandbox jobs as part of a durable workflow.
 Some tasks require running untrusted or semi-trusted code (parsers, quick data
 analysis, verifying assumptions) without risking the app runtime or leaking
 secrets. Vercel Sandbox provides ephemeral isolated compute suitable for these
-tasks.
+tasks (see [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) and
+[Vercel Sandbox reference](https://vercel.com/docs/vercel-sandbox/reference/readme)).
 
 ## Goals / Non-goals
 
@@ -53,6 +55,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - **FR-018:** Safe “Code Mode” execution for analysis tasks in isolated sandbox
   VMs.
+- **FR-031:** Side-effectful actions require explicit approval gates.
 
 ### Non-functional requirements
 
@@ -106,7 +109,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Configuration
 
-- Sandbox auth modes (see `docs/ops/env.md`):
+- Sandbox auth modes (see `docs/ops/env.md`; see
+  [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication)):
   - OIDC token (preferred): `VERCEL_OIDC_TOKEN`
   - Access token fallback: `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (optional `VERCEL_TEAM_ID`)
 

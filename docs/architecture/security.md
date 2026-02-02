@@ -42,7 +42,8 @@ Primary threats:
 ## Authentication & session security
 
 - Managed authentication via Neon Auth.
-- Route protection uses Next.js `proxy.ts`.
+- Route protection is implemented in `src/proxy.ts` (Next.js request proxy /
+  middleware) that invokes Neon Auth middleware for authenticated access.
 - App access is allowlist-gated by default (private access mode) until BYOK is
   implemented.
 

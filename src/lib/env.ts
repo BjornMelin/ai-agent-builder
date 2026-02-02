@@ -35,7 +35,11 @@ function parseFeatureEnv<S extends z.ZodTypeAny>(
 
 const envNonEmpty = z.string().trim().min(1);
 const envUrl = z.string().trim().pipe(z.url());
-const envOptionalTrimmed = z.string().trim().min(1).optional();
+const envOptionalTrimmed = z.preprocess(
+  (value) =>
+    typeof value === "string" && value.trim().length === 0 ? undefined : value,
+  z.string().trim().min(1).optional(),
+);
 
 function parseCommaSeparatedList(value: string): string[] {
   return value
@@ -45,10 +49,10 @@ function parseCommaSeparatedList(value: string): string[] {
 }
 
 /**
- * Normalize an email address for allowlist matching.
+ * Normalize an email address for consistent allowlist matching.
  *
- * @param value - Email input to normalize.
- * @returns Normalized email value.
+ * @param value - Raw email string to normalize.
+ * @returns Trimmed, lowercased email address.
  */
 export function normalizeEmail(value: string): string {
   // Lowercasing is sufficient for allowlist matching (domain-part is case-insensitive;

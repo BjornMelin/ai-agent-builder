@@ -112,7 +112,7 @@ This spec’s design details are captured in the following sections:
 - Run + step persistence: see `docs/architecture/data-model.md`.
 - Step IO contract:
   - `run_steps.inputs`: stable JSON inputs and provenance references
-  - `run_steps.outputs`: stable JSON outputs and external IDs
+  - `run_steps.outputs`: stable JSON outputs and external IDs.
 
 ### File-level contracts
 
@@ -171,7 +171,7 @@ For implementation runs, add:
   - any external IDs produced (PR, deployment, sandbox job)
 - “Wait” steps are first-class:
   - approval wait: user action unblocks
-  - external wait: poll GitHub/Vercel until condition met
+  - external wait: poll GitHub/Vercel until condition met.
 
 ## QStash integration
 

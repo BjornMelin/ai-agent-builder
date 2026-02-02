@@ -34,6 +34,12 @@ export function Providers(props: Readonly<{ children: ReactNode }>) {
       Link={Link}
     >
       <div className="flex min-h-dvh flex-col">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-background focus:p-2"
+        >
+          Skip to content
+        </a>
         <header className="flex h-16 items-center justify-between px-4 md:px-6">
           <Link
             href="/"

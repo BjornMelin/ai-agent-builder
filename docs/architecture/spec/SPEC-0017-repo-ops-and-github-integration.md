@@ -117,10 +117,10 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - Use a fine-grained GitHub personal access token (PAT) stored in environment
   variables (`GITHUB_TOKEN`).
 - Scope permissions minimally:
-  - repository contents: read/write
-  - pull requests: read/write
-  - workflows/checks: read (for status polling)
-  - metadata: read
+  - repository contents: read/write.
+  - pull requests: read/write.
+  - workflows/checks: read (for status polling).
+  - metadata: read.
 
 ### Future-compatible: GitHub App
 

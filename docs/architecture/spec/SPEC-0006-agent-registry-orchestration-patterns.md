@@ -5,7 +5,7 @@ version: 0.3.0
 date: 2026-02-01
 owners: ["you"]
 status: Proposed
-related_requirements: ["FR-009", "FR-033", "NFR-011", "NFR-013"]
+related_requirements: ["FR-009", "FR-033", "NFR-011", "NFR-013", "NFR-015"]
 related_adrs: ["ADR-0006", "ADR-0012", "ADR-0024"]
 notes: "Defines agent modes, tool allowlists, and orchestration patterns."
 ---
@@ -18,7 +18,9 @@ Defines:
 - which tools each mode can access (least privilege)
 - orchestration patterns for multi-agent workflows
 
-The system uses AI SDK v6 agents and dynamic tools to reduce context bloat.
+The system uses AI SDK v6 agents and dynamic tools to reduce context bloat
+(see [AI SDK Agents](https://ai-sdk.dev/docs/agents/overview) and
+[dynamicTool](https://ai-sdk.dev/docs/reference/ai-sdk-core/dynamic-tool)).
 
 ## Context
 

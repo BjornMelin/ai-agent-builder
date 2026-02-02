@@ -47,7 +47,10 @@ artifacts into a production-ready target application:
 
 The system’s “implementation phase” turns generated artifacts into a deployed
 target application. This requires durable orchestration, safe execution, and
-auditability across external systems (GitHub, Vercel, optional provisioning).
+auditability across external systems (GitHub, Vercel, optional provisioning)
+(see [GitHub REST API](https://docs.github.com/en/rest),
+[Vercel REST API](https://vercel.com/docs/rest-api), and
+[Terraform docs](https://developer.hashicorp.com/terraform/docs)).
 
 ## Goals / Non-goals
 
@@ -318,6 +321,9 @@ Add run step payload conventions:
 - Sandbox verification jobs: [SPEC-0019](./SPEC-0019-sandbox-build-test-and-ci-execution.md)
 - GitOps decision: [ADR-0024](../adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md)
 - Provisioning/deploy decision: [ADR-0025](../adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md)
+- GitHub REST API: https://docs.github.com/en/rest
+- Vercel REST API: https://vercel.com/docs/rest-api
+- Terraform docs: https://developer.hashicorp.com/terraform/docs
 
 ## Changelog
 

@@ -5,7 +5,17 @@ version: 0.3.0
 date: 2026-02-01
 owners: ["you"]
 status: Proposed
-related_requirements: ["FR-001", "FR-020", "FR-023", "NFR-011"]
+related_requirements: [
+  "FR-001",
+  "FR-020",
+  "FR-023",
+  "FR-034",
+  "NFR-011",
+  "PR-001",
+  "PR-008",
+  "IR-001",
+  "IR-014"
+]
 related_adrs: ["ADR-0001", "ADR-0024", "ADR-0025"]
 notes: "Defines system scope, glossary, and how requirements map to specs."
 ---
@@ -98,7 +108,7 @@ terminology; it does not restate every requirement verbatim).
   required (org billing, collaboration).
 - Server-only secrets and tool execution
 - Bun-only scripts and installs
-- Side-effectful operations are approval-gated and audited
+- Side-effectful operations are approval-gated and audited.
 
 ## Glossary (system vocabulary)
 

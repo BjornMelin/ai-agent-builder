@@ -80,7 +80,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - The UI must provide provenance for results (at minimum: project, result type,
   and a stable deep link).
 - Search must degrade gracefully when an integration is unavailable:
-  - vector store unavailable → fall back to metadata/title search in Postgres
+  - vector store unavailable → fall back to metadata/title search in Postgres.
 
 ## Decision Framework Score (must be ≥ 9.0)
 

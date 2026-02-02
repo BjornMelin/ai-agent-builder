@@ -32,10 +32,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function safeError(value: unknown): unknown {
   if (value instanceof Error) {
-    return {
+    const base: Record<string, unknown> = {
       message: value.message,
       name: value.name,
     };
+    if ("code" in value && typeof value.code === "string") {
+      base.code = value.code;
+    }
+    return base;
   }
   return value;
 }
