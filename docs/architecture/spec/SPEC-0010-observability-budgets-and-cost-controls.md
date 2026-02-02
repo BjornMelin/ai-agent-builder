@@ -89,7 +89,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ### File-level contracts
 
 - `src/lib/runs/budgets.ts`: budget model + enforcement helpers.
-- `src/lib/log.ts`: log redaction and structured logging.
+- `src/lib/core/log.ts`: log redaction and structured logging.
 - `docs/architecture/runbook.md`: operational guidance for budgets.
 
 ### Configuration

@@ -15,7 +15,14 @@ Common workflows and troubleshooting for ai-agent-builder.
 
 4. Start dev server:
 
-   - `bun dev`
+   - `bun run dev`
+
+### Reproduce a Vercel Preview environment locally (optional)
+
+If you need to reproduce a branch-scoped Preview environment locally, pull the
+preview env vars for that branch:
+
+- `vercel env pull --environment=preview --git-branch=<branch>`
 
 ## Database migrations
 

@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0002
 title: Authentication & access control
-version: 1.0.0
-date: 2026-01-31
+version: 1.1.0
+date: 2026-02-02
 owners: ["you"]
 status: Implemented
 related_requirements: ["FR-001", "NFR-001", "NFR-002", "NFR-012"]
@@ -80,19 +80,22 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ### Architecture overview
 
 - Neon Auth server instance:
-  - `src/lib/auth/server.ts` provides a lazy `getAuth()` singleton.
+  - `src/lib/auth/neon-auth.server.ts` provides a lazy `getAuth()` singleton.
   - Laziness avoids requiring auth env vars at build time (Next.js evaluates
     some modules during `next build`).
 - Auth API proxy:
-  - `src/app/api/auth/[...path]/route.ts` proxies all Neon Auth endpoints.
+  - `src/app/api/auth/[...path]/route.ts` proxies all Neon Auth endpoints and
+    exports `GET`, `POST`, `PUT`, `PATCH`, `DELETE` handlers from
+    `getAuth().handler()`.
 - Route protection:
-  - `src/proxy.ts` uses `auth.middleware()` to redirect unauthenticated users to
+  - `src/proxy.ts` uses `getAuth().middleware()` to redirect unauthenticated users to
     `/auth/sign-in`.
   - The proxy matcher excludes `/auth/*` and `/api/auth/*`.
 - App-level allowlist:
-  - `src/lib/auth/access.ts` exports `requireAppUser()`.
+  - `src/lib/auth/require-app-user.ts` exports `requireAppUser()`.
   - Routes that must enforce allowlisted access call `requireAppUser()` and
-    redirect to `/auth/denied` when authenticated-but-not-allowed.
+    redirect to `/auth/sign-out?redirectTo=/auth/denied` when
+    authenticated-but-not-allowed (clears cookies).
 
 ### Data contracts
 
@@ -106,9 +109,10 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - `src/app/account/[path]/page.tsx`: Neon Auth account UI (settings, security)
 - `src/app/auth/denied/page.tsx`: allowlist denial page
 - `src/app/providers.tsx`: `NeonAuthUIProvider` configuration and header
-- `src/lib/auth/access.ts`: `requireAppUser()` allowlist guard
-- `src/lib/auth/client.ts`: browser auth client
-- `src/lib/auth/server.ts`: `getAuth()` server singleton
+- `src/lib/auth/require-app-user.ts`: `requireAppUser()` allowlist guard
+- `src/lib/auth/neon-auth.client.ts`: browser auth client
+- `src/lib/auth/neon-auth.server.ts`: `getAuth()` server singleton
+- `src/lib/auth/social-providers.ts`: parses `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS`
 
 ### Configuration
 
@@ -116,19 +120,22 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
   - `NEON_AUTH_BASE_URL`
   - `NEON_AUTH_COOKIE_SECRET`
   - `NEON_AUTH_COOKIE_DOMAIN` (optional)
+  - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` (optional)
   - `AUTH_ACCESS_MODE` (optional)
   - `AUTH_ALLOWED_EMAILS` (required when restricted)
 
 ## Acceptance criteria
 
 - Unauthenticated requests to non-auth routes are redirected to `/auth/sign-in`.
-- Authenticated requests by non-allowlisted users are redirected to
+- Authenticated requests by non-allowlisted users are signed out and end on
   `/auth/denied` (default posture).
 - `/auth/sign-up` is not exposed while BYOK is not implemented.
 
 ## Testing
 
 - Unit: `src/lib/env.test.ts` covers auth env validation and allowlist parsing.
+- Unit: `src/lib/auth/require-app-user.test.ts` covers allowlist denial redirect
+  behavior.
 - Build: `bun run build` succeeds without auth env vars during build time (lazy
   `getAuth()` instance creation).
 - Future E2E: sign-in (OAuth) + allowlist gate.
@@ -152,8 +159,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - `src/app/auth/[path]/page.tsx`
 - `src/app/account/[path]/page.tsx`
 - `src/app/providers.tsx`
-- `src/lib/auth/access.ts`
-- `src/lib/auth/server.ts`
+- `src/lib/auth/require-app-user.ts`
+- `src/lib/auth/neon-auth.server.ts`
 
 ## References
 

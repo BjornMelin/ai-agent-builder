@@ -13,7 +13,7 @@ Chat and agent output are streamed using AI SDK v6 streaming helpers:
   - `GET /auth/*`
   - `GET /account/*`
 - Neon Auth API proxy:
-  - `GET|POST /api/auth/*`
+  - `GET|POST|PUT|PATCH|DELETE /api/auth/*`
 
 See:
 

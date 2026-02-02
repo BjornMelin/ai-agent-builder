@@ -17,7 +17,8 @@ References:
 
 ## Status
 
-Accepted — 2026-01-31.
+Accepted — 2026-01-31.  
+Updated — 2026-02-02 (allowlist sign-out; preview-friendly OAuth toggles).
 
 ## Description
 
@@ -101,6 +102,11 @@ Even if a user can authenticate via OAuth, the app denies access unless:
 This gates access to routes that call `requireAppUser()` and is intended as a
 cost-control mechanism until BYOK is implemented.
 
+When `AUTH_ACCESS_MODE=restricted` and the user is not allowlisted (or the OAuth
+provider does not supply an email), the app redirects to
+`/auth/sign-out?redirectTo=/auth/denied` to clear Neon Auth cookies and prevent
+non-allowlisted users from remaining logged in.
+
 ### Disabling sign-up (admin-provisioned access)
 
 Until BYOK exists and public sign-up is enabled:
@@ -109,6 +115,12 @@ Until BYOK exists and public sign-up is enabled:
 - The app does not configure sign-up in the Neon Auth UI provider.
 
 This keeps the UI in a sign-in-only posture.
+
+### Preview-friendly OAuth toggles
+
+Social sign-in buttons are controlled by `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS`
+(defaults to `github,vercel`; set to `vercel` on preview branches to reduce
+per-preview OAuth configuration overhead).
 
 ## Consequences
 

@@ -118,7 +118,7 @@ This spec’s design details are captured in the following sections:
 
 - `src/app/api/runs/*`: Route Handlers that execute or resume steps (signed).
 - `src/lib/runs/*`: run state machine, idempotency, and persistence helpers.
-- `src/lib/upstash/qstash.ts`: publish + verify helpers for QStash integration.
+- `src/lib/upstash/qstash.server.ts`: publish + verify helpers for QStash integration.
 
 ### Configuration
 
@@ -241,7 +241,7 @@ For implementation runs, add:
 - `docs/specs/requirements.md`
 - `docs/architecture/spec/SPEC-0005-durable-runs-orchestration.md`
 - `docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`
-- `src/lib/upstash/qstash.ts`
+- `src/lib/upstash/qstash.server.ts`
 
 ## References
 

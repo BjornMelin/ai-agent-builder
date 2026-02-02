@@ -2,8 +2,8 @@
 ADR: 0021
 Title: Environment configuration contracts and secret handling
 Status: Implemented
-Version: 0.2
-Date: 2026-02-01
+Version: 0.3
+Date: 2026-02-02
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0017, ADR-0015, ADR-0024, ADR-0025]
@@ -23,6 +23,7 @@ References:
 
 Implemented — 2026-01-30.  
 Updated — 2026-02-01 (implementation/deploy automation integrations).
+Updated — 2026-02-02 (public auth UI env; client `NEXT_PUBLIC_*` exception).
 
 ## Description
 
@@ -113,7 +114,9 @@ address secret handling and optional integrations. This involves using
 **Zod v4 schemas** behind a **server-only env boundary (`src/lib/env.ts`)**
 configured with **per-integration feature gates** and **normalized errors**.
 
-- `src/lib/env.ts` is the only place in `src/**` that reads `process.env`.
+- `src/lib/env.ts` is the only place in `src/**` server code that reads
+  `process.env` (tests excluded).
+- Client Components may read `process.env.NEXT_PUBLIC_*` values directly.
 - `src/lib/env.ts` is server-only (`server-only`) and must not be imported from
   Client Components.
 - Each integration validates its required variables only when accessed
@@ -130,6 +133,8 @@ configured with **per-integration feature gates** and **normalized errors**.
   - `NEON_AUTH_BASE_URL`
   - `NEON_AUTH_COOKIE_SECRET`
   - `NEON_AUTH_COOKIE_DOMAIN` (optional)
+- Auth UI (public):
+  - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` (optional)
 - App access control:
   - `AUTH_ACCESS_MODE` (optional; defaults to `restricted`)
   - `AUTH_ALLOWED_EMAILS` (required when restricted)
@@ -160,6 +165,8 @@ configured with **per-integration feature gates** and **normalized errors**.
 
 - No secrets in client bundles.
 - No env validation that fails builds for unused features.
+- Client Components may read `process.env.NEXT_PUBLIC_*` values directly; keep
+  them non-secret and documented.
 - Tooling configs may still read env directly (e.g. `drizzle.config.ts`).
 
 ## High-Level Architecture
@@ -213,15 +220,19 @@ flowchart LR
 
 - Added:
   - `src/lib/env.ts`
-  - `src/lib/errors.ts`
-  - `src/lib/log.ts`
-  - `src/lib/ids.ts`
-  - `src/lib/time.ts`
-  - `src/lib/upstash/redis.ts`
-  - `src/lib/upstash/qstash.ts`
+  - `src/lib/core/errors.ts`
+  - `src/lib/core/log.ts`
+  - `src/lib/core/ids.ts`
+  - `src/lib/core/time.ts`
+  - `src/lib/upstash/redis.server.ts`
+  - `src/lib/upstash/qstash.server.ts`
   - `src/lib/env.test.ts`
-  - `src/lib/errors.test.ts`
-  - `src/lib/log.test.ts`
+  - `src/lib/core/errors.test.ts`
+  - `src/lib/core/log.test.ts`
+  - `src/lib/core/ids.test.ts`
+  - `src/lib/core/time.test.ts`
+  - `src/lib/upstash/redis.server.test.ts`
+  - `src/lib/upstash/qstash.server.test.ts`
   - `docs/ops/env.md`
 - Updated:
   - `.env.example`

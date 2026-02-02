@@ -14,6 +14,32 @@ The baseline CI workflow is `.github/workflows/ci.yml`:
 
 All steps run using Bun.
 
+## Preview environment automation (optional)
+
+The repo includes a Preview automation workflow to keep Vercel Preview branches
+isolated and correctly configured:
+
+- Workflow: `.github/workflows/preview-neon-auth.yml`
+- What it does (best-effort):
+  - Creates/reuses a Neon branch per PR/branch
+  - Ensures Neon Auth is enabled for that branch and captures `NEON_AUTH_BASE_URL`
+  - Sets branch-scoped Vercel Preview env vars:
+    - `NEON_AUTH_BASE_URL`
+    - `DATABASE_URL`
+    - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS=vercel`
+  - Adds the Preview deployment domain to Neon Auth trusted domains for that
+    branch (once the Preview URL exists)
+
+Required repo configuration:
+
+- GitHub Actions variables:
+  - `NEON_PROJECT_ID`
+- GitHub Actions secrets:
+  - `NEON_API_KEY`
+  - `VERCEL_TOKEN`
+  - `VERCEL_PROJECT_ID`
+  - `VERCEL_TEAM_ID` (optional)
+
 ## Security workflows
 
 These workflows provide supply-chain and code-scanning coverage:

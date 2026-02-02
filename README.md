@@ -86,6 +86,7 @@ we monitor upstream releases before upgrading.
   - `NEON_AUTH_BASE_URL`
   - `NEON_AUTH_COOKIE_SECRET` (32+ chars; generate with `openssl rand -base64 32`)
   - `AUTH_ALLOWED_EMAILS` (when `AUTH_ACCESS_MODE=restricted`)
+  - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` (optional; defaults to `github,vercel`)
 - Upstash credentials (Redis/Vector/QStash)
 - Vercel AI Gateway API key (`AI_GATEWAY_API_KEY`)
 
@@ -99,6 +100,16 @@ bun run dev
 
 Optional: implementation/deploy automation variables (GitHub/Vercel/Neon/Upstash)
 are documented in [`docs/ops/env.md`](./docs/ops/env.md).
+
+## Vercel Preview automation (optional)
+
+The repo includes `.github/workflows/preview-neon-auth.yml` to provision a Neon
+branch per PR/branch and set branch-scoped Vercel Preview env vars.
+
+Required GitHub Actions configuration:
+
+- Variables: `NEON_PROJECT_ID`
+- Secrets: `NEON_API_KEY`, `VERCEL_TOKEN`, `VERCEL_PROJECT_ID` (optional: `VERCEL_TEAM_ID`)
 
 ## Fetch AI Gateway model catalog
 

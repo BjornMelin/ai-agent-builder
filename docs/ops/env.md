@@ -6,6 +6,7 @@ This project centralizes environment access in `src/lib/env.ts`.
   configs may be the exception, e.g. `drizzle.config.ts`). Unit test files
   (e.g. `*.test.ts` / `*.test.tsx`) may read and mutate `process.env` as part of
   their test setup.
+  - Client Components may read `process.env.NEXT_PUBLIC_*` values directly.
 - Do not import `@/lib/env` into Client Components (it is server-only).
 - Required variables are validated lazily (on first access to a feature gate)
   so optional features do not break builds.
@@ -27,6 +28,8 @@ This project centralizes environment access in `src/lib/env.ts`.
 - `NEON_AUTH_BASE_URL` (required for `env.auth`)
   - Neon Auth base URL from the Neon Console.
   - Used by: `src/lib/auth/neon-auth.server.ts` and `src/app/api/auth/[...path]/route.ts`.
+  - This app proxies Neon Auth behind `/api/auth/*`, so the browser does **not**
+    need to talk to Neon Auth directly (no client-side Neon Auth URL env var is required).
 - `NEON_AUTH_COOKIE_SECRET` (required for `env.auth`)
   - App-side HMAC secret used to sign cached session data cookies (minimum 32
     characters).
@@ -37,7 +40,7 @@ This project centralizes environment access in `src/lib/env.ts`.
 
 Auth UI / OAuth providers:
 
-- `AUTH_SOCIAL_PROVIDERS` (optional)
+- `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` (optional)
   - Comma-separated list of social providers to show in the auth UI.
   - Supported values (currently): `github`, `vercel`.
   - If unset: defaults to `github,vercel`.

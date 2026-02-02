@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0015
 title: Environment configuration contracts
-version: 0.2.0
-date: 2026-02-01
+version: 0.3.0
+date: 2026-02-02
 owners: ["you"]
 status: Implemented
 related_requirements:
@@ -56,7 +56,9 @@ optional provisioning APIs), which must remain feature-gated.
 
 ### Non-goals
 
-- Client-side env access (no `NEXT_PUBLIC_*` config in scope)
+- Client-side env secrets or broad client config surfaces. The only allowed
+  `NEXT_PUBLIC_*` values are explicitly non-secret and documented (currently:
+  `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS`).
 - Supporting multiple variable aliases for the same secret
 
 ## Requirements
@@ -90,7 +92,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ## Constraints
 
 - No direct `process.env` reads in `src/**` (tooling configs may be exceptions,
-  e.g. `drizzle.config.ts`).
+  e.g. `drizzle.config.ts`). Client Components may read
+  `process.env.NEXT_PUBLIC_*` values directly.
 - `@/lib/env` is server-only and must never be imported from Client Components.
 - Missing/invalid required variables fail at runtime at the first usage site,
   with a clear error message listing the variable(s).
@@ -110,7 +113,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Architecture overview
 
-- `src/lib/env.ts` is the only module that reads `process.env`.
+- `src/lib/env.ts` is the only module that reads `process.env` for server code.
+  Client Components may read `process.env.NEXT_PUBLIC_*` values directly.
 - `src/lib/env.ts` uses `server-only` to prevent accidental client imports.
 - Each feature has its own schema (DB, Upstash, QStash publish/verify, AI
   Gateway, research, blob, sandbox, auth).
@@ -135,6 +139,8 @@ Feature gates are accessed through `env.<feature>`:
 - `env.auth`
   - Neon Auth: `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `NEON_AUTH_COOKIE_DOMAIN`
   - App access control: `AUTH_ACCESS_MODE`, `AUTH_ALLOWED_EMAILS`
+- `env.authUi` (public; non-secret)
+  - Auth UI social providers: `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS`
 
 Implementation/deploy automation (optional feature gates):
 
@@ -168,7 +174,8 @@ Implementation/deploy automation (optional feature gates):
 - [x] `src/lib/env.ts` is the single typed env access module.
 - [x] Feature-gated validation: missing vars do not fail until the feature is
   accessed.
-- [x] No direct `process.env` usage in `src/**`.
+- [x] No direct `process.env` usage in `src/**` server code (Client Components
+  may read `process.env.NEXT_PUBLIC_*`).
 - [x] `.env.example` lists all required/optional variables.
 - [x] Ops documentation exists and explains each variable.
 
@@ -194,12 +201,12 @@ Implementation/deploy automation (optional feature gates):
 ## Key files
 
 - `src/lib/env.ts`
-- `src/lib/errors.ts`
-- `src/lib/log.ts`
-- `src/lib/ids.ts`
-- `src/lib/time.ts`
-- `src/lib/upstash/redis.ts`
-- `src/lib/upstash/qstash.ts`
+- `src/lib/core/errors.ts`
+- `src/lib/core/log.ts`
+- `src/lib/core/ids.ts`
+- `src/lib/core/time.ts`
+- `src/lib/upstash/redis.server.ts`
+- `src/lib/upstash/qstash.server.ts`
 - `src/lib/env.test.ts`
 - `.env.example`
 - `docs/ops/env.md`
