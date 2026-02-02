@@ -72,14 +72,16 @@ Runs are durable state machines driven by QStash.
 - `POST /api/jobs/run-step`
   - executes a single run step (research or implementation)
   - production security: always verify incoming QStash requests before processing
-    jobs; validate the signature header (for example, `QSTASH-SIGNATURE`) and
-    timestamp with Upstash/QStash verification utilities or middleware using the
-    project secret, and enforce replay-timestamp checks (see QStash Quickstart
+    jobs; validate the `Upstash-Signature` header (JWT) with the official
+    `verifySignatureAppRouter` from `@upstash/qstash/nextjs` (or the repo wrapper)
+    and rely on the JWT claims (`exp`, `nbf`, `iat`) for replay/timestamp
+    protection—no separate timestamp header is required (see QStash Quickstart
     for implementation details).
 
 Reference:
 
 - [QStash Next.js Quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
+- [QStash signature verification](https://upstash.mintlify.dev/docs/qstash/howto/signature)
 
 ## Export
 

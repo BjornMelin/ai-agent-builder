@@ -119,8 +119,19 @@ This keeps the UI in a sign-in-only posture.
 ### Preview-friendly OAuth toggles
 
 Social sign-in buttons are controlled by `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS`
-(defaults to `github,vercel`; set to `vercel` on preview branches to reduce
-per-preview OAuth configuration overhead).
+(defaults to `github,vercel` when unset).
+
+Recommended values:
+
+- Local/development: `vercel`
+- Production: `github,vercel`
+- Preview: *(empty)* (disable social providers)
+
+Rationale: Vercel OAuth requires exact callback URL allowlisting, while the Neon
+↔ Vercel integration provisions a branch-specific `NEON_AUTH_BASE_URL` (and thus
+branch-specific Vercel callback URL). Disabling OAuth on Preview avoids
+per-branch callback management while still allowing allowlisted users to sign in
+via email/password.
 
 ## Consequences
 

@@ -52,20 +52,33 @@ Apply migration:
 
 Use this checklist for Sign in with Vercel failures.
 
-1. Compute the callback URL from the active environment:
+If this is happening on a **Preview** deployment, prefer disabling Vercel OAuth
+entirely for Preview by setting `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` to an empty
+string. Preview branches get a unique Neon Auth URL, which would otherwise
+require per-branch callback URL allowlisting in the Vercel OAuth app
+([Neon Auth staging/preview callback note](https://neon.com/blog/handling-auth-in-a-staging-environment)).
+
+1. Compute the callback URL from the active environment
+   ([Vercel OAuth callback URL formats](https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard)):
    - `<NEON_AUTH_BASE_URL>/callback/vercel`
    - Example: `https://<neon-auth-host>/neondb/auth/callback/vercel`
-2. In the Vercel OAuth App settings, add the callback URL to **Authorization Callback URLs**.
+2. In the Vercel OAuth App settings, add the callback URL to
+   **Authorization Callback URLs**
+   ([Vercel OAuth callback setup](https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard)).
 3. In Neon Auth, ensure the Vercel provider is enabled and configured with the
-   same client ID/secret as the Vercel OAuth app.
+   same client ID/secret as the Vercel OAuth app
+   ([Neon Auth OAuth providers](https://neon.tech/docs/neon-auth/oauth-authentication)).
 4. In Neon Auth “Domains”, whitelist the app domain(s) that Neon Auth redirects
-   back to after login:
+   back to after login
+   ([Neon Auth domains allowlist](https://neon.com/docs/neon-auth/best-practices-and-faq#domains)):
    - Local: `http://localhost:3000`
    - Preview: the Vercel preview deployment domain(s)
    - Production: the primary production domain
-5. Verify locally:
+5. Verify locally
+   ([Vercel OAuth callback URL formats](https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard)):
    - Open `/auth/sign-in`
-   - Click “Sign in with Vercel”
+   - Click
+     [“Sign in with Vercel”](https://vercel.com/docs/sign-in-with-vercel/)
    - Confirm you can complete OAuth and return to the app without errors.
 
 ### Vector indexing not returning results

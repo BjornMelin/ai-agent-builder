@@ -26,16 +26,24 @@ This project centralizes environment access in `src/lib/env.ts`.
 ### Auth (Neon Auth + app access control)
 
 - `NEON_AUTH_BASE_URL` (required for `env.auth`)
-  - Neon Auth base URL from the Neon Console.
+  - Neon Auth base URL from the Neon Console
+    ([Neon Auth endpoint format](https://neon.com/blog/handling-auth-in-a-staging-environment)).
   - Used by: `src/lib/auth/neon-auth.server.ts` and `src/app/api/auth/[...path]/route.ts`.
   - This app proxies Neon Auth behind `/api/auth/*`, so the browser does **not**
     need to talk to Neon Auth directly (no client-side Neon Auth URL env var is required).
+  - Any Server Component or Route Handler that calls Neon Auth session methods
+    must export `export const dynamic = "force-dynamic"` so request-specific
+    cookies are available (see [Route Segment Config: `dynamic`](https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config#dynamic)).
+    This applies to the Neon Auth server helper (`src/lib/auth/neon-auth.server.ts`)
+    and the auth proxy route (`src/app/api/auth/[...path]/route.ts`).
   - Vercel OAuth callback URL **must** exactly match:
     - `<NEON_AUTH_BASE_URL>/callback/vercel`
     - Example: `https://<neon-auth-host>/neondb/auth/callback/vercel`
+    ([Vercel OAuth callback URL format](https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard)).
   - Vercel Preview note: when using the Neon ↔ Vercel integration with Preview
     Branching and Neon Auth enabled, this value is injected automatically per
-    Preview branch.
+    Preview branch
+    ([Neon Auth staging/preview callback note](https://neon.com/blog/handling-auth-in-a-staging-environment)).
 - `NEON_AUTH_COOKIE_SECRET` (required for `env.auth`)
   - App-side HMAC secret used to sign cached session data cookies (minimum 32
     characters).
@@ -52,10 +60,15 @@ Auth UI / OAuth providers:
   - If unset: defaults to `github,vercel`.
   - If set to an empty string: disables social providers (no OAuth buttons).
   - Recommended:
-    - Production/local: `github,vercel`
-    - Vercel Preview branches: `vercel` (avoids GitHub OAuth callback limitations)
+    - Local/development: `vercel`
+    - Production: `github,vercel`
+    - Vercel Preview branches: *(empty)* disables social providers to avoid
+      per-preview Vercel OAuth callback URL allowlisting (Neon Auth uses a
+      branch-specific callback URL)
+      ([Vercel OAuth callback URL formats](https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard)).
   - Ensure each provider is configured in Neon Auth and that the provider's
-    callback URL (e.g. Vercel) matches the Neon Auth callback derived above.
+    callback URL (e.g. Vercel) matches the Neon Auth callback derived above
+    ([Neon Auth OAuth providers](https://neon.tech/docs/neon-auth/oauth-authentication)).
 
 App-level access control (cost control):
 
@@ -74,14 +87,19 @@ App-level access control (cost control):
   - Used by: Drizzle DB client (planned).
   - Vercel Preview note: when using the Neon ↔ Vercel integration with Preview
     Branching, this value is injected automatically per Preview branch.
+    ([Neon Vercel integration](https://neon.com/docs/guides/vercel))
 
 ### Upstash (Redis + Vector)
 
 - `UPSTASH_REDIS_REST_URL` (required for `env.upstash`)
+  ([Upstash Redis REST API](https://upstash.com/docs/redis/features/restapi))
 - `UPSTASH_REDIS_REST_TOKEN` (required for `env.upstash`)
+  ([Upstash Redis REST API](https://upstash.com/docs/redis/features/restapi))
   - Used by: caching, rate limiting, tool-call budgets.
 - `UPSTASH_VECTOR_REST_URL` (required for `env.upstash`)
+  ([Upstash Vector REST API](https://upstash.com/docs/vector/features/metadata))
 - `UPSTASH_VECTOR_REST_TOKEN` (required for `env.upstash`)
+  ([Upstash Vector REST API](https://upstash.com/docs/vector/features/metadata))
   - Used by: semantic search index (planned).
 
 #### Redis client usage
@@ -109,6 +127,12 @@ const redis = getRedis();
 
 Prefer `src/lib/upstash/qstash.server.ts`:
 
+Implementation details: `getQstashClient` and `verifyQstashSignatureAppRouter`
+in `src/lib/upstash/qstash.server.ts` wrap the official
+`verifySignatureAppRouter` and verify signatures against the raw request body
+before invoking your handler
+([QStash signature verification](https://upstash.mintlify.dev/docs/qstash/howto/signature)).
+
 ```ts
 import { getQstashClient } from "@/lib/upstash/qstash.server";
 import { verifyQstashSignatureAppRouter } from "@/lib/upstash/qstash.server";
@@ -116,7 +140,8 @@ import { verifyQstashSignatureAppRouter } from "@/lib/upstash/qstash.server";
 const qstash = getQstashClient();
 
 export const POST = verifyQstashSignatureAppRouter(async (req) => {
-  const body = await req.json();
+  const rawBody = await req.text();
+  const body = JSON.parse(rawBody);
   return Response.json({ ok: true, body });
 });
 ```
@@ -124,15 +149,18 @@ export const POST = verifyQstashSignatureAppRouter(async (req) => {
 ### Vercel AI Gateway
 
 - `AI_GATEWAY_API_KEY` (required for `env.aiGateway`)
-  - Bearer token for the AI Gateway.
+  - Bearer token for the AI Gateway
+    ([AI Gateway authentication](https://vercel.com/docs/ai-gateway/authentication)).
 - `AI_GATEWAY_BASE_URL` (optional, default:
   `https://ai-gateway.vercel.sh/v1`)
-  - Base URL for OpenAI-compatible requests to AI Gateway.
+  - Base URL for OpenAI-compatible requests to AI Gateway
+    ([OpenAI-compatible API](https://vercel.com/docs/ai-gateway/openai-compatibility)).
 
 ### Vercel Blob
 
 - `BLOB_READ_WRITE_TOKEN` (required for `env.blob`)
-  - Token for reading/writing blobs (uploads).
+  - Token for reading/writing blobs (uploads)
+    ([Vercel Blob SDK](https://vercel.com/docs/storage/vercel-blob/using-blob-sdk)).
 
 ### Web research
 
@@ -146,13 +174,16 @@ export const POST = verifyQstashSignatureAppRouter(async (req) => {
 Supported auth modes:
 
 - **OIDC token (preferred):**
-  - `VERCEL_OIDC_TOKEN` (required for `env.sandbox`)
-    - Token used for sandbox execution (provider-specific).
-    - For local development, use `vercel env pull` to fetch environment
-      variables for a Vercel project.
+- `VERCEL_OIDC_TOKEN` (required for `env.sandbox`)
+  - Token used for sandbox execution (provider-specific)
+      ([Sandbox auth](https://vercel.com/docs/vercel-sandbox/concepts/authentication)).
+  - For local development, use `vercel env pull` to fetch environment
+      variables for a Vercel project
+      ([Vercel CLI env pull](https://vercel.com/docs/cli/env#exporting-development-environment-variables)).
 - **Access token (fallback):**
-  - `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (required for `env.sandbox`)
-  - `VERCEL_TEAM_ID` (optional; needed for team-owned resources)
+- `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (required for `env.sandbox`)
+- `VERCEL_TEAM_ID` (optional; needed for team-owned resources)
+  ([Sandbox auth](https://vercel.com/docs/vercel-sandbox/concepts/authentication)).
 
 Docs:
 
@@ -186,7 +217,8 @@ Docs:
 ### Vercel API (deployment automation)
 
 - `VERCEL_TOKEN` (required for `env.vercelApi`)
-  - Access token used to create/configure projects and env vars.
+  - Access token used to create/configure projects and env vars
+    ([Vercel REST API](https://vercel.com/docs/rest-api)).
 - `VERCEL_TEAM_ID` (optional)
   - If you operate under a Vercel team account.
 
@@ -198,6 +230,7 @@ Docs:
 ### Neon API (optional auto-provisioning)
 
 - `NEON_API_KEY` (required for `env.neonApi` if using auto-provisioning)
+  ([Neon API keys](https://neon.tech/docs/manage/api-keys))
 
 Docs:
 
@@ -206,10 +239,12 @@ Docs:
 ### Upstash Developer API (optional auto-provisioning)
 
 > Important: Upstash Developer API is only available for native Upstash accounts;
-> accounts created via some third-party platforms may not support it.
+> accounts created via some third-party platforms may not support it
+> ([Upstash Developer API](https://upstash.com/docs/common/account/developerapi)).
 
 - `UPSTASH_EMAIL` (required for `env.upstashDeveloper` if using auto-provisioning)
 - `UPSTASH_API_KEY` (required for `env.upstashDeveloper` if using auto-provisioning)
+  ([Upstash Developer API](https://upstash.com/docs/common/account/developerapi))
 
 Docs:
 
