@@ -93,23 +93,26 @@ describe("env feature gates", () => {
     );
   });
 
-  it("defaults AUTH_SOCIAL_PROVIDERS when unset", async () => {
-    await withEnv({ AUTH_SOCIAL_PROVIDERS: undefined }, async () => {
-      const { env } = await loadEnv();
-      expect(env.authUi.socialProviders).toEqual(["github", "vercel"]);
-    });
+  it("defaults NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS when unset", async () => {
+    await withEnv(
+      { NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS: undefined },
+      async () => {
+        const { env } = await loadEnv();
+        expect(env.authUi.socialProviders).toEqual(["github", "vercel"]);
+      },
+    );
   });
 
-  it("supports disabling social providers with an empty AUTH_SOCIAL_PROVIDERS", async () => {
-    await withEnv({ AUTH_SOCIAL_PROVIDERS: "   " }, async () => {
+  it("supports disabling social providers with an empty NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS", async () => {
+    await withEnv({ NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS: "   " }, async () => {
       const { env } = await loadEnv();
       expect(env.authUi.socialProviders).toEqual([]);
     });
   });
 
-  it("parses AUTH_SOCIAL_PROVIDERS case-insensitively and ignores unknown values", async () => {
+  it("parses NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS case-insensitively and ignores unknown values", async () => {
     await withEnv(
-      { AUTH_SOCIAL_PROVIDERS: "GitHub,unknown,vercel,github" },
+      { NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS: "GitHub,unknown,vercel,github" },
       async () => {
         const { env } = await loadEnv();
         expect(env.authUi.socialProviders).toEqual(["github", "vercel"]);

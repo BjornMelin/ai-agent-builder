@@ -104,7 +104,9 @@ are documented in [`docs/ops/env.md`](./docs/ops/env.md).
 ## Vercel Preview automation (optional)
 
 The repo includes `.github/workflows/preview-neon-auth.yml` to provision a Neon
-branch per PR/branch and set branch-scoped Vercel Preview env vars.
+branch per PR/branch and set branch-scoped Vercel Preview env vars (push + PR
+runs are concurrency-safe, and required Vercel env upserts fail the workflow on
+API errors).
 
 Required GitHub Actions configuration:
 

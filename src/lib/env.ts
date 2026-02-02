@@ -1,7 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
-
+import { parseAuthSocialProviders } from "@/lib/auth/social-providers";
 import { AppError } from "@/lib/core/errors";
 
 function formatZodEnvIssues(error: z.ZodError): string {
@@ -48,34 +48,6 @@ function parseCommaSeparatedList(value: string): string[] {
     .filter((v) => v.length > 0);
 }
 
-const supportedAuthSocialProviders = ["github", "vercel"] as const;
-type AuthSocialProvider = (typeof supportedAuthSocialProviders)[number];
-
-function parseAuthSocialProviders(
-  raw: string | undefined,
-): ReadonlyArray<AuthSocialProvider> {
-  if (raw === undefined) {
-    return supportedAuthSocialProviders;
-  }
-
-  const trimmed = raw.trim();
-  if (trimmed.length === 0) {
-    return [];
-  }
-
-  const providers = new Set<AuthSocialProvider>();
-  for (const token of parseCommaSeparatedList(trimmed)) {
-    const normalized = token.toLowerCase();
-    if (
-      (supportedAuthSocialProviders as readonly string[]).includes(normalized)
-    ) {
-      providers.add(normalized as AuthSocialProvider);
-    }
-  }
-
-  return Array.from(providers);
-}
-
 /**
  * Normalize an email address for consistent allowlist matching.
  *
@@ -119,7 +91,7 @@ const authSchema = z
   .superRefine((v, ctx) => {
     if (v.AUTH_ACCESS_MODE === "restricted" && !v.AUTH_ALLOWED_EMAILS) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message:
           "AUTH_ALLOWED_EMAILS is required when AUTH_ACCESS_MODE is 'restricted'.",
         path: ["AUTH_ALLOWED_EMAILS"],
@@ -152,10 +124,12 @@ const authUiSchema = z
     // Auth UI / social providers (app-level UX control)
     // - unset: defaults to "github,vercel"
     // - empty string: disables social providers
-    AUTH_SOCIAL_PROVIDERS: z.string().optional(),
+    NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS: z.string().optional(),
   })
   .transform((v) => ({
-    socialProviders: parseAuthSocialProviders(v.AUTH_SOCIAL_PROVIDERS),
+    socialProviders: parseAuthSocialProviders(
+      v.NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS,
+    ),
   }));
 
 const upstashSchema = z
@@ -228,7 +202,7 @@ const sandboxSchema = z
 
     if (!hasOidcToken && !hasAccessToken) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message:
           "Provide either VERCEL_OIDC_TOKEN (preferred) or VERCEL_TOKEN + VERCEL_PROJECT_ID for Sandbox auth.",
         path: ["VERCEL_OIDC_TOKEN"],
@@ -237,7 +211,7 @@ const sandboxSchema = z
 
     if (!hasOidcToken && hasAccessToken && !hasProjectId) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message:
           "VERCEL_PROJECT_ID is required when using VERCEL_TOKEN for Sandbox auth.",
         path: ["VERCEL_PROJECT_ID"],

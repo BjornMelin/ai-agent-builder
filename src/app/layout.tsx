@@ -48,7 +48,6 @@ export default function RootLayout(
 ) {
   const { children } = props;
   const enableAnalytics = env.runtime.isVercel;
-  const authSocialProviders = env.authUi.socialProviders;
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -60,9 +59,7 @@ export default function RootLayout(
         >
           Skip to Main Content
         </a>
-        <Providers authSocialProviders={authSocialProviders}>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
         {enableAnalytics ? <Analytics /> : null}
       </body>
     </html>

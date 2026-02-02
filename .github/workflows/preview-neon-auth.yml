@@ -1,0 +1,260 @@
+name: Preview (Neon Auth + Vercel env)
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, synchronize, reopened]
+  push:
+    branches-ignore: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  # Use the same concurrency key for push + pull_request on the same branch.
+  # - pull_request: github.head_ref
+  # - push: github.ref_name
+  group: preview-neon-auth-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  provision:
+    name: Provision Neon branch + Vercel preview env
+    runs-on: ubuntu-latest
+    # Secrets are not available on forked PRs.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Provision preview branch
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${NEON_API_KEY:-}" ] || [ -z "${NEON_PROJECT_ID:-}" ] || [ -z "${VERCEL_PROJECT_ID:-}" ] || [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "::warning::Missing required secrets/vars (NEON_API_KEY, NEON_PROJECT_ID, VERCEL_PROJECT_ID, VERCEL_TOKEN). Skipping preview provisioning."
+            exit 0
+          fi
+
+          NEON_API_BASE="https://console.neon.tech/api/v2"
+          VERCEL_API_BASE="https://api.vercel.com"
+
+          GIT_BRANCH="${GITHUB_HEAD_REF:-}"
+          if [ -z "${GIT_BRANCH}" ]; then
+            GIT_BRANCH="${GITHUB_REF_NAME}"
+          fi
+
+          # Neon branch names are user-visible; keep them short and deterministic.
+          # Include a stable hash suffix to avoid collisions after slug normalization.
+          BRANCH_SLUG="$(printf '%s' "$GIT_BRANCH" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-//;s/-$//')"
+          BRANCH_HASH="$(printf '%s' "$GIT_BRANCH" | sha256sum | cut -c1-8)"
+
+          if [ -z "${BRANCH_SLUG}" ]; then
+            NEON_BRANCH_NAME="branch-${BRANCH_HASH}"
+          else
+            BRANCH_SLUG_TRIMMED="$(printf '%s' "$BRANCH_SLUG" | cut -c1-44)"
+            NEON_BRANCH_NAME="branch-${BRANCH_SLUG_TRIMMED}-${BRANCH_HASH}"
+          fi
+
+          echo "Using git branch: ${GIT_BRANCH}"
+          echo "Using Neon branch name: ${NEON_BRANCH_NAME}"
+
+          neon() {
+            local method="$1"
+            local path="$2"
+            local data="${3:-}"
+            if [ -n "$data" ]; then
+              curl -sS -X "$method" "${NEON_API_BASE}${path}" \
+                -H "Authorization: Bearer ${NEON_API_KEY}" \
+                -H "Accept: application/json" \
+                -H "Content-Type: application/json" \
+                -d "$data"
+            else
+              curl -sS -X "$method" "${NEON_API_BASE}${path}" \
+                -H "Authorization: Bearer ${NEON_API_KEY}" \
+                -H "Accept: application/json"
+            fi
+          }
+
+          neon_poll_operation() {
+            local op_id="$1"
+            local tries=60
+            local sleep_s=2
+
+            for i in $(seq 1 "$tries"); do
+              local body
+              body="$(neon GET "/projects/${NEON_PROJECT_ID}/operations/${op_id}")"
+              local status
+              status="$(printf '%s' "$body" | jq -r '.operation.status')"
+
+              if [ "$status" = "finished" ] || [ "$status" = "skipped" ]; then
+                return 0
+              fi
+
+              if [ "$status" = "failed" ] || [ "$status" = "cancelled" ] || [ "$status" = "cancelling" ]; then
+                echo "::error::Neon operation ${op_id} failed with status=${status}"
+                exit 1
+              fi
+
+              sleep "$sleep_s"
+            done
+
+            echo "::error::Timed out waiting for Neon operation ${op_id}"
+            exit 1
+          }
+
+          vercel() {
+            local method="$1"
+            local path="$2"
+            local data="${3:-}"
+            if [ -n "$data" ]; then
+              curl -sS -X "$method" "${VERCEL_API_BASE}${path}" \
+                -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+                -H "Content-Type: application/json" \
+                -H "Accept: application/json" \
+                -d "$data"
+            else
+              curl -sS -X "$method" "${VERCEL_API_BASE}${path}" \
+                -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+                -H "Accept: application/json"
+            fi
+          }
+
+          VERCEL_TEAM_QUERY=""
+          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
+            VERCEL_TEAM_QUERY="&teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          echo "Checking if Neon branch already exists..."
+          BRANCHES_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches")"
+          NEON_BRANCH_ID="$(printf '%s' "$BRANCHES_JSON" | jq -r --arg name "$NEON_BRANCH_NAME" '.branches[] | select(.name == $name) | .id' | head -n 1)"
+
+          if [ -z "${NEON_BRANCH_ID}" ] || [ "${NEON_BRANCH_ID}" = "null" ]; then
+            echo "Creating Neon branch..."
+            CREATE_BRANCH_BODY="$(jq -cn --arg name "$NEON_BRANCH_NAME" '{branch: {name: $name}, endpoints: [{type: "read_write"}]}')"
+            CREATE_BRANCH_JSON="$(neon POST "/projects/${NEON_PROJECT_ID}/branches" "$CREATE_BRANCH_BODY")"
+            NEON_BRANCH_ID="$(printf '%s' "$CREATE_BRANCH_JSON" | jq -r '.branch.id')"
+
+            printf '%s' "$CREATE_BRANCH_JSON" | jq -r '.operations[].id' | while read -r op_id; do
+              if [ -n "$op_id" ] && [ "$op_id" != "null" ]; then
+                neon_poll_operation "$op_id"
+              fi
+            done
+          else
+            echo "Reusing Neon branch ${NEON_BRANCH_ID}"
+          fi
+
+          DATABASES_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/databases")"
+          DB_NAME="$(printf '%s' "$DATABASES_JSON" | jq -r '.databases[] | select(.name == "neondb") | .name' | head -n 1)"
+          if [ -z "${DB_NAME}" ] || [ "${DB_NAME}" = "null" ]; then
+            DB_NAME="$(printf '%s' "$DATABASES_JSON" | jq -r '.databases[0].name')"
+          fi
+
+          ROLES_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/roles")"
+          ROLE_NAME="$(printf '%s' "$ROLES_JSON" | jq -r '.roles[] | select(.name == "neondb_owner") | .name' | head -n 1)"
+          if [ -z "${ROLE_NAME}" ] || [ "${ROLE_NAME}" = "null" ]; then
+            ROLE_NAME="$(printf '%s' "$ROLES_JSON" | jq -r '.roles[] | select(.protected == false) | .name' | head -n 1)"
+          fi
+          if [ -z "${ROLE_NAME}" ] || [ "${ROLE_NAME}" = "null" ]; then
+            ROLE_NAME="$(printf '%s' "$ROLES_JSON" | jq -r '.roles[0].name')"
+          fi
+
+          echo "Using database=${DB_NAME} role=${ROLE_NAME}"
+
+          # Ensure Neon Auth (Better Auth) is enabled for the branch and get its base URL.
+          AUTH_BODY="$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer ${NEON_API_KEY}" -H "Accept: application/json" "${NEON_API_BASE}/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth")"
+          AUTH_CODE="$(printf '%s' "$AUTH_BODY" | tail -n 1)"
+          AUTH_JSON="$(printf '%s' "$AUTH_BODY" | sed '$d')"
+
+          NEON_AUTH_BASE_URL=""
+          if [ "$AUTH_CODE" = "200" ]; then
+            NEON_AUTH_BASE_URL="$(printf '%s' "$AUTH_JSON" | jq -r '.base_url // empty')"
+          else
+            echo "Enabling Neon Auth for branch (auth_provider=better_auth)..."
+            ENABLE_AUTH_BODY="$(jq -cn --arg db "$DB_NAME" '{auth_provider: "better_auth", database_name: $db}')"
+            ENABLE_AUTH_JSON="$(neon POST "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth" "$ENABLE_AUTH_BODY")"
+            NEON_AUTH_BASE_URL="$(printf '%s' "$ENABLE_AUTH_JSON" | jq -r '.base_url // empty')"
+          fi
+
+          if [ -z "${NEON_AUTH_BASE_URL}" ]; then
+            echo "::error::Failed to determine NEON_AUTH_BASE_URL for Neon branch ${NEON_BRANCH_ID}"
+            exit 1
+          fi
+
+          # Get DATABASE_URL for the branch.
+          CONNECTION_URI_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/connection_uri?branch_id=${NEON_BRANCH_ID}&database_name=${DB_NAME}&role_name=${ROLE_NAME}")"
+          DATABASE_URL="$(printf '%s' "$CONNECTION_URI_JSON" | jq -r '.uri')"
+
+          if [ -z "${DATABASE_URL}" ] || [ "${DATABASE_URL}" = "null" ]; then
+            echo "::error::Failed to determine DATABASE_URL for Neon branch ${NEON_BRANCH_ID}"
+            exit 1
+          fi
+
+          # Upsert branch-scoped Vercel preview env vars.
+          set_vercel_env() {
+            local key="$1"
+            local value="$2"
+            local type="$3"
+            local comment="$4"
+
+            local payload
+            payload="$(jq -cn \
+              --arg key "$key" \
+              --arg value "$value" \
+              --arg type "$type" \
+              --arg branch "$GIT_BRANCH" \
+              --arg comment "$comment" \
+              '{key: $key, value: $value, type: $type, target: ["preview"], gitBranch: $branch, comment: $comment}')"
+
+            local response_path
+            response_path="$(mktemp)"
+
+            local http_code
+            http_code="$(curl -sS -o "$response_path" -w "%{http_code}" \
+              -X POST "${VERCEL_API_BASE}/v10/projects/${VERCEL_PROJECT_ID}/env?upsert=true${VERCEL_TEAM_QUERY}" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$payload")"
+
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              local err
+              err="$(jq -r '.error.message // .error // .message // empty' "$response_path" 2>/dev/null || true)"
+              rm -f "$response_path"
+              echo "::error::Vercel env upsert failed for '${key}' (HTTP ${http_code})${err:+: ${err}}"
+              exit 1
+            fi
+
+            rm -f "$response_path"
+          }
+
+          set_vercel_env "NEON_AUTH_BASE_URL" "$NEON_AUTH_BASE_URL" "plain" "Neon Auth base URL for preview branch (auto-managed)"
+          set_vercel_env "DATABASE_URL" "$DATABASE_URL" "encrypted" "Neon DB connection string for preview branch (auto-managed)"
+          set_vercel_env "NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS" "vercel" "plain" "Preview default: only Vercel OAuth (avoid GitHub callback limitations)"
+
+          # Best-effort: add the preview deployment domain to Neon Auth trusted domains for this branch.
+          ENCODED_BRANCH="$(jq -nr --arg v "$GIT_BRANCH" '$v|@uri')"
+          DEPLOYMENTS_JSON="$(vercel GET "/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=preview&branch=${ENCODED_BRANCH}&limit=5${VERCEL_TEAM_QUERY}")"
+          PREVIEW_URL="$(printf '%s' "$DEPLOYMENTS_JSON" | jq -r '.deployments[] | select(.url != null) | .url' | head -n 1)"
+
+          if [ -n "${PREVIEW_URL}" ] && [ "${PREVIEW_URL}" != "null" ]; then
+            PREVIEW_DOMAIN="https://${PREVIEW_URL}"
+            echo "Adding trusted domain to Neon Auth allowlist: ${PREVIEW_DOMAIN}"
+
+            TRUSTED_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth/domains")"
+            HAS_DOMAIN="$(printf '%s' "$TRUSTED_JSON" | jq -r --arg domain "$PREVIEW_DOMAIN" '.domains[] | select(.domain == $domain and .auth_provider == "better_auth") | .domain' | head -n 1)"
+
+            if [ -z "${HAS_DOMAIN}" ]; then
+              ADD_DOMAIN_BODY="$(jq -cn --arg domain "$PREVIEW_DOMAIN" '{domain: $domain, auth_provider: "better_auth"}')"
+              neon POST "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth/domains" "$ADD_DOMAIN_BODY" >/dev/null
+            else
+              echo "Trusted domain already present."
+            fi
+          else
+            echo "::warning::No Vercel preview deployment URL found yet for branch '${GIT_BRANCH}'. Trusted-domain allowlisting will be applied on the next workflow run once the deployment URL exists."
+          fi

@@ -6,14 +6,13 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { authClient } from "@/lib/auth/neon-auth.client";
-
-type AuthSocialProvider = "github" | "vercel";
+import { parseAuthSocialProviders } from "@/lib/auth/social-providers";
 
 /**
  * Client-side providers wrapper (keeps `app/layout.tsx` as a Server Component).
  *
  * Neon Auth UI is configured to:
- * - Allow sign-in via GitHub + Vercel OAuth
+ * - Allow sign-in via GitHub + Vercel OAuth (configurable)
  * - Allow password sign-in for existing users (sign-up UI is disabled)
  * - Support "forgot password" for admin-provisioned email accounts
  *
@@ -23,13 +22,14 @@ type AuthSocialProvider = "github" | "vercel";
 export function Providers(
   props: Readonly<{
     children: ReactNode;
-    authSocialProviders: ReadonlyArray<AuthSocialProvider>;
   }>,
 ) {
-  const { children, authSocialProviders } = props;
+  const { children } = props;
   const router = useRouter();
 
-  const socialProviders = Array.from(authSocialProviders);
+  const socialProviders = Array.from(
+    parseAuthSocialProviders(process.env.NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS),
+  );
   const socialProps =
     socialProviders.length > 0
       ? { social: { providers: socialProviders } }

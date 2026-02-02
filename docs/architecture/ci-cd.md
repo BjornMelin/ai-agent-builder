@@ -20,15 +20,19 @@ The repo includes a Preview automation workflow to keep Vercel Preview branches
 isolated and correctly configured:
 
 - Workflow: `.github/workflows/preview-neon-auth.yml`
-- What it does (best-effort):
-  - Creates/reuses a Neon branch per PR/branch
+- What it does:
+  - Uses a branch-keyed concurrency group so push + PR events don’t race each
+    other for the same branch.
+  - Creates/reuses a Neon branch per git branch (deterministic name derived from
+    branch name; avoids collisions).
   - Ensures Neon Auth is enabled for that branch and captures `NEON_AUTH_BASE_URL`
-  - Sets branch-scoped Vercel Preview env vars:
+  - Upserts branch-scoped Vercel Preview env vars (fails the workflow if Vercel
+    API calls return non-2xx):
     - `NEON_AUTH_BASE_URL`
     - `DATABASE_URL`
     - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS=vercel`
-  - Adds the Preview deployment domain to Neon Auth trusted domains for that
-    branch (once the Preview URL exists)
+  - Best-effort: adds the Preview deployment domain to Neon Auth trusted domains
+    for that branch (once the Preview URL exists)
 
 Required repo configuration:
 
