@@ -32,3 +32,39 @@ export async function POST(
 ) {
   return handlers().POST(...args);
 }
+
+/**
+ * Neon Auth API proxy (PUT).
+ *
+ * @param args - Route handler args.
+ * @returns Next.js response.
+ */
+export async function PUT(
+  ...args: Parameters<ReturnType<typeof handlers>["PUT"]>
+) {
+  return handlers().PUT(...args);
+}
+
+/**
+ * Neon Auth API proxy (PATCH).
+ *
+ * @param args - Route handler args.
+ * @returns Next.js response.
+ */
+export async function PATCH(
+  ...args: Parameters<ReturnType<typeof handlers>["PATCH"]>
+) {
+  return handlers().PATCH(...args);
+}
+
+/**
+ * Neon Auth API proxy (DELETE).
+ *
+ * @param args - Route handler args.
+ * @returns Next.js response.
+ */
+export async function DELETE(
+  ...args: Parameters<ReturnType<typeof handlers>["DELETE"]>
+) {
+  return handlers().DELETE(...args);
+}

@@ -27,7 +27,8 @@ export async function requireAppUser() {
 
   const email = session.user.email ? normalizeEmail(session.user.email) : "";
   if (email.length === 0 || !env.auth.allowedEmails.includes(email)) {
-    redirect("/auth/denied");
+    const redirectTo = encodeURIComponent("/auth/denied");
+    redirect(`/auth/sign-out?redirectTo=${redirectTo}`);
   }
 
   return session.user;

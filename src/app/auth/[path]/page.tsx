@@ -32,12 +32,12 @@ export function generateStaticParams() {
  * @param props - Next.js page props.
  * @returns The auth page UI.
  */
-export default function AuthPage(
+export default async function AuthPage(
   props: Readonly<{
-    params: { path: string };
+    params: Promise<{ path: string }>;
   }>,
 ) {
-  const { path } = props.params;
+  const { path } = await props.params;
 
   return (
     <main className="container mx-auto flex grow flex-col items-center justify-center p-4 md:p-6">

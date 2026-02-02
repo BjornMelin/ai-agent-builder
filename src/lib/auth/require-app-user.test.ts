@@ -90,7 +90,7 @@ describe("requireAppUser", () => {
 
     const { requireAppUser } = await loadRequireAppUser();
     await expect(requireAppUser()).rejects.toMatchObject({
-      path: "/auth/denied",
+      path: "/auth/sign-out?redirectTo=%2Fauth%2Fdenied",
     });
   });
 
@@ -106,7 +106,7 @@ describe("requireAppUser", () => {
       });
 
       await expect(requireAppUser()).rejects.toMatchObject({
-        path: "/auth/denied",
+        path: "/auth/sign-out?redirectTo=%2Fauth%2Fdenied",
       });
     }
   });

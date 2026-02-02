@@ -48,6 +48,34 @@ function parseCommaSeparatedList(value: string): string[] {
     .filter((v) => v.length > 0);
 }
 
+const supportedAuthSocialProviders = ["github", "vercel"] as const;
+type AuthSocialProvider = (typeof supportedAuthSocialProviders)[number];
+
+function parseAuthSocialProviders(
+  raw: string | undefined,
+): ReadonlyArray<AuthSocialProvider> {
+  if (raw === undefined) {
+    return supportedAuthSocialProviders;
+  }
+
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) {
+    return [];
+  }
+
+  const providers = new Set<AuthSocialProvider>();
+  for (const token of parseCommaSeparatedList(trimmed)) {
+    const normalized = token.toLowerCase();
+    if (
+      (supportedAuthSocialProviders as readonly string[]).includes(normalized)
+    ) {
+      providers.add(normalized as AuthSocialProvider);
+    }
+  }
+
+  return Array.from(providers);
+}
+
 /**
  * Normalize an email address for consistent allowlist matching.
  *
@@ -118,6 +146,17 @@ const authSchema = z
       cookieSecret: v.NEON_AUTH_COOKIE_SECRET,
     };
   });
+
+const authUiSchema = z
+  .looseObject({
+    // Auth UI / social providers (app-level UX control)
+    // - unset: defaults to "github,vercel"
+    // - empty string: disables social providers
+    AUTH_SOCIAL_PROVIDERS: z.string().optional(),
+  })
+  .transform((v) => ({
+    socialProviders: parseAuthSocialProviders(v.AUTH_SOCIAL_PROVIDERS),
+  }));
 
 const upstashSchema = z
   .looseObject({
@@ -279,6 +318,7 @@ const upstashDeveloperSchema = z
 let cachedRuntimeEnv: Readonly<z.output<typeof runtimeSchema>> | undefined;
 let cachedDbEnv: Readonly<z.output<typeof dbSchema>> | undefined;
 let cachedAuthEnv: Readonly<z.output<typeof authSchema>> | undefined;
+let cachedAuthUiEnv: Readonly<z.output<typeof authUiSchema>> | undefined;
 let cachedUpstashEnv: Readonly<z.output<typeof upstashSchema>> | undefined;
 let cachedQstashPublishEnv:
   | Readonly<z.output<typeof qstashPublishSchema>>
@@ -325,6 +365,16 @@ export const env = {
   get auth(): Readonly<z.output<typeof authSchema>> {
     cachedAuthEnv ??= parseFeatureEnv("auth", authSchema);
     return cachedAuthEnv;
+  },
+
+  /**
+   * Auth UI configuration (public behavior only; no secrets).
+   *
+   * @returns Auth UI env.
+   */
+  get authUi(): Readonly<z.output<typeof authUiSchema>> {
+    cachedAuthUiEnv ??= parseFeatureEnv("authUi", authUiSchema);
+    return cachedAuthUiEnv;
   },
 
   /**

@@ -13,10 +13,10 @@ This project centralizes environment access in `src/lib/env.ts`.
 ## Files
 
 - `src/lib/env.ts`: typed env + feature gates (Zod v4).
-- `src/lib/errors.ts`: `AppError` + JSON response helpers used by Route
+- `src/lib/core/errors.ts`: `AppError` + JSON response helpers used by Route
   Handlers and Server Actions.
-- `src/lib/upstash/redis.ts`: Upstash Redis client (no `process.env` access).
-- `src/lib/upstash/qstash.ts`: QStash client + Route Handler verification
+- `src/lib/upstash/redis.server.ts`: Upstash Redis client (no `process.env` access).
+- `src/lib/upstash/qstash.server.ts`: QStash client + Route Handler verification
   wrapper.
 - `.env.example`: canonical list of variables and placeholders.
 
@@ -26,7 +26,7 @@ This project centralizes environment access in `src/lib/env.ts`.
 
 - `NEON_AUTH_BASE_URL` (required for `env.auth`)
   - Neon Auth base URL from the Neon Console.
-  - Used by: `src/lib/auth/server.ts` and Neon Auth API proxy route.
+  - Used by: `src/lib/auth/neon-auth.server.ts` and `src/app/api/auth/[...path]/route.ts`.
 - `NEON_AUTH_COOKIE_SECRET` (required for `env.auth`)
   - App-side HMAC secret used to sign cached session data cookies (minimum 32
     characters).
@@ -34,6 +34,17 @@ This project centralizes environment access in `src/lib/env.ts`.
 - `NEON_AUTH_COOKIE_DOMAIN` (optional)
   - Cookie domain for sharing session cookies across subdomains (e.g.
     `.example.com`).
+
+Auth UI / OAuth providers:
+
+- `AUTH_SOCIAL_PROVIDERS` (optional)
+  - Comma-separated list of social providers to show in the auth UI.
+  - Supported values (currently): `github`, `vercel`.
+  - If unset: defaults to `github,vercel`.
+  - If set to an empty string: disables social providers (no OAuth buttons).
+  - Recommended:
+    - Production/local: `github,vercel`
+    - Vercel Preview branches: `vercel` (avoids GitHub OAuth callback limitations)
 
 App-level access control (cost control):
 
@@ -62,10 +73,10 @@ App-level access control (cost control):
 
 #### Redis client usage
 
-Prefer `src/lib/upstash/redis.ts`:
+Prefer `src/lib/upstash/redis.server.ts`:
 
 ```ts
-import { getRedis } from "@/lib/upstash/redis";
+import { getRedis } from "@/lib/upstash/redis.server";
 
 const redis = getRedis();
 ```
@@ -80,11 +91,11 @@ const redis = getRedis();
 
 #### QStash usage
 
-Prefer `src/lib/upstash/qstash.ts`:
+Prefer `src/lib/upstash/qstash.server.ts`:
 
 ```ts
-import { getQstashClient } from "@/lib/upstash/qstash";
-import { verifyQstashSignatureAppRouter } from "@/lib/upstash/qstash";
+import { getQstashClient } from "@/lib/upstash/qstash.server";
+import { verifyQstashSignatureAppRouter } from "@/lib/upstash/qstash.server";
 
 const qstash = getQstashClient();
 

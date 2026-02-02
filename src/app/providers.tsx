@@ -7,6 +7,8 @@ import type { ReactNode } from "react";
 
 import { authClient } from "@/lib/auth/neon-auth.client";
 
+type AuthSocialProvider = "github" | "vercel";
+
 /**
  * Client-side providers wrapper (keeps `app/layout.tsx` as a Server Component).
  *
@@ -18,9 +20,20 @@ import { authClient } from "@/lib/auth/neon-auth.client";
  * @param props - Provider props.
  * @returns Provider-wrapped children.
  */
-export function Providers(props: Readonly<{ children: ReactNode }>) {
-  const { children } = props;
+export function Providers(
+  props: Readonly<{
+    children: ReactNode;
+    authSocialProviders: ReadonlyArray<AuthSocialProvider>;
+  }>,
+) {
+  const { children, authSocialProviders } = props;
   const router = useRouter();
+
+  const socialProviders = Array.from(authSocialProviders);
+  const socialProps =
+    socialProviders.length > 0
+      ? { social: { providers: socialProviders } }
+      : {};
 
   return (
     <NeonAuthUIProvider
@@ -29,7 +42,8 @@ export function Providers(props: Readonly<{ children: ReactNode }>) {
       replace={router.replace}
       onSessionChange={() => router.refresh()}
       redirectTo="/account/settings"
-      social={{ providers: ["github", "vercel"] }}
+      signUp={false}
+      {...socialProps}
       credentials={{ forgotPassword: true }}
       Link={Link}
     >
