@@ -110,8 +110,10 @@ Sandbox jobs provide a single interface for:
 ### Configuration
 
 - Sandbox auth modes (see `docs/ops/env.md`):
-  - OIDC token (preferred): `VERCEL_OIDC_TOKEN`
-  - Access token fallback: `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (optional `VERCEL_TEAM_ID`)
+  - OIDC token (preferred): `VERCEL_OIDC_TOKEN` (see
+    [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication))
+  - Access token fallback: `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (optional `VERCEL_TEAM_ID`) (see
+    [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication))
 
 ## Principles
 
@@ -126,11 +128,13 @@ Sandbox execution requires Vercel Sandbox credentials.
 
 Preferred:
 
-- `VERCEL_OIDC_TOKEN` (OIDC-based sandbox auth, typically on Vercel)
+- `VERCEL_OIDC_TOKEN` (OIDC-based sandbox auth, typically on Vercel; see
+  [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication))
 
 Fallback (local dev / external CI):
 
-- `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (+ optional `VERCEL_TEAM_ID`)
+- `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (+ optional `VERCEL_TEAM_ID`; see
+  [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication))
 
 ## Job types
 
@@ -254,7 +258,7 @@ Persist:
 ## References
 
 - [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)
-- [Vercel Sandbox system specs](https://vercel.com/docs/vercel-sandbox/sandbox-system-specs)
+- [Vercel Sandbox system specs](https://vercel.com/docs/vercel-sandbox/system-specifications)
 - [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication)
 
 ## Changelog

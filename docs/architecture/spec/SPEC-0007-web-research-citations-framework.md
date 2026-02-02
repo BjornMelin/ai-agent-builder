@@ -75,10 +75,10 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Architecture overview
 
-- Exa search provides candidate URLs.
-- Firecrawl extracts clean content.
-- Redis caches extraction results.
-- Citations persisted in Neon and referenced by artifacts.
+- Exa search provides candidate URLs [Exa](https://ai-sdk.dev/tools-registry/exa).
+- Firecrawl extracts clean content [Firecrawl](https://ai-sdk.dev/tools-registry/firecrawl).
+- Redis caches extraction results [Redis](https://redis.io/docs/latest/).
+- Citations persisted in Neon and referenced by artifacts [Neon](https://neon.tech/docs/introduction/about).
 
 ### Data contracts
 

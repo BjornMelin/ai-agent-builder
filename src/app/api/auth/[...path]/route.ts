@@ -4,6 +4,11 @@ let cachedHandlers:
   | ReturnType<ReturnType<typeof getAuth>["handler"]>
   | undefined;
 
+/**
+ * `cachedHandlers` + `handlers()` lazily initialize and cache the
+ * `getAuth().handler()` result so the auth handler is created once and reused
+ * across requests for performance and to avoid repeated initialization.
+ */
 function handlers() {
   cachedHandlers ??= getAuth().handler();
   return cachedHandlers;

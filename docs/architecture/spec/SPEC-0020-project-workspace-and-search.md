@@ -45,7 +45,7 @@ To stay usable at scale, the UI needs:
 
 - A “universal” full-text search engine for arbitrary third-party systems.
 - Multi-user collaboration and shared workspaces (out of scope for the private,
-  single-user product).
+  allowlist-only, single-tenant product).
 
 ## Requirements
 
@@ -136,14 +136,14 @@ Query strategy:
 Use a hybrid strategy:
 
 1. **Metadata / titles**
-   - Neon Postgres queries (ILIKE and/or full-text for titles and names; see
+   - Neon Postgres queries (ILIKE or full-text for titles and names; see
      [PostgreSQL ILIKE](https://www.postgresql.org/docs/current/functions-matching.html)
      and [PostgreSQL full-text search](https://www.postgresql.org/docs/current/textsearch.html))
 2. **Content**
    - Upstash Vector retrieval over indexed chunks (uploads, artifacts, code; see
      [Upstash Vector](https://upstash.com/docs/vector))
    - prefer HYBRID indexes when available (see
-     [Upstash Vector Hybrid Indexes](https://upstash.com/docs/vector/features/hybridsearch))
+     [Upstash Vector Hybrid Indexes](https://upstash.com/docs/vector/features/hybridindexes))
 
 Merge results into a single ranked list with type-aware scoring.
 
