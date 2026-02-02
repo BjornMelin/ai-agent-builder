@@ -83,6 +83,12 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
   - `src/lib/auth/neon-auth.server.ts` provides a lazy `getAuth()` singleton.
   - Laziness avoids requiring auth env vars at build time (Next.js evaluates
     some modules during `next build`).
+  - Server components that call Neon Auth methods (for example,
+    `getAuth().getSession()` or other `auth.getSession()`/`auth.getUser()` calls
+    originating from `src/lib/auth/neon-auth.server.ts`) must export
+    `export const dynamic = "force-dynamic"` to force dynamic rendering; see the
+    Neon Auth Next.js server SDK docs and Next.js route segment config docs for
+    details.
 - Auth API proxy:
   - `src/app/api/auth/[...path]/route.ts` proxies all Neon Auth endpoints and
     exports `GET`, `POST`, `PUT`, `PATCH`, `DELETE` handlers from
@@ -177,7 +183,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ## Changelog
 
-- **0.1 (2026-01-29)**: Initial draft.
-- **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **1.1.0 (2026-02-02)**: Clarified allowlist enforcement details and test/env validation coverage.
 - **1.0 (2026-01-31)**: Migrated to Neon Auth + allowlist access control.
+- **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.1 (2026-01-29)**: Initial draft.

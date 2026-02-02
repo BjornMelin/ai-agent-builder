@@ -27,7 +27,7 @@ function scheduleHydration() {
   if (typeof queueMicrotask === "function") {
     queueMicrotask(run);
   } else {
-    Promise.resolve().then(run);
+    setTimeout(run, 0);
   }
 }
 

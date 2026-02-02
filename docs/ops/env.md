@@ -30,6 +30,9 @@ This project centralizes environment access in `src/lib/env.ts`.
   - Used by: `src/lib/auth/neon-auth.server.ts` and `src/app/api/auth/[...path]/route.ts`.
   - This app proxies Neon Auth behind `/api/auth/*`, so the browser does **not**
     need to talk to Neon Auth directly (no client-side Neon Auth URL env var is required).
+  - Vercel OAuth callback URL **must** exactly match:
+    - `<NEON_AUTH_BASE_URL>/callback/vercel`
+    - Example: `https://<neon-auth-host>/neondb/auth/callback/vercel`
   - Vercel Preview note: when using the Neon ↔ Vercel integration with Preview
     Branching and Neon Auth enabled, this value is injected automatically per
     Preview branch.
@@ -51,6 +54,8 @@ Auth UI / OAuth providers:
   - Recommended:
     - Production/local: `github,vercel`
     - Vercel Preview branches: `vercel` (avoids GitHub OAuth callback limitations)
+  - Ensure each provider is configured in Neon Auth and that the provider's
+    callback URL (e.g. Vercel) matches the Neon Auth callback derived above.
 
 App-level access control (cost control):
 

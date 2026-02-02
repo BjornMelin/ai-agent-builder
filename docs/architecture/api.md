@@ -71,6 +71,11 @@ Runs are durable state machines driven by QStash.
 
 - `POST /api/jobs/run-step`
   - executes a single run step (research or implementation)
+  - production security: always verify incoming QStash requests before processing
+    jobs; validate the signature header (for example, `QSTASH-SIGNATURE`) and
+    timestamp with Upstash/QStash verification utilities or middleware using the
+    project secret, and enforce replay-timestamp checks (see QStash Quickstart
+    for implementation details).
 
 Reference:
 
