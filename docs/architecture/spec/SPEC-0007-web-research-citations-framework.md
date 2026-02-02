@@ -16,7 +16,9 @@ Defines how web research is performed and how citations are recorded and rendere
 
 ## Context
 
-Market research must be current and auditable. Exa search results and Firecrawl extractions must be cached and converted into a minimal citation schema.
+Market research must be current and auditable. [Exa](https://ai-sdk.dev/tools-registry/exa)
+search results and [Firecrawl](https://ai-sdk.dev/tools-registry/firecrawl)
+extractions must be cached and converted into a minimal citation schema.
 
 ## Goals / Non-goals
 

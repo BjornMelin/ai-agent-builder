@@ -221,8 +221,8 @@ Persist:
 - Long jobs should be split:
   - clone → apply → verify → deploy
 - Concurrency limits:
-  - global limit
-  - per-project limit
+  - global limit.
+  - per-project limit.
 
 ## Acceptance criteria
 

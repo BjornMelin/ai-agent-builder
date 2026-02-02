@@ -75,8 +75,9 @@ Recommended credential types:
 - GitHub: fine-grained PAT or GitHub App credentials
 - Vercel: access token with minimal project scopes
 - Neon: API key with least privilege
-- Upstash: Developer API key (only if using a native account) + per-resource REST
-  tokens for runtime
+- Upstash: Developer API key (only if using a native account; see
+  [Upstash Developer API](https://upstash.com/docs/common/account/developerapi))
+  + per-resource REST tokens for runtime
 
 ## Sandbox safety
 

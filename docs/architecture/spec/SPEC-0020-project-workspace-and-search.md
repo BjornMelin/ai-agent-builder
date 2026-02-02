@@ -5,7 +5,7 @@ version: 0.1.0
 date: 2026-02-01
 owners: ["you"]
 status: Proposed
-related_requirements: ["FR-002", "FR-019", "FR-020", "NFR-008"]
+related_requirements: ["FR-002", "FR-019", "FR-020", "NFR-008", "IR-002", "IR-005"]
 related_adrs: ["ADR-0011", "ADR-0004"]
 notes:
   "Defines the user-facing workspace information architecture and search behavior."
@@ -136,10 +136,14 @@ Query strategy:
 Use a hybrid strategy:
 
 1. **Metadata / titles**
-   - Neon Postgres queries (ILIKE and/or full-text for titles and names)
+   - Neon Postgres queries (ILIKE and/or full-text for titles and names; see
+     [PostgreSQL ILIKE](https://www.postgresql.org/docs/current/functions-matching.html)
+     and [PostgreSQL full-text search](https://www.postgresql.org/docs/current/textsearch.html))
 2. **Content**
-   - Upstash Vector retrieval over indexed chunks (uploads, artifacts, code)
-   - prefer HYBRID indexes when available (see Upstash Vector Hybrid Indexes)
+   - Upstash Vector retrieval over indexed chunks (uploads, artifacts, code; see
+     [Upstash Vector](https://upstash.com/docs/vector))
+   - prefer HYBRID indexes when available (see
+     [Upstash Vector Hybrid Indexes](https://upstash.com/docs/vector/features/hybridsearch))
 
 Merge results into a single ranked list with type-aware scoring.
 

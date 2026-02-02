@@ -16,7 +16,7 @@ related_requirements: [
   "IR-001",
   "IR-014"
 ]
-related_adrs: ["ADR-0001", "ADR-0024", "ADR-0025"]
+related_adrs: ["ADR-0001"]
 notes: "Defines system scope, glossary, and how requirements map to specs."
 ---
 
