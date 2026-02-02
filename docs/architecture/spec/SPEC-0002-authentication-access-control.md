@@ -145,7 +145,10 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - See [docs/ops/env.md](../../ops/env.md) for environment variables.
 - Neon Console configuration:
   - Enable Neon Auth and configure OAuth providers (GitHub, Vercel).
-  - Copy the Auth Base URL into `NEON_AUTH_BASE_URL`.
+  - For local development, copy the Auth Base URL into `NEON_AUTH_BASE_URL`.
+  - For Vercel Preview deployments, prefer the Neon ↔ Vercel integration with
+    Preview Branching enabled; it injects `NEON_AUTH_BASE_URL` per Preview
+    branch automatically.
 
 ## Failure modes and mitigation
 

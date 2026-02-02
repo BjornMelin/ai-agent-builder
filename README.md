@@ -103,10 +103,18 @@ are documented in [`docs/ops/env.md`](./docs/ops/env.md).
 
 ## Vercel Preview automation (optional)
 
-The repo includes `.github/workflows/preview-neon-auth.yml` to provision a Neon
-branch per PR/branch and set branch-scoped Vercel Preview env vars (push + PR
-runs are concurrency-safe, and required Vercel env upserts fail the workflow on
-API errors).
+This repo is designed to use the **Neon ↔ Vercel integration** for Preview
+Branching (recommended). When enabled, Neon automatically provisions a database
+branch per Vercel Preview branch and injects the branch-scoped Preview env vars
+(`DATABASE_URL`, and (if Neon Auth is enabled) `NEON_AUTH_BASE_URL`).
+
+To avoid GitHub OAuth’s “single callback URL per app” limitation on Preview
+deployments, set `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS=vercel` for the Vercel
+Preview environment (global Preview default).
+
+Optional: `.github/workflows/neon-auth-trusted-domains.yml` can automatically
+add the Preview deployment domain to Neon Auth trusted domains for the matching
+Neon preview branch (`preview/<git-branch>`).
 
 Required GitHub Actions configuration:
 

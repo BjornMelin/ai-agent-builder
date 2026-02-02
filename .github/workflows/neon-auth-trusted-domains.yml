@@ -1,0 +1,166 @@
+name: Preview (Neon Auth trusted domains)
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      gitBranch:
+        description: "Git branch name (for manual runs)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # Ensure push/PR re-runs for the same git branch don't race.
+  group: neon-auth-trusted-domains-${{ github.workflow }}-${{ github.event.pull_request.head.ref || inputs.gitBranch || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  allowlist:
+    name: Ensure Neon Auth trusted domains
+    runs-on: ubuntu-latest
+    # Secrets are not available on forked PRs.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Allowlist Vercel Preview domain
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          GIT_BRANCH_INPUT: ${{ inputs.gitBranch }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${NEON_API_KEY:-}" ] || [ -z "${NEON_PROJECT_ID:-}" ] || [ -z "${VERCEL_PROJECT_ID:-}" ] || [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "::warning::Missing required secrets/vars (NEON_API_KEY, NEON_PROJECT_ID, VERCEL_PROJECT_ID, VERCEL_TOKEN). Skipping trusted-domain allowlisting."
+            exit 0
+          fi
+
+          NEON_API_BASE="https://console.neon.tech/api/v2"
+          VERCEL_API_BASE="https://api.vercel.com"
+
+          GIT_BRANCH="${GITHUB_HEAD_REF:-}"
+          if [ -z "${GIT_BRANCH}" ]; then
+            GIT_BRANCH="${GIT_BRANCH_INPUT:-}"
+          fi
+          if [ -z "${GIT_BRANCH}" ]; then
+            GIT_BRANCH="${GITHUB_REF_NAME}"
+          fi
+
+          # When using the Neon <-> Vercel integration with Preview Branching,
+          # Neon creates branches named "preview/<git-branch>".
+          NEON_BRANCH_NAME="preview/${GIT_BRANCH}"
+
+          echo "Using git branch: ${GIT_BRANCH}"
+          echo "Expecting Neon branch: ${NEON_BRANCH_NAME}"
+
+          neon() {
+            local method="$1"
+            local path="$2"
+            local data="${3:-}"
+            if [ -n "$data" ]; then
+              curl -fsS -X "$method" "${NEON_API_BASE}${path}" \
+                -H "Authorization: Bearer ${NEON_API_KEY}" \
+                -H "Accept: application/json" \
+                -H "Content-Type: application/json" \
+                -d "$data"
+            else
+              curl -fsS -X "$method" "${NEON_API_BASE}${path}" \
+                -H "Authorization: Bearer ${NEON_API_KEY}" \
+                -H "Accept: application/json"
+            fi
+          }
+
+          vercel() {
+            local method="$1"
+            local path="$2"
+            curl -fsS -X "$method" "${VERCEL_API_BASE}${path}" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              -H "Accept: application/json"
+          }
+
+          VERCEL_TEAM_QUERY=""
+          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
+            VERCEL_TEAM_QUERY="&teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          # Wait for Neon preview branch to exist (it may be created asynchronously by the integration).
+          NEON_BRANCH_ID=""
+          for _ in $(seq 1 60); do
+            BRANCHES_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches")"
+            NEON_BRANCH_ID="$(printf '%s' "$BRANCHES_JSON" | jq -r --arg name "$NEON_BRANCH_NAME" '.branches[] | select(.name == $name) | .id' | head -n 1)"
+            if [ -n "${NEON_BRANCH_ID}" ] && [ "${NEON_BRANCH_ID}" != "null" ]; then
+              break
+            fi
+            sleep 5
+          done
+
+          if [ -z "${NEON_BRANCH_ID}" ] || [ "${NEON_BRANCH_ID}" = "null" ]; then
+            echo "::error::Neon preview branch '${NEON_BRANCH_NAME}' not found. Ensure the Neon <-> Vercel integration has Preview Branching enabled."
+            exit 1
+          fi
+
+          echo "Found Neon branch id: ${NEON_BRANCH_ID}"
+
+          # Ensure Neon Auth is enabled for the branch (should be handled by the integration).
+          neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth" >/dev/null
+
+          # Find a stable Vercel preview alias (prefer the branch alias ending in .vercel.app).
+          ENCODED_BRANCH="$(jq -nr --arg v "$GIT_BRANCH" '$v|@uri')"
+          PREVIEW_HOST=""
+          for _ in $(seq 1 60); do
+            DEPLOYMENTS_JSON="$(vercel GET "/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=preview&branch=${ENCODED_BRANCH}&state=READY&limit=10${VERCEL_TEAM_QUERY}")"
+
+            # Prefer the stable "git branch" alias, fall back to the deployment URL.
+            PREVIEW_HOST="$(printf '%s' "$DEPLOYMENTS_JSON" | jq -r '
+              .deployments
+              | map(select(.alias != null))
+              | map(.alias[])
+              | map(select(type == "string"))
+              | map(select(endswith(".vercel.app")))
+              | map(select(test("-git-"; "i")))
+              | .[0]
+              // empty
+            ')"
+
+            if [ -z "${PREVIEW_HOST}" ]; then
+              PREVIEW_HOST="$(printf '%s' "$DEPLOYMENTS_JSON" | jq -r '.deployments[] | select(.url != null) | .url' | head -n 1)"
+            fi
+
+            if [ -n "${PREVIEW_HOST}" ] && [ "${PREVIEW_HOST}" != "null" ]; then
+              break
+            fi
+
+            PREVIEW_HOST=""
+            sleep 5
+          done
+
+          if [ -z "${PREVIEW_HOST}" ] || [ "${PREVIEW_HOST}" = "null" ]; then
+            echo "::warning::No Vercel preview deployment URL found yet for branch '${GIT_BRANCH}'. Re-run once the Preview deployment is ready."
+            exit 0
+          fi
+
+          PREVIEW_DOMAIN="https://${PREVIEW_HOST}"
+          echo "Ensuring trusted domain exists: ${PREVIEW_DOMAIN}"
+
+          TRUSTED_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth/domains")"
+          HAS_DOMAIN="$(printf '%s' "$TRUSTED_JSON" | jq -r --arg domain "$PREVIEW_DOMAIN" '.domains[] | select(.domain == $domain and .auth_provider == "better_auth") | .domain' | head -n 1)"
+
+          if [ -n "${HAS_DOMAIN}" ] && [ "${HAS_DOMAIN}" != "null" ]; then
+            echo "Trusted domain already present."
+            exit 0
+          fi
+
+          ADD_DOMAIN_BODY="$(jq -cn --arg domain "$PREVIEW_DOMAIN" '{domain: $domain, auth_provider: "better_auth"}')"
+          neon POST "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth/domains" "$ADD_DOMAIN_BODY" >/dev/null
+
+          echo "Trusted domain added."

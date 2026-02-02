@@ -16,23 +16,28 @@ All steps run using Bun.
 
 ## Preview environment automation (optional)
 
-The repo includes a Preview automation workflow to keep Vercel Preview branches
-isolated and correctly configured:
+This repo is designed to work with the **Neon ↔ Vercel integration** for Preview
+Branching. When enabled, Neon will automatically provision:
 
-- Workflow: `.github/workflows/preview-neon-auth.yml`
+- A Neon database branch per Vercel Preview branch (typically named
+  `preview/<git-branch>`)
+- Branch-scoped Vercel env vars for the Preview deployment (e.g. `DATABASE_URL`,
+  and (if Neon Auth is enabled) `NEON_AUTH_BASE_URL`)
+
+This avoids duplicating branch/env provisioning logic in GitHub Actions and
+prevents races between push and pull_request workflows.
+
+### Neon Auth trusted domains (optional)
+
+Neon Auth requires explicit allowlisting of trusted domains. Preview URLs can be
+added manually in the Neon Console, or automated via a lightweight workflow.
+
+- Workflow: `.github/workflows/neon-auth-trusted-domains.yml`
 - What it does:
-  - Uses a branch-keyed concurrency group so push + PR events don’t race each
-    other for the same branch.
-  - Creates/reuses a Neon branch per git branch (deterministic name derived from
-    branch name; avoids collisions).
-  - Ensures Neon Auth is enabled for that branch and captures `NEON_AUTH_BASE_URL`
-  - Upserts branch-scoped Vercel Preview env vars (fails the workflow if Vercel
-    API calls return non-2xx):
-    - `NEON_AUTH_BASE_URL`
-    - `DATABASE_URL`
-    - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS=vercel`
-  - Best-effort: adds the Preview deployment domain to Neon Auth trusted domains
-    for that branch (once the Preview URL exists)
+  - Finds the Neon branch created by the integration (`preview/<git-branch>`).
+  - Finds the Vercel Preview deployment URL for the PR branch.
+  - Adds that Preview domain to Neon Auth trusted domains for that branch
+    (idempotent).
 
 Required repo configuration:
 

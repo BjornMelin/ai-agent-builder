@@ -30,6 +30,9 @@ This project centralizes environment access in `src/lib/env.ts`.
   - Used by: `src/lib/auth/neon-auth.server.ts` and `src/app/api/auth/[...path]/route.ts`.
   - This app proxies Neon Auth behind `/api/auth/*`, so the browser does **not**
     need to talk to Neon Auth directly (no client-side Neon Auth URL env var is required).
+  - Vercel Preview note: when using the Neon ↔ Vercel integration with Preview
+    Branching and Neon Auth enabled, this value is injected automatically per
+    Preview branch.
 - `NEON_AUTH_COOKIE_SECRET` (required for `env.auth`)
   - App-side HMAC secret used to sign cached session data cookies (minimum 32
     characters).
@@ -64,6 +67,8 @@ App-level access control (cost control):
 - `DATABASE_URL` (required for `env.db`)
   - Postgres connection string.
   - Used by: Drizzle DB client (planned).
+  - Vercel Preview note: when using the Neon ↔ Vercel integration with Preview
+    Branching, this value is injected automatically per Preview branch.
 
 ### Upstash (Redis + Vector)
 
