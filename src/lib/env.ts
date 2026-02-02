@@ -44,7 +44,7 @@ function parseCommaSeparatedList(value: string): string[] {
     .filter((v) => v.length > 0);
 }
 
-function normalizeEmail(value: string): string {
+export function normalizeEmail(value: string): string {
   // Lowercasing is sufficient for allowlist matching (domain-part is case-insensitive;
   // local-part case sensitivity is rarely enforced in practice and not worth the complexity here).
   return value.trim().toLowerCase();

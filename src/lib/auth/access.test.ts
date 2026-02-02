@@ -89,4 +89,21 @@ describe("requireAppUser", () => {
       path: "/auth/denied",
     });
   });
+
+  it("redirects restricted users with empty or missing emails", async () => {
+    envState.auth.accessMode = "restricted";
+    envState.auth.allowedEmails = ["allow@example.com"];
+    const { requireAppUser } = await loadRequireAppUser();
+
+    const emailCases: Array<SessionUser["email"]> = ["", null, undefined];
+    for (const email of emailCases) {
+      getSessionMock.mockResolvedValueOnce({
+        data: { user: { email } },
+      });
+
+      await expect(requireAppUser()).rejects.toMatchObject({
+        path: "/auth/denied",
+      });
+    }
+  });
 });

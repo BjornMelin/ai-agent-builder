@@ -3,11 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 
 import { getAuth } from "@/lib/auth/server";
-import { env } from "@/lib/env";
-
-function normalizeEmail(value: string): string {
-  return value.trim().toLowerCase();
-}
+import { env, normalizeEmail } from "@/lib/env";
 
 /**
  * Enforces that the current request has an authenticated and allowed user.
