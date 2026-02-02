@@ -8,6 +8,8 @@ let cachedHandlers:
  * `cachedHandlers` + `handlers()` lazily initialize and cache the
  * `getAuth().handler()` result so the auth handler is created once and reused
  * across requests for performance and to avoid repeated initialization.
+ *
+ * @returns Neon Auth route handlers.
  */
 function handlers() {
   cachedHandlers ??= getAuth().handler();

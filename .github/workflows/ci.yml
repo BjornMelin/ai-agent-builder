@@ -16,7 +16,7 @@ concurrency:
 jobs:
   lint:
     name: Lint (Biome + ESLint)
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -31,7 +31,7 @@ jobs:
 
   typecheck:
     name: Typecheck
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -46,7 +46,7 @@ jobs:
 
   test:
     name: Test (Vitest)
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -61,7 +61,7 @@ jobs:
 
   build:
     name: Build (Next.js)
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
     needs: ["lint", "typecheck", "test"]
     steps:
       - name: Checkout

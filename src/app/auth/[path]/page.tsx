@@ -1,5 +1,5 @@
-import { AuthView } from "@neondatabase/auth/react";
 import { authViewPaths } from "@neondatabase/auth/react/ui/server";
+import { AuthViewClient } from "./auth-view-client";
 
 /**
  * Disables dynamic route params for auth views.
@@ -41,7 +41,7 @@ export default async function AuthPage(
 
   return (
     <main className="container mx-auto flex grow flex-col items-center justify-center p-4 md:p-6">
-      <AuthView path={path} />
+      <AuthViewClient path={path} />
     </main>
   );
 }

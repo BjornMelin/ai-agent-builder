@@ -43,6 +43,11 @@ Required repo configuration:
 
 - GitHub Actions variables:
   - `NEON_PROJECT_ID`
+- Optional GitHub Actions variable:
+  - `ACTIONS_RUNNER_LABELS` (JSON array; defaults to `["ubuntu-latest"]`)
+    - Use this only as an operational escape hatch if GitHub-hosted runners are
+      unavailable (e.g. GitHub Actions outage) and you have a self-hosted runner.
+    - Example: `["self-hosted","linux","x64"]`
 - GitHub Actions secrets:
   - `NEON_API_KEY`
   - `VERCEL_TOKEN`

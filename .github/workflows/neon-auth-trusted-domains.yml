@@ -22,7 +22,7 @@ concurrency:
 jobs:
   allowlist:
     name: Ensure Neon Auth trusted domains
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
     # Secrets are not available on forked PRs.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
     steps:

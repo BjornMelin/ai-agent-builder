@@ -4,7 +4,7 @@ import { NeonAuthUIProvider, UserButton } from "@neondatabase/auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-
+import { ClientOnly } from "@/components/client-only";
 import { authClient } from "@/lib/auth/neon-auth.client";
 import { parseAuthSocialProviders } from "@/lib/auth/social-providers";
 
@@ -61,7 +61,9 @@ export function Providers(
           >
             AI Agent Builder
           </Link>
-          <UserButton size="icon" />
+          <ClientOnly fallback={<div aria-hidden="true" className="h-9 w-9" />}>
+            <UserButton size="icon" />
+          </ClientOnly>
         </header>
         <div id="main" tabIndex={-1} className="flex-1">
           {children}

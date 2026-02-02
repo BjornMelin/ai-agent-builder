@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   dependency-review:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
