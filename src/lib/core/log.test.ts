@@ -6,7 +6,7 @@ describe("log", () => {
     vi.useFakeTimers();
     vi.setSystemTime(fixed);
 
-    const { log } = await import("@/lib/log");
+    const { log } = await import("@/lib/core/log");
     const spy = vi.spyOn(console, "info").mockImplementation(() => {});
 
     log.info("hello", {
@@ -34,7 +34,7 @@ describe("log", () => {
     vi.useFakeTimers();
     vi.setSystemTime(fixed);
 
-    const { log } = await import("@/lib/log");
+    const { log } = await import("@/lib/core/log");
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     log.error("boom", { err: new Error("fail"), token: "x" });
@@ -53,7 +53,7 @@ describe("log", () => {
   });
 
   it("truncates very long strings", async () => {
-    const { log } = await import("@/lib/log");
+    const { log } = await import("@/lib/core/log");
     const spy = vi.spyOn(console, "info").mockImplementation(() => {});
 
     const long = "x".repeat(400);

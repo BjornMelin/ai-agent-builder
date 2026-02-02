@@ -1,4 +1,4 @@
-import { getAuth } from "@/lib/auth/server";
+import { getAuth } from "@/lib/auth/neon-auth.server";
 
 let cachedHandlers:
   | ReturnType<ReturnType<typeof getAuth>["handler"]>

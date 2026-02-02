@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { nowIso, unixMs, unixSeconds } from "@/lib/time";
+import { nowIso, unixMs, unixSeconds } from "@/lib/core/time";
 
 describe("time", () => {
   afterEach(() => {

@@ -1,7 +1,7 @@
 import { AccountView } from "@neondatabase/auth/react";
 import { accountViewPaths } from "@neondatabase/auth/react/ui/server";
 
-import { requireAppUser } from "@/lib/auth/access";
+import { requireAppUser } from "@/lib/auth/require-app-user";
 
 /**
  * Forces dynamic rendering for the account route.

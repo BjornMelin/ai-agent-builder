@@ -64,7 +64,7 @@ describe("qstash helpers", () => {
   it("fails when QStash publish env is missing", async () => {
     await withEnv({ QSTASH_TOKEN: undefined }, async () => {
       vi.resetModules();
-      const { getQstashClient } = await import("@/lib/upstash/qstash");
+      const { getQstashClient } = await import("@/lib/upstash/qstash.server");
       expect(() => getQstashClient()).toThrowError(/QSTASH_TOKEN/i);
     });
   });
@@ -80,7 +80,7 @@ describe("qstash helpers", () => {
         vi.resetModules();
         qstashClientInits.length = 0;
 
-        const { getQstashClient } = await import("@/lib/upstash/qstash");
+        const { getQstashClient } = await import("@/lib/upstash/qstash.server");
         const a = getQstashClient();
         const b = getQstashClient();
 
@@ -102,7 +102,7 @@ describe("qstash helpers", () => {
         verifyInits.length = 0;
 
         const { verifyQstashSignatureAppRouter } = await import(
-          "@/lib/upstash/qstash"
+          "@/lib/upstash/qstash.server"
         );
 
         const handler = async () => new Response("ok");

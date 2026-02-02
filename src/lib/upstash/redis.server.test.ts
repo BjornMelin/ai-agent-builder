@@ -55,7 +55,7 @@ describe("getRedis", () => {
       },
       async () => {
         vi.resetModules();
-        const { getRedis } = await import("@/lib/upstash/redis");
+        const { getRedis } = await import("@/lib/upstash/redis.server");
         expect(() => getRedis()).toThrowError(/UPSTASH_/i);
       },
     );
@@ -73,7 +73,7 @@ describe("getRedis", () => {
         vi.resetModules();
         redisInits.length = 0;
 
-        const { getRedis } = await import("@/lib/upstash/redis");
+        const { getRedis } = await import("@/lib/upstash/redis.server");
         const a = getRedis();
         const b = getRedis();
 

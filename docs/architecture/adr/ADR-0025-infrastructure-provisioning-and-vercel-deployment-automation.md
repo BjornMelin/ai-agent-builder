@@ -52,7 +52,7 @@ Provider constraints differ:
 - Neon provides an API for projects/branches/databases.
 - Upstash provides per-database REST tokens for runtime access, but the Upstash
   Developer API (provisioning) is only available to native Upstash accounts
-  (Upstash Developer API — native accounts only: https://upstash.com/docs/common/account/developerapi).
+  (Upstash Developer API — native accounts only: <https://upstash.com/docs/common/account/developerapi>).
 
 ## Decision Drivers
 

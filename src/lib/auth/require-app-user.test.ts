@@ -36,7 +36,7 @@ vi.mock("@/lib/env", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/auth/server", () => ({
+vi.mock("@/lib/auth/neon-auth.server", () => ({
   getAuth: () => ({
     getSession: getSessionMock,
   }),
@@ -50,7 +50,7 @@ vi.mock("next/navigation", () => ({
 
 async function loadRequireAppUser() {
   vi.resetModules();
-  return await import("@/lib/auth/access");
+  return await import("@/lib/auth/require-app-user");
 }
 
 describe("requireAppUser", () => {

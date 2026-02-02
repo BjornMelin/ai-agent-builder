@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { newId } from "@/lib/ids";
+import { newId } from "@/lib/core/ids";
 
 describe("ids", () => {
   it("returns a UUID", () => {

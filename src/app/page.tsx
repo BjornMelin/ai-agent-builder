@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { requireAppUser } from "@/lib/auth/access";
+import { requireAppUser } from "@/lib/auth/require-app-user";
 
 /**
  * Forces dynamic rendering for the home page.

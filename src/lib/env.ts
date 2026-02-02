@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import { AppError } from "@/lib/errors";
+import { AppError } from "@/lib/core/errors";
 
 function formatZodEnvIssues(error: z.ZodError): string {
   return error.issues

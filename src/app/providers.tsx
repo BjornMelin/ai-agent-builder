@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { authClient } from "@/lib/auth/client";
+import { authClient } from "@/lib/auth/neon-auth.client";
 
 /**
  * Client-side providers wrapper (keeps `app/layout.tsx` as a Server Component).

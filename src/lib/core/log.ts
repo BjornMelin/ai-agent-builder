@@ -1,6 +1,6 @@
 import "server-only";
 
-import { nowIso } from "@/lib/time";
+import { nowIso } from "@/lib/core/time";
 
 /**
  * Additional structured data attached to a log entry.

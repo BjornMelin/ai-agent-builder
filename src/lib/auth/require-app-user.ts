@@ -2,7 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 
-import { getAuth } from "@/lib/auth/server";
+import { getAuth } from "@/lib/auth/neon-auth.server";
 import { env, normalizeEmail } from "@/lib/env";
 
 /**
