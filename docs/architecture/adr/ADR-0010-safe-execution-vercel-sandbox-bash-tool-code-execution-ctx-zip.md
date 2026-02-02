@@ -157,7 +157,7 @@ flowchart LR
 - Prefer using Sandbox for CPU-bound transformations and parsing edge cases.
 - For implementation runs, treat verification as first-class sandbox jobs
   (see
-  [SPEC-0019](../spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)).
+  [SPEC-0009](../spec/SPEC-0009-sandbox-code-mode.md)).
 
 ## Consequences
 

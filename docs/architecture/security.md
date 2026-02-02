@@ -65,9 +65,9 @@ See:
 - All provider keys are configured via environment variables (Vercel env in prod).
 - No provider token or connection string is stored in Neon.
 - Logs and artifacts must redact:
-  - Authorization headers
-  - tokens embedded in URLs
-  - connection strings
+  - Authorization headers.
+  - tokens embedded in URLs.
+  - connection strings.
 
 Recommended credential types:
 

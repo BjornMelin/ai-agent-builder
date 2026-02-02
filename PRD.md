@@ -76,11 +76,11 @@ plan” without redoing analysis.
 ### Journey C: Implementation Run (plan → code → verify → deploy)
 
 1. User connects a target repository (create new or link existing).
-2. System generates an implementation plan traceable to PRD/SPECs/ADRs.
-3. System applies patchsets and opens a PR for review.
-4. System runs verification as sandbox jobs (lint/typecheck/test/build).
+2. Generate an implementation plan traceable to PRD/SPECs/ADRs.
+3. Apply patchsets and open a PR for review.
+4. Run verification as sandbox jobs (lint/typecheck/test/build).
 5. User explicitly approves side effects (push/merge/provision/deploy).
-6. System provisions/connects infra and deploys, recording provenance and logs.
+6. Provision/connect infra and deploy, recording provenance and logs.
 
 ## Scope and requirements
 
