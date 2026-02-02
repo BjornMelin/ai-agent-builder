@@ -36,20 +36,22 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
-- **FR-012**
+- **FR-012:** Web research with citations (search + extraction).
 
 ### Non-functional requirements
 
-- **NFR-004**
-- **NFR-006**
+- **NFR-004 (Observability):** Persist logs, latency, token usage, tool calls,
+  and errors.
+- **NFR-006 (Cost controls):** Caching and guardrails limit web calls and token
+  usage.
 
 ### Performance / Reliability requirements (if applicable)
 
-- **PR-001**
+- **PR-001:** Streaming begins within 1.5s (p95) for warm paths.
 
 ### Integration requirements (if applicable)
 
-- **IR-007**
+- **IR-007:** Web research via Exa + Firecrawl.
 
 ## Constraints
 
@@ -80,11 +82,17 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - `Citation`: `{url, title, publishedAt?, accessedAt, excerpt}`
 
-### Key files
+### File-level contracts
 
-- `src/lib/ai/tools/web-search.ts`
-- `src/lib/ai/tools/firecrawl.ts`
-- `src/lib/citations/normalize.ts`
+- `src/lib/ai/tools/web-search.ts`: search wrapper; enforces per-step query/result bounds.
+- `src/lib/ai/tools/firecrawl.ts`: extraction wrapper; normalizes response payloads.
+- `src/lib/citations/normalize.ts`: canonical citation schema normalization.
+
+### Configuration
+
+- See `docs/ops/env.md`:
+  - Web research: `EXA_API_KEY`, `FIRECRAWL_API_KEY`
+  - Optional caching: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 
 ## Acceptance criteria
 
@@ -103,6 +111,12 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ## Failure modes and mitigation
 
 - Extraction fails → retry and/or fall back to summarizing snippet
+
+## Key files
+
+- `src/lib/ai/tools/web-search.ts`
+- `src/lib/ai/tools/firecrawl.ts`
+- `src/lib/citations/normalize.ts`
 
 ## References
 

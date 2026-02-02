@@ -37,7 +37,7 @@ cleanly, without leaking secrets or breaking unrelated parts of the app.
 ai-agent-builder integrates several providers (DB, Upstash, QStash, AI Gateway,
 Blob, Exa, Firecrawl, Sandbox, MCP). These integrations require secrets and
 configuration, and incorrect configuration should fail clearly without breaking
-optional features or leaking secrets to client bundles.
+optional features or leaking secrets to client bundles (Next.js environment variables).
 
 Implementation Runs add new integrations:
 
@@ -48,8 +48,8 @@ Implementation Runs add new integrations:
 
 ## Decision Drivers
 
-- Avoid secret exposure to client bundles
-- Clear, typed configuration contracts (Zod v4)
+- Avoid secret exposure to client bundles (Next.js environment variables)
+- Clear, typed configuration contracts (Zod v4; Zod)
 - Feature-gated validation to keep optional features optional
 - Consistent error behavior for Route Handlers and Server Actions
 - Support optional automation integrations without forcing credentials

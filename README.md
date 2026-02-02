@@ -84,7 +84,7 @@ we monitor upstream releases before upgrading.
 - Neon Auth configured for this project:
   - Enable Neon Auth in the Neon Console and configure OAuth providers (GitHub, Vercel)
   - `NEON_AUTH_BASE_URL`
-  - `NEON_AUTH_COOKIE_SECRET` (32+ chars)
+  - `NEON_AUTH_COOKIE_SECRET` (32+ chars; generate with `openssl rand -base64 32`)
   - `AUTH_ALLOWED_EMAILS` (when `AUTH_ACCESS_MODE=restricted`)
 - Upstash credentials (Redis/Vector/QStash)
 - Vercel AI Gateway API key (`AI_GATEWAY_API_KEY`)

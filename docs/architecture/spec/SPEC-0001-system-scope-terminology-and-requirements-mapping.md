@@ -14,6 +14,15 @@ notes: "Defines system scope, glossary, and how requirements map to specs."
 
 Defines the overall system scope, vocabulary, and how requirements are organized.
 
+## Context
+
+This spec exists to keep the project “north star” stable while implementation
+iterates. The repo contains only a subset of the final system; specs and ADRs
+define the definitive target behavior and constraints.
+
+The requirements catalog in `docs/specs/requirements.md` is the canonical set
+of IDs that other specs/ADRs must reference.
+
 ## System scope
 
 ai-agent-builder is a single-user application with **two major capability
@@ -60,20 +69,28 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
-- **FR-001** … **FR-021**
-- **FR-022** … **FR-034**
+- **FR-001:** Managed authentication via Neon Auth and app-level access control.
+- **FR-020:** Search across projects/files/runs/artifacts.
+- **FR-023:** Start a durable Implementation Run (plan → code → verify → deploy).
+- **FR-034:** Generate a deterministic implementation audit bundle.
+
+Full catalog: see `docs/specs/requirements.md` (this spec maps scope and
+terminology; it does not restate every requirement verbatim).
 
 ### Non-functional requirements
 
-- **NFR-001** … **NFR-015**
+- **NFR-011 (Agent-first DX):** Repo conventions optimized for AI coding agents
+  (AGENTS.md, strict doc requirements, deterministic scripts).
 
 ### Performance / Reliability requirements (if applicable)
 
-- **PR-001** … **PR-008**
+- **PR-001:** Streaming begins within 1.5s (p95) for warm paths.
+- **PR-008:** Repo indexing supports 25k files / 250 MB repos with bounded memory.
 
 ### Integration requirements (if applicable)
 
-- **IR-001** … **IR-014**
+- **IR-001:** All model/embedding calls through Vercel AI Gateway.
+- **IR-014:** Optional: Provision Upstash resources via Upstash Developer API.
 
 ## Constraints
 
@@ -130,6 +147,56 @@ the expanded glossary.
 | Alignment with repo conventions | 0.20 | 9.1 | 1.82 |
 | Completeness for both phases | 0.20 | 9.2 | 1.84 |
 | **Total** | **1.00** | - | **9.13** |
+
+## Design
+
+### Architecture overview
+
+This spec is “meta”: it defines how the system is decomposed into specs/ADRs.
+The two capability domains map to two major pipelines:
+
+- **Research → Spec Generation**: uploads + web research + artifact generation.
+- **Implementation → Deployment**: repo ops + verification + provisioning + deploy.
+
+### Data contracts (if applicable)
+
+- Requirement IDs: `FR-*`, `NFR-*`, `PR-*`, `IR-*` in `docs/specs/requirements.md`.
+- Artifact IDs/versions: see [SPEC-0008](./SPEC-0008-artifact-generation-versioning-and-export-zip.md).
+
+### File-level contracts
+
+- `docs/specs/requirements.md`: canonical requirement IDs and descriptions.
+- `docs/architecture/spec/SPEC-*.md`: implementable designs (must reference requirement IDs).
+- `docs/architecture/adr/ADR-*.md`: durable decisions (must reference requirement IDs).
+
+### Configuration
+
+- Documentation alignment rules are enforced by `AGENTS.md` (including the env
+  var contract rule that keeps ADR/spec/docs aligned with `.env.example` and
+  `docs/ops/env.md`).
+
+## Acceptance criteria
+
+- Specs/ADRs consistently reference requirement IDs from `docs/specs/requirements.md`.
+- The system scope and vocabulary is stable enough to guide implementation work
+  without frequent renames/restructures.
+
+## Testing
+
+- Documentation checks are enforced via CI formatting/linting.
+
+## Operational notes
+
+- When adding a new feature, add/extend:
+  - `docs/specs/requirements.md` (new IDs if needed)
+  - a SPEC for implementable design
+  - an ADR for durable decisions
+
+## Failure modes and mitigation
+
+- Spec/ADR drift from the requirements catalog → enforce requirement ID usage
+  and keep the index files updated (`docs/architecture/spec/index.md`,
+  `docs/architecture/adr/index.md`).
 
 ## Key files
 

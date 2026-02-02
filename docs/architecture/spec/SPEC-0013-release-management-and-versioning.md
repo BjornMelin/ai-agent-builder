@@ -36,9 +36,12 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
+- None
+
 ### Non-functional requirements
 
-- **NFR-010**
+- **NFR-010 (Quality gates):** CI enforces format/lint/typecheck/test/build with
+  Bun-only commands.
 
 ### Performance / Reliability requirements (if applicable)
 
@@ -72,11 +75,21 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - It opens a release PR that updates version and `CHANGELOG.md`.
 - Merging the PR creates a GitHub release.
 
+### Data contracts (if applicable)
+
+- Not applicable. This spec defines repository release automation; it does not
+  add runtime APIs or application data formats.
+
 ### File-level contracts
 
 - `release-please-config.json`: bump strategy and changelog path
 - `.release-please-manifest.json`: current version
 - `CHANGELOG.md`: canonical history
+
+### Configuration
+
+- GitHub workflow: `.github/workflows/release-please.yml` (trigger + permissions).
+- Release Please config: `release-please-config.json` + `.release-please-manifest.json`.
 
 ## Acceptance criteria
 

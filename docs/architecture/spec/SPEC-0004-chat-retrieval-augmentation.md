@@ -37,24 +37,29 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
-- **FR-008**
-- **FR-009**
-- **FR-019**
+- **FR-008:** Project-scoped chat with streaming responses.
+- **FR-009:** Agent mode selection per chat (Orchestrator, Market Research,
+  Architect, etc.).
+- **FR-019:** Maintain project knowledge base from uploads + generated artifacts
+  (retrievable).
 
 ### Non-functional requirements
 
-- **NFR-004**
-- **NFR-006**
+- **NFR-004 (Observability):** Persist logs, latency, token usage, tool calls,
+  and errors.
+- **NFR-006 (Cost controls):** Caching and guardrails limit web calls and token
+  usage.
 
 ### Performance / Reliability requirements (if applicable)
 
-- **PR-001**
-- **PR-002**
+- **PR-001:** Streaming begins within 1.5s (p95) for warm paths.
+- **PR-002:** Retrieval top-k query within 250ms (p95) for warm paths.
 
 ### Integration requirements (if applicable)
 
-- **IR-005**
-- **IR-001**
+- **IR-005:** Vector search via Upstash Vector (prefer HYBRID indexes when
+  provisioning).
+- **IR-001:** All model/embedding calls through Vercel AI Gateway.
 
 ## Constraints
 
@@ -80,12 +85,26 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - Retrieval tool queries Upstash Vector (chunks + artifacts).
 - Citations are rendered as footnotes.
 
+### Data contracts (if applicable)
+
+- Chat message persistence: see `docs/architecture/data-model.md`.
+- Retrieval results include enough metadata to render citations:
+  - `url` (for web sources)
+  - `fileId`/`chunkId` (for uploaded and generated sources)
+
 ### File-level contracts
 
-- `src/app/(app)/projects/[projectId]/chat/page.tsx`
-- `src/app/api/chat/route.ts`
-- `src/lib/ai/tools/retrieval.ts`
-- `src/lib/upstash/vector.ts`
+- `src/app/(app)/projects/[projectId]/chat/page.tsx`: UI for streaming chat and message history.
+- `src/app/api/chat/route.ts`: server streaming endpoint; must persist messages/tool calls.
+- `src/lib/ai/tools/retrieval.ts`: retrieval tool; must enforce project scoping and top-k bounds.
+- `src/lib/upstash/vector.ts`: vector query interface with metadata filters.
+
+### Configuration
+
+- See `docs/ops/env.md`:
+  - AI Gateway: `AI_GATEWAY_API_KEY` (optional `AI_GATEWAY_BASE_URL`)
+  - Upstash Vector: `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`
+  - Optional caching: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 
 ## Acceptance criteria
 

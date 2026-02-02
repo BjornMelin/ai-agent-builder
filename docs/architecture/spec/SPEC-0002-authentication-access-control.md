@@ -46,13 +46,17 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
-- **FR-001**
+- **FR-001:** Managed authentication via Neon Auth with secure, server-managed
+  session cookies and app-level access control.
 
 ### Non-functional requirements
 
-- **NFR-001**
-- **NFR-002**
-- **NFR-012**
+- **NFR-001 (Security):** Protect all sensitive routes, server-only keys, secure
+  cookies.
+- **NFR-002 (Private access mode):** Default to restricted access (allowlist);
+  do not require multi-tenant constructs.
+- **NFR-012 (BYOK gating):** Public sign-up must remain disabled until the app
+  supports BYOK for metered third-party keys.
 
 ## Constraints
 
@@ -105,6 +109,15 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - `src/lib/auth/access.ts`: `requireAppUser()` allowlist guard
 - `src/lib/auth/client.ts`: browser auth client
 - `src/lib/auth/server.ts`: `getAuth()` server singleton
+
+### Configuration
+
+- See `docs/ops/env.md` for env vars used by auth and access control:
+  - `NEON_AUTH_BASE_URL`
+  - `NEON_AUTH_COOKIE_SECRET`
+  - `NEON_AUTH_COOKIE_DOMAIN` (optional)
+  - `AUTH_ACCESS_MODE` (optional)
+  - `AUTH_ALLOWED_EMAILS` (required when restricted)
 
 ## Acceptance criteria
 

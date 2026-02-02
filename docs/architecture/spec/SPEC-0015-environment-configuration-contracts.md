@@ -65,24 +65,27 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Non-functional requirements
 
-- **NFR-001**
-- **NFR-003**
-- **NFR-010**
+- **NFR-001 (Security):** Protect all sensitive routes, server-only keys, secure
+  cookies.
+- **NFR-003 (Maintainability):** Strict TS, Zod v4, modular architecture, low
+  boilerplate.
+- **NFR-010 (Quality gates):** CI enforces format/lint/typecheck/test/build with
+  Bun-only commands.
 
 ### Integration requirements (if applicable)
 
-- **IR-001**
-- **IR-002**
-- **IR-003**
-- **IR-004**
-- **IR-006**
-- **IR-007**
-- **IR-008**
-- **IR-009**
-- **IR-011**
-- **IR-012**
-- **IR-013**
-- **IR-014**
+- **IR-001:** All model/embedding calls through Vercel AI Gateway.
+- **IR-002:** Relational store is Neon Postgres.
+- **IR-003:** Cache and rate limit via Upstash Redis + Ratelimit.
+- **IR-004:** Orchestrate durable jobs via Upstash QStash.
+- **IR-006:** File storage via Vercel Blob.
+- **IR-007:** Web research via Exa + Firecrawl.
+- **IR-008:** Library docs via MCP (Context7).
+- **IR-009:** Code execution via Vercel Sandbox.
+- **IR-011:** Repo operations via GitHub (API + Git over HTTPS).
+- **IR-012:** Deployments and env var management via Vercel API/SDK.
+- **IR-013:** Optional: Provision Neon resources via Neon API.
+- **IR-014:** Optional: Provision Upstash resources via Upstash Developer API.
 
 ## Constraints
 
@@ -125,7 +128,10 @@ Feature gates are accessed through `env.<feature>`:
 - `env.aiGateway` (`AI_GATEWAY_*`)
 - `env.webResearch` (`EXA_API_KEY`, `FIRECRAWL_API_KEY`)
 - `env.blob` (`BLOB_READ_WRITE_TOKEN`)
-- `env.sandbox` (`VERCEL_OIDC_TOKEN`)
+- `env.sandbox`
+  - OIDC token (preferred): `VERCEL_OIDC_TOKEN`
+  - Access token fallback: `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (optional
+    `VERCEL_TEAM_ID`)
 - `env.auth`
   - Neon Auth: `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `NEON_AUTH_COOKIE_DOMAIN`
   - App access control: `AUTH_ACCESS_MODE`, `AUTH_ALLOWED_EMAILS`
@@ -136,6 +142,26 @@ Implementation/deploy automation (optional feature gates):
 - `env.vercelApi` (`VERCEL_TOKEN`, optional `VERCEL_TEAM_ID`)
 - `env.neonApi` (`NEON_API_KEY`)
 - `env.upstashDeveloper` (`UPSTASH_EMAIL`, `UPSTASH_API_KEY`)
+
+### Data contracts (if applicable)
+
+- Env feature gates return normalized, typed objects. Consumers must not read
+  raw `process.env`.
+- Env parsing failures throw `AppError` with code `env_invalid` and a message
+  that lists missing/invalid variables.
+
+### File-level contracts
+
+- `src/lib/env.ts`: single boundary for `process.env` reads; feature-gated getters.
+- `docs/ops/env.md`: canonical docs for each variable and how it is used.
+- `.env.example`: canonical set of variables for local setup.
+
+### Configuration
+
+- Add a new env var only by introducing a new feature gate (or extending an
+  existing one) in `src/lib/env.ts`.
+- Keep `.env.example` and `docs/ops/env.md` aligned with `src/lib/env.ts` (see
+  `AGENTS.md` “Env var contract” rule).
 
 ## Acceptance criteria
 
@@ -150,6 +176,20 @@ Implementation/deploy automation (optional feature gates):
 
 - Unit tests cover env feature gates and error normalization.
 - Run: `bun run test`
+
+## Operational notes
+
+- Prefer OIDC-based sandbox auth on Vercel; use access-token auth primarily for
+  local development and external CI where OIDC is unavailable.
+- Treat key rotation as a side-effectful operation: do not log secrets in
+  plaintext and avoid persisting them in DB artifacts.
+
+## Failure modes and mitigation
+
+- Missing/invalid env vars → fail on first feature use with `AppError` and a
+  message pointing to `docs/ops/env.md`.
+- Accidental client import of `@/lib/env` → prevented by `server-only`; treat
+  any bundler leak as a release blocker.
 
 ## Key files
 

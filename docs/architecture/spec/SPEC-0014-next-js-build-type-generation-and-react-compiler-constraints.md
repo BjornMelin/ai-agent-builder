@@ -36,18 +36,23 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
+- None
+
 ### Non-functional requirements
 
-- **NFR-011**
-- **NFR-010**
+- **NFR-011 (Agent-first DX):** Repository conventions optimized for AI coding
+  agents (AGENTS.md, strict doc requirements, deterministic scripts).
+- **NFR-010 (Quality gates):** CI enforces format/lint/typecheck/test/build with
+  Bun-only commands.
 
 ### Performance / Reliability requirements (if applicable)
 
-- **PR-006**
+- **PR-006:** CI completes within 10 minutes for typical PRs (p95).
 
 ### Integration requirements (if applicable)
 
-- **IR-010**
+- **IR-010:** Bun toolchain: installs/scripts/CI use Bun and Vercel Functions run
+  on Bun runtime where supported.
 
 ## Constraints
 
@@ -72,10 +77,20 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - `next.config.ts`: `reactCompiler: true`, Turbopack root configured.
 - `package.json`: `typecheck` and `test` run `bun --bun next typegen`.
 
+### Data contracts (if applicable)
+
+- Not applicable. This spec defines Next.js build and typegen invariants; it
+  does not introduce runtime APIs or persisted data formats.
+
 ### File-level contracts
 
-- `next.config.ts`
-- `package.json` scripts: `typegen`, `typecheck`, `test`
+- `next.config.ts`: enables React Compiler and Next build invariants (do not drift).
+- `package.json` scripts: `typegen`, `typecheck`, `test` must run `next typegen` before TypeScript/Vitest.
+
+### Configuration
+
+- `next.config.ts`: `reactCompiler: true` and repo-specific Next config invariants.
+- `package.json`: `bun --bun next typegen` in `typecheck` and `test`.
 
 ## Acceptance criteria
 

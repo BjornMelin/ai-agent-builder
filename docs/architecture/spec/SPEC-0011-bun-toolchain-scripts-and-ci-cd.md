@@ -40,20 +40,24 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
-- **FR-021**
+- **FR-021:** Fetch and cache the AI Gateway model catalog for UI model selection
+  (script + cached JSON).
 
 ### Non-functional requirements
 
-- **NFR-010**
-- **NFR-011**
+- **NFR-010 (Quality gates):** CI enforces format/lint/typecheck/test/build with
+  Bun-only commands.
+- **NFR-011 (Agent-first DX):** Repository conventions optimized for AI coding
+  agents (AGENTS.md, strict doc requirements, deterministic scripts).
 
 ### Performance / Reliability requirements (if applicable)
 
-- **PR-006**
+- **PR-006:** CI completes within 10 minutes for typical PRs (p95).
 
 ### Integration requirements (if applicable)
 
-- **IR-010**
+- **IR-010:** Bun toolchain: installs/scripts/CI use Bun and Vercel Functions run
+  on Bun runtime where supported.
 
 ## Constraints
 
@@ -79,6 +83,17 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - Vercel: `vercel.json` sets Bun runtime.
 - Local + CI: `bun install` and `bun run ...`.
 - Scripts execute Next via `bun --bun next ...`.
+
+### Data contracts (if applicable)
+
+- Not applicable. This spec defines repository toolchain invariants and does not
+  introduce runtime APIs or persisted data formats.
+
+### File-level contracts
+
+- `package.json`: script entrypoints must use `bun run` and avoid `pnpm`/`npm`.
+- `bun.lock`: committed; CI uses frozen lockfile.
+- `vercel.json`: configures Bun runtime on Vercel.
 
 ### Configuration
 
