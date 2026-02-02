@@ -33,7 +33,7 @@ credentials are available, with an explicit fallback path that generates exact
 manual steps when automation cannot be performed.
 
 “Automation when possible” is critical for scaling workflows, but the system
-must remain usable when some provider APIs are unavailable (e.g. account type
+must remain usable when some provider APIs are unavailable (e.g., account type
 limitations) or tokens are intentionally omitted.
 
 ## Context
@@ -75,7 +75,7 @@ Provider constraints differ:
 - B: Terraform / Pulumi — Pros: repeatable IaC, state management. Cons: heavy
   operational overhead; state secrets; higher setup friction.
 - C: Manual-only provisioning — Pros: minimal permissions; simplest. Cons:
-  slow; error-prone; hard to guarantee end-to-end “ship”.
+  slow; error-prone; difficult to guarantee end-to-end “ship”.
 
 ### Decision Framework Score (must be ≥ 9.0)
 
@@ -193,7 +193,7 @@ flowchart LR
   - derive connection details for `DATABASE_URL` without persisting secrets
 - Upstash provisioning:
   - provision Redis and Vector only when Developer API is available; otherwise,
-    fall back to manual setup and/or Marketplace guidance
+    fall back to manual setup or Marketplace guidance
 
 ### Configuration
 
