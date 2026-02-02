@@ -28,9 +28,13 @@ const envState = {
 
 const getSessionMock = vi.fn<() => Promise<SessionResult>>();
 
-vi.mock("@/lib/env", () => ({
-  env: envState,
-}));
+vi.mock("@/lib/env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/env")>();
+  return {
+    ...actual,
+    env: envState,
+  };
+});
 
 vi.mock("@/lib/auth/server", () => ({
   getAuth: () => ({
@@ -95,10 +99,10 @@ describe("requireAppUser", () => {
     envState.auth.allowedEmails = ["allow@example.com"];
     const { requireAppUser } = await loadRequireAppUser();
 
-    const emailCases: Array<SessionUser["email"]> = ["", null, undefined];
-    for (const email of emailCases) {
+    const userCases: SessionUser[] = [{ email: "" }, { email: null }, {}];
+    for (const user of userCases) {
       getSessionMock.mockResolvedValueOnce({
-        data: { user: { email } },
+        data: { user },
       });
 
       await expect(requireAppUser()).rejects.toMatchObject({
