@@ -79,8 +79,8 @@ If OAuth is disabled on Preview, use **email OTP** or **magic link** auth flows:
    - Local: `http://localhost:3000`
    - Preview: the Vercel preview deployment domain(s)
    - Production: the primary production domain
-   - Note: for Vercel Preview branches, the repo includes a best-effort GitHub
-     workflow (`.github/workflows/neon-auth-trusted-domains.yml`) that enables
+   - Note: for Vercel Preview branches, the repo includes a best-effort GitHub workflow
+     (`.github/workflows/neon-auth-trusted-domains.yml`) that enables
      Neon Auth for the preview branch (if needed) and adds the Preview domain to
      trusted domains automatically.
 5. Verify locally
