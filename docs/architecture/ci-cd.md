@@ -31,17 +31,13 @@ prevents races between push and pull_request workflows.
 
 On Vercel **Fluid compute**, this app uses a pooled Postgres TCP connection via
 `pg` and attaches the pool with `attachDatabasePool` to ensure idle clients are
-released before functions suspend.[^neon-vercel][^vercel-functions][^vercel-fluid]
+released before functions suspend.
 
 - Implementation: `src/db/client.ts`
-- Reference: Neon’s Vercel connection methods guide and Vercel’s
-  `attachDatabasePool` reference.
-  - <https://neon.com/docs/guides/vercel-connection-methods>
-  - <https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package>
-  - <https://vercel.com/docs/fluid-compute>
-[^neon-vercel]: https://neon.com/docs/guides/vercel-connection-methods
-[^vercel-functions]: https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package
-[^vercel-fluid]: https://vercel.com/docs/fluid-compute
+- Reference:
+  - [Neon: Connecting to Neon from Vercel](https://neon.com/docs/guides/vercel-connection-methods)
+  - [Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package)
+  - [Vercel Fluid compute](https://vercel.com/docs/fluid-compute)
 
 ### Neon Auth trusted domains (optional)
 

@@ -37,14 +37,12 @@ Apply migration:
 ## Database connection method (Vercel)
 
 This app targets Vercel’s Fluid compute model and uses a pooled Postgres TCP
-connection (`pg`) to Neon, attaching the pool with `attachDatabasePool`.[^neon-vercel][^vercel-functions]
+connection (`pg`) to Neon, attaching the pool with `attachDatabasePool`.
 
 - Implementation: `src/db/client.ts`
 - Reference:
   - [Neon: Connecting to Neon from Vercel](https://neon.com/docs/guides/vercel-connection-methods)
   - [Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package)
-[^neon-vercel]: https://neon.com/docs/guides/vercel-connection-methods
-[^vercel-functions]: https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package
 
 ## QStash worker debugging
 
