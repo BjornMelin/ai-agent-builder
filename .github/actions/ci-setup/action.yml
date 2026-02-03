@@ -3,7 +3,7 @@ description: "Shared CI setup: Bun + dependency install (requires checkout)"
 
 inputs:
   bun-version:
-    description: "Bun version to install (default: latest)"
+    description: "Bun version to install (default: 1.3.7)"
     required: false
     default: "1.3.7"
 
