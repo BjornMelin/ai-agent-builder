@@ -31,8 +31,17 @@ export function getQstashClient(): Client {
 export function verifyQstashSignatureAppRouter(
   handler: Parameters<typeof verifySignatureAppRouter>[0],
 ): ReturnType<typeof verifySignatureAppRouter> {
-  return verifySignatureAppRouter(handler, {
-    currentSigningKey: env.qstashVerify.currentSigningKey,
-    nextSigningKey: env.qstashVerify.nextSigningKey,
-  });
+  type VerifiedHandler = ReturnType<typeof verifySignatureAppRouter>;
+  type VerifiedArgs = Parameters<VerifiedHandler>;
+
+  let verified: VerifiedHandler | undefined;
+
+  return async (...args: VerifiedArgs) => {
+    verified ??= verifySignatureAppRouter(handler, {
+      currentSigningKey: env.qstashVerify.currentSigningKey,
+      nextSigningKey: env.qstashVerify.nextSigningKey,
+    });
+
+    return verified(...args);
+  };
 }
