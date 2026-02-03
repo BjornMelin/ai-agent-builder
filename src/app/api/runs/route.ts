@@ -3,7 +3,12 @@ import { z } from "zod";
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { getProjectById } from "@/lib/data/projects.server";
-import { createRun, ensureRunStep } from "@/lib/data/runs.server";
+import {
+  createRun,
+  ensureRunStep,
+  updateRunStatus,
+  updateRunStepStatus,
+} from "@/lib/data/runs.server";
 import { env } from "@/lib/env";
 import { jsonCreated, jsonError } from "@/lib/next/responses";
 import { enqueueRunStep } from "@/lib/runs/run-engine.server";
@@ -52,11 +57,17 @@ export async function POST(req: Request) {
       stepName: "Start run",
     });
 
-    await enqueueRunStep({
-      origin: callbackOrigin,
-      runId: run.id,
-      stepId: "run.start",
-    });
+    try {
+      await enqueueRunStep({
+        origin: callbackOrigin,
+        runId: run.id,
+        stepId: "run.start",
+      });
+    } catch (error) {
+      await updateRunStatus(run.id, "blocked");
+      await updateRunStepStatus(run.id, "run.start", "blocked");
+      throw error;
+    }
 
     return jsonCreated(run);
   } catch (err) {

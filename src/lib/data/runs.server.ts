@@ -189,3 +189,44 @@ export async function listRunSteps(runId: string): Promise<RunStepDto[]> {
 
   return rows.map(toRunStepDto);
 }
+
+/**
+ * Update run status by ID.
+ *
+ * @param runId - Run ID.
+ * @param status - New status.
+ */
+export async function updateRunStatus(
+  runId: string,
+  status: RunDto["status"],
+): Promise<void> {
+  const db = getDb();
+  await db
+    .update(schema.runsTable)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(schema.runsTable.id, runId));
+}
+
+/**
+ * Update run step status by runId + stepId.
+ *
+ * @param runId - Run ID.
+ * @param stepId - Step ID.
+ * @param status - New status.
+ */
+export async function updateRunStepStatus(
+  runId: string,
+  stepId: string,
+  status: RunDto["status"],
+): Promise<void> {
+  const db = getDb();
+  await db
+    .update(schema.runStepsTable)
+    .set({ status, updatedAt: new Date() })
+    .where(
+      and(
+        eq(schema.runStepsTable.runId, runId),
+        eq(schema.runStepsTable.stepId, stepId),
+      ),
+    );
+}

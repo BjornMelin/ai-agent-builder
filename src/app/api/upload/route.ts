@@ -79,96 +79,101 @@ export async function POST(
         .trim()
         .toLowerCase() === "true";
 
-    const results: (ProjectFileDto &
-      Readonly<{ ingest?: { chunksIndexed: number } }>)[] = [];
+    const results = await Promise.all(
+      files.map(
+        async (
+          file,
+        ): Promise<
+          ProjectFileDto & Readonly<{ ingest?: { chunksIndexed: number } }>
+        > => {
+          const sizeBytes = file.size;
+          if (sizeBytes > budgets.maxUploadBytes) {
+            throw new AppError(
+              "file_too_large",
+              413,
+              `File too large (max ${budgets.maxUploadBytes} bytes).`,
+            );
+          }
 
-    for (const file of files) {
-      const sizeBytes = file.size;
-      if (sizeBytes > budgets.maxUploadBytes) {
-        throw new AppError(
-          "file_too_large",
-          413,
-          `File too large (max ${budgets.maxUploadBytes} bytes).`,
-        );
-      }
+          const mimeType = file.type || "application/octet-stream";
+          if (!allowedMimeTypes.has(mimeType)) {
+            throw new AppError(
+              "unsupported_file_type",
+              400,
+              `Unsupported file type: ${mimeType}`,
+            );
+          }
 
-      const mimeType = file.type || "application/octet-stream";
-      if (!allowedMimeTypes.has(mimeType)) {
-        throw new AppError(
-          "unsupported_file_type",
-          400,
-          `Unsupported file type: ${mimeType}`,
-        );
-      }
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          const sha256 = sha256Hex(bytes);
 
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      const sha256 = sha256Hex(bytes);
+          const existing = await getProjectFileBySha256(projectId, sha256);
+          if (existing) {
+            return existing;
+          }
 
-      const existing = await getProjectFileBySha256(projectId, sha256);
-      if (existing) {
-        results.push(existing);
-        continue;
-      }
+          const safeName = sanitizeFilename(file.name);
+          const blobPath = `projects/${projectId}/uploads/${sha256}-${safeName}`;
 
-      const safeName = sanitizeFilename(file.name);
-      const blobPath = `projects/${projectId}/uploads/${sha256}-${safeName}`;
-
-      const blob = await put(blobPath, file, {
-        access: "public",
-        addRandomSuffix: false,
-        allowOverwrite: true,
-        contentType: mimeType,
-        token: env.blob.readWriteToken,
-      });
-
-      const dbFile = await upsertProjectFile({
-        mimeType,
-        name: safeName,
-        projectId,
-        sha256,
-        sizeBytes,
-        storageKey: blob.url,
-      });
-
-      // Prefer QStash for heavier ingestion; fall back to inline when not configured.
-      if (shouldIngestAsync) {
-        try {
-          const qstash = getQstashClient();
-          const origin = env.app.baseUrl;
-
-          await qstash.publishJSON({
-            body: { fileId: dbFile.id, projectId },
-            url: `${origin}/api/jobs/ingest-file`,
+          const blob = await put(blobPath, file, {
+            access: "public",
+            addRandomSuffix: false,
+            allowOverwrite: true,
+            contentType: mimeType,
+            token: env.blob.readWriteToken,
           });
 
-          results.push(dbFile);
-          continue;
-        } catch (err) {
-          // If QStash isn't configured, fall through to inline ingestion.
-          // This keeps local development usable without tunneling.
-          if (env.runtime.isVercel) {
-            throw err;
+          const dbFile = await upsertProjectFile({
+            mimeType,
+            name: safeName,
+            projectId,
+            sha256,
+            sizeBytes,
+            storageKey: blob.url,
+          });
+
+          // Prefer QStash for heavier ingestion; fall back to inline when not configured.
+          if (shouldIngestAsync) {
+            try {
+              const qstash = getQstashClient();
+              const origin = env.app.baseUrl;
+
+              await qstash.publishJSON({
+                body: { fileId: dbFile.id, projectId },
+                deduplicationId: `ingest:${dbFile.id}`,
+                label: "ingest-file",
+                url: `${origin}/api/jobs/ingest-file`,
+              });
+
+              return dbFile;
+            } catch (err) {
+              // If QStash isn't configured, fall through to inline ingestion.
+              // This keeps local development usable without tunneling.
+              if (env.runtime.isVercel) {
+                throw err;
+              }
+              console.debug(
+                "[upload] QStash unavailable, falling back to inline ingestion",
+                err,
+              );
+            }
           }
-          console.debug(
-            "[upload] QStash unavailable, falling back to inline ingestion",
-            err,
-          );
-        }
-      }
 
-      const ingest = await ingestFile({
-        bytes,
-        fileId: dbFile.id,
-        mimeType,
-        name: safeName,
-        projectId,
-      });
+          const ingest = await ingestFile({
+            bytes,
+            fileId: dbFile.id,
+            mimeType,
+            name: safeName,
+            projectId,
+          });
 
-      results.push({
-        ...dbFile,
-        ingest: { chunksIndexed: ingest.chunksIndexed },
-      });
-    }
+          return {
+            ...dbFile,
+            ingest: { chunksIndexed: ingest.chunksIndexed },
+          };
+        },
+      ),
+    );
 
     return jsonOk({ files: results });
   } catch (err) {

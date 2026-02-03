@@ -177,14 +177,8 @@ async function extractXlsx(
 ): Promise<readonly ExtractedSection[]> {
   const { Workbook } = await import("exceljs");
   const workbook = new Workbook();
-  const arrayBuffer = bytes.buffer.slice(
-    bytes.byteOffset,
-    bytes.byteOffset + bytes.byteLength,
-  ) as ArrayBuffer;
-  const buffer = Buffer.from(arrayBuffer);
-  await workbook.xlsx.load(
-    buffer as unknown as Parameters<typeof workbook.xlsx.load>[0],
-  );
+  const buffer = Buffer.from(bytes);
+  await workbook.xlsx.load(buffer);
 
   const sections: ExtractedSection[] = [];
   for (const sheet of workbook.worksheets) {
