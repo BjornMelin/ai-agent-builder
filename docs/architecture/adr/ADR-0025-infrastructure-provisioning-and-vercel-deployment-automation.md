@@ -16,7 +16,7 @@ References:
   - [Vercel TypeScript SDK](https://github.com/vercel/sdk)
   - [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)
   - [Neon API](https://neon.com/docs/reference/api-reference)
-  - [Neon API Reference: Create project](https://api-docs.neon.tech/reference/createproject)
+  - [Neon OpenAPI Specification](https://neon.com/api_spec/release/v2.json)
   - [Upstash Developer API](https://upstash.com/docs/common/account/developerapi)
   - [Upstash Redis REST API](https://upstash.com/docs/redis/features/restapi)
   - [Upstash Vector API — Get started](https://upstash.com/docs/vector/api/get-started)

@@ -48,6 +48,11 @@ jobs:
           NEON_API_BASE="https://console.neon.tech/api/v2"
           VERCEL_API_BASE="https://api.vercel.com"
 
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::warning::jq is not available on this runner. Skipping trusted-domain allowlisting."
+            exit 0
+          fi
+
           GIT_BRANCH="${GITHUB_HEAD_REF:-}"
           if [ -z "${GIT_BRANCH}" ]; then
             GIT_BRANCH="${GIT_BRANCH_INPUT:-}"
@@ -67,25 +72,54 @@ jobs:
             local method="$1"
             local path="$2"
             local data="${3:-}"
+            local resp=""
+            local curl_status=0
+
             if [ -n "$data" ]; then
-              curl -fsS -X "$method" "${NEON_API_BASE}${path}" \
+              resp="$(curl -sS -X "$method" "${NEON_API_BASE}${path}" \
                 -H "Authorization: Bearer ${NEON_API_KEY}" \
                 -H "Accept: application/json" \
                 -H "Content-Type: application/json" \
-                -d "$data"
+                -d "$data" \
+                -w '\n%{http_code}' 2>&1)"
+              curl_status=$?
             else
-              curl -fsS -X "$method" "${NEON_API_BASE}${path}" \
+              resp="$(curl -sS -X "$method" "${NEON_API_BASE}${path}" \
                 -H "Authorization: Bearer ${NEON_API_KEY}" \
-                -H "Accept: application/json"
+                -H "Accept: application/json" \
+                -w '\n%{http_code}' 2>&1)"
+              curl_status=$?
             fi
+
+            if [ $curl_status -ne 0 ]; then
+              # Network / TLS / DNS errors. We treat this workflow as best-effort and non-blocking.
+              printf '%s\n' "${resp}"
+              printf '%s\n' "000"
+              return 0
+            fi
+
+            # Print body, then status code on the last line.
+            printf '%s\n' "${resp%$'\n'*}"
+            printf '%s\n' "${resp##*$'\n'}"
           }
 
           vercel() {
             local method="$1"
             local path="$2"
-            curl -fsS -X "$method" "${VERCEL_API_BASE}${path}" \
+            local resp=""
+            local curl_status=0
+            resp="$(curl -sS -X "$method" "${VERCEL_API_BASE}${path}" \
               -H "Authorization: Bearer ${VERCEL_TOKEN}" \
-              -H "Accept: application/json"
+              -H "Accept: application/json" \
+              -w '\n%{http_code}' 2>&1)"
+            curl_status=$?
+            if [ $curl_status -ne 0 ]; then
+              printf '%s\n' "${resp}"
+              printf '%s\n' "000"
+              return 0
+            fi
+            printf '%s\n' "${resp%$'\n'*}"
+            printf '%s\n' "${resp##*$'\n'}"
           }
 
           VERCEL_TEAM_QUERY=""
@@ -96,7 +130,13 @@ jobs:
           # Wait for Neon preview branch to exist (it may be created asynchronously by the integration).
           NEON_BRANCH_ID=""
           for _ in $(seq 1 60); do
-            BRANCHES_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches")"
+            BRANCHES_RESP="$(neon GET "/projects/${NEON_PROJECT_ID}/branches")"
+            BRANCHES_HTTP_CODE="$(printf '%s' "$BRANCHES_RESP" | tail -n 1)"
+            BRANCHES_JSON="$(printf '%s' "$BRANCHES_RESP" | sed '$d')"
+            if [ "${BRANCHES_HTTP_CODE}" != "200" ]; then
+              echo "::warning::Failed to list Neon branches (HTTP ${BRANCHES_HTTP_CODE}). Skipping trusted-domain allowlisting."
+              exit 0
+            fi
             NEON_BRANCH_ID="$(printf '%s' "$BRANCHES_JSON" | jq -r --arg name "$NEON_BRANCH_NAME" '.branches[] | select(.name == $name) | .id' | head -n 1)"
             if [ -n "${NEON_BRANCH_ID}" ] && [ "${NEON_BRANCH_ID}" != "null" ]; then
               break
@@ -105,34 +145,58 @@ jobs:
           done
 
           if [ -z "${NEON_BRANCH_ID}" ] || [ "${NEON_BRANCH_ID}" = "null" ]; then
-            echo "::error::Neon preview branch '${NEON_BRANCH_NAME}' not found. Ensure the Neon <-> Vercel integration has Preview Branching enabled."
-            exit 1
+            echo "::warning::Neon preview branch '${NEON_BRANCH_NAME}' not found yet. Ensure the Neon <-> Vercel integration has Preview Branching enabled. Skipping trusted-domain allowlisting."
+            exit 0
           fi
 
           echo "Found Neon branch id: ${NEON_BRANCH_ID}"
 
-          # Ensure Neon Auth is enabled for the branch (should be handled by the integration).
-          AUTH_JSON=""
-          AUTH_STATUS=0
-          if AUTH_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth" 2>&1)"; then
-            AUTH_STATUS=0
-          else
-            AUTH_STATUS=$?
+          # Ensure Neon Auth is enabled for the branch (best-effort).
+          # Neon OpenAPI: POST /projects/{project_id}/branches/{branch_id}/auth with body:
+          #   { "auth_provider": "better_auth", "database_name": "neondb" }
+          # OpenAPI spec: https://neon.com/api_spec/release/v2.json
+          AUTH_RESP="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth")"
+          AUTH_HTTP_CODE="$(printf '%s' "$AUTH_RESP" | tail -n 1)"
+
+          if [ "${AUTH_HTTP_CODE}" != "200" ]; then
+            echo "::warning::Neon Auth is not enabled (or not ready) for project ${NEON_PROJECT_ID} branch ${NEON_BRANCH_ID} (HTTP ${AUTH_HTTP_CODE}). Attempting to enable it."
+
+            ENABLE_BODY="$(jq -cn '{auth_provider:"better_auth", database_name:"neondb"}')"
+            ENABLE_RESP="$(neon POST "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth" "$ENABLE_BODY")"
+            ENABLE_HTTP_CODE="$(printf '%s' "$ENABLE_RESP" | tail -n 1)"
+
+            if [ "${ENABLE_HTTP_CODE}" != "201" ] && [ "${ENABLE_HTTP_CODE}" != "409" ]; then
+              echo "::warning::Failed to enable Neon Auth for project ${NEON_PROJECT_ID} branch ${NEON_BRANCH_ID} (HTTP ${ENABLE_HTTP_CODE}). Skipping trusted-domain allowlisting."
+              exit 0
+            fi
+
+            # Poll until enabled.
+            for _ in $(seq 1 30); do
+              AUTH_RESP="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth")"
+              AUTH_HTTP_CODE="$(printf '%s' "$AUTH_RESP" | tail -n 1)"
+              if [ "${AUTH_HTTP_CODE}" = "200" ]; then
+                break
+              fi
+              sleep 5
+            done
           fi
-          if [ ${AUTH_STATUS} -ne 0 ]; then
-            echo "::error::Failed to fetch Neon Auth status for project ${NEON_PROJECT_ID} branch ${NEON_BRANCH_ID}. Output: ${AUTH_JSON}"
-            exit ${AUTH_STATUS}
-          fi
-          if ! printf '%s' "${AUTH_JSON}" | jq -e '.enabled == true' >/dev/null; then
-            echo "::error::Neon Auth is not enabled for project ${NEON_PROJECT_ID} branch ${NEON_BRANCH_ID}. Enable Neon Auth for the branch to proceed."
-            exit 1
+
+          if [ "${AUTH_HTTP_CODE}" != "200" ]; then
+            echo "::warning::Neon Auth is still not available for project ${NEON_PROJECT_ID} branch ${NEON_BRANCH_ID} (HTTP ${AUTH_HTTP_CODE}). Skipping trusted-domain allowlisting."
+            exit 0
           fi
 
           # Find a stable Vercel preview alias (prefer the branch alias ending in .vercel.app).
           ENCODED_BRANCH="$(jq -nr --arg v "$GIT_BRANCH" '$v|@uri')"
           PREVIEW_HOST=""
           for _ in $(seq 1 60); do
-            DEPLOYMENTS_JSON="$(vercel GET "/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=preview&branch=${ENCODED_BRANCH}&state=READY&limit=10${VERCEL_TEAM_QUERY}")"
+            DEPLOYMENTS_RESP="$(vercel GET "/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=preview&branch=${ENCODED_BRANCH}&state=READY&limit=10${VERCEL_TEAM_QUERY}")"
+            DEPLOYMENTS_HTTP_CODE="$(printf '%s' "$DEPLOYMENTS_RESP" | tail -n 1)"
+            DEPLOYMENTS_JSON="$(printf '%s' "$DEPLOYMENTS_RESP" | sed '$d')"
+            if [ "${DEPLOYMENTS_HTTP_CODE}" != "200" ]; then
+              echo "::warning::Failed to list Vercel preview deployments (HTTP ${DEPLOYMENTS_HTTP_CODE}). Skipping trusted-domain allowlisting."
+              exit 0
+            fi
 
             # Prefer the stable "git branch" alias, fall back to the deployment URL.
             PREVIEW_HOST="$(printf '%s' "$DEPLOYMENTS_JSON" | jq -r '
@@ -166,7 +230,13 @@ jobs:
           PREVIEW_DOMAIN="https://${PREVIEW_HOST}"
           echo "Ensuring trusted domain exists: ${PREVIEW_DOMAIN}"
 
-          TRUSTED_JSON="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth/domains")"
+          TRUSTED_RESP="$(neon GET "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth/domains")"
+          TRUSTED_HTTP_CODE="$(printf '%s' "$TRUSTED_RESP" | tail -n 1)"
+          TRUSTED_JSON="$(printf '%s' "$TRUSTED_RESP" | sed '$d')"
+          if [ "${TRUSTED_HTTP_CODE}" != "200" ]; then
+            echo "::warning::Failed to fetch Neon Auth trusted domains (HTTP ${TRUSTED_HTTP_CODE}). Skipping trusted-domain allowlisting."
+            exit 0
+          fi
           HAS_DOMAIN="$(printf '%s' "$TRUSTED_JSON" | jq -r --arg domain "$PREVIEW_DOMAIN" '.domains[] | select(.domain == $domain and .auth_provider == "better_auth") | .domain' | head -n 1)"
 
           if [ -n "${HAS_DOMAIN}" ] && [ "${HAS_DOMAIN}" != "null" ]; then
@@ -175,6 +245,11 @@ jobs:
           fi
 
           ADD_DOMAIN_BODY="$(jq -cn --arg domain "$PREVIEW_DOMAIN" '{domain: $domain, auth_provider: "better_auth"}')"
-          neon POST "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth/domains" "$ADD_DOMAIN_BODY" >/dev/null
+          ADD_DOMAIN_RESP="$(neon POST "/projects/${NEON_PROJECT_ID}/branches/${NEON_BRANCH_ID}/auth/domains" "$ADD_DOMAIN_BODY")"
+          ADD_DOMAIN_HTTP_CODE="$(printf '%s' "$ADD_DOMAIN_RESP" | tail -n 1)"
+          if [ "${ADD_DOMAIN_HTTP_CODE}" != "201" ] && [ "${ADD_DOMAIN_HTTP_CODE}" != "409" ]; then
+            echo "::warning::Failed to add trusted domain (HTTP ${ADD_DOMAIN_HTTP_CODE}). Skipping."
+            exit 0
+          fi
 
           echo "Trusted domain added."

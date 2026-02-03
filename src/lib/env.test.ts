@@ -68,7 +68,7 @@ describe("env feature gates", () => {
       {
         AUTH_ACCESS_MODE: "restricted",
         AUTH_ALLOWED_EMAILS: undefined,
-        NEON_AUTH_BASE_URL: "https://example.neon.tech/neondb/auth",
+        NEON_AUTH_BASE_URL: "https://example.neon.com/neondb/auth",
         NEON_AUTH_COOKIE_SECRET: "a".repeat(32),
       },
       async () => {
@@ -83,7 +83,7 @@ describe("env feature gates", () => {
       {
         AUTH_ACCESS_MODE: "open",
         AUTH_ALLOWED_EMAILS: undefined,
-        NEON_AUTH_BASE_URL: "https://example.neon.tech/neondb/auth",
+        NEON_AUTH_BASE_URL: "https://example.neon.com/neondb/auth",
         NEON_AUTH_COOKIE_SECRET: "a".repeat(32),
       },
       async () => {
@@ -126,12 +126,12 @@ describe("env feature gates", () => {
         AUTH_ACCESS_MODE: "restricted",
         AUTH_ALLOWED_EMAILS:
           "  Alice@Example.com, bob@example.com, alice@example.com  ",
-        NEON_AUTH_BASE_URL: "  https://example.neon.tech/neondb/auth  ",
+        NEON_AUTH_BASE_URL: "  https://example.neon.com/neondb/auth  ",
         NEON_AUTH_COOKIE_SECRET: `  ${"a".repeat(32)}  `,
       },
       async () => {
         const { env } = await loadEnv();
-        expect(env.auth.baseUrl).toBe("https://example.neon.tech/neondb/auth");
+        expect(env.auth.baseUrl).toBe("https://example.neon.com/neondb/auth");
         expect(env.auth.cookieSecret).toBe("a".repeat(32));
         expect(env.auth.allowedEmails).toEqual([
           "alice@example.com",

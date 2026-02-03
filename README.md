@@ -119,8 +119,9 @@ URL, and Vercel OAuth requires exact callback URL allowlisting (not practical
 per preview).
 
 Optional: `.github/workflows/neon-auth-trusted-domains.yml` can automatically
-add the Preview deployment domain to Neon Auth trusted domains for the matching
-Neon preview branch (`preview/<git-branch>`).
+ensure Neon Auth is enabled for the matching Neon preview branch
+(`preview/<git-branch>`) and add the Preview deployment domain to Neon Auth
+trusted domains (best-effort; non-blocking).
 
 Required GitHub Actions configuration:
 

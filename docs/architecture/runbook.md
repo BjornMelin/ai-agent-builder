@@ -58,6 +58,11 @@ string. Preview branches get a unique Neon Auth URL, which would otherwise
 require per-branch callback URL allowlisting in the Vercel OAuth app
 ([Neon Auth staging/preview callback note](https://neon.com/blog/handling-auth-in-a-staging-environment)).
 
+If OAuth is disabled on Preview, use **email OTP** or **magic link** auth flows:
+
+- `/auth/email-otp` (recommended)
+- `/auth/magic-link`
+
 1. Compute the callback URL from the active environment
    ([Vercel OAuth callback URL formats](https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard)):
    - `<NEON_AUTH_BASE_URL>/callback/vercel`
@@ -74,6 +79,10 @@ require per-branch callback URL allowlisting in the Vercel OAuth app
    - Local: `http://localhost:3000`
    - Preview: the Vercel preview deployment domain(s)
    - Production: the primary production domain
+   - Note: for Vercel Preview branches, the repo includes a best-effort GitHub
+     workflow (`.github/workflows/neon-auth-trusted-domains.yml`) that enables
+     Neon Auth for the preview branch (if needed) and adds the Preview domain to
+     trusted domains automatically.
 5. Verify locally
    ([Vercel OAuth callback URL formats](https://vercel.com/docs/sign-in-with-vercel/manage-from-dashboard)):
    - Open `/auth/sign-in`

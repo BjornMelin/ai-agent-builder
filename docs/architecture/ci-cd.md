@@ -35,9 +35,11 @@ added manually in the Neon Console, or automated via a lightweight workflow.
 - Workflow: `.github/workflows/neon-auth-trusted-domains.yml`
 - What it does:
   - Finds the Neon branch created by the integration (`preview/<git-branch>`).
+  - Ensures Neon Auth is enabled for that branch (best-effort; uses the Neon API).
   - Finds the Vercel Preview deployment URL for the PR branch.
   - Adds that Preview domain to Neon Auth trusted domains for that branch
     (idempotent).
+  - Never blocks PR merges: on missing integrations/config, it warns and exits 0.
 
 Required repo configuration:
 
