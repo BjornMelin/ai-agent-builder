@@ -36,9 +36,10 @@ Apply migration:
 
 ## QStash worker debugging
 
-- Ensure worker endpoints verify QStash signatures.
+- Ensure worker endpoints verify QStash signatures (Upstash QStash signature
+  verification: <https://upstash.com/docs/qstash/verify>).
 - For local development, you may need to trigger test messages from the Upstash
-  dashboard.
+  dashboard (Upstash QStash overview: <https://upstash.com/docs/qstash/overview>).
 
 ## Common issues
 
