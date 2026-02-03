@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.4](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.3...ai-agent-builder-v0.1.4) (2026-02-03)
+
+
+### Features
+
+* **ai:** add gateway provider and vector retrieval ([8096d88](https://github.com/BjornMelin/ai-agent-builder/commit/8096d8818583eddbffd7d93562a8aa39f10b1289))
+* align architecture and env config with Neon Postgres and Fluid compute stack ([809a4b7](https://github.com/BjornMelin/ai-agent-builder/commit/809a4b7dc23b1e8c65c0bd2e2b6f3bae9ebda9b2))
+* **api:** add upload, search, run jobs ([5d3529a](https://github.com/BjornMelin/ai-agent-builder/commit/5d3529af1435a4baa1bec8fb737d5d958d353647))
+* **api:** enhance run management and file upload processes ([7899f94](https://github.com/BjornMelin/ai-agent-builder/commit/7899f9434047dabc84ade01a801f99f892253a6e))
+* **api:** enhance upload and ingestion processes with parallel handling and testing ([ad63562](https://github.com/BjornMelin/ai-agent-builder/commit/ad63562b9ea6e1e2e46d29ca94cffda2c738abed))
+* **data:** add project, file, run accessors ([fb09a56](https://github.com/BjornMelin/ai-agent-builder/commit/fb09a5605122863ff15d4f2b739a7e0bcfc0a2b4))
+* **db:** add schema, client, migrations ([8f4d379](https://github.com/BjornMelin/ai-agent-builder/commit/8f4d379a316e6572eb5122df1c3db834f50db71f))
+* **env:** add APP_BASE_URL for server callbacks and update related documentation ([e9b3414](https://github.com/BjornMelin/ai-agent-builder/commit/e9b341422588bec8d61ad8ff6964668dcaef43cb))
+* **ingest:** add document extraction pipeline ([af3baf6](https://github.com/BjornMelin/ai-agent-builder/commit/af3baf6ab1e557308ae2975246609aebcedb2d8d))
+* update AI Gateway model IDs and enhance environment configuration ([f428e31](https://github.com/BjornMelin/ai-agent-builder/commit/f428e31355e6f0c08db6491bb92e76528e9b9c81))
+
+
+### Bug Fixes
+
+* **docs:** punctuate QStash list ([50cc08a](https://github.com/BjornMelin/ai-agent-builder/commit/50cc08af80c1af52881ee3a1feb95a23d0d08882))
+* **docs:** update references and formatting in CI/CD and runbook documentation ([e61a29d](https://github.com/BjornMelin/ai-agent-builder/commit/e61a29d6af26dd79d8ab2a748fd7bb411e9c80b0))
+* **pr-10:** address review feedback ([8847cf9](https://github.com/BjornMelin/ai-agent-builder/commit/8847cf90c66ee430966ecfa1aebad154feabd227))
+* **pr:** resolve review comments for PR [#10](https://github.com/BjornMelin/ai-agent-builder/issues/10) ([2f61f52](https://github.com/BjornMelin/ai-agent-builder/commit/2f61f52cb3df85fdaea12d75157681ce1d412ecd))
+* **review:** address PR comments ([0202f06](https://github.com/BjornMelin/ai-agent-builder/commit/0202f06c0138c0de55f4e9cd1a5fd87d431f58d2))
+* **review:** resolve PR 10 comments ([24f5c35](https://github.com/BjornMelin/ai-agent-builder/commit/24f5c3585e16979e832ff1da664c88e0d9b1734b))
+* **tests:** format expectation for AI Gateway base URL in env tests ([1487481](https://github.com/BjornMelin/ai-agent-builder/commit/1487481699975532af3a958fe747c41b3d7d6501))
+
 ## [0.1.3](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.2...ai-agent-builder-v0.1.3) (2026-02-03)
 
 
