@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0010
 title: Observability, budgets, and cost controls
-version: 0.3.0
-date: 2026-02-01
+version: 0.3.1
+date: 2026-02-03
 owners: ["you"]
 status: Proposed
 related_requirements: ["FR-011", "NFR-004", "NFR-006", "NFR-015", "PR-007"]
@@ -88,7 +88,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### File-level contracts
 
-- `src/lib/runs/budgets.ts`: budget model + enforcement helpers.
+- `src/lib/config/budgets.server.ts`: budget defaults and hard limits.
+- `src/lib/runs/*`: run-step execution uses budgets to gate expensive operations.
 - `src/lib/core/log.ts`: log redaction and structured logging.
 - `docs/architecture/runbook.md`: operational guidance for budgets.
 
@@ -200,3 +201,4 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-01)**: Updated for implementation/deploy workflows and sandbox budgets.
+- **0.3.1 (2026-02-03)**: Updated file path references to match current repo structure.

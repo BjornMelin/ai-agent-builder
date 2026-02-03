@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0005
 title: Durable runs & orchestration
-version: 0.3.0
-date: 2026-02-01
+version: 0.3.1
+date: 2026-02-03
 owners: ["you"]
 status: Proposed
 related_requirements:
@@ -15,6 +15,10 @@ notes: "Defines durable run execution, step graph, retries, and QStash integrati
 
 Defines how durable run pipelines execute step-by-step with retries, idempotency,
 and explicit step graphs.
+
+See [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+for the cross-cutting “finalization” plan that integrates durable runs with the
+UI workflow view, DB persistence, and supporting infra (Neon/Upstash/AI Gateway).
 
 Runs are used for:
 
@@ -255,3 +259,4 @@ For implementation runs, add:
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-01)**: Updated for implementation/deploy runs and approval waits.
+- **0.3.1 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.

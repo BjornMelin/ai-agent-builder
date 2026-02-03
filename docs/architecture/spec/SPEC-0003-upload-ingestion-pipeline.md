@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0003
 title: Upload + ingestion pipeline
-version: 0.2.0
-date: 2026-01-30
+version: 0.3.0
+date: 2026-02-03
 owners: ["you"]
 status: Proposed
 related_requirements: ["FR-003", "FR-004", "FR-005", "FR-006", "FR-007", "PR-003", "IR-006", "IR-005", "IR-001"]
@@ -13,6 +13,10 @@ notes: "Defines storage, extraction, chunking, embedding, and indexing pipeline.
 ## Summary
 
 Defines how uploaded files are stored, extracted, chunked, embedded, and indexed for retrieval.
+
+See [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+for the cross-cutting “finalization” plan that integrates ingestion with
+durable runs, retrieval, and the workspace UI.
 
 ## Context
 
@@ -98,10 +102,12 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ### File-level contracts
 
 - `src/app/api/upload/route.ts`: accepts uploads, stores originals, writes DB metadata.
+- `src/app/api/jobs/ingest-file/route.ts`: QStash-signed async ingestion worker (optional; used for larger inputs).
 - `src/lib/ingest/extract/*`: extraction adapters per file type; must preserve stable refs.
 - `src/lib/ingest/chunk/*`: deterministic chunking rules (stable chunk ids).
-- `src/lib/ai/embeddings.ts`: embedding calls via AI Gateway; must be idempotent per hash.
-- `src/lib/upstash/vector.ts`: upsert/query/delete vectors with project/file metadata.
+- `src/lib/ingest/ingest-file.server.ts`: orchestrates extract → chunk → embed → index (idempotent per content hash).
+- `src/lib/ai/embeddings.server.ts`: embedding calls via AI Gateway; must be idempotent per hash.
+- `src/lib/upstash/vector.server.ts`: upsert/query/delete vectors with project/file metadata.
 
 ### Configuration
 
@@ -135,9 +141,11 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ## Key files
 
 - `src/app/api/upload/route.ts`
+- `src/app/api/jobs/ingest-file/route.ts`
 - `src/lib/ingest/extract`
 - `src/lib/ingest/chunk`
-- `src/lib/upstash/vector.ts`
+- `src/lib/ingest/ingest-file.server.ts`
+- `src/lib/upstash/vector.server.ts`
 
 ## References
 
@@ -148,3 +156,4 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-03)**: Updated file path references to server-only modules and documented the async ingestion worker.

@@ -2,8 +2,8 @@
 ADR: 0013
 Title: Caching + cost controls: Next.js caching + Upstash Redis + budgets
 Status: Accepted
-Version: 0.2
-Date: 2026-01-30
+Version: 0.3
+Date: 2026-02-03
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0004, ADR-0005, ADR-0007]
@@ -22,6 +22,10 @@ Accepted — 2026-01-30.
 ## Description
 
 Use layered caching and guardrails to reduce cost and improve latency.
+
+See [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+for the cross-cutting “finalization” plan that applies caching and budgets to
+ingestion, retrieval, chat, and durable runs.
 
 ## Context
 
@@ -100,7 +104,7 @@ flowchart LR
 
 ### Implementation Details
 
-- Define budgets in `src/lib/config/budgets.ts`.
+- Define budgets in `src/lib/config/budgets.server.ts`.
 - Persist per-step usage, enforce max tokens and tool calls.
 - Add admin UI to adjust budgets if needed.
 
@@ -139,3 +143,4 @@ flowchart LR
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.

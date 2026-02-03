@@ -46,6 +46,8 @@ flowchart LR
 - Auth: Neon Auth (managed auth + UI components)
 - AI: Vercel AI SDK v6 + AI Gateway
 - DB: Neon Postgres + Drizzle ORM
+- DB connectivity (Vercel): Postgres TCP + connection pooling (`pg`) with
+  `attachDatabasePool` (`@vercel/functions`) for Fluid compute
 - Infra helpers: Upstash (Redis, QStash, Vector)
 - Quality: Biome (format/lint) + ESLint (TSDoc/JSDoc enforcement) + Vitest
 - Typing/Schema: Zod v4
@@ -100,6 +102,23 @@ cp .env.example .env.local
 bun install
 bun run dev
 ```
+
+### Database migrations
+
+Generate migrations (does not require a live DB connection):
+
+```bash
+bun run db:generate
+```
+
+Apply migrations (requires `DATABASE_URL`):
+
+```bash
+bun run db:migrate
+```
+
+Integration tests in `tests/integration/db.test.ts` run only when `DATABASE_URL`
+is set; otherwise they are skipped.
 
 Optional: implementation/deploy automation variables (GitHub/Vercel/Neon/Upstash)
 are documented in [`docs/ops/env.md`](./docs/ops/env.md).

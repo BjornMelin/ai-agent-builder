@@ -84,7 +84,12 @@ App-level access control (cost control):
 
 - `DATABASE_URL` (required for `env.db`)
   - Postgres connection string.
-  - Used by: Drizzle DB client (planned).
+  - Used by: Drizzle DB client (`src/db/client.ts`) and server-only DAL modules
+    (`src/lib/data/*.server.ts`).
+  - On Vercel Fluid compute, DB connections are pooled with `pg` and integrated
+    with Vercel’s pooling semantics via `attachDatabasePool`.
+    ([Neon: Connecting to Neon from Vercel](https://neon.com/docs/guides/vercel-connection-methods),
+    [`attachDatabasePool`](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package))
   - Vercel Preview note: when using the Neon ↔ Vercel integration with Preview
     Branching, this value is injected automatically per Preview branch.
     ([Neon Vercel integration](https://neon.com/docs/guides/vercel))
@@ -155,6 +160,10 @@ export const POST = verifyQstashSignatureAppRouter(async (req) => {
   `https://ai-gateway.vercel.sh/v1`)
   - Base URL for OpenAI-compatible requests to AI Gateway
     ([OpenAI-compatible API](https://vercel.com/docs/ai-gateway/openai-compatibility)).
+- `AI_GATEWAY_CHAT_MODEL` (optional, default: `xai/grok-4.1-fast-reasoning`)
+  - Default AI Gateway model ID used for chat generation.
+- `AI_GATEWAY_EMBEDDING_MODEL` (optional, default: `alibaba/qwen3-embedding-4b`)
+  - Default AI Gateway model ID used for embeddings (uploads + retrieval).
 
 ### Vercel Blob
 

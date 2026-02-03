@@ -9,6 +9,33 @@
 - Vercel project configuration via `vercel.json`.
   ([vercel.json](https://vercel.com/docs/project-configuration))
 
+## Database connectivity (Neon)
+
+Default runtime strategy (Vercel deployments):
+
+- Use Postgres TCP + a connection pool (`pg`) to Neon.
+  ([Neon: Connecting to Neon from Vercel](https://neon.com/docs/guides/vercel-connection-methods))
+- Attach the pool with `attachDatabasePool` so idle connections are released
+  before a Fluid compute function suspends.
+  ([Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package))
+
+Implementation:
+
+- `src/db/client.ts` creates the `pg` pool and configures Drizzle (`drizzle-orm/node-postgres`).
+- `src/lib/data/*.server.ts` is the Data Access Layer (DAL); prefer calling DAL
+  functions from Route Handlers, Server Actions, and Server Components.
+
+Operational notes:
+
+- Keep pool sizes conservative to avoid exhausting Neon connection limits under
+  high concurrency.
+- If running on a classic serverless platform without safe pooling, consider
+  Neon’s HTTP/WebSocket driver as an alternative connection method.
+- If Fluid compute is disabled for the Vercel project, you can explicitly enable
+  it via `vercel.json` (`"fluid": true`).
+  ([Fluid compute](https://vercel.com/docs/fluid-compute),
+  [`vercel.json` configuration](https://vercel.com/docs/project-configuration))
+
 ## Runtime & Package Manager (Bun)
 
 ai-agent-builder standardizes on **Bun** for local dev, CI, and Vercel

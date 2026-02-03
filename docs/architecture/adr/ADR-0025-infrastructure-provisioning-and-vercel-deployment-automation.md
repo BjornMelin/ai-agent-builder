@@ -2,8 +2,8 @@
 ADR: 0025
 Title: Infrastructure provisioning and Vercel deployment automation
 Status: Accepted
-Version: 0.1
-Date: 2026-02-01
+Version: 0.2
+Date: 2026-02-03
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0003, ADR-0004, ADR-0005, ADR-0010, ADR-0021, ADR-0024]
@@ -31,6 +31,10 @@ Accepted — 2026-02-01.
 Automate target-app infrastructure and deployments using provider APIs when
 credentials are available, with an explicit fallback path that generates exact
 manual steps when automation cannot be performed.
+
+See [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+for the cross-cutting “finalization” plan that ties provisioning and env var
+contracts back to the runtime app stack (Neon/Drizzle, Upstash, AI Gateway, UI).
 
 “Automation when possible” is critical for scaling workflows, but the system
 must remain usable when some provider APIs are unavailable (e.g., account type
@@ -255,3 +259,4 @@ flowchart LR
 ## Changelog
 
 - **0.1 (2026-02-01)**: Initial version.
+- **0.2 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.

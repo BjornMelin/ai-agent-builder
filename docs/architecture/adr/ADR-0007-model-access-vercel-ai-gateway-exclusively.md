@@ -2,8 +2,8 @@
 ADR: 0007
 Title: Model access: Vercel AI Gateway exclusively
 Status: Accepted
-Version: 0.2
-Date: 2026-01-30
+Version: 0.3
+Date: 2026-02-03
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0013, ADR-0021]
@@ -94,13 +94,17 @@ flowchart LR
 
 ### Architecture Overview
 
-- `src/lib/ai/gateway.ts` exposes model factories and model listing for UI.
+- `src/lib/ai/gateway.server.ts` exposes AI Gateway provider wiring and model configuration.
 - `scripts/fetch-models.sh` fetches `/models` into `docs/ai-gateway-models.json`.
 
 ### Implementation Details
 
 - Persist `model`, `provider`, `token_usage`, `latency_ms` in run steps.
 - Provide run-level budget checks before expensive steps.
+- Default model IDs are config-driven via env vars (see `docs/ops/env.md` and
+  SPEC-0021):
+  - `AI_GATEWAY_CHAT_MODEL` (default: `xai/grok-4.1-fast-reasoning`)
+  - `AI_GATEWAY_EMBEDDING_MODEL` (default: `alibaba/qwen3-embedding-4b`)
 
 ## Testing
 
@@ -138,3 +142,4 @@ flowchart LR
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-03)**: Updated file path references and recorded final default model IDs (SPEC-0021).

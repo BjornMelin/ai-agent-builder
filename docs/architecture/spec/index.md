@@ -23,3 +23,4 @@
 - [SPEC-0018](./SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md) — Target app provisioning and secrets mapping
 - [SPEC-0019](./SPEC-0019-sandbox-build-test-and-ci-execution.md) — Sandbox build/test/verification execution
 - [SPEC-0020](./SPEC-0020-project-workspace-and-search.md) — Project workspace and search UX
+- [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md) — Full-stack finalization (Fluid Compute + Neon/Drizzle + Upstash + AI Gateway + AI Elements UI)

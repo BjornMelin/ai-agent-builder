@@ -38,6 +38,7 @@ Drizzle is configured for:
 - `src/db/schema.ts` (schema definitions)
 - `src/db/migrations` (generated migrations)
 - `drizzle.config.ts` (drizzle-kit configuration)
+- `src/lib/data/*.server.ts` (server-only Data Access Layer; preferred access point)
 
 ## Consistency and idempotency
 
@@ -45,9 +46,9 @@ Drizzle is configured for:
 - Upstash Vector is authoritative for similarity search results.
 - Each ingestion run is idempotent per file using content hash (`sha256`) +
   extraction version.
-- Each workflow step is idempotent per `(runId, stepName)`.
+- Each workflow step is idempotent per `(runId, stepId)`.
 - Each side-effectful action is idempotent via:
-  - a stable `idempotency_key`
+  - a stable internal identifier (e.g. step id)
   - stored external IDs (PR number, deployment id, etc.)
 
 ## Entity details (minimum fields)
@@ -155,7 +156,7 @@ rules (see
 - `file_chunks(project_id, file_id)`
 - `runs(project_id)`
 - `run_steps(run_id, step_name)`
-- `artifacts(project_id, kind, key)`
+- `artifacts(project_id, kind, logical_key)`
 - `chat_threads(project_id)`
 - `chat_messages(thread_id, created_at)`
 - `repos(project_id)`

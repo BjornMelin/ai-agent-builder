@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0020
 title: Project workspace and search UX
-version: 0.1.0
-date: 2026-02-01
+version: 0.1.1
+date: 2026-02-03
 owners: ["you"]
 status: Proposed
 related_requirements: ["FR-002", "FR-019", "FR-020", "NFR-008", "IR-002", "IR-005"]
@@ -15,6 +15,10 @@ notes:
 
 Defines the project workspace structure and search behavior across projects,
 uploads, runs, artifacts, and connected repositories.
+
+See [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+for the cross-cutting “finalization” plan that ties the workspace UI into
+ingestion, retrieval, chat, and durable runs.
 
 ## Context
 
@@ -247,3 +251,4 @@ Accessibility and UX:
 ## Changelog
 
 - **0.1 (2026-02-01)**: Initial draft.
+- **0.1.1 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.

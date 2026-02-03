@@ -2,8 +2,8 @@
 ADR: 0004
 Title: Retrieval: Upstash Vector for semantic + hybrid search
 Status: Accepted
-Version: 0.3
-Date: 2026-02-01
+Version: 0.4
+Date: 2026-02-03
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0003, ADR-0006, ADR-0024]
@@ -30,6 +30,10 @@ Use Upstash Vector for retrieval across:
 Prefer **HYBRID** vector indexes (dense + lexical) when provisioning new indexes
 to improve exact-token recall (important for code and identifiers), while still
 retaining semantic retrieval quality.
+
+See [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+for the cross-cutting “finalization” plan that ties Vector retrieval into
+ingestion, chat, search, and durable runs end-to-end.
 
 ## Context
 
@@ -122,9 +126,9 @@ flowchart LR
 
 ### Architecture Overview
 
-Planned implementation module:
+Implementation module:
 
-- `src/lib/upstash/vector.ts`: client + helper functions (namespace, upsert,
+- `src/lib/upstash/vector.server.ts`: client + helper functions (namespace, upsert,
   query, delete).
 
 ### Implementation Details
@@ -179,3 +183,4 @@ Planned implementation module:
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-01)**: Updated for hybrid retrieval guidance.
+- **0.4 (2026-02-03)**: Updated file path references for server-only Vector client module.
