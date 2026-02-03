@@ -58,7 +58,7 @@ describe("env feature gates", () => {
       },
       async () => {
         const { env } = await loadEnv();
-        expect(env.aiGateway.baseUrl).toBe("https://ai-gateway.vercel.sh/v1");
+        expect(env.aiGateway.baseUrl).toBe("https://ai-gateway.vercel.sh/v3/ai");
       },
     );
   });
@@ -73,9 +73,7 @@ describe("env feature gates", () => {
       async () => {
         const { env } = await loadEnv();
         expect(env.aiGateway.chatModel).toBe("xai/grok-4.1-fast-reasoning");
-        expect(env.aiGateway.embeddingModel).toBe(
-          "alibaba/qwen3-embedding-4b",
-        );
+        expect(env.aiGateway.embeddingModel).toBe("alibaba/qwen3-embedding-4b");
       },
     );
   });

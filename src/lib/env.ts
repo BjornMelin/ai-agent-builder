@@ -165,10 +165,12 @@ const qstashVerifySchema = z
 const aiGatewaySchema = z
   .looseObject({
     AI_GATEWAY_API_KEY: envNonEmpty,
-    AI_GATEWAY_BASE_URL: envUrl.default("https://ai-gateway.vercel.sh/v1"),
+    AI_GATEWAY_BASE_URL: envUrl.default("https://ai-gateway.vercel.sh/v3/ai"),
     // Optional defaults for model selection (config-driven, not hardcoded at call sites).
     // These are AI Gateway model IDs, e.g. "xai/grok-4.1-fast-reasoning".
-    AI_GATEWAY_CHAT_MODEL: envOptionalTrimmed.default("xai/grok-4.1-fast-reasoning"),
+    AI_GATEWAY_CHAT_MODEL: envOptionalTrimmed.default(
+      "xai/grok-4.1-fast-reasoning",
+    ),
     AI_GATEWAY_EMBEDDING_MODEL: envOptionalTrimmed.default(
       "alibaba/qwen3-embedding-4b",
     ),

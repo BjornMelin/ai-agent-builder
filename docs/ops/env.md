@@ -157,9 +157,9 @@ export const POST = verifyQstashSignatureAppRouter(async (req) => {
   - Bearer token for the AI Gateway
     ([AI Gateway authentication](https://vercel.com/docs/ai-gateway/authentication)).
 - `AI_GATEWAY_BASE_URL` (optional, default:
-  `https://ai-gateway.vercel.sh/v1`)
-  - Base URL for OpenAI-compatible requests to AI Gateway
-    ([OpenAI-compatible API](https://vercel.com/docs/ai-gateway/openai-compatibility)).
+  `https://ai-gateway.vercel.sh/v3/ai`)
+  - Base URL for AI Gateway provider requests
+    ([AI Gateway provider](https://ai-sdk.dev/providers/ai-sdk-providers/ai-gateway)).
 - `AI_GATEWAY_CHAT_MODEL` (optional, default: `xai/grok-4.1-fast-reasoning`)
   - Default AI Gateway model ID used for chat generation.
 - `AI_GATEWAY_EMBEDDING_MODEL` (optional, default: `alibaba/qwen3-embedding-4b`)
