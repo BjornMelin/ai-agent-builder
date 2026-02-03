@@ -83,7 +83,12 @@ See [repository baseline](./repository-baseline.md).
 - **Vector retrieval:** Upstash Vector.
   ([Upstash Vector + AI SDK](https://upstash.com/docs/vector/integrations/ai-sdk))
 - **DB:** Neon Postgres + Drizzle ORM.
-  ([Neon serverless driver](https://neon.com/docs/serverless/serverless-driver))
+  - On Vercel **Fluid compute**, use Postgres TCP + connection pooling.
+    ([Neon: Connecting to Neon from Vercel](https://neon.com/docs/guides/vercel-connection-methods),
+    [`attachDatabasePool`](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package))
+  - In classic serverless environments without safe pooling, Neon’s HTTP/WebSocket
+    serverless driver can be used instead.
+    ([Neon serverless driver](https://neon.com/docs/serverless/serverless-driver))
 - **Safe execution and verification:** Vercel Sandbox for “Code Mode” and
   implementation verification jobs.
   ([Vercel Sandbox](https://vercel.com/docs/vercel-sandbox))

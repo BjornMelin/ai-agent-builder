@@ -77,7 +77,7 @@ Recommended credential types:
 - Neon: API key with least privilege
 - Upstash: Developer API key (only if using a native account; see
   [Upstash Developer API](https://upstash.com/docs/common/account/developerapi))
-  + per-resource REST tokens for runtime
+  - per-resource REST tokens for runtime
 
 ## Sandbox safety
 

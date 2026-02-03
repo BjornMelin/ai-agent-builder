@@ -99,6 +99,10 @@ flowchart LR
 ### Implementation Details
 
 - `src/app/api/upload/route.ts`: streams to Blob.
+- Upload processing runs per-file work in parallel; async ingestion enqueues a
+  QStash job per file with deduplication ids and labels.
+  ([QStash deduplication](https://upstash.com/docs/qstash/features/deduplication),
+  [QStash publish API](https://upstash.com/docs/qstash/api-reference/messages/publish-a-message))
 - `src/lib/blob/client.ts`: wrapper with typed metadata.
 - Persist `blobUrl`, `sha256`, `sizeBytes`, `mimeType`.
 

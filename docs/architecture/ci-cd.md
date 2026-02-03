@@ -27,6 +27,18 @@ Branching. When enabled, Neon will automatically provision:
 This avoids duplicating branch/env provisioning logic in GitHub Actions and
 prevents races between push and pull_request workflows.
 
+## Database connection method (Vercel)
+
+On Vercel **Fluid compute**, this app uses a pooled Postgres TCP connection via
+`pg` and attaches the pool with `attachDatabasePool` to ensure idle clients are
+released before functions suspend.
+
+- Implementation: `src/db/client.ts`
+- Reference:
+  - [Neon: Connecting to Neon from Vercel](https://neon.com/docs/guides/vercel-connection-methods)
+  - [Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package)
+  - [Vercel Fluid compute](https://vercel.com/docs/fluid-compute)
+
 ### Neon Auth trusted domains (optional)
 
 Neon Auth requires explicit allowlisting of trusted domains. Preview URLs can be

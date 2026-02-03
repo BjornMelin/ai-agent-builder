@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0015
 title: Environment configuration contracts
-version: 0.3.0
-date: 2026-02-02
+version: 0.3.1
+date: 2026-02-03
 owners: ["you"]
 status: Implemented
 related_requirements:
@@ -35,6 +35,10 @@ notes:
 
 Defines environment variable contracts and a single typed access module
 (`src/lib/env.ts`) with feature-gated validation.
+
+See [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+for the cross-cutting “finalization” plan that records the current env var
+defaults and the remaining work to finalize full-stack behavior.
 
 ## Context
 
@@ -224,3 +228,4 @@ Implementation/deploy automation (optional feature gates):
 - **0.2 (2026-01-31)**: Migrated `env.auth` to Neon Auth + allowlist access control.
 - **0.3 (2026-02-01)**: Documented public auth UI env and client
   `NEXT_PUBLIC_*` exception; aligned env ops references.
+- **0.3.1 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.

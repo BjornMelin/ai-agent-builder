@@ -8,6 +8,7 @@ Run** subsystem (plan → code → verify → deploy) described in:
 - [SPEC-0018](./spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)
 - [SPEC-0019](./spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
 - [SPEC-0020](./spec/SPEC-0020-project-workspace-and-search.md)
+- [SPEC-0021](./spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md) (cross-cutting finalization plan)
 
 ## Invariants (do not violate)
 

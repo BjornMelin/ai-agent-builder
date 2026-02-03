@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0004
 title: Chat + retrieval augmentation
-version: 0.2.0
-date: 2026-01-30
+version: 0.3.0
+date: 2026-02-03
 owners: ["you"]
 status: Proposed
 related_requirements: ["FR-008", "FR-009", "FR-019", "PR-001", "PR-002"]
@@ -13,6 +13,10 @@ notes: "Defines chat UX, persistence, and RAG behavior for grounded responses."
 ## Summary
 
 Defines streaming chat UX, persistence, and retrieval augmentation for grounded responses.
+
+See [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+for the cross-cutting “finalization” plan that integrates chat and retrieval
+into the workspace UI, caching, and durable orchestration.
 
 ## Context
 
@@ -96,8 +100,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - `src/app/(app)/projects/[projectId]/chat/page.tsx`: UI for streaming chat and message history.
 - `src/app/api/chat/route.ts`: server streaming endpoint; must persist messages/tool calls.
-- `src/lib/ai/tools/retrieval.ts`: retrieval tool; must enforce project scoping and top-k bounds.
-- `src/lib/upstash/vector.ts`: vector query interface with metadata filters.
+- `src/lib/ai/tools/retrieval.server.ts`: retrieval tool; must enforce project scoping and top-k bounds.
+- `src/lib/upstash/vector.server.ts`: vector query interface with metadata filters.
 
 ### Configuration
 
@@ -128,7 +132,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ## Key files
 
 - `src/app/api/chat/route.ts`
-- `src/lib/ai/tools/retrieval.ts`
+- `src/lib/ai/tools/retrieval.server.ts`
 
 ## References
 
@@ -138,3 +142,4 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-03)**: Updated file path references to server-only modules.

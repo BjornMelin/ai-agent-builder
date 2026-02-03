@@ -72,6 +72,14 @@ const runtimeSchema = z
     nodeEnv: v.NODE_ENV,
   }));
 
+const appSchema = z
+  .looseObject({
+    APP_BASE_URL: envUrl,
+  })
+  .transform((v) => ({
+    baseUrl: v.APP_BASE_URL,
+  }));
+
 const dbSchema = z
   .looseObject({
     DATABASE_URL: envUrl,
@@ -165,11 +173,21 @@ const qstashVerifySchema = z
 const aiGatewaySchema = z
   .looseObject({
     AI_GATEWAY_API_KEY: envNonEmpty,
-    AI_GATEWAY_BASE_URL: envUrl.default("https://ai-gateway.vercel.sh/v1"),
+    AI_GATEWAY_BASE_URL: envUrl.default("https://ai-gateway.vercel.sh/v3/ai"),
+    // Optional defaults for model selection (config-driven, not hardcoded at call sites).
+    // These are AI Gateway model IDs, e.g. "xai/grok-4.1-fast-reasoning".
+    AI_GATEWAY_CHAT_MODEL: envOptionalTrimmed.default(
+      "xai/grok-4.1-fast-reasoning",
+    ),
+    AI_GATEWAY_EMBEDDING_MODEL: envOptionalTrimmed.default(
+      "alibaba/qwen3-embedding-4b",
+    ),
   })
   .transform((v) => ({
     apiKey: v.AI_GATEWAY_API_KEY,
     baseUrl: v.AI_GATEWAY_BASE_URL,
+    chatModel: v.AI_GATEWAY_CHAT_MODEL,
+    embeddingModel: v.AI_GATEWAY_EMBEDDING_MODEL,
   }));
 
 const webResearchSchema = z
@@ -290,6 +308,7 @@ const upstashDeveloperSchema = z
   }));
 
 let cachedRuntimeEnv: Readonly<z.output<typeof runtimeSchema>> | undefined;
+let cachedAppEnv: Readonly<z.output<typeof appSchema>> | undefined;
 let cachedDbEnv: Readonly<z.output<typeof dbSchema>> | undefined;
 let cachedAuthEnv: Readonly<z.output<typeof authSchema>> | undefined;
 let cachedAuthUiEnv: Readonly<z.output<typeof authUiSchema>> | undefined;
@@ -329,6 +348,15 @@ export const env = {
   get aiGateway(): Readonly<z.output<typeof aiGatewaySchema>> {
     cachedAiGatewayEnv ??= parseFeatureEnv("aiGateway", aiGatewaySchema);
     return cachedAiGatewayEnv;
+  },
+  /**
+   * Returns the application base URL used for server callbacks.
+   *
+   * @returns App env.
+   */
+  get app(): Readonly<z.output<typeof appSchema>> {
+    cachedAppEnv ??= parseFeatureEnv("app", appSchema);
+    return cachedAppEnv;
   },
 
   /**

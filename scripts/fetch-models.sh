@@ -5,7 +5,13 @@ set -euo pipefail
 # AI Gateway OpenAI-compatible base URL: https://ai-gateway.vercel.sh/v1
 # Models endpoint: https://ai-gateway.vercel.sh/v1/models
 
-BASE_URL="${AI_GATEWAY_BASE_URL:-https://ai-gateway.vercel.sh/v1}"
+RAW_BASE_URL="${AI_GATEWAY_BASE_URL:-https://ai-gateway.vercel.sh/v1}"
+BASE_URL="${RAW_BASE_URL%/}"
+if [[ "$BASE_URL" == */v3/ai ]]; then
+  BASE_URL="${BASE_URL%/v3/ai}/v1"
+elif [[ "$BASE_URL" == */v1/ai ]]; then
+  BASE_URL="${BASE_URL%/ai}"
+fi
 OUT_FILE="${1:-docs/ai-gateway-models.json}"
 
 if [[ -z "${AI_GATEWAY_API_KEY:-}" ]]; then

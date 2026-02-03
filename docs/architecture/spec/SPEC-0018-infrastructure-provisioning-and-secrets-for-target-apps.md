@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0018
 title: Target app infrastructure provisioning and secrets mapping
-version: 0.1.0
-date: 2026-02-01
+version: 0.1.1
+date: 2026-02-03
 owners: ["you"]
 status: Proposed
 related_requirements:
@@ -16,6 +16,10 @@ notes:
 
 Define how Implementation Runs provision or connect infrastructure and configure
 deployments.
+
+See [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+for the cross-cutting “finalization” plan that ties provisioning and env var
+contracts back to the runtime app stack (Neon/Drizzle, Upstash, AI Gateway, UI).
 
 Core principle: **never store secrets in the DB**. The system stores only
 non-secret metadata and external IDs.
@@ -145,6 +149,14 @@ Implementation runs support three provisioning modes per integration:
   - database (per app)
 - Connection strings are secrets and must only be written to Vercel env vars or
   presented once for manual copy/paste.
+- Target apps deployed on Vercel should default to Postgres TCP + connection
+  pooling on Fluid compute (instead of per-request connections), and attach the
+  pool via `attachDatabasePool` for correct idle connection handling.
+  - [Neon: Connecting to Neon from Vercel](https://neon.com/docs/guides/vercel-connection-methods)
+  - [Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package)
+- This app consumes the runtime connection string exclusively via `DATABASE_URL`
+  (see `src/db/client.ts` and `src/lib/data/*.server.ts`); the DB stores only
+  non-secret metadata and external IDs.
 
 ### Upstash (cache/queue/vector)
 
@@ -238,3 +250,4 @@ Default policies:
 ## Changelog
 
 - **0.1 (2026-02-01)**: Initial draft.
+- **0.1.1 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.

@@ -2,8 +2,8 @@
 ADR: 0011
 Title: UI: AI Elements + Streamdown + shadcn/ui + Tailwind v4
 Status: Accepted
-Version: 0.2
-Date: 2026-01-30
+Version: 0.3
+Date: 2026-02-03
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0006, ADR-0020]
@@ -23,6 +23,10 @@ Accepted — 2026-01-30.
 ## Description
 
 Use AI Elements for AI chat/streaming components and shadcn/ui for the rest of the UI.
+
+See [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+for the cross-cutting “finalization” plan that specifies the workspace
+information architecture and the API contracts required by the UI.
 
 ## Context
 
@@ -137,3 +141,4 @@ flowchart LR
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.

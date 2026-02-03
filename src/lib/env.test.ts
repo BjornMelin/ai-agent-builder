@@ -42,6 +42,21 @@ describe("env feature gates", () => {
     });
   });
 
+  it("throws on first access when APP_BASE_URL is missing", async () => {
+    await withEnv({ APP_BASE_URL: undefined }, async () => {
+      const { env } = await loadEnv();
+      expect(() => env.app).toThrowError(/APP_BASE_URL/i);
+    });
+  });
+
+  it("parses APP_BASE_URL when required vars exist", async () => {
+    const appBaseUrl = "https://example.com";
+    await withEnv({ APP_BASE_URL: appBaseUrl }, async () => {
+      const { env } = await loadEnv();
+      expect(env.app.baseUrl).toBe(appBaseUrl);
+    });
+  });
+
   it("parses a feature gate when required vars exist", async () => {
     const databaseUrl = "postgresql://user:pw@localhost/db";
     await withEnv({ DATABASE_URL: databaseUrl }, async () => {
@@ -58,7 +73,24 @@ describe("env feature gates", () => {
       },
       async () => {
         const { env } = await loadEnv();
-        expect(env.aiGateway.baseUrl).toBe("https://ai-gateway.vercel.sh/v1");
+        expect(env.aiGateway.baseUrl).toBe(
+          "https://ai-gateway.vercel.sh/v3/ai",
+        );
+      },
+    );
+  });
+
+  it("defaults AI Gateway model IDs when unset", async () => {
+    await withEnv(
+      {
+        AI_GATEWAY_API_KEY: "test-key",
+        AI_GATEWAY_CHAT_MODEL: undefined,
+        AI_GATEWAY_EMBEDDING_MODEL: undefined,
+      },
+      async () => {
+        const { env } = await loadEnv();
+        expect(env.aiGateway.chatModel).toBe("xai/grok-4.1-fast-reasoning");
+        expect(env.aiGateway.embeddingModel).toBe("alibaba/qwen3-embedding-4b");
       },
     );
   });
