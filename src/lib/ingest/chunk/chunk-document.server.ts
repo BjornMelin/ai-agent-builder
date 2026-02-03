@@ -4,13 +4,17 @@ import { sha256Hex } from "@/lib/core/sha256";
 import type { Chunk, ExtractedDoc } from "@/lib/ingest/types";
 
 function estimateTokens(text: string): number {
+  // Heuristic token estimate; replace with a model tokenizer if precise budgets are required.
   const trimmed = text.trim();
   if (trimmed.length === 0) return 0;
   return trimmed.split(/\s+/).length;
 }
 
 function splitByMaxChars(text: string, maxChars: number): string[] {
-  const normalized = text.replace(/\s+/g, " ").trim();
+  const normalized = text
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .trim();
   if (normalized.length <= maxChars) return [normalized];
 
   const chunks: string[] = [];

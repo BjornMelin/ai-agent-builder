@@ -72,6 +72,14 @@ const runtimeSchema = z
     nodeEnv: v.NODE_ENV,
   }));
 
+const appSchema = z
+  .looseObject({
+    APP_BASE_URL: envUrl,
+  })
+  .transform((v) => ({
+    baseUrl: v.APP_BASE_URL,
+  }));
+
 const dbSchema = z
   .looseObject({
     DATABASE_URL: envUrl,
@@ -300,6 +308,7 @@ const upstashDeveloperSchema = z
   }));
 
 let cachedRuntimeEnv: Readonly<z.output<typeof runtimeSchema>> | undefined;
+let cachedAppEnv: Readonly<z.output<typeof appSchema>> | undefined;
 let cachedDbEnv: Readonly<z.output<typeof dbSchema>> | undefined;
 let cachedAuthEnv: Readonly<z.output<typeof authSchema>> | undefined;
 let cachedAuthUiEnv: Readonly<z.output<typeof authUiSchema>> | undefined;
@@ -331,6 +340,16 @@ let cachedUpstashDeveloperEnv:
  * Client Components.
  */
 export const env = {
+  /**
+   * Returns the application base URL used for server callbacks.
+   *
+   * @returns App env.
+   */
+  get app(): Readonly<z.output<typeof appSchema>> {
+    cachedAppEnv ??= parseFeatureEnv("app", appSchema);
+    return cachedAppEnv;
+  },
+
   /**
    * Returns the Vercel AI Gateway configuration used by server code.
    *

@@ -11,6 +11,9 @@ import {
   type VectorMetadata,
 } from "@/lib/upstash/vector.server";
 
+/**
+ * A single retrieval result with score, snippet, and provenance metadata.
+ */
 export type RetrievalHit = Readonly<{
   id: string;
   score: number;
@@ -24,6 +27,9 @@ export type RetrievalHit = Readonly<{
     pageEnd?: number;
   }>;
 }>;
+
+const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function getRedisOptional() {
   try {
@@ -53,6 +59,10 @@ function cacheKey(
 export async function retrieveProjectChunks(
   input: Readonly<{ projectId: string; q: string; topK?: number }>,
 ): Promise<readonly RetrievalHit[]> {
+  if (!uuidRegex.test(input.projectId)) {
+    throw new AppError("bad_request", 400, "Invalid projectId format.");
+  }
+
   const topK = input.topK ?? budgets.maxVectorTopK;
   if (topK < 1 || topK > budgets.maxVectorTopK) {
     throw new AppError(
@@ -105,7 +115,10 @@ export async function retrieveProjectChunks(
   });
 
   if (redis) {
-    await redis.setex(key, budgets.toolCacheTtlSeconds, hits);
+    // Cache write is best-effort; don't fail the request if Redis is unavailable.
+    await redis.setex(key, budgets.toolCacheTtlSeconds, hits).catch(() => {
+      // Silently ignore cache write failures.
+    });
   }
 
   return hits;

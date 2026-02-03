@@ -37,6 +37,12 @@ async function extractPdf(
   }
 }
 
+/**
+ * Extract text content from XML by tag name.
+ *
+ * @remarks
+ * IMPORTANT: tagName must be a trusted literal, never user input (ReDoS risk).
+ */
 function extractXmlTextByTag(xml: string, tagName: string): string {
   const re = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)</${tagName}>`, "g");
   const parts: string[] = [];
@@ -49,11 +55,11 @@ function extractXmlTextByTag(xml: string, tagName: string): string {
     const raw = match[1] ?? "";
     // Basic entity decode for common cases.
     const decoded = raw
-      .replace(/&amp;/g, "&")
       .replace(/&lt;/g, "<")
       .replace(/&gt;/g, ">")
       .replace(/&quot;/g, '"')
-      .replace(/&apos;/g, "'");
+      .replace(/&apos;/g, "'")
+      .replace(/&amp;/g, "&");
     parts.push(decoded);
   }
   return parts.join(" ").trim();
@@ -147,7 +153,7 @@ async function extractXlsx(
   bytes: Uint8Array,
 ): Promise<readonly ExtractedSection[]> {
   const XLSX = await import("xlsx");
-  const workbook = XLSX.read(Buffer.from(bytes), { type: "buffer" });
+  const workbook = XLSX.read(bytes);
 
   const sections: ExtractedSection[] = [];
   for (const sheetName of workbook.SheetNames) {
@@ -169,8 +175,10 @@ async function extractXlsx(
 /**
  * Extract a document into a normalized section-based text model.
  *
- * @param input - Extraction input.
+ * @param input - Document metadata and binary content including fileId, name, mimeType, and raw bytes.
  * @returns Normalized extracted document.
+ * @throws AppError - With code "unsupported_file_type" if mimeType is not supported.
+ * @throws AppError - With code "extract_failed" if document is invalid or contains no extractable text.
  */
 export async function extractDocument(
   input: Readonly<{

@@ -14,6 +14,12 @@ import {
   projectChunksNamespace,
 } from "@/lib/upstash/vector.server";
 
+/**
+ * Result of a file ingestion operation.
+ *
+ * @property fileId - Ingested file identifier.
+ * @property chunksIndexed - Number of chunks indexed.
+ */
 export type IngestFileResult = Readonly<{
   fileId: string;
   chunksIndexed: number;
@@ -25,8 +31,10 @@ export type IngestFileResult = Readonly<{
  * This is designed to run either inline (small files) or in a QStash worker
  * Route Handler (async ingestion).
  *
- * @param input - Ingestion input.
+ * @param input - File metadata and content bytes for ingestion.
  * @returns Ingestion result.
+ * @throws AppError - When no chunks are produced from extraction (400).
+ * @throws AppError - When embedding batch size doesn't match chunk count (500).
  */
 export async function ingestFile(
   input: Readonly<{
@@ -87,24 +95,31 @@ export async function ingestFile(
   });
 
   // Ensure stale vectors are removed (e.g., extraction version changes).
-  await vector.delete({ prefix: `${input.fileId}:` });
+  try {
+    await vector.delete({ prefix: `${input.fileId}:` });
 
-  await vector.upsert(
-    chunks.map((c, idx) => ({
-      id: c.id,
-      metadata: {
-        chunkId: c.id,
-        chunkIndex: c.chunkIndex,
-        fileId: input.fileId,
-        projectId: input.projectId,
-        snippet: c.content.slice(0, 280),
-        type: "chunk",
-        ...(c.pageStart === undefined ? {} : { pageStart: c.pageStart }),
-        ...(c.pageEnd === undefined ? {} : { pageEnd: c.pageEnd }),
-      },
-      vector: embeddings[idx] as number[],
-    })),
-  );
+    await vector.upsert(
+      chunks.map((c, idx) => ({
+        id: c.id,
+        metadata: {
+          chunkId: c.id,
+          chunkIndex: c.chunkIndex,
+          fileId: input.fileId,
+          projectId: input.projectId,
+          snippet: c.content.slice(0, 280),
+          type: "chunk",
+          ...(c.pageStart === undefined ? {} : { pageStart: c.pageStart }),
+          ...(c.pageEnd === undefined ? {} : { pageEnd: c.pageEnd }),
+        },
+        vector: embeddings[idx] as number[],
+      })),
+    );
+  } catch (error) {
+    await db
+      .delete(schema.fileChunksTable)
+      .where(eq(schema.fileChunksTable.fileId, input.fileId));
+    throw error;
+  }
 
   return { chunksIndexed: chunks.length, fileId: input.fileId };
 }

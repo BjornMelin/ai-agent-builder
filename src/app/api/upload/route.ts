@@ -13,7 +13,6 @@ import {
 import { getProjectById } from "@/lib/data/projects.server";
 import { env } from "@/lib/env";
 import { ingestFile } from "@/lib/ingest/ingest-file.server";
-import { getRequestOrigin } from "@/lib/next/request-origin";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { getQstashClient } from "@/lib/upstash/qstash.server";
 
@@ -32,6 +31,9 @@ function sanitizeFilename(name: string): string {
   return trimmed.replaceAll(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 128);
 }
 
+/**
+ * Response payload for the upload endpoint.
+ */
 type UploadResponse = Readonly<{
   files: readonly (ProjectFileDto &
     Readonly<{ ingest?: { chunksIndexed: number } }>)[]; // JSON-safe
@@ -40,8 +42,8 @@ type UploadResponse = Readonly<{
 /**
  * Upload one or more files to a project, optionally ingesting them.
  *
- * @param req - HTTP request.
- * @returns Upload response.
+ * @param req - Incoming multipart/form-data request containing projectId, file(s), and optional async flag.
+ * @returns JSON response with uploaded file metadata and optional ingestion results.
  */
 export async function POST(
   req: Request,
@@ -128,14 +130,7 @@ export async function POST(
       if (shouldIngestAsync) {
         try {
           const qstash = getQstashClient();
-          const origin = getRequestOrigin(req.headers);
-          if (!origin) {
-            throw new AppError(
-              "bad_request",
-              400,
-              "Unable to determine request origin for async ingestion.",
-            );
-          }
+          const origin = env.app.baseUrl;
 
           await qstash.publishJSON({
             body: { fileId: dbFile.id, projectId },
@@ -150,6 +145,10 @@ export async function POST(
           if (env.runtime.isVercel) {
             throw err;
           }
+          console.debug(
+            "[upload] QStash unavailable, falling back to inline ingestion",
+            err,
+          );
         }
       }
 

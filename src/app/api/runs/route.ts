@@ -4,7 +4,7 @@ import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { getProjectById } from "@/lib/data/projects.server";
 import { createRun, ensureRunStep } from "@/lib/data/runs.server";
-import { getRequestOrigin } from "@/lib/next/request-origin";
+import { env } from "@/lib/env";
 import { jsonCreated, jsonError } from "@/lib/next/responses";
 import { enqueueRunStep } from "@/lib/runs/run-engine.server";
 
@@ -18,6 +18,9 @@ const createRunSchema = z.strictObject({
  * Create a new run for a project and enqueue its first step.
  *
  * @param req - HTTP request.
+ * @throws AppError - When request body is invalid (400).
+ * @throws AppError - When project is not found (404).
+ * @throws AppError - When callback origin configuration is invalid.
  * @returns Run response or JSON error.
  */
 export async function POST(req: Request) {
@@ -35,6 +38,7 @@ export async function POST(req: Request) {
       throw new AppError("not_found", 404, "Project not found.");
     }
 
+    const callbackOrigin = env.app.baseUrl;
     const run = await createRun({
       kind: parsed.data.kind,
       projectId: parsed.data.projectId,
@@ -48,16 +52,11 @@ export async function POST(req: Request) {
       stepName: "Start run",
     });
 
-    const origin = getRequestOrigin(req.headers);
-    if (!origin) {
-      throw new AppError(
-        "bad_request",
-        400,
-        "Unable to determine request origin.",
-      );
-    }
-
-    await enqueueRunStep({ origin, runId: run.id, stepId: "run.start" });
+    await enqueueRunStep({
+      origin: callbackOrigin,
+      runId: run.id,
+      stepId: "run.start",
+    });
 
     return jsonCreated(run);
   } catch (err) {

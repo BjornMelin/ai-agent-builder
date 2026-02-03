@@ -42,6 +42,21 @@ describe("env feature gates", () => {
     });
   });
 
+  it("throws on first access when APP_BASE_URL is missing", async () => {
+    await withEnv({ APP_BASE_URL: undefined }, async () => {
+      const { env } = await loadEnv();
+      expect(() => env.app).toThrowError(/APP_BASE_URL/i);
+    });
+  });
+
+  it("parses APP_BASE_URL when required vars exist", async () => {
+    const appBaseUrl = "https://example.com";
+    await withEnv({ APP_BASE_URL: appBaseUrl }, async () => {
+      const { env } = await loadEnv();
+      expect(env.app.baseUrl).toBe(appBaseUrl);
+    });
+  });
+
   it("parses a feature gate when required vars exist", async () => {
     const databaseUrl = "postgresql://user:pw@localhost/db";
     await withEnv({ DATABASE_URL: databaseUrl }, async () => {
