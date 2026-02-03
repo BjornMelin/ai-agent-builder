@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.2...ai-agent-builder-v0.1.3) (2026-02-03)
+
+
+### Bug Fixes
+
+* **ci:** enforce ubuntu-latest for scorecard ([af278ae](https://github.com/BjornMelin/ai-agent-builder/commit/af278aee4bcc428363dbc4788790b7d12655b7e5))
+* **ci:** enforce ubuntu-latest for scorecard ([3a43fee](https://github.com/BjornMelin/ai-agent-builder/commit/3a43fee3ec2b0ff81be320c9ddabd3cd7092a4d6))
+
 ## [0.1.2](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.1...ai-agent-builder-v0.1.2) (2026-02-03)
 
 
