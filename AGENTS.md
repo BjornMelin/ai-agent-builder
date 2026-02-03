@@ -37,8 +37,12 @@ bun run fetch:models           # Update AI model catalog (requires AI_GATEWAY_AP
 
 ## Drizzle + database
 
-- `drizzle.config.ts` reads `DATABASE_URL` at runtime; `bun run db:*` commands will fail fast if it's missing.
+- `drizzle.config.ts` loads Next.js `.env*` files and requires `DATABASE_URL` for
+  commands that need a live DB connection (e.g. `db:migrate`, `db:studio`).
 - Schema lives in `src/db/schema.ts` and migrations are generated into `src/db/migrations`.
+- Runtime DB access uses Postgres TCP with pooling (`pg`) and Drizzle
+  (`drizzle-orm/node-postgres`). On Vercel Fluid compute, the pool is attached
+  with `attachDatabasePool` (`@vercel/functions`) in `src/db/client.ts`.
 
 ## Database
 
