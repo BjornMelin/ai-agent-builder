@@ -109,6 +109,6 @@ If OAuth is disabled on Preview, use **email OTP** or **magic link** auth flows:
 
 ## Rotating secrets
 
-- Rotate `NEON_AUTH_COOKIE_SECRET` to invalidate session cache.
+- Rotate `NEON_AUTH_COOKIE_SECRET` to invalidate all active user sessions (requiring users to sign in again).
 - Rotate provider tokens (GitHub/Vercel/Neon/Upstash) if compromised.
 - Update Vercel environment variables accordingly.
