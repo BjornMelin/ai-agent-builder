@@ -63,6 +63,23 @@ describe("env feature gates", () => {
     );
   });
 
+  it("defaults AI Gateway model IDs when unset", async () => {
+    await withEnv(
+      {
+        AI_GATEWAY_API_KEY: "test-key",
+        AI_GATEWAY_CHAT_MODEL: undefined,
+        AI_GATEWAY_EMBEDDING_MODEL: undefined,
+      },
+      async () => {
+        const { env } = await loadEnv();
+        expect(env.aiGateway.chatModel).toBe("xai/grok-4.1-fast-reasoning");
+        expect(env.aiGateway.embeddingModel).toBe(
+          "alibaba/qwen3-embedding-4b",
+        );
+      },
+    );
+  });
+
   it("requires AUTH_ALLOWED_EMAILS when AUTH_ACCESS_MODE is restricted", async () => {
     await withEnv(
       {
