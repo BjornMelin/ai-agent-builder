@@ -1,3 +1,4 @@
+import path from "node:path";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { configDefaults, defineConfig } from "vitest/config";
@@ -20,13 +21,19 @@ export default defineConfig({
       projects: ["./tsconfig.json"],
     }),
   ],
+  resolve: {
+    alias: {
+      "client-only": path.resolve(__dirname, "tests/mocks/empty.ts"),
+      "server-only": path.resolve(__dirname, "tests/mocks/empty.ts"),
+    },
+  },
   test: {
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
       reportsDirectory: "./coverage",
     },
-    environment: "jsdom",
+    environment: "node",
     exclude: [...configDefaults.exclude, "opensrc/**", ".next-docs/**"],
     include: testInclude,
     passWithNoTests: true,

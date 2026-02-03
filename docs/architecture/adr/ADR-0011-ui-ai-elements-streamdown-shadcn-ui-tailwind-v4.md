@@ -132,7 +132,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: @vercel/ai-elements, streamdown, shadcn/ui
-- **Removed**: []
 
 ## Changelog
 

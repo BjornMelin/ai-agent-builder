@@ -1,11 +1,11 @@
 ---
 ADR: 0002
 Title: Authentication: single-password + signed cookie session
-Status: Accepted
-Version: 0.2
+Status: Superseded
+Version: 0.3
 Date: 2026-01-30
 Supersedes: []
-Superseded-by: []
+Superseded-by: [ADR-0022]
 Related: [ADR-0013, ADR-0016]
 Tags: [security, dx]
 References:
@@ -15,7 +15,8 @@ References:
 
 ## Status
 
-Accepted — 2026-01-30.
+Superseded — 2026-01-31 (replaced by Neon Auth; see ADR-0022). Originally
+accepted on 2026-01-30.
 
 ## Description
 
@@ -103,7 +104,7 @@ sequenceDiagram
 ### Implementation Details
 
 - Store only a session identifier and issued-at timestamp in cookie.
-- Rotate session secret via env var.
+- Rotate session secret via env var (`APP_SESSION_SECRET`).
 - Optional: lockout after N failures per IP/time window.
 
 ### File locations (target)
@@ -142,9 +143,9 @@ sequenceDiagram
 ### Dependencies
 
 - **Added**: argon2, @upstash/ratelimit, @upstash/redis
-- **Removed**: []
 
 ## Changelog
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-01-30)**: Renamed session secret var to `APP_SESSION_SECRET`.

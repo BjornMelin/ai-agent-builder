@@ -129,7 +129,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: vitest (already), playwright (later)
-- **Removed**: []
 
 ## Changelog
 

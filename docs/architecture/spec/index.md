@@ -14,3 +14,12 @@
 - [SPEC-0012](./SPEC-0012-ci-cd-pipeline-and-supply-chain-security-controls.md) — CI/CD pipeline and supply chain security controls
 - [SPEC-0013](./SPEC-0013-release-management-and-versioning.md) — Release management and versioning
 - [SPEC-0014](./SPEC-0014-next-js-build-type-generation-and-react-compiler-constraints.md) — Next.js build, type generation, and React Compiler constraints
+- [SPEC-0015](./SPEC-0015-environment-configuration-contracts.md) — Environment configuration contracts
+
+## Implementation & deployment automation
+
+- [SPEC-0016](./SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md) — Implementation runs: plan → code → verify → deploy
+- [SPEC-0017](./SPEC-0017-repo-ops-and-github-integration.md) — RepoOps and GitHub integration
+- [SPEC-0018](./SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md) — Target app provisioning and secrets mapping
+- [SPEC-0019](./SPEC-0019-sandbox-build-test-and-ci-execution.md) — Sandbox build/test/verification execution
+- [SPEC-0020](./SPEC-0020-project-workspace-and-search.md) — Project workspace and search UX

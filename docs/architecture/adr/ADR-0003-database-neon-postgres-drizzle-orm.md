@@ -135,7 +135,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: drizzle-orm, drizzle-kit, @neondatabase/serverless
-- **Removed**: []
 
 ## Changelog
 

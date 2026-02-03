@@ -1,22 +1,26 @@
 ---
 spec: SPEC-0011
 title: Bun toolchain, scripts, and CI/CD
-version: 0.2.0
+version: 0.3.0
 date: 2026-01-30
 owners: ["you"]
-status: Proposed
+status: Implemented
 related_requirements: ["NFR-010", "IR-010", "PR-006"]
 related_adrs: ["ADR-0015"]
-notes: "Defines Bun-first local development, CI workflows, and Vercel runtime configuration."
+notes:
+  "Defines Bun-first local development, CI workflows, and Vercel runtime
+  configuration."
 ---
 
 ## Summary
 
-Defines the Bun-first toolchain for installs, scripts, CI, and Vercel Functions runtime selection.
+Defines the Bun-first toolchain for installs, scripts, CI, and Vercel Functions
+runtime selection.
 
 ## Context
 
-The repo is already Bun-first. This spec documents required invariants so later work does not regress to Node+pnpm assumptions.
+The repo is already Bun-first. This spec documents required invariants so later
+work does not regress to Node+pnpm assumptions.
 
 ## Goals / Non-goals
 
@@ -36,20 +40,24 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
-- **FR-021**
+- **FR-021:** Fetch and cache the AI Gateway model catalog for UI model selection
+  (script + cached JSON).
 
 ### Non-functional requirements
 
-- **NFR-010**
-- **NFR-011**
+- **NFR-010 (Quality gates):** CI enforces format/lint/typecheck/test/build with
+  Bun-only commands.
+- **NFR-011 (Agent-first DX):** Repository conventions optimized for AI coding
+  agents (AGENTS.md, strict doc requirements, deterministic scripts).
 
 ### Performance / Reliability requirements (if applicable)
 
-- **PR-006**
+- **PR-006:** CI completes within 10 minutes for typical PRs (p95).
 
 ### Integration requirements (if applicable)
 
-- **IR-010**
+- **IR-010:** Bun toolchain: installs/scripts/CI use Bun and Vercel Functions run
+  on Bun runtime where supported.
 
 ## Constraints
 
@@ -76,6 +84,17 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - Local + CI: `bun install` and `bun run ...`.
 - Scripts execute Next via `bun --bun next ...`.
 
+### Data contracts (if applicable)
+
+- Not applicable. This spec defines repository toolchain invariants and does not
+  introduce runtime APIs or persisted data formats.
+
+### File-level contracts
+
+- `package.json`: script entrypoints must use `bun run` and avoid `pnpm`/`npm`.
+- `bun.lock`: committed; CI uses frozen lockfile.
+- `vercel.json`: configures Bun runtime on Vercel.
+
 ### Configuration
 
 - `package.json.engines.bun`: minimum supported Bun version
@@ -83,13 +102,14 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ## Acceptance criteria
 
-- All scripts run with Bun
-- CI uses deterministic installs
-- Vercel deployment uses Bun runtime
+- [x] All scripts run with Bun
+- [x] CI uses deterministic installs
+- [x] Vercel deployment uses Bun runtime
 
 ## Testing
 
-- CI builds and tests run successfully under Bun
+- CI builds and tests run successfully under Bun.
+- Run: `bun run ci`
 
 ## Operational notes
 
@@ -115,4 +135,6 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ## Changelog
 
 - **0.1 (2026-01-29)**: Initial draft.
-- **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout,
+  CI).
+- **0.3 (2026-01-30)**: Marked as implemented (repo already Bun-first).

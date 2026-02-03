@@ -130,7 +130,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: babel-plugin-react-compiler (already present)
-- **Removed**: []
 
 ## Changelog
 

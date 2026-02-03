@@ -3,14 +3,15 @@
 This document maps the **current** repository files to the architecture plan,
 so ADRs and SPECs remain grounded as the system is implemented.
 
-It is based on the bootstrapped repo snapshot captured in `repomix-output.md`.
-
 ## Current directory structure
 
 Key paths present now:
 
 - `src/app/*` — Next.js App Router entrypoints
-- `src/db/*` — Drizzle schema + migrations (configured; schema file may be added)
+- `src/lib/*` — foundational runtime modules (env, auth, provider adapters)
+- `src/proxy.ts` — Next.js `proxy.ts` based route protection
+- `src/db/*` — configured target location for Drizzle schema + migrations (not
+  committed yet)
 - `.github/workflows/*` — CI, CodeQL, dependency review, release-please, scorecard
 - `.github/actions/ci-setup` — composite action (Bun setup + install)
 - `scripts/fetch-models.sh` — pulls AI Gateway model catalog into `docs/`
@@ -52,22 +53,30 @@ Why this matters:
 
 ## Gaps between baseline and target system
 
-The bootstrapped repo snapshot in `repomix-output.md` predates the documentation
-pack now committed under `docs/`. The repo still does **not** yet include:
+The repo is intentionally bootstrapped: it includes core conventions, tooling,
+and some foundational modules, but does **not** yet include the full target
+system described in [docs/architecture/spec/index.md](./spec/index.md) and
+[docs/architecture/adr/index.md](./adr/index.md).
 
-- `src/app/api/*` route handlers for chat/upload/runs
-- `src/lib/*` modules for:
-  - AI agents and tools
-  - ingestion/extraction/chunking
-  - DB access layer
-  - Upstash adapters
-  - auth/session
-- dependencies for planned tools and UI libraries:
-  - AI Elements, Streamdown
-  - Exa, Firecrawl
-  - @vercel/blob
-  - MCP client packages
-  - sandbox tool adapters
+Major gaps that remain:
+
+- Core Route Handlers for uploads/ingestion/chat/runs under `src/app/api/*`.
+- Drizzle schema + migrations under `src/db/*` (currently configured but not
+  committed).
+- Research pipeline modules for extraction/chunking/embedding/indexing.
+- Web research integrations (Exa + Firecrawl) and citations persistence.
+- Implementation Run subsystems:
+  - RepoOps (GitHub) and PR automation
+    ([SPEC-0017](./spec/SPEC-0017-repo-ops-and-github-integration.md))
+  - sandbox verification jobs
+    ([SPEC-0019](./spec/SPEC-0019-sandbox-build-test-and-ci-execution.md))
+  - infrastructure provisioning + Vercel deployment automation
+    ([SPEC-0018](./spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md))
+  - audit bundle export
+    ([SPEC-0016](./spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md) +
+    [SPEC-0008](./spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md))
+- UI libraries referenced by ADRs (AI Elements, Streamdown, shadcn/ui components)
+  where not yet present.
 
 These are intentional: the repository is bootstrapped to keep initial complexity
 low, while the docs define the full production target.

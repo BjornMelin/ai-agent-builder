@@ -36,18 +36,23 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
+- None
+
 ### Non-functional requirements
 
-- **NFR-009**
-- **NFR-010**
+- **NFR-009 (Supply chain):** Automated scanning and dependency governance
+  (Dependabot, Dependency Review, CodeQL, Scorecard).
+- **NFR-010 (Quality gates):** CI enforces format/lint/typecheck/test/build with
+  Bun-only commands.
 
 ### Performance / Reliability requirements (if applicable)
 
-- **PR-006**
+- **PR-006:** CI completes within 10 minutes for typical PRs (p95).
 
 ### Integration requirements (if applicable)
 
-- **IR-010**
+- **IR-010:** Bun toolchain: installs/scripts/CI use Bun and Vercel Functions run
+  on Bun runtime where supported.
 
 ## Constraints
 
@@ -74,6 +79,24 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - `dependency-review.yml`: dependency diff scanning on PR.
 - `scorecard.yml`: supply-chain posture.
 - `dependabot.yml`: automated updates (Bun ecosystem).
+
+### Data contracts (if applicable)
+
+- Not applicable. CI workflows and scanners produce logs and checks, but this
+  spec does not define new app-facing APIs or persisted data formats.
+
+### File-level contracts
+
+- `.github/workflows/ci.yml`: runs `bun run lint`, `bun run typecheck`, `bun run test`, `bun run build`.
+- `.github/workflows/codeql.yml`: code scanning configuration.
+- `.github/workflows/dependency-review.yml`: PR dependency diff scanning.
+- `.github/workflows/scorecard.yml`: supply-chain posture checks.
+- `.github/dependabot.yml`: update cadence and grouping.
+
+### Configuration
+
+- CI scripts are defined in `package.json` and must remain Bun-only.
+- Scanner configurations live under `.github/workflows/*` and are reviewed like code.
 
 ## Acceptance criteria
 

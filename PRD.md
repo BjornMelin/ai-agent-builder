@@ -1,19 +1,23 @@
 # Product Requirements Document (PRD) — ai-agent-builder
 
-Version: 0.1.0  
-Date: 2026-01-30  
+Version: 0.2.0  
+Date: 2026-02-01  
 Owner: you
 
 ## Executive summary
 
-ai-agent-builder is a single-user system for turning rough product inputs (docs,
-decks, spreadsheets, notes) into an implementation-ready documentation pack:
-market research, competitive analysis, differentiation, PRD, architecture,
-ADRs/SPECs, security notes, roadmap, and Codex-ready implementation prompts.
+ai-agent-builder is a private, production-focused system for turning rough
+product inputs (docs, decks, spreadsheets, notes) into a complete
+**implementation engine**:
+
+- research and validation (with citations)
+- an implementation-ready documentation pack (PRD/ADRs/SPECs/security/roadmap)
+- end-to-end implementation workflows (plan → code → verify → deploy) with a
+  deterministic audit trail
 
 The product is optimized for:
 
-- fast iteration by one builder
+- fast iteration by one builder (with a path to additional users later)
 - auditable research (citations)
 - durable workflows that continue after disconnects
 - deterministic exports for handoff/versioning
@@ -38,9 +42,9 @@ plan” without redoing analysis.
 
 ### Non-goals
 
-- Multi-tenant accounts, orgs, billing, or collaboration features.
+- Multi-tenant product constructs (org-level billing, collaboration, marketplace).
 - A generic “agent framework” for third parties (this is an end-user product).
-- Long-running compute jobs beyond bounded research/spec generation workflows.
+- Unbounded autonomous side effects without explicit approval gates.
 
 ## Target users / personas
 
@@ -52,7 +56,8 @@ plan” without redoing analysis.
 
 ### Journey A: From uploads to a full documentation pack
 
-1. User logs in (single password).
+1. User signs in via Neon Auth (GitHub OAuth, Vercel OAuth, or credentials)
+   and must be allowlisted to access the app.
 2. User creates a project.
 3. User uploads files (PDF/DOCX/PPTX/XLSX/TXT/MD).
 4. System extracts text and structure, chunks content, and indexes it for
@@ -68,21 +73,33 @@ plan” without redoing analysis.
 2. User regenerates or refines a subset of artifacts.
 3. System versions artifacts and updates export output deterministically.
 
+### Journey C: Implementation Run (plan → code → verify → deploy)
+
+1. User connects a target repository (create new or link existing).
+2. Generate an implementation plan traceable to PRD/SPECs/ADRs.
+3. Apply patchsets and open a PR for review.
+4. Run verification as sandbox jobs (lint/typecheck/test/build).
+5. User explicitly approves side effects (push/merge/provision/deploy).
+6. Provision/connect infra and deploy, recording provenance and logs.
+
 ## Scope and requirements
 
-The canonical requirement catalog lives in `docs/specs/requirements.md`. This
+The canonical requirement catalog lives in
+[`docs/specs/requirements.md`](./docs/specs/requirements.md). This
 PRD describes product-level scope and maps to requirements/specs for
 implementation.
 
 ### Epic 1: Authentication and access control
 
-- Single-user password login with secure session cookie. (FR-001, NFR-001, NFR-002)
+- Managed authentication via Neon Auth with secure cookies. (FR-001, NFR-001, NFR-002)
+- Default restricted access via allowlist to prevent unintended API spend. (NFR-002, NFR-006, NFR-012)
 - Protect all sensitive routes and keep provider keys server-only. (NFR-001)
 
 Primary spec/ADR references:
 
-- `docs/architecture/spec/SPEC-0002-authentication-access-control.md`
-- `docs/architecture/adr/ADR-0002-authentication-single-password-signed-cookie-session.md`
+- [`docs/architecture/spec/SPEC-0002-authentication-access-control.md`](./docs/architecture/spec/SPEC-0002-authentication-access-control.md)
+- [`docs/architecture/adr/ADR-0022-authentication-neon-auth-oauth-allowlist.md`](./docs/architecture/adr/ADR-0022-authentication-neon-auth-oauth-allowlist.md)
+- [`docs/architecture/adr/ADR-0023-public-signup-deferred-until-byok.md`](./docs/architecture/adr/ADR-0023-public-signup-deferred-until-byok.md)
 
 ### Epic 2: Projects and workspace
 
@@ -91,7 +108,7 @@ Primary spec/ADR references:
 
 Primary spec/ADR references:
 
-- `docs/architecture/data-model.md`
+- [`docs/architecture/data-model.md`](./docs/architecture/data-model.md)
 
 ### Epic 3: Uploads and ingestion
 
@@ -101,9 +118,9 @@ Primary spec/ADR references:
 
 Primary spec/ADR references:
 
-- `docs/architecture/spec/SPEC-0003-upload-ingestion-pipeline.md`
-- `docs/architecture/adr/ADR-0009-file-storage-vercel-blob-for-uploads-originals.md`
-- `docs/architecture/adr/ADR-0004-retrieval-upstash-vector-for-semantic-search.md`
+- [`docs/architecture/spec/SPEC-0003-upload-ingestion-pipeline.md`](./docs/architecture/spec/SPEC-0003-upload-ingestion-pipeline.md)
+- [`docs/architecture/adr/ADR-0009-file-storage-vercel-blob-for-uploads-originals.md`](./docs/architecture/adr/ADR-0009-file-storage-vercel-blob-for-uploads-originals.md)
+- [`docs/architecture/adr/ADR-0004-retrieval-upstash-vector-for-semantic-search.md`](./docs/architecture/adr/ADR-0004-retrieval-upstash-vector-for-semantic-search.md)
 
 ### Epic 4: Chat with retrieval augmentation
 
@@ -113,8 +130,8 @@ Primary spec/ADR references:
 
 Primary spec/ADR references:
 
-- `docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md`
-- `docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md`
+- [`docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md`](./docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md)
+- [`docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md`](./docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md)
 
 ### Epic 5: Durable runs (research → artifacts)
 
@@ -123,8 +140,8 @@ Primary spec/ADR references:
 
 Primary spec/ADR references:
 
-- `docs/architecture/spec/SPEC-0005-durable-runs-orchestration.md`
-- `docs/architecture/adr/ADR-0005-orchestration-upstash-qstash-for-durable-workflows.md`
+- [`docs/architecture/spec/SPEC-0005-durable-runs-orchestration.md`](./docs/architecture/spec/SPEC-0005-durable-runs-orchestration.md)
+- [`docs/architecture/adr/ADR-0005-orchestration-upstash-qstash-for-durable-workflows.md`](./docs/architecture/adr/ADR-0005-orchestration-upstash-qstash-for-durable-workflows.md)
 
 ### Epic 6: Web research with citations
 
@@ -134,8 +151,8 @@ Primary spec/ADR references:
 
 Primary spec/ADR references:
 
-- `docs/architecture/spec/SPEC-0007-web-research-citations-framework.md`
-- `docs/architecture/adr/ADR-0008-web-research-exa-firecrawl-with-citations.md`
+- [`docs/architecture/spec/SPEC-0007-web-research-citations-framework.md`](./docs/architecture/spec/SPEC-0007-web-research-citations-framework.md)
+- [`docs/architecture/adr/ADR-0008-web-research-exa-firecrawl-with-citations.md`](./docs/architecture/adr/ADR-0008-web-research-exa-firecrawl-with-citations.md)
 
 ### Epic 7: Artifact generation, versioning, and export
 
@@ -146,7 +163,7 @@ Primary spec/ADR references:
 
 Primary spec/ADR references:
 
-- `docs/architecture/spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md`
+- [`docs/architecture/spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md`](./docs/architecture/spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md)
 
 ### Epic 8: Safe “Code Mode” execution
 
@@ -155,8 +172,8 @@ Primary spec/ADR references:
 
 Primary spec/ADR references:
 
-- `docs/architecture/spec/SPEC-0009-sandbox-code-mode.md`
-- `docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md`
+- [`docs/architecture/spec/SPEC-0009-sandbox-code-mode.md`](./docs/architecture/spec/SPEC-0009-sandbox-code-mode.md)
+- [`docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md`](./docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md)
 
 ### Epic 9: Observability, budgets, and cost controls
 
@@ -165,15 +182,35 @@ Primary spec/ADR references:
 
 Primary spec/ADR references:
 
-- `docs/architecture/spec/SPEC-0010-observability-budgets-and-cost-controls.md`
-- `docs/architecture/adr/ADR-0013-caching-cost-controls-next-js-caching-upstash-redis-budgets.md`
+- [`docs/architecture/spec/SPEC-0010-observability-budgets-and-cost-controls.md`](./docs/architecture/spec/SPEC-0010-observability-budgets-and-cost-controls.md)
+- [`docs/architecture/adr/ADR-0013-caching-cost-controls-next-js-caching-upstash-redis-budgets.md`](./docs/architecture/adr/ADR-0013-caching-cost-controls-next-js-caching-upstash-redis-budgets.md)
+
+### Epic 10: Implementation Runs (plan → code → verify → deploy)
+
+- Connect a target application repository and persist repo metadata. (FR-022)
+- Start durable implementation workflows with machine-readable plans. (FR-023, FR-024)
+- Apply patchsets and create/manage PRs for review. (FR-025)
+- Run automated verification via sandbox jobs and persist results. (FR-026)
+- Enforce explicit approval gates for side effects. (FR-031, NFR-013, NFR-015)
+- Provision/connect infra and deploy (manual fallback supported). (FR-027, FR-028, IR-011+)
+- Persist and export a deterministic implementation audit bundle. (FR-030, FR-034)
+
+Primary spec/ADR references:
+
+- [`docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md`](./docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md)
+- [`docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md`](./docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md)
+- [`docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md`](./docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)
+- [`docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`](./docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
+- [`docs/architecture/spec/SPEC-0020-project-workspace-and-search.md`](./docs/architecture/spec/SPEC-0020-project-workspace-and-search.md)
+- [`docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md`](./docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md)
+- [`docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md`](./docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md)
 
 ## Non-functional requirements (product-level)
 
 The system must be:
 
 - Secure by default; no client exposure of provider keys. (NFR-001)
-- Single-user by design. (NFR-002)
+- Private access mode by default (restricted allowlist; no multi-tenant constructs). (NFR-002, NFR-012)
 - Maintainable with strict TypeScript + modular boundaries. (NFR-003)
 - Observable with persisted, queryable telemetry. (NFR-004)
 - Deterministic for exports and artifact version selection. (NFR-005)
@@ -188,6 +225,7 @@ Required external services (see also IR-* requirements):
 - Vercel (hosting + functions runtime + blob + sandbox)
 - Vercel AI Gateway (models + embeddings routing)
 - Neon Postgres (relational store)
+- GitHub (RepoOps)
 - Upstash Redis + Ratelimit (cache + budgets)
 - Upstash Vector (vector retrieval)
 - Upstash QStash (durable orchestration)
@@ -202,6 +240,12 @@ Primary metrics:
 - Median time from “new project” → “exportable docs pack”.
 - Percent of research sections with citations attached.
 - Run success rate and retry/repair rate.
+
+Implementation / deploy metrics:
+
+- Median time from “approved implementation plan” → “green verification” (lint/typecheck/test/build).
+- Median time from “approved deploy” → “production deployment created” and marked ready.
+- Percent of implementation runs with a complete audit bundle export (FR-034).
 
 Guardrail metrics:
 
@@ -231,8 +275,7 @@ Guardrail metrics:
 
 ## References
 
-- Requirements: `docs/specs/requirements.md`
-- Architecture overview: `docs/architecture/overview.md`
-- ADR index: `docs/architecture/adr/index.md`
-- SPEC index: `docs/architecture/spec/index.md`
-
+- Requirements: [`docs/specs/requirements.md`](./docs/specs/requirements.md)
+- Architecture overview: [`docs/architecture/overview.md`](./docs/architecture/overview.md)
+- ADR index: [`docs/architecture/adr/index.md`](./docs/architecture/adr/index.md)
+- SPEC index: [`docs/architecture/spec/index.md`](./docs/architecture/spec/index.md)

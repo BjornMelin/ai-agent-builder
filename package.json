@@ -1,55 +1,10 @@
 {
-  "dependencies": {
-    "@neondatabase/serverless": "~1.0.2",
-    "@upstash/qstash": "~2.9.0",
-    "@upstash/ratelimit": "~2.0.8",
-    "@upstash/redis": "~1.36.1",
-    "@upstash/vector": "~1.2.2",
-    "@vercel/blob": "~2.0.1",
-    "ai": "~6.0.63",
-    "argon2": "~0.44.0",
-    "drizzle-orm": "~0.45.1",
-    "lucide-react": "^0.563.0",
-    "next": "~16.1.6",
-    "react": "~19.2.4",
-    "react-dom": "~19.2.4",
-    "zod": "~4.3.6"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.3.13",
-    "@eslint/eslintrc": "^3.3.3",
-    "@eslint/js": "^9.39.2",
-    "@tailwindcss/postcss": "^4.1.18",
-    "@types/node": "~25.1.0",
-    "@types/react": "^19.2.10",
-    "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.54.0",
-    "@typescript-eslint/parser": "^8.54.0",
-    "@vitejs/plugin-react": "^5.1.2",
-    "@vitest/coverage-v8": "^4.0.18",
-    "babel-plugin-react-compiler": "^1.0.0",
-    "dotenv": "^17.2.3",
-    "drizzle-kit": "^0.31.8",
-    "eslint": "^9.39.2",
-    "eslint-config-next": "^16.1.6",
-    "eslint-plugin-jsdoc": "^62.5.0",
-    "eslint-plugin-tsdoc": "^0.5.0",
-    "globals": "^17.2.0",
-    "jsdom": "^27.4.0",
-    "tailwindcss": "^4.1.18",
-    "typescript": "~5.9.3",
-    "vite-tsconfig-paths": "^6.0.5",
-    "vitest": "^4.0.18"
-  },
+  "name": "ai-agent-builder",
+  "version": "0.1.1",
+  "private": true,
   "engines": {
     "bun": ">=1.2.0"
   },
-  "ignoreScripts": [
-    "sharp",
-    "unrs-resolver"
-  ],
-  "name": "ai-agent-builder",
-  "private": true,
   "scripts": {
     "build": "bun --bun next build",
     "ci": "bun run lint && bun run typecheck && bun run test && bun run build",
@@ -68,9 +23,57 @@
     "typecheck": "bun --bun next typegen && tsc -p tsconfig.json --noEmit",
     "typegen": "bun --bun next typegen"
   },
+  "dependencies": {
+    "@neondatabase/auth": "0.2.0-beta.1",
+    "@neondatabase/serverless": "~1.0.2",
+    "@upstash/qstash": "~2.9.0",
+    "@upstash/ratelimit": "~2.0.8",
+    "@upstash/redis": "~1.36.1",
+    "@upstash/vector": "~1.2.2",
+    "@vercel/analytics": "^1.6.1",
+    "@vercel/blob": "~2.0.1",
+    "ai": "~6.0.68",
+    "drizzle-orm": "~0.45.1",
+    "lucide-react": "^0.563.0",
+    "next": "~16.1.6",
+    "react": "~19.2.4",
+    "react-dom": "~19.2.4",
+    "server-only": "^0.0.1",
+    "zod": "~4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.13",
+    "@eslint/eslintrc": "^3.3.3",
+    "@eslint/js": "^9.39.2",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "~25.2.0",
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "@vitejs/plugin-react": "^5.1.2",
+    "@vitest/coverage-v8": "^4.0.18",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "dotenv": "^17.2.3",
+    "drizzle-kit": "^0.31.8",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.1.6",
+    "eslint-plugin-jsdoc": "^62.5.0",
+    "eslint-plugin-tsdoc": "^0.5.0",
+    "globals": "^17.3.0",
+    "jsdom": "^27.4.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "~5.9.3",
+    "vite-tsconfig-paths": "^6.0.5",
+    "vitest": "^4.0.18"
+  },
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
   ],
-  "version": "0.1.1"
+  "ignoreScripts": [
+    "sharp",
+    "unrs-resolver"
+  ]
 }

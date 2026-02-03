@@ -38,26 +38,31 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
-- **FR-003**
-- **FR-004**
-- **FR-005**
-- **FR-006**
-- **FR-007**
+- **FR-003:** Upload files (PDF, DOCX, PPTX, XLSX, TXT/MD) to a project.
+- **FR-004:** Store original files durably and associate to a project.
+- **FR-005:** Extract text + structural metadata (pages/slides/sheets) from each
+  file.
+- **FR-006:** Chunk extracted content into retrieval-optimized segments with
+  stable rules.
+- **FR-007:** Generate embeddings via AI Gateway and index chunks in vector store.
 
 ### Non-functional requirements
 
-- **NFR-005**
-- **NFR-007**
+- **NFR-005 (Determinism):** Export and artifact generation is deterministic
+  (stable ordering and latest versions).
+- **NFR-007 (Data retention):** Project deletion removes DB records, vector
+  entries, and blob refs.
 
 ### Performance / Reliability requirements (if applicable)
 
-- **PR-003**
+- **PR-003:** Ingest 10 MB PDF within 2 minutes (p95) excluding queue delay.
 
 ### Integration requirements (if applicable)
 
-- **IR-006**
-- **IR-005**
-- **IR-001**
+- **IR-006:** File storage via Vercel Blob.
+- **IR-005:** Vector search via Upstash Vector (prefer HYBRID indexes when
+  provisioning).
+- **IR-001:** All model/embedding calls through Vercel AI Gateway.
 
 ## Constraints
 
@@ -92,11 +97,19 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### File-level contracts
 
-- `src/app/api/upload/route.ts`
-- `src/lib/ingest/extract/*`
-- `src/lib/ingest/chunk/*`
-- `src/lib/ai/embeddings.ts`
-- `src/lib/upstash/vector.ts`
+- `src/app/api/upload/route.ts`: accepts uploads, stores originals, writes DB metadata.
+- `src/lib/ingest/extract/*`: extraction adapters per file type; must preserve stable refs.
+- `src/lib/ingest/chunk/*`: deterministic chunking rules (stable chunk ids).
+- `src/lib/ai/embeddings.ts`: embedding calls via AI Gateway; must be idempotent per hash.
+- `src/lib/upstash/vector.ts`: upsert/query/delete vectors with project/file metadata.
+
+### Configuration
+
+- See `docs/ops/env.md` for the ingestion pipeline env vars:
+  - Blob: `BLOB_READ_WRITE_TOKEN`
+  - AI Gateway: `AI_GATEWAY_API_KEY` (optional `AI_GATEWAY_BASE_URL`)
+  - Upstash Vector: `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`
+  - Optional async ingestion: `QSTASH_TOKEN` (+ verify keys for inbound hooks)
 
 ## Acceptance criteria
 

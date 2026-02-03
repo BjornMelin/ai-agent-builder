@@ -132,7 +132,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: @exa/ai-sdk, firecrawl-aisdk (or official package)
-- **Removed**: []
 
 ## Changelog
 

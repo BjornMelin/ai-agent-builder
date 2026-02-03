@@ -109,3 +109,4 @@ repomix-output.md
 opensrc/
 # next-agents-md
 .next-docs/
+.env*.local

@@ -1,41 +1,70 @@
 ---
 ADR: 0004
-Title: Retrieval: Upstash Vector for semantic search
+Title: Retrieval: Upstash Vector for semantic + hybrid search
 Status: Accepted
-Version: 0.2
-Date: 2026-01-30
+Version: 0.3
+Date: 2026-02-01
 Supersedes: []
 Superseded-by: []
-Related: [ADR-0003, ADR-0006]
+Related: [ADR-0003, ADR-0006, ADR-0024]
 Tags: [retrieval, architecture]
 References:
   - [Upstash Vector + AI SDK](https://upstash.com/docs/vector/integrations/ai-sdk)
+  - [Upstash Vector API — Get started](https://upstash.com/docs/vector/api/get-started)
+  - [Upstash Vector: Hybrid indexes](https://upstash.com/docs/vector/features/hybridindexes)
 ---
 
 ## Status
 
-Accepted — 2026-01-30.
+Accepted — 2026-01-30.  
+Updated — 2026-02-01 (hybrid retrieval guidance).
 
 ## Description
 
-Use Upstash Vector for semantic retrieval across uploads and artifacts.
+Use Upstash Vector for retrieval across:
+
+- uploaded inputs (docs/decks/spreadsheets)
+- generated artifacts (PRD/ADRs/SPECs)
+- connected target repositories (source code), for implementation runs
+
+Prefer **HYBRID** vector indexes (dense + lexical) when provisioning new indexes
+to improve exact-token recall (important for code and identifiers), while still
+retaining semantic retrieval quality.
 
 ## Context
 
-System quality depends on grounding responses in uploaded sources and previously generated artifacts. A dedicated vector store with metadata filters and namespaces provides fast similarity search without complex DB tuning.
+System quality depends on grounding responses in uploaded sources, previously
+generated artifacts, and (for implementation runs) the target repo’s code.
+
+A dedicated vector store with metadata filters and namespaces provides fast
+retrieval without complex DB tuning.
+
+Hybrid retrieval improves matches for:
+
+- exact identifiers, file names, function names
+- error messages, stack traces
+- product names and competitor strings
+- “known phrase” lookups where lexical matching matters
 
 ## Decision Drivers
 
-- RAG quality
+- RAG quality (semantic + lexical recall)
 - Low ops serverless vector store
-- Metadata filtering
+- Metadata filtering and namespaces
 - AI SDK ecosystem alignment
+- Ability to scale indexing for both docs and code
 
 ## Alternatives
 
-- A: Upstash Vector — Pros: serverless; AI SDK integration. Cons: external dependency.
-- B: Neon + pgvector — Pros: single DB. Cons: more tuning and scaling concerns.
-- C: Dedicated vector DB — Pros: powerful. Cons: higher cost/ops for single-user.
+- A: Upstash Vector (DENSE or HYBRID)
+  - Pros: serverless; AI SDK integration.
+  - Cons: external dependency.
+- B: Neon + pgvector
+  - Pros: single DB.
+  - Cons: more tuning and scaling concerns; hybrid lexical search requires extra machinery.
+- C: Dedicated vector DB (Pinecone/Weaviate/etc.)
+  - Pros: powerful features.
+  - Cons: cost + ops overhead; ecosystem drift.
 
 ### Decision Framework
 
@@ -50,7 +79,10 @@ System quality depends on grounding responses in uploaded sources and previously
 
 ## Decision
 
-We will adopt **Upstash Vector** with per-project namespaces for chunks and artifacts, storing canonical text and citations in Neon.
+We will adopt **Upstash Vector** as the system vector store.
+
+- When creating new indexes, prefer HYBRID indexes when supported by the plan.
+- Use namespaces per project and per target repo to isolate retrieval scope.
 
 ## Constraints
 
@@ -84,19 +116,31 @@ flowchart LR
 
 ### Integration Requirements
 
-- **IR-005:** Upstash Vector required.
+- **IR-005:** Upstash Vector required (HYBRID preferred when provisioning).
 
 ## Design
 
 ### Architecture Overview
 
-- `src/lib/upstash/vector.ts`: client + helper functions (namespace, upsert, query, delete).
+Planned implementation module:
+
+- `src/lib/upstash/vector.ts`: client + helper functions (namespace, upsert,
+  query, delete).
 
 ### Implementation Details
 
 - Deterministic vector IDs for idempotency: `{{fileId}}:{{chunkIndex}}`.
 - Metadata filters: `projectId`, `fileId`, `type`.
 - Keep top-k small and rerank in-model if needed.
+
+### Configuration
+
+- Runtime env (server-only; see [ADR-0021](ADR-0021-environment-configuration-contracts-and-secret-handling.md)):
+  - `UPSTASH_VECTOR_REST_URL`
+  - `UPSTASH_VECTOR_REST_TOKEN`
+- Index provisioning:
+  - Prefer provisioning **HYBRID** indexes for new projects when supported by the
+    account/plan. See [Upstash Vector: Hybrid indexes](https://upstash.com/docs/vector/features/hybridindexes).
 
 ## Testing
 
@@ -129,9 +173,9 @@ flowchart LR
 ### Dependencies
 
 - **Added**: @upstash/vector
-- **Removed**: []
 
 ## Changelog
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-01)**: Updated for hybrid retrieval guidance.

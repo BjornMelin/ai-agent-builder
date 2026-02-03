@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
     steps:
       - name: Run release-please
         uses: googleapis/release-please-action@v4.4.0

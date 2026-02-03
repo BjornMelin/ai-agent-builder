@@ -136,7 +136,6 @@ flowchart LR
 ### Dependencies
 
 - **Added**: ai
-- **Removed**: []
 
 ## Changelog
 

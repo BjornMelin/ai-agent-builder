@@ -16,7 +16,9 @@ Defines how web research is performed and how citations are recorded and rendere
 
 ## Context
 
-Market research must be current and auditable. Exa search results and Firecrawl extractions must be cached and converted into a minimal citation schema.
+Market research must be current and auditable. [Exa](https://ai-sdk.dev/tools-registry/exa)
+search results and [Firecrawl](https://ai-sdk.dev/tools-registry/firecrawl)
+extractions must be cached and converted into a minimal citation schema.
 
 ## Goals / Non-goals
 
@@ -36,20 +38,22 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Functional requirements
 
-- **FR-012**
+- **FR-012:** Web research with citations (search + extraction).
 
 ### Non-functional requirements
 
-- **NFR-004**
-- **NFR-006**
+- **NFR-004 (Observability):** Persist logs, latency, token usage, tool calls,
+  and errors.
+- **NFR-006 (Cost controls):** Caching and guardrails limit web calls and token
+  usage.
 
 ### Performance / Reliability requirements (if applicable)
 
-- **PR-001**
+- **PR-001:** Streaming begins within 1.5s (p95) for warm paths.
 
 ### Integration requirements (if applicable)
 
-- **IR-007**
+- **IR-007:** Web research via Exa + Firecrawl.
 
 ## Constraints
 
@@ -71,20 +75,27 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Architecture overview
 
-- Exa search provides candidate URLs.
-- Firecrawl extracts clean content.
-- Redis caches extraction results.
-- Citations persisted in Neon and referenced by artifacts.
+- Exa search provides candidate URLs [Exa](https://ai-sdk.dev/tools-registry/exa).
+- Firecrawl extracts clean content [Firecrawl](https://ai-sdk.dev/tools-registry/firecrawl).
+- Redis caches extraction results [Upstash Redis REST API](https://upstash.com/docs/redis/restapi).
+- Citations persisted in Neon and referenced by artifacts
+  [Neon connection guide](https://neon.com/docs/connect/connect-from-any-app).
 
 ### Data contracts
 
 - `Citation`: `{url, title, publishedAt?, accessedAt, excerpt}`
 
-### Key files
+### File-level contracts
 
-- `src/lib/ai/tools/web-search.ts`
-- `src/lib/ai/tools/firecrawl.ts`
-- `src/lib/citations/normalize.ts`
+- `src/lib/ai/tools/web-search.ts`: search wrapper; enforces per-step query/result bounds.
+- `src/lib/ai/tools/firecrawl.ts`: extraction wrapper; normalizes response payloads.
+- `src/lib/citations/normalize.ts`: canonical citation schema normalization.
+
+### Configuration
+
+- See `docs/ops/env.md`:
+  - Web research: `EXA_API_KEY`, `FIRECRAWL_API_KEY`
+  - Optional caching: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 
 ## Acceptance criteria
 
@@ -108,6 +119,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - [Exa tool](https://ai-sdk.dev/tools-registry/exa)
 - [Firecrawl tool](https://ai-sdk.dev/tools-registry/firecrawl)
+- [Upstash Redis REST API](https://upstash.com/docs/redis/restapi)
+- [Neon connection guide](https://neon.com/docs/connect/connect-from-any-app)
 
 ## Changelog
 

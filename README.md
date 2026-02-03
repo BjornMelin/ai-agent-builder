@@ -8,22 +8,22 @@
 ![Postgres](https://img.shields.io/badge/DB-Neon_Postgres-4169E1?logo=postgresql&logoColor=white)
 ![Redis](https://img.shields.io/badge/Cache-Upstash-00E9A3?logo=redis&logoColor=white)
 
-A single-user, production-focused system for turning rough product ideas
-(pitch decks, docs, spreadsheets, notes) into a complete, implementation-ready
-spec set: market research, competitive analysis, differentiation, PRD, ADRs,
-architecture, and Codex-ready implementation prompts.
+A private, production-focused system for turning rough product inputs (pitch
+decks, docs, spreadsheets, notes) into a complete **implementation engine**:
+research → specs → plan → code → verify → deploy (with a deterministic audit
+trail).
 
 ## What it does
 
 - Ingests source material: PDFs, slides, docs, markdown, spreadsheets.
-- Runs deep research and validation:
-  - competitors, positioning, pricing signals, go-to-market constraints
-  - feature gaps, differentiation opportunities, risk analysis
-- Produces formal, versioned outputs:
-  - PRD, architecture, ADRs, roadmap, build plan
-  - Codex prompts structured for end-to-end production implementation
-- Keeps an iterative project workspace so you can upload more material and
-  re-run or refine outputs over time.
+- Runs deep research and validation (with citations).
+- Produces formal, versioned artifacts (PRD, ADRs, specs, security, roadmap).
+- Supports an implementation/deployment phase (spec’d) to:
+  - connect a target GitHub repo
+  - plan changes traceable to artifacts
+  - apply patches + open PRs
+  - run verification in Vercel Sandbox
+  - provision/connect infra and deploy.
 
 ## High-level architecture
 
@@ -33,8 +33,9 @@ flowchart LR
   B --> C[Research Agents]
   C --> D[Gap + Differentiation]
   D --> E[PRD + ADR + Architecture]
-  E --> F[Codex Implementation Prompts]
-  F --> G[Export + Versioned Artifacts]
+  E --> F[Export + Versioned Artifacts]
+  E --> G[Implementation Runs]
+  G --> H[PRs + Verification + Deployments]
 ```
 
 ## Tech stack
@@ -42,12 +43,30 @@ flowchart LR
 - Runtime + tooling: Bun
 - Web: Next.js 16 (App Router), React 19
 - Styling/UI: TailwindCSS v4, shadcn/ui, Lucide
+- Auth: Neon Auth (managed auth + UI components)
 - AI: Vercel AI SDK v6 + AI Gateway
 - DB: Neon Postgres + Drizzle ORM
 - Infra helpers: Upstash (Redis, QStash, Vector)
 - Quality: Biome (format/lint) + ESLint (TSDoc/JSDoc enforcement) + Vitest
 - Typing/Schema: Zod v4
 - Releases: Release Please (semver via Conventional Commits)
+
+## Implementation engine (specs)
+
+- End-to-end implementation runs: [`docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md`](./docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md)
+- RepoOps (GitHub): [`docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md`](./docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md)
+- Provisioning + deploy automation: [`docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md`](./docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)
+- Sandbox verification jobs: [`docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`](./docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
+- Workspace + search UX: [`docs/architecture/spec/SPEC-0020-project-workspace-and-search.md`](./docs/architecture/spec/SPEC-0020-project-workspace-and-search.md)
+- GitOps + deploy ADRs:
+  - [`docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md`](./docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md)
+  - [`docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md`](./docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md)
+
+### Auth dependency note
+
+`@neondatabase/auth` is currently a beta package. We pin the version and treat
+it as intentional: access is allowlisted, auth flows are covered by tests, and
+we monitor upstream releases before upgrading.
 
 ## Documentation
 
@@ -62,19 +81,52 @@ flowchart LR
 
 - Bun v1.2+ (uses `bun.lock`)
 - A Neon database URL in `DATABASE_URL`
+- Neon Auth configured for this project:
+  - Enable Neon Auth in the Neon Console and configure OAuth providers (GitHub, Vercel)
+  - `NEON_AUTH_BASE_URL`
+  - `NEON_AUTH_COOKIE_SECRET` (32+ chars; generate with `openssl rand -base64 32`)
+  - `AUTH_ALLOWED_EMAILS` (when `AUTH_ACCESS_MODE=restricted`)
+  - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` (optional; if unset defaults to `github,vercel`)
+    - Local/development: `vercel`
+    - Preview: *(empty)* (disable social providers)
+    - Production: `github,vercel`
 - Upstash credentials (Redis/Vector/QStash)
 - Vercel AI Gateway API key (`AI_GATEWAY_API_KEY`)
-- `argon2` builds natively via `node-gyp-build` if no prebuilt binary is available; ensure C/C++ build tools (GCC >=5 or Clang >=3.3), Python, and `make` are available on Linux (see the [node-argon2 README](https://github.com/ranisalt/node-argon2#before-installing) for prebuilt binaries and build prerequisites).
 
 ### Setup
 
 ```bash
 cp .env.example .env.local
 bun install
-bun run db:generate
-bun run db:migrate
 bun run dev
 ```
+
+Optional: implementation/deploy automation variables (GitHub/Vercel/Neon/Upstash)
+are documented in [`docs/ops/env.md`](./docs/ops/env.md).
+
+## Vercel Preview automation (optional)
+
+This repo is designed to use the **Neon ↔ Vercel integration** for Preview
+Branching (recommended). When enabled, Neon automatically provisions a database
+branch per Vercel Preview branch and injects the branch-scoped Preview env vars
+(`DATABASE_URL`, and (if Neon Auth is enabled) `NEON_AUTH_BASE_URL`).
+
+To avoid GitHub OAuth’s “single callback URL per app” limitation on Preview
+deployments, **disable** social providers on Preview deployments by setting
+`NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` to an empty string for the Vercel Preview
+environment (global Preview default). Preview branches get a unique Neon Auth
+URL, and Vercel OAuth requires exact callback URL allowlisting (not practical
+per preview).
+
+Optional: `.github/workflows/neon-auth-trusted-domains.yml` can automatically
+ensure Neon Auth is enabled for the matching Neon preview branch
+(`preview/<git-branch>`) and add the Preview deployment domain to Neon Auth
+trusted domains (best-effort; non-blocking).
+
+Required GitHub Actions configuration:
+
+- Variables: `NEON_PROJECT_ID`
+- Secrets: `NEON_API_KEY`, `VERCEL_TOKEN`, `VERCEL_PROJECT_ID` (optional: `VERCEL_TEAM_ID`)
 
 ## Fetch AI Gateway model catalog
 

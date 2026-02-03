@@ -1,7 +1,7 @@
 # ADR Index
 
 - [ADR-0001](./ADR-0001-repository-structure-single-next-js-app-no-monorepo.md) — Repository structure: single Next.js app (no monorepo)
-- [ADR-0002](./ADR-0002-authentication-single-password-signed-cookie-session.md) — Authentication: single-password + signed cookie session
+- [ADR-0002](./ADR-0002-authentication-single-password-signed-cookie-session.md) — Authentication: single-password + signed cookie session (superseded)
 - [ADR-0003](./ADR-0003-database-neon-postgres-drizzle-orm.md) — Database: Neon Postgres + Drizzle ORM
 - [ADR-0004](./ADR-0004-retrieval-upstash-vector-for-semantic-search.md) — Retrieval: Upstash Vector for semantic search
 - [ADR-0005](./ADR-0005-orchestration-upstash-qstash-for-durable-workflows.md) — Orchestration: Upstash QStash for durable workflows
@@ -20,3 +20,11 @@
 - [ADR-0018](./ADR-0018-ci-supply-chain-security-automation-codeql-dependency-review-scorecard-dependabot.md) — CI + supply chain security automation (CodeQL, Dependency Review, Scorecard, Dependabot)
 - [ADR-0019](./ADR-0019-release-automation-release-please-conventional-commits.md) — Release automation: Release Please + Conventional Commits
 - [ADR-0020](./ADR-0020-next-js-dev-build-strategy-turbopack-react-compiler-typegen.md) — Next.js dev/build strategy: Turbopack + React Compiler + typegen
+- [ADR-0021](./ADR-0021-environment-configuration-contracts-and-secret-handling.md) — Environment configuration contracts and secret handling
+- [ADR-0022](./ADR-0022-authentication-neon-auth-oauth-allowlist.md) — Authentication: Neon Auth (OAuth + UI) + allowlist access control
+- [ADR-0023](./ADR-0023-public-signup-deferred-until-byok.md) — Public sign-up deferred until BYOK (deferred)
+
+## Implementation & deployment automation
+
+- [ADR-0024](./ADR-0024-gitops-repository-automation-pr-based-workflows.md) — GitOps automation: PR-based workflows for agentic implementation
+- [ADR-0025](./ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md) — Infrastructure provisioning and Vercel deployment automation

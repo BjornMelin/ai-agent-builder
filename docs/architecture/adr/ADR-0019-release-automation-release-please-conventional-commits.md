@@ -124,8 +124,7 @@ flowchart LR
 
 ### Dependencies
 
-- **Added**: []
-- **Removed**: []
+- None
 
 ## Changelog
 
