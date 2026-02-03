@@ -88,7 +88,7 @@ Run long pipelines via QStash.
 
 - Use deduplication ids for idempotent jobs and labels for log filtering.
   - [QStash deduplication ids](https://upstash.com/docs/qstash/howto/deduplication)
-  - [QStash labels](https://upstash.com/docs/qstash/howto/labels)
+  - [QStash labels](https://upstash.com/docs/qstash/howto/labels).
 
 ## Monitoring
 
