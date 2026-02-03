@@ -6,6 +6,9 @@ import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
 
+/**
+ * Data transfer object representing a workflow run.
+ */
 export type RunDto = Readonly<{
   id: string;
   projectId: string;
@@ -23,6 +26,9 @@ export type RunDto = Readonly<{
   metadata: Record<string, unknown>;
 }>;
 
+/**
+ * Data transfer object representing a single step within a workflow run.
+ */
 export type RunStepDto = Readonly<{
   id: string;
   runId: string;
@@ -134,15 +140,6 @@ export async function ensureRunStep(
   }>,
 ): Promise<RunStepDto> {
   const db = getDb();
-  const existing = await db.query.runStepsTable.findFirst({
-    where: and(
-      eq(schema.runStepsTable.runId, input.runId),
-      eq(schema.runStepsTable.stepId, input.stepId),
-    ),
-  });
-
-  if (existing) return toRunStepDto(existing);
-
   const [row] = await db
     .insert(schema.runStepsTable)
     .values({
@@ -152,13 +149,27 @@ export async function ensureRunStep(
       stepKind: input.stepKind,
       stepName: input.stepName,
     })
+    .onConflictDoNothing({
+      target: [schema.runStepsTable.runId, schema.runStepsTable.stepId],
+    })
     .returning();
 
-  if (!row) {
+  if (row) {
+    return toRunStepDto(row);
+  }
+
+  const existing = await db.query.runStepsTable.findFirst({
+    where: and(
+      eq(schema.runStepsTable.runId, input.runId),
+      eq(schema.runStepsTable.stepId, input.stepId),
+    ),
+  });
+
+  if (!existing) {
     throw new AppError("db_insert_failed", 500, "Failed to create run step.");
   }
 
-  return toRunStepDto(row);
+  return toRunStepDto(existing);
 }
 
 /**

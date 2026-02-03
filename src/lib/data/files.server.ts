@@ -7,6 +7,9 @@ import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
 
+/**
+ * Data transfer object representing a project file record.
+ */
 export type ProjectFileDto = Readonly<{
   id: string;
   projectId: string;
@@ -36,8 +39,9 @@ function toProjectFileDto(row: FileRow): ProjectFileDto {
 /**
  * Create (or upsert) a project file record idempotently by `(projectId, sha256)`.
  *
- * @param input - File inputs.
+ * @param input - File metadata including projectId, name, mimeType, sha256 hash, size, and storage URL.
  * @returns File DTO.
+ * @throws AppError - With code "db_insert_failed" if the database operation fails.
  */
 export async function upsertProjectFile(
   input: Readonly<{

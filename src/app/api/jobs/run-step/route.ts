@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { AppError } from "@/lib/core/errors";
-import { getRequestOrigin } from "@/lib/next/request-origin";
+import { env } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { executeRunStep } from "@/lib/runs/run-engine.server";
 import { verifyQstashSignatureAppRouter } from "@/lib/upstash/qstash.server";
@@ -11,6 +11,18 @@ const bodySchema = z.strictObject({
   stepId: z.string().min(1),
 });
 
+/**
+ * Execute a single step of a durable run.
+ *
+ * @remarks
+ * This route is protected by QStash signature verification and processes
+ * run steps enqueued by the run engine.
+ *
+ * @param req - HTTP request containing runId and stepId in JSON body.
+ * @returns JSON response with step execution result or error.
+ * @throws AppError - When JSON body is malformed (400).
+ * @throws AppError - When request body validation fails (400).
+ */
 export const POST = verifyQstashSignatureAppRouter(async (req: Request) => {
   try {
     const raw = await req.text();
@@ -26,14 +38,7 @@ export const POST = verifyQstashSignatureAppRouter(async (req: Request) => {
       throw new AppError("bad_request", 400, "Invalid request body.");
     }
 
-    const origin = getRequestOrigin(req.headers);
-    if (!origin) {
-      throw new AppError(
-        "bad_request",
-        400,
-        "Unable to determine request origin.",
-      );
-    }
+    const origin = env.app.baseUrl;
 
     const result = await executeRunStep({
       origin,

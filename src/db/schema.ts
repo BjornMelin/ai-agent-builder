@@ -270,6 +270,9 @@ export const citationsTable = pgTable(
   (t) => [index("citations_project_id_idx").on(t.projectId)],
 );
 
+/**
+ * Project chat threads.
+ */
 export const chatThreadsTable = pgTable(
   "chat_threads",
   {
@@ -288,6 +291,9 @@ export const chatThreadsTable = pgTable(
   (t) => [index("chat_threads_project_id_idx").on(t.projectId)],
 );
 
+/**
+ * Messages within a chat thread.
+ */
 export const chatMessagesTable = pgTable(
   "chat_messages",
   {
@@ -467,6 +473,9 @@ export const sandboxJobsTable = pgTable(
 /**
  * Relations (enables `db.query.*` in Drizzle).
  */
+/**
+ * Project relations for Drizzle query helpers.
+ */
 export const projectsRelations = relations(projectsTable, ({ many }) => ({
   artifacts: many(artifactsTable),
   chatThreads: many(chatThreadsTable),
@@ -475,6 +484,9 @@ export const projectsRelations = relations(projectsTable, ({ many }) => ({
   runs: many(runsTable),
 }));
 
+/**
+ * Project file relations for Drizzle query helpers.
+ */
 export const projectFilesRelations = relations(
   projectFilesTable,
   ({ one, many }) => ({
@@ -486,6 +498,9 @@ export const projectFilesRelations = relations(
   }),
 );
 
+/**
+ * File chunk relations for Drizzle query helpers.
+ */
 export const fileChunksRelations = relations(fileChunksTable, ({ one }) => ({
   file: one(projectFilesTable, {
     fields: [fileChunksTable.fileId],
@@ -497,6 +512,9 @@ export const fileChunksRelations = relations(fileChunksTable, ({ one }) => ({
   }),
 }));
 
+/**
+ * Run relations for Drizzle query helpers.
+ */
 export const runsRelations = relations(runsTable, ({ one, many }) => ({
   artifacts: many(artifactsTable),
   project: one(projectsTable, {
@@ -506,6 +524,9 @@ export const runsRelations = relations(runsTable, ({ one, many }) => ({
   steps: many(runStepsTable),
 }));
 
+/**
+ * Run step relations for Drizzle query helpers.
+ */
 export const runStepsRelations = relations(runStepsTable, ({ one, many }) => ({
   approvals: many(approvalsTable),
   run: one(runsTable, {
@@ -515,6 +536,9 @@ export const runStepsRelations = relations(runStepsTable, ({ one, many }) => ({
   sandboxJobs: many(sandboxJobsTable),
 }));
 
+/**
+ * Artifact relations for Drizzle query helpers.
+ */
 export const artifactsRelations = relations(
   artifactsTable,
   ({ one, many }) => ({
@@ -530,6 +554,9 @@ export const artifactsRelations = relations(
   }),
 );
 
+/**
+ * Citation relations for Drizzle query helpers.
+ */
 export const citationsRelations = relations(citationsTable, ({ one }) => ({
   artifact: one(artifactsTable, {
     fields: [citationsTable.artifactId],
@@ -541,6 +568,9 @@ export const citationsRelations = relations(citationsTable, ({ one }) => ({
   }),
 }));
 
+/**
+ * Chat thread relations for Drizzle query helpers.
+ */
 export const chatThreadsRelations = relations(
   chatThreadsTable,
   ({ one, many }) => ({
@@ -552,6 +582,9 @@ export const chatThreadsRelations = relations(
   }),
 );
 
+/**
+ * Chat message relations for Drizzle query helpers.
+ */
 export const chatMessagesRelations = relations(
   chatMessagesTable,
   ({ one }) => ({
@@ -562,6 +595,9 @@ export const chatMessagesRelations = relations(
   }),
 );
 
+/**
+ * Repo relations for Drizzle query helpers.
+ */
 export const reposRelations = relations(reposTable, ({ one }) => ({
   project: one(projectsTable, {
     fields: [reposTable.projectId],
@@ -569,6 +605,9 @@ export const reposRelations = relations(reposTable, ({ one }) => ({
   }),
 }));
 
+/**
+ * Approval relations for Drizzle query helpers.
+ */
 export const approvalsRelations = relations(approvalsTable, ({ one }) => ({
   project: one(projectsTable, {
     fields: [approvalsTable.projectId],
@@ -584,6 +623,9 @@ export const approvalsRelations = relations(approvalsTable, ({ one }) => ({
   }),
 }));
 
+/**
+ * Deployment relations for Drizzle query helpers.
+ */
 export const deploymentsRelations = relations(deploymentsTable, ({ one }) => ({
   project: one(projectsTable, {
     fields: [deploymentsTable.projectId],
@@ -595,6 +637,9 @@ export const deploymentsRelations = relations(deploymentsTable, ({ one }) => ({
   }),
 }));
 
+/**
+ * Infra resource relations for Drizzle query helpers.
+ */
 export const infraResourcesRelations = relations(
   infraResourcesTable,
   ({ one }) => ({
@@ -609,6 +654,9 @@ export const infraResourcesRelations = relations(
   }),
 );
 
+/**
+ * Sandbox job relations for Drizzle query helpers.
+ */
 export const sandboxJobsRelations = relations(sandboxJobsTable, ({ one }) => ({
   project: one(projectsTable, {
     fields: [sandboxJobsTable.projectId],
@@ -628,4 +676,7 @@ export const sandboxJobsRelations = relations(sandboxJobsTable, ({ one }) => ({
  * Type helpers for consumers.
  */
 export type Project = typeof projectsTable.$inferSelect;
+/**
+ * Insert shape for creating a project.
+ */
 export type NewProject = typeof projectsTable.$inferInsert;

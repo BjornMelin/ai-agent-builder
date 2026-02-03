@@ -1,5 +1,7 @@
 import "server-only";
 
+import { Buffer } from "node:buffer";
+
 import { AppError } from "@/lib/core/errors";
 import type { ExtractedDoc, ExtractedSection } from "@/lib/ingest/types";
 
@@ -42,6 +44,10 @@ async function extractPdf(
  *
  * @remarks
  * IMPORTANT: tagName must be a trusted literal, never user input (ReDoS risk).
+ *
+ * @param xml - XML string to scan for tag contents.
+ * @param tagName - Tag name to extract (trusted literal).
+ * @returns Joined text content for matching tags.
  */
 function extractXmlTextByTag(xml: string, tagName: string): string {
   const re = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)</${tagName}>`, "g");
@@ -152,19 +158,38 @@ async function extractPptx(
 async function extractXlsx(
   bytes: Uint8Array,
 ): Promise<readonly ExtractedSection[]> {
-  const XLSX = await import("xlsx");
-  const workbook = XLSX.read(bytes);
+  const { Workbook } = await import("exceljs");
+  const workbook = new Workbook();
+  const arrayBuffer = bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  ) as ArrayBuffer;
+  const buffer = Buffer.from(arrayBuffer);
+  await workbook.xlsx.load(
+    buffer as unknown as Parameters<typeof workbook.xlsx.load>[0],
+  );
 
   const sections: ExtractedSection[] = [];
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    if (!sheet) continue;
-    const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
+  for (const sheet of workbook.worksheets) {
+    const rows: string[] = [];
+    sheet.eachRow({ includeEmpty: false }, (row) => {
+      const values = row.values;
+      if (!Array.isArray(values)) return;
+      const cells = values
+        .slice(1)
+        .map((value) => (value === null || value === undefined ? "" : value))
+        .map((value) => String(value));
+      if (cells.every((value) => value.trim().length === 0)) {
+        return;
+      }
+      rows.push(cells.join(","));
+    });
+    const csv = rows.join("\n");
     const normalized = normalizeWhitespace(csv);
     if (normalized.length === 0) continue;
     sections.push({
-      meta: { sheet: sheetName },
-      ref: `sheet:${sheetName}`,
+      meta: { sheet: sheet.name },
+      ref: `sheet:${sheet.name}`,
       text: normalized,
     });
   }

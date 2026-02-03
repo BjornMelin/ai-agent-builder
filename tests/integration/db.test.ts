@@ -13,33 +13,39 @@ describeDb("db (integration)", () => {
   it("connects and can round-trip a project row", async () => {
     const db = getDb();
     const slug = `test-${crypto.randomUUID()}`;
+    let createdId: string | null = null;
 
-    const [created] = await db
-      .insert(schema.projectsTable)
-      .values({ name: "Test Project", slug })
-      .returning();
+    try {
+      const [created] = await db
+        .insert(schema.projectsTable)
+        .values({ name: "Test Project", slug })
+        .returning();
 
-    expect(created).toBeTruthy();
-    if (!created) throw new Error("Expected inserted project row.");
-    expect(created.slug).toBe(slug);
-    const createdId = created.id;
+      expect(created).toBeTruthy();
+      if (!created) throw new Error("Expected inserted project row.");
+      expect(created.slug).toBe(slug);
+      createdId = created.id;
 
-    const fetched = await db.query.projectsTable.findFirst({
-      where: eq(schema.projectsTable.id, createdId),
-    });
+      const fetched = await db.query.projectsTable.findFirst({
+        where: eq(schema.projectsTable.id, createdId),
+      });
 
-    expect(fetched).toBeTruthy();
-    expect(fetched?.id).toBe(createdId);
+      expect(fetched).toBeTruthy();
+      expect(fetched?.id).toBe(createdId);
+    } finally {
+      if (createdId) {
+        await db
+          .delete(schema.projectsTable)
+          .where(eq(schema.projectsTable.id, createdId));
+      }
+    }
 
-    await db
-      .delete(schema.projectsTable)
-      .where(eq(schema.projectsTable.id, createdId));
-
-    const deleted = await db.query.projectsTable.findFirst({
-      where: eq(schema.projectsTable.id, createdId),
-    });
-
-    expect(deleted).toBeUndefined();
+    if (createdId) {
+      const deleted = await db.query.projectsTable.findFirst({
+        where: eq(schema.projectsTable.id, createdId),
+      });
+      expect(deleted).toBeUndefined();
+    }
   });
 
   it("has drizzle migrations table (after bun run db:migrate)", async () => {
@@ -49,8 +55,7 @@ describeDb("db (integration)", () => {
     );
 
     const rows =
-      (result as unknown as { rows?: Array<{ table_name: string }> }).rows ??
-      [];
+      (result as { rows?: Array<{ table_name?: string }> }).rows ?? [];
     expect(rows.some((r) => r.table_name === "__drizzle_migrations")).toBe(
       true,
     );

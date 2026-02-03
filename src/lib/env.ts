@@ -341,16 +341,6 @@ let cachedUpstashDeveloperEnv:
  */
 export const env = {
   /**
-   * Returns the application base URL used for server callbacks.
-   *
-   * @returns App env.
-   */
-  get app(): Readonly<z.output<typeof appSchema>> {
-    cachedAppEnv ??= parseFeatureEnv("app", appSchema);
-    return cachedAppEnv;
-  },
-
-  /**
    * Returns the Vercel AI Gateway configuration used by server code.
    *
    * @returns AI Gateway env.
@@ -358,6 +348,15 @@ export const env = {
   get aiGateway(): Readonly<z.output<typeof aiGatewaySchema>> {
     cachedAiGatewayEnv ??= parseFeatureEnv("aiGateway", aiGatewaySchema);
     return cachedAiGatewayEnv;
+  },
+  /**
+   * Returns the application base URL used for server callbacks.
+   *
+   * @returns App env.
+   */
+  get app(): Readonly<z.output<typeof appSchema>> {
+    cachedAppEnv ??= parseFeatureEnv("app", appSchema);
+    return cachedAppEnv;
   },
 
   /**

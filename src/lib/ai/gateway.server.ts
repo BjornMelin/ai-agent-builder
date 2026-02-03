@@ -2,6 +2,7 @@ import "server-only";
 
 import { createGateway, type GatewayModelId } from "ai";
 
+import { AppError } from "@/lib/core/errors";
 import { env } from "@/lib/env";
 
 let cachedGatewayProvider: ReturnType<typeof createGateway> | undefined;
@@ -9,6 +10,22 @@ let cachedGatewayProvider: ReturnType<typeof createGateway> | undefined;
 type GatewayEmbeddingModelId = Parameters<
   ReturnType<typeof createGateway>["embeddingModel"]
 >[0];
+
+const gatewayModelIdPattern = /^[a-z0-9][a-z0-9_.-]*\/[a-z0-9][a-z0-9_.-]*$/i;
+
+function assertGatewayModelId(
+  value: string,
+  kind: "chat" | "embedding",
+): string {
+  if (!gatewayModelIdPattern.test(value)) {
+    throw new AppError(
+      "env_invalid",
+      500,
+      `Invalid AI Gateway ${kind} model id: ${value}.`,
+    );
+  }
+  return value;
+}
 
 /**
  * Get the configured Vercel AI Gateway provider.
@@ -39,7 +56,8 @@ export function getAiGatewayProvider(): ReturnType<typeof createGateway> {
  */
 export function getDefaultChatModel() {
   const provider = getAiGatewayProvider();
-  return provider.languageModel(env.aiGateway.chatModel as GatewayModelId);
+  const modelId = assertGatewayModelId(env.aiGateway.chatModel, "chat");
+  return provider.languageModel(modelId as GatewayModelId);
 }
 
 /**
@@ -51,7 +69,9 @@ export function getDefaultChatModel() {
  */
 export function getDefaultEmbeddingModel() {
   const provider = getAiGatewayProvider();
-  return provider.embeddingModel(
-    env.aiGateway.embeddingModel as GatewayEmbeddingModelId,
+  const modelId = assertGatewayModelId(
+    env.aiGateway.embeddingModel,
+    "embedding",
   );
+  return provider.embeddingModel(modelId as GatewayEmbeddingModelId);
 }

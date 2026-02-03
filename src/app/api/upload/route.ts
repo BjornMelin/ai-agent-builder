@@ -42,8 +42,8 @@ type UploadResponse = Readonly<{
 /**
  * Upload one or more files to a project, optionally ingesting them.
  *
- * @param req - Incoming multipart/form-data request containing projectId, file(s), and optional async flag.
- * @returns JSON response with uploaded file metadata and optional ingestion results.
+ * @param req - Authenticated multipart/form-data request containing projectId, file(s), and optional async flag; files must be within size limits and supported MIME types.
+ * @returns JSON response with uploaded file metadata and optional ingestion results (chunk counts when ingested).
  */
 export async function POST(
   req: Request,

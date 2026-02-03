@@ -10,6 +10,20 @@ const bodySchema = z.strictObject({
   projectId: z.string().min(1),
 });
 
+/**
+ * Ingest a file: extract, chunk, embed, and index its content.
+ *
+ * @remarks
+ * This route is protected by QStash signature verification and is intended
+ * to be called asynchronously via QStash for larger file processing.
+ *
+ * @param req - HTTP request containing fileId and projectId in JSON body.
+ * @returns JSON response with ingestion result or error.
+ * @throws AppError - When JSON body is malformed (400).
+ * @throws AppError - When request body validation fails (400).
+ * @throws AppError - When file is not found or project mismatch (404).
+ * @throws AppError - When blob fetch fails (502).
+ */
 export const POST = verifyQstashSignatureAppRouter(async (req: Request) => {
   try {
     const raw = await req.text();
@@ -31,7 +45,18 @@ export const POST = verifyQstashSignatureAppRouter(async (req: Request) => {
       throw new AppError("not_found", 404, "File not found.");
     }
 
-    const res = await fetch(file.storageKey);
+    let res: Response;
+    try {
+      res = await fetch(file.storageKey, {
+        signal: AbortSignal.timeout(30_000),
+      });
+    } catch (err) {
+      const message =
+        err instanceof DOMException && err.name === "TimeoutError"
+          ? "Blob fetch timed out."
+          : "Failed to fetch blob.";
+      throw new AppError("blob_fetch_failed", 502, message, err);
+    }
     if (!res.ok) {
       throw new AppError(
         "blob_fetch_failed",

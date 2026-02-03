@@ -37,19 +37,22 @@ Apply migration:
 ## Database connection method (Vercel)
 
 This app targets Vercel’s Fluid compute model and uses a pooled Postgres TCP
-connection (`pg`) to Neon, attaching the pool with `attachDatabasePool`.
+connection (`pg`) to Neon, attaching the pool with `attachDatabasePool`.[^neon-vercel][^vercel-functions]
 
 - Implementation: `src/db/client.ts`
 - Reference:
   - [Neon: Connecting to Neon from Vercel](https://neon.com/docs/guides/vercel-connection-methods)
   - [Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package)
+[^neon-vercel]: https://neon.com/docs/guides/vercel-connection-methods
+[^vercel-functions]: https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package
 
 ## QStash worker debugging
 
-- Ensure worker endpoints verify QStash signatures (Upstash QStash signature
-  verification: [Upstash QStash signature verification](https://upstash.com/docs/qstash/verify)).
+- Ensure worker endpoints verify QStash signatures. Reference:
+  [Upstash QStash signature verification](https://upstash.com/docs/qstash/verify).
 - For local development, you may need to trigger test messages from the Upstash
-  dashboard (Upstash QStash overview: [Upstash QStash overview](https://upstash.com/docs/qstash/overview)).
+  dashboard. Reference:
+  [Upstash QStash overview](https://upstash.com/docs/qstash/overview).
 
 ## Common issues
 

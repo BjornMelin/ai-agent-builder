@@ -41,10 +41,32 @@ function toProjectDto(row: schema.Project): ProjectDto {
 export async function createProject(
   input: Readonly<{ name: string; slug: string }>,
 ): Promise<ProjectDto> {
+  const name = input.name.trim();
+  if (name.length === 0 || name.length > 256) {
+    throw new AppError(
+      "invalid_input",
+      400,
+      "Project name must be between 1 and 256 characters.",
+    );
+  }
+
+  const slug = input.slug.trim().toLowerCase();
+  if (
+    slug.length === 0 ||
+    slug.length > 128 ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+  ) {
+    throw new AppError(
+      "invalid_input",
+      400,
+      "Project slug must be lowercase alphanumeric with optional dashes.",
+    );
+  }
+
   const db = getDb();
   const [row] = await db
     .insert(schema.projectsTable)
-    .values({ name: input.name, slug: input.slug })
+    .values({ name, slug })
     .returning();
 
   if (!row) {
@@ -89,13 +111,20 @@ export const getProjectBySlug = cache(
 );
 
 /**
- * List all projects ordered by newest first.
+ * List projects ordered by newest first.
  *
+ * @param options - Pagination options.
  * @returns Project DTOs.
  */
-export async function listProjects(): Promise<ProjectDto[]> {
+export async function listProjects(
+  options: Readonly<{ limit?: number; offset?: number }> = {},
+): Promise<ProjectDto[]> {
+  const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
+  const offset = Math.max(options.offset ?? 0, 0);
   const db = getDb();
   const rows = await db.query.projectsTable.findMany({
+    limit,
+    offset,
     orderBy: (t, { desc }) => [desc(t.createdAt)],
   });
   return rows.map(toProjectDto);

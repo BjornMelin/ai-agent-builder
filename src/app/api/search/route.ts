@@ -1,4 +1,4 @@
-import { ilike } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import type { NextResponse } from "next/server";
 
 import { getDb } from "@/db/client";
@@ -34,11 +34,16 @@ type SearchResult =
 
 type SearchResponse = Readonly<{ results: readonly SearchResult[] }>;
 
+function escapeLikePattern(value: string): string {
+  return value.replace(/[%_\\]/g, (match) => `\\${match}`);
+}
+
 /**
  * Search endpoint for typeahead and global search.
  *
  * @param req - HTTP request.
  * @returns Search response or JSON error.
+ * @throws AppError - With status 400 when query parameter q is missing or empty.
  */
 export async function GET(
   req: Request,
@@ -76,10 +81,11 @@ export async function GET(
     }
 
     const db = getDb();
+    const pattern = `%${escapeLikePattern(q)}%`;
     const projects = await db.query.projectsTable.findMany({
       limit: 10,
       orderBy: (t, { desc }) => [desc(t.updatedAt)],
-      where: ilike(schema.projectsTable.name, `%${q}%`),
+      where: sql`${schema.projectsTable.name} ILIKE ${pattern} ESCAPE '\\'`,
     });
 
     return jsonOk<SearchResponse>({

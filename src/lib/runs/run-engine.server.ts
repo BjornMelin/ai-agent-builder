@@ -66,7 +66,10 @@ function getStepDef(stepId: string): StepDefinition {
 
 function resolveQstashOrigin(inputOrigin: string): string {
   const configured = new URL(env.app.baseUrl);
-  if (env.runtime.nodeEnv === "production" && configured.protocol !== "https:") {
+  if (
+    env.runtime.nodeEnv === "production" &&
+    configured.protocol !== "https:"
+  ) {
     throw new AppError(
       "bad_request",
       400,
@@ -162,13 +165,20 @@ export async function executeRunStep(
     return { runId: input.runId, status: "running", stepId: input.stepId };
   }
 
-  if (step.status === "blocked" && nextStepId) {
+  if ((step.status === "blocked" || step.status === "waiting") && nextStepId) {
     try {
       await enqueueRunStep({
         origin: input.origin,
         runId: input.runId,
         stepId: nextStepId,
       });
+
+      if (run.status === "blocked") {
+        await db
+          .update(schema.runsTable)
+          .set({ status: "running", updatedAt: now })
+          .where(eq(schema.runsTable.id, input.runId));
+      }
 
       await db
         .update(schema.runStepsTable)
@@ -246,9 +256,10 @@ export async function executeRunStep(
       ),
     });
 
+    const status = latest?.status ?? step.status;
     return {
       runId: input.runId,
-      status: latest?.status ?? step.status,
+      status: status === "pending" ? "running" : status,
       stepId: input.stepId,
     };
   }

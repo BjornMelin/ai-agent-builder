@@ -46,6 +46,8 @@ export async function embedTexts(
     maxParallelCalls?: number;
   }>,
 ): Promise<readonly number[][]> {
+  if (inputs.length === 0) return [];
+
   const model = options?.modelId
     ? getAiGatewayProvider().embeddingModel(options.modelId)
     : getDefaultEmbeddingModel();

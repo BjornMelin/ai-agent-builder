@@ -178,7 +178,7 @@ All DB and ingestion routes that depend on `pg`/Drizzle must execute on Node.js 
 - Create a single `pg` Pool per module instance.
 - Immediately call `attachDatabasePool(pool)` so idle clients are released before a function suspends.
   - Reference: Vercel Functions package `attachDatabasePool` docs.
-    - [Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package)
+    - [Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package).
 
 ### Fluid Compute enablement
 

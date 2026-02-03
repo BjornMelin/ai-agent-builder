@@ -16,9 +16,6 @@ import {
 
 /**
  * Result of a file ingestion operation.
- *
- * @property fileId - Ingested file identifier.
- * @property chunksIndexed - Number of chunks indexed.
  */
 export type IngestFileResult = Readonly<{
   fileId: string;
