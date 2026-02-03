@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.2](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.1...ai-agent-builder-v0.1.2) (2026-02-03)
+
+
+### Features
+
+* add @edge-runtime/primitives, @edge-runtime/vm, and tsx dependencies to bun.lock. ([3500202](https://github.com/BjornMelin/ai-agent-builder/commit/35002020fa4851d0e75ce60adf3e1ca109c9f12f))
+* add GitHub, Vercel, Neon, and Upstash environment schemas with validation and access methods ([850b406](https://github.com/BjornMelin/ai-agent-builder/commit/850b40672852fdecbae290d121affb6ac3a1edc9))
+* add Neon Auth proxy middleware, enhance global styles, and implement access control pages ([058caaf](https://github.com/BjornMelin/ai-agent-builder/commit/058caafc8d99e94fa981a2349927909afefdf6aa))
+* add new authentication, UI, and captcha dependencies, update `ai` package, and disable Biome key sorting for `package.json`. ([694560a](https://github.com/BjornMelin/ai-agent-builder/commit/694560a231e0c9b9fe112e08b2127ec0628aec8a))
+* **auth:** enhance environment configuration for social login and update documentation ([f271dd1](https://github.com/BjornMelin/ai-agent-builder/commit/f271dd196c42260412e1338f5d2c0aafe1a82627))
+* **auth:** introduce AUTH_SOCIAL_PROVIDERS for configurable social login options and update related documentation ([a30ca55](https://github.com/BjornMelin/ai-agent-builder/commit/a30ca55a024eebcf7c730d5bfdc86049e42a3343))
+* **ci:** implement Vercel Preview automation with Neon branch provisioning ([764f58e](https://github.com/BjornMelin/ai-agent-builder/commit/764f58e323f770514637b08be351313e8e9ef208))
+* **ci:** streamline Vercel Preview automation with Neon Auth trusted domains ([f99ddbe](https://github.com/BjornMelin/ai-agent-builder/commit/f99ddbec286bc8219fd8c373034c11f4fd8186b0))
+* enhance Vercel Sandbox environment configuration with new auth modes and validation, updating related documentation and tests ([684d832](https://github.com/BjornMelin/ai-agent-builder/commit/684d83275f603c0e298b8327f904d54fc9fd836b))
+* export normalizeEmail function and add tests for restricted user email handling in access control ([6898363](https://github.com/BjornMelin/ai-agent-builder/commit/6898363698c8f9aa2e2aead2fb5c025067c5be35))
+* implement Neon Auth integration with client-side providers, account management routes, and access control enforcement ([14f8154](https://github.com/BjornMelin/ai-agent-builder/commit/14f815410d6d0606e8e53995f275750afcf092d8))
+* integrate @vercel/analytics for enhanced tracking and update project description ([93cee24](https://github.com/BjornMelin/ai-agent-builder/commit/93cee245058ada283d014072d613b2e62aa3b43b))
+* **platform:** add typed env and server foundation utilities ([5851132](https://github.com/BjornMelin/ai-agent-builder/commit/58511320a2767f1e670c6ed6af5f30128799c307))
+* scaffold platform foundations + env + Neon Auth + Neon DB ([432b22f](https://github.com/BjornMelin/ai-agent-builder/commit/432b22f75cbc28ba5dbd56e0c83f1fbc8815bc4f))
+
+
+### Bug Fixes
+
+* **ci:** improve error handling in Neon Auth workflow ([c2cfa0d](https://github.com/BjornMelin/ai-agent-builder/commit/c2cfa0d8ae9d45afb4434247a286fce54bf149ef))
+* **pr-review:** resolve review feedback ([5ddfb30](https://github.com/BjornMelin/ai-agent-builder/commit/5ddfb30704792303284b14fa3a0a6f32dada0408))
+* **pr:** address review comments (PR [#5](https://github.com/BjornMelin/ai-agent-builder/issues/5)) ([b6759c6](https://github.com/BjornMelin/ai-agent-builder/commit/b6759c652506f69c1d39f70c36d58b3f710fea9d))
+
 ## [0.1.1](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.0...ai-agent-builder-v0.1.1) (2026-01-30)
 
 ### Features
