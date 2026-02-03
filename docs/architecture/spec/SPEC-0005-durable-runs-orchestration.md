@@ -223,6 +223,8 @@ For implementation runs, add:
 ## Testing
 
 - Unit tests: step idempotency helpers and error normalization.
+- Unit tests: run engine enqueue behavior and status transitions
+  (`src/lib/runs/run-engine.server.test.ts`).
 - Integration tests: QStash signature verification and step scheduling.
 - E2E (later): execute a small run end-to-end and validate status transitions.
 
@@ -247,6 +249,7 @@ For implementation runs, add:
 - `docs/architecture/spec/SPEC-0005-durable-runs-orchestration.md`
 - `docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`
 - `src/lib/upstash/qstash.server.ts`
+- `src/lib/runs/run-engine.server.ts`
 
 ## References
 

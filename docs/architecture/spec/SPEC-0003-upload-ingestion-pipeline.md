@@ -1,7 +1,7 @@
 ---
 spec: SPEC-0003
 title: Upload + ingestion pipeline
-version: 0.3.0
+version: 0.4.0
 date: 2026-02-03
 owners: ["you"]
 status: Proposed
@@ -90,6 +90,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ### Architecture overview
 
 - Upload route stores file in Blob and writes metadata in Neon.
+- Upload route processes independent files in parallel; async ingestion enqueues
+  QStash jobs with per-file deduplication ids and labels.
 - Extraction pipeline produces a normalized document model.
 - Chunker splits text into stable segments with source refs.
 - Embeddings generated via AI Gateway and stored in Upstash Vector.
@@ -126,6 +128,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ## Testing
 
 - Unit: chunking determinism and hashing
+- Unit: request-level route handler tests for `/api/upload` and
+  `/api/jobs/ingest-file` error handling and async ingestion fallbacks.
 - Integration: upload → extract → index → query
 
 ## Operational notes
@@ -157,3 +161,5 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-03)**: Updated file path references to server-only modules and documented the async ingestion worker.
+- **0.4 (2026-02-03)**: Documented parallel upload processing, QStash
+  deduplication/labels, and route handler test coverage.

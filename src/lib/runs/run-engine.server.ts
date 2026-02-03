@@ -120,6 +120,7 @@ export async function enqueueRunStep(
   // additional context from Neon in the worker.
   await qstash.publishJSON({
     body: { runId: input.runId, stepId: input.stepId },
+    label: "run-step",
     url: `${origin}/api/jobs/run-step`,
   });
 }

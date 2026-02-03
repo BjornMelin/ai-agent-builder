@@ -32,6 +32,8 @@ See:
 
 - `POST /api/upload`
   - stores original in Vercel Blob ([Vercel Blob](https://vercel.com/docs/vercel-blob))
+  - processes independent files in parallel; when `async=true`, enqueues
+    QStash ingestion jobs with per-file labels/dedup ids
   - extracts text (PDF/DOCX/PPTX/XLSX/TXT/MD)
   - chunks
   - embeds via AI Gateway

@@ -168,6 +168,10 @@ bun run test
 bun run build
 ```
 
+Tests are colocated under `src/**` (including route handler tests in
+`src/app/api/**/__tests__`) with integration tests under
+`tests/integration`.
+
 ## Releases and versioning
 
 This repo uses Release Please and Conventional Commits.
