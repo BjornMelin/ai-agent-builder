@@ -14,7 +14,6 @@ export type LogFields = Readonly<Record<string, unknown>>;
  * - Redacts common secret-like keys.
  * - Normalizes `Error` objects.
  */
-/* eslint-disable no-unused-vars -- type-only parameter names */
 export type Logger = Readonly<{
   debug: (message: string, fields?: LogFields) => void;
   info: (message: string, fields?: LogFields) => void;
@@ -22,7 +21,6 @@ export type Logger = Readonly<{
   error: (message: string, fields?: LogFields) => void;
   child: (fields: LogFields) => Logger;
 }>;
-/* eslint-enable no-unused-vars */
 
 const REDACT_KEY = /password|secret|token|key|cookie|authorization/i;
 

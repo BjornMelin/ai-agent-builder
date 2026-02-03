@@ -71,6 +71,9 @@ module.exports = [
       "jsdoc/require-returns": "error",
       "jsdoc/tag-lines": ["error", "any", { startLines: 1 }],
 
+      // Prefer the TypeScript-aware variant (with underscore ignore patterns).
+      "no-unused-vars": "off",
+
       // TSDoc syntax enforcement
       "tsdoc/syntax": "error",
     },
