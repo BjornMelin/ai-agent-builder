@@ -64,8 +64,10 @@ export async function POST(req: Request) {
         stepId: "run.start",
       });
     } catch (error) {
-      await updateRunStatus(run.id, "blocked");
-      await updateRunStepStatus(run.id, "run.start", "blocked");
+      await Promise.all([
+        updateRunStatus(run.id, "blocked"),
+        updateRunStepStatus(run.id, "run.start", "blocked"),
+      ]);
       throw error;
     }
 

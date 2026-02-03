@@ -42,22 +42,40 @@ async function extractPdf(
 const allowedXmlTextTags = new Set(["w:t", "a:t"]);
 
 function decodeXmlEntities(input: string): string {
-  return input.replace(/&(amp|lt|gt|quot|apos);/g, (_match, entity: string) => {
-    switch (entity) {
-      case "amp":
-        return "&";
-      case "lt":
-        return "<";
-      case "gt":
-        return ">";
-      case "quot":
-        return '"';
-      case "apos":
-        return "'";
-      default:
-        return _match;
-    }
-  });
+  const withNumeric = input
+    .replace(/&#x([0-9a-fA-F]+);/g, (_match, hex: string) => {
+      const codePoint = Number.parseInt(hex, 16);
+      return Number.isFinite(codePoint)
+        ? String.fromCodePoint(codePoint)
+        : _match;
+    })
+    .replace(/&#(\d+);/g, (_match, dec: string) => {
+      const codePoint = Number.parseInt(dec, 10);
+      return Number.isFinite(codePoint)
+        ? String.fromCodePoint(codePoint)
+        : _match;
+    });
+
+  const withNamed = withNumeric.replace(
+    /&(lt|gt|quot|apos);/g,
+    (_match, entity: string) => {
+      switch (entity) {
+        case "lt":
+          return "<";
+        case "gt":
+          return ">";
+        case "quot":
+          return '"';
+        case "apos":
+          return "'";
+        default:
+          return _match;
+      }
+    },
+  );
+
+  // Decode ampersands only when they don't introduce another entity reference.
+  return withNamed.replace(/&amp;(?!#\d+;|#x[0-9a-fA-F]+;|[a-zA-Z]+;)/g, "&");
 }
 
 /**
