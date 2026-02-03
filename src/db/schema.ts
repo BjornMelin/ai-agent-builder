@@ -471,9 +471,6 @@ export const sandboxJobsTable = pgTable(
 );
 
 /**
- * Relations (enables `db.query.*` in Drizzle).
- */
-/**
  * Project relations for Drizzle query helpers.
  */
 export const projectsRelations = relations(projectsTable, ({ many }) => ({

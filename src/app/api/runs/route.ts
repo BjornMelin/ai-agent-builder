@@ -18,10 +18,10 @@ const createRunSchema = z.strictObject({
  * Create a new run for a project and enqueue its first step.
  *
  * @param req - HTTP request.
+ * @returns Run response or JSON error.
  * @throws AppError - When request body is invalid (400).
  * @throws AppError - When project is not found (404).
  * @throws AppError - When callback origin configuration is invalid.
- * @returns Run response or JSON error.
  */
 export async function POST(req: Request) {
   try {

@@ -59,7 +59,7 @@ notes: "Cross-cutting: records current implementation snapshot and defines the r
 
 This spec is the “stitching document” that finalizes the end-to-end system:
 
-- **Persistence**: Neon Postgres via Drizzle ORM, on Vercel **Fluid Compute** using `pg` pooling + `attachDatabasePool`.
+- **Persistence**: Neon Postgres via Drizzle ORM, on Vercel **Fluid Compute** using `pg` pooling + `attachDatabasePool`. [^vercel-attach-db-pool] [^vercel-fluid-compute]
 - **Ingestion**: Blob → extract → chunk → embed → Upstash Vector, with idempotency and bounded costs.
 - **Retrieval**: project-scoped search and retrieval tool(s), with Redis caching.
 - **Durable orchestration**: QStash-signed route handlers + a step engine, persisted in DB.
@@ -96,7 +96,7 @@ This section is the authoritative snapshot of the current repository state as of
 - Migrations: `src/db/migrations/**`
 - Runtime client: `src/db/client.ts`
   - Uses `pg` pooling with `drizzle-orm/node-postgres`
-  - On Vercel Fluid Compute, attaches the pool with `attachDatabasePool` (`@vercel/functions`)
+  - On Vercel Fluid Compute, attaches the pool with `attachDatabasePool` (`@vercel/functions`). [^vercel-attach-db-pool]
 - Integration test (gated by `DATABASE_URL`): `tests/integration/db.test.ts`
 
 ### Ingestion pipeline (Blob → extract → chunk → embed → vector)
@@ -135,7 +135,7 @@ This section is the authoritative snapshot of the current repository state as of
 
 ### UI (Not Yet Implemented)
 
-- No workspace pages under `src/app/(app)/...` exist yet (planned in this spec).
+- No workspace pages under `src/app/(app)/…` exist yet (planned in this spec).
 - shadcn/ui + AI Elements component code is not yet vendored into the app.
 
 ## Target Architecture (Final System Shape)
@@ -182,7 +182,7 @@ All DB and ingestion routes that depend on `pg`/Drizzle must execute on Node.js 
 
 ### Fluid Compute enablement
 
-Fluid Compute is enabled by default for new Vercel projects, but can be explicitly controlled per project via `vercel.json`:
+Fluid Compute is enabled by default for new Vercel projects, but can be explicitly controlled per project via `vercel.json`. [^vercel-fluid-compute] [^vercel-vercel-json]
 
 ```jsonc
 {
@@ -210,7 +210,7 @@ We use Vercel’s standard env tiers and keep the contracts aligned with
 ### Neon ↔ Vercel integration (recommended)
 
 Use the Neon marketplace integration with Preview Branching enabled when
-possible:
+possible. [^neon-vercel-integration]
 
 - `DATABASE_URL` is injected per Preview branch automatically.
 - When Neon Auth is enabled, `NEON_AUTH_BASE_URL` is also injected per Preview branch.
@@ -222,7 +222,7 @@ References:
 
 ### Upstash integration (recommended)
 
-Use Vercel Marketplace integrations for:
+Use Vercel Marketplace integrations for: [^vercel-upstash-marketplace]
 
 - Upstash Redis (caching)
 - Upstash Vector (retrieval)
@@ -327,8 +327,8 @@ Direct CLI reference:
 
 Per ADR-0007, all model access is through AI Gateway. This spec sets the final default model IDs:
 
-- Default chat model: `xai/grok-4.1-fast-reasoning`
-- Default embedding model: `alibaba/qwen3-embedding-4b`
+- Default chat model: `xai/grok-4.1-fast-reasoning` [^ai-gateway-grok-fast-reasoning]
+- Default embedding model: `alibaba/qwen3-embedding-4b` [^ai-gateway-qwen-embedding]
 
 Verification command (do not hardcode based on memory; confirm at implementation time):
 
@@ -451,7 +451,7 @@ When implementing the UI in Phase 1–3, vendor these AI Elements components
   - `Controls`
   - `Connection`
 
-Reference: AI Elements workflow example:
+Reference: AI Elements workflow example: [^ai-elements-workflow]
 
 - [AI Elements workflow example](https://elements.ai-sdk.dev/examples/workflow)
 
@@ -517,6 +517,17 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 1. Expand `src/lib/runs/run-engine.server.ts` from placeholder to a real step DAG aligned with SPEC-0005.
 2. Ensure each step is idempotent and persisted in DB.
 3. Add UI to display run timelines and step details; reuse AI Elements workflow primitives.
+
+## Citations
+
+[^vercel-attach-db-pool]: <https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package>
+[^vercel-fluid-compute]: <https://vercel.com/docs/fluid-compute>
+[^vercel-vercel-json]: <https://vercel.com/docs/project-configuration/vercel-json>
+[^neon-vercel-integration]: <https://neon.com/docs/guides/vercel>
+[^vercel-upstash-marketplace]: <https://vercel.com/changelog/upstash-joins-the-vercel-marketplace>
+[^ai-gateway-grok-fast-reasoning]: <https://vercel.com/ai-gateway/models/grok-4.1-fast-reasoning>
+[^ai-gateway-qwen-embedding]: <https://vercel.com/ai-gateway/models/qwen3-embedding-4b>
+[^ai-elements-workflow]: <https://ai-sdk.dev/elements/examples/workflow>
 
 ### Phase 4 — Cache Components enablement
 

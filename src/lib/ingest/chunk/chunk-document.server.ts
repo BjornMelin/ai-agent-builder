@@ -15,6 +15,7 @@ function splitByMaxChars(text: string, maxChars: number): string[] {
     .replace(/\r\n/g, "\n")
     .replace(/[ \t]+/g, " ")
     .trim();
+  if (normalized.length === 0) return [];
   if (normalized.length <= maxChars) return [normalized];
 
   const chunks: string[] = [];

@@ -85,6 +85,7 @@ function toRunStepDto(row: RunStepRow): RunStepDto {
  *
  * @param input - Run creation inputs.
  * @returns Created run DTO.
+ * @throws AppError - With code "db_insert_failed" (500) when run creation fails.
  */
 export async function createRun(
   input: Readonly<{
@@ -129,6 +130,7 @@ export const getRunById = cache(async (id: string): Promise<RunDto | null> => {
  *
  * @param input - Run step inputs.
  * @returns Existing or created run step DTO.
+ * @throws AppError - With code "db_insert_failed" (500) when the run step cannot be created or found.
  */
 export async function ensureRunStep(
   input: Readonly<{

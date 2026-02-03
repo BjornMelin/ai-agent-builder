@@ -7,6 +7,9 @@ import {
   getDefaultEmbeddingModel,
 } from "@/lib/ai/gateway.server";
 
+/**
+ * AI Gateway embedding model identifier.
+ */
 type GatewayEmbeddingModelId = Parameters<
   ReturnType<typeof getAiGatewayProvider>["embeddingModel"]
 >[0];

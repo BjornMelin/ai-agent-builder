@@ -39,17 +39,41 @@ async function extractPdf(
   }
 }
 
+const allowedXmlTextTags = new Set(["w:t", "a:t"]);
+
+function decodeXmlEntities(input: string): string {
+  return input.replace(/&(amp|lt|gt|quot|apos);/g, (_match, entity: string) => {
+    switch (entity) {
+      case "amp":
+        return "&";
+      case "lt":
+        return "<";
+      case "gt":
+        return ">";
+      case "quot":
+        return '"';
+      case "apos":
+        return "'";
+      default:
+        return _match;
+    }
+  });
+}
+
 /**
  * Extract text content from XML by tag name.
  *
  * @remarks
- * IMPORTANT: tagName must be a trusted literal, never user input (ReDoS risk).
+ * IMPORTANT: tagName is allowlisted to trusted literals to avoid ReDoS.
  *
  * @param xml - XML string to scan for tag contents.
- * @param tagName - Tag name to extract (trusted literal).
+ * @param tagName - Tag name to extract (allowlisted literal).
  * @returns Joined text content for matching tags.
  */
 function extractXmlTextByTag(xml: string, tagName: string): string {
+  if (!allowedXmlTextTags.has(tagName)) {
+    throw new AppError("extract_failed", 500, "Unsupported XML tag name.");
+  }
   const re = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)</${tagName}>`, "g");
   const parts: string[] = [];
   // Avoid assignment-in-expression for readability and linting.
@@ -59,14 +83,7 @@ function extractXmlTextByTag(xml: string, tagName: string): string {
       break;
     }
     const raw = match[1] ?? "";
-    // Basic entity decode for common cases.
-    const decoded = raw
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"')
-      .replace(/&apos;/g, "'")
-      .replace(/&amp;/g, "&");
-    parts.push(decoded);
+    parts.push(decodeXmlEntities(raw));
   }
   return parts.join(" ").trim();
 }

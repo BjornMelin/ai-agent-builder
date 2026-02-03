@@ -16,6 +16,9 @@ import {
 
 /**
  * Result of a file ingestion operation.
+ *
+ * @remarks
+ * Includes the ingested file identifier and the number of chunks indexed.
  */
 export type IngestFileResult = Readonly<{
   fileId: string;
@@ -112,6 +115,11 @@ export async function ingestFile(
       })),
     );
   } catch (error) {
+    try {
+      await vector.delete({ prefix: `${input.fileId}:` });
+    } catch {
+      // Best-effort cleanup; preserve original failure.
+    }
     await db
       .delete(schema.fileChunksTable)
       .where(eq(schema.fileChunksTable.fileId, input.fileId));

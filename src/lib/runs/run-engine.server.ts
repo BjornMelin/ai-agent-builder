@@ -130,8 +130,8 @@ export async function enqueueRunStep(
  * This function is called from the QStash-secured Route Handler.
  *
  * @param input - Execution input.
- * @throws AppError - When the run is missing, the step id is invalid, or the request origin is invalid.
  * @returns Step execution result.
+ * @throws AppError - When the run is missing, the step id is invalid, or the request origin is invalid.
  */
 export async function executeRunStep(
   input: Readonly<{ runId: string; stepId: string; origin: string }>,
@@ -293,14 +293,15 @@ export async function executeRunStep(
     throw error;
   }
 
+  const completedAt = new Date();
   await db
     .update(schema.runStepsTable)
     .set({
-      endedAt: now,
+      endedAt: completedAt,
       error: null,
       outputs,
       status: nextStepId ? "waiting" : "succeeded",
-      updatedAt: now,
+      updatedAt: completedAt,
     })
     .where(
       and(
@@ -357,7 +358,7 @@ export async function executeRunStep(
 
   await db
     .update(schema.runsTable)
-    .set({ status: "succeeded", updatedAt: now })
+    .set({ status: "succeeded", updatedAt: completedAt })
     .where(eq(schema.runsTable.id, input.runId));
 
   return { runId: input.runId, status: "succeeded", stepId: input.stepId };

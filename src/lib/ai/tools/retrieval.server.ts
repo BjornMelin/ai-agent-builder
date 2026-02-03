@@ -55,6 +55,7 @@ function cacheKey(
  *
  * @param input - Retrieval input.
  * @returns Retrieval hits with provenance for citations.
+ * @throws AppError - When projectId is not a UUID or topK is out of range.
  */
 export async function retrieveProjectChunks(
   input: Readonly<{ projectId: string; q: string; topK?: number }>,

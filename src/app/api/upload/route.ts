@@ -33,6 +33,9 @@ function sanitizeFilename(name: string): string {
 
 /**
  * Response payload for the upload endpoint.
+ *
+ * Contains a JSON-safe readonly array of ProjectFileDto values, each optionally
+ * extended with ingestion metadata (`ingest.chunksIndexed`).
  */
 type UploadResponse = Readonly<{
   files: readonly (ProjectFileDto &
@@ -44,6 +47,7 @@ type UploadResponse = Readonly<{
  *
  * @param req - Authenticated multipart/form-data request containing projectId, file(s), and optional async flag; files must be within size limits and supported MIME types.
  * @returns JSON response with uploaded file metadata and optional ingestion results (chunk counts when ingested).
+ * @throws AppError - When authentication fails, inputs are invalid, or upload/ingest operations fail.
  */
 export async function POST(
   req: Request,

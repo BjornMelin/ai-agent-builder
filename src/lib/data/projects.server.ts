@@ -37,6 +37,7 @@ function toProjectDto(row: schema.Project): ProjectDto {
  *
  * @param input - Project creation inputs.
  * @returns Created project DTO.
+ * @throws AppError - When inputs are invalid or project creation fails.
  */
 export async function createProject(
   input: Readonly<{ name: string; slug: string }>,
