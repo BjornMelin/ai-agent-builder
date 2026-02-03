@@ -29,6 +29,10 @@ Operational notes:
 
 - Keep pool sizes conservative to avoid exhausting Neon connection limits under
   high concurrency.
+- On Vercel Fluid compute, set `idleTimeoutMillis` to ~5s in `src/db/client.ts`
+  (pool options) so idle connections are released before suspend while
+  preserving reuse.
+  ([Vercel KB: Connection Pooling with Vercel Functions](https://vercel.com/kb/guide/connection-pooling-with-functions))
 - If running on a classic serverless platform without safe pooling, consider
   Neon’s HTTP/WebSocket driver as an alternative connection method.
 - If Fluid compute is disabled for the Vercel project, you can explicitly enable

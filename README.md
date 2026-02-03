@@ -48,6 +48,8 @@ flowchart LR
 - DB: Neon Postgres + Drizzle ORM
 - DB connectivity (Vercel): Postgres TCP + connection pooling (`pg`) with
   `attachDatabasePool` (`@vercel/functions`) for Fluid compute
+  ([Vercel Functions package](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package),
+  [Vercel KB: Connection Pooling with Vercel Functions](https://vercel.com/kb/guide/connection-pooling-with-functions))
 - Infra helpers: Upstash (Redis, QStash, Vector)
 - Quality: Biome (format/lint) + ESLint (TSDoc/JSDoc enforcement) + Vitest
 - Typing/Schema: Zod v4

@@ -17,10 +17,13 @@ type DbState = Readonly<{
 }>;
 
 function createDbState(): DbState {
+  // Vercel recommends a low idle timeout (~5s) on Fluid compute so idle
+  // connections are released before suspend while preserving reuse.
+  // https://vercel.com/kb/guide/connection-pooling-with-functions
   const pool = new Pool({
     connectionString: env.db.databaseUrl,
     // Conservative default; can be increased once workload/concurrency requires it.
-    ...(env.runtime.isVercel ? { max: 1 } : {}),
+    ...(env.runtime.isVercel ? { idleTimeoutMillis: 5_000, max: 1 } : {}),
   });
 
   // On Vercel Fluid compute, a pooled TCP connection is recommended.

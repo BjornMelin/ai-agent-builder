@@ -92,6 +92,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - Upload route stores file in Blob and writes metadata in Neon.
 - Upload route processes independent files in parallel; async ingestion enqueues
   QStash jobs with per-file deduplication ids and labels.
+  ([QStash deduplication](https://upstash.com/docs/qstash/features/deduplication),
+  [QStash publish API](https://upstash.com/docs/qstash/api-refence/messages/publish-a-message))
 - Extraction pipeline produces a normalized document model.
 - Chunker splits text into stable segments with source refs.
 - Embeddings generated via AI Gateway and stored in Upstash Vector.
