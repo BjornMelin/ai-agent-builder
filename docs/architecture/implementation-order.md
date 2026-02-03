@@ -9,6 +9,8 @@ Run** subsystem (plan → code → verify → deploy) described in:
 - [SPEC-0019](./spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
 - [SPEC-0020](./spec/SPEC-0020-project-workspace-and-search.md)
 - [SPEC-0021](./spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md) (cross-cutting finalization plan)
+- [SPEC-0022](./spec/SPEC-0022-vercel-workflow-durable-runs-and-streaming-contracts.md) (workflow + streaming contracts)
+- [SPEC-0023](./spec/SPEC-0023-ai-elements-workspace-ui-and-interaction-model.md) (AI Elements workspace UI)
 
 ## Invariants (do not violate)
 
@@ -56,6 +58,8 @@ Run** subsystem (plan → code → verify → deploy) described in:
   - **FR-023, FR-024, FR-029, FR-031**
   - [SPEC-0016](./spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md)
   - [SPEC-0005](./spec/SPEC-0005-durable-runs-orchestration.md)
+  - [SPEC-0022](./spec/SPEC-0022-vercel-workflow-durable-runs-and-streaming-contracts.md)
+  - [ADR-0026](./adr/ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md)
 - Patchset → commit → PR integration:
   - **FR-025**
   - [ADR-0024](./adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md)
@@ -90,6 +94,7 @@ Run** subsystem (plan → code → verify → deploy) described in:
 
 - Workspace information architecture + deep links:
   - [SPEC-0020](./spec/SPEC-0020-project-workspace-and-search.md)
+  - [SPEC-0023](./spec/SPEC-0023-ai-elements-workspace-ui-and-interaction-model.md)
   - **FR-020**
 
 ## Verification checklist (each group)

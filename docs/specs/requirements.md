@@ -21,10 +21,12 @@ components.
 - **FR-006:** Chunk extracted content into retrieval-optimized segments with
   stable rules.
 - **FR-007:** Generate embeddings via AI Gateway and index chunks in vector store.
-- **FR-008:** Project-scoped chat with streaming responses.
+- **FR-008:** Project-scoped, multi-turn chat with streaming responses that can
+  resume after disconnects/timeouts.
 - **FR-009:** Agent mode selection per chat (Orchestrator, Market Research,
   Architect, etc.).
-- **FR-010:** Start a durable “Run” that executes research → spec pipeline.
+- **FR-010:** Start a durable, multi-step “Run” that executes the research → spec
+  pipeline (and serves as the base workflow pattern for other runs).
 - **FR-011:** Persist run step status, tool calls, citations, model usage, and
   artifacts.
 - **FR-012:** Web research with citations (search + extraction).
@@ -113,7 +115,8 @@ components.
 - **PR-001:** Streaming begins within 1.5s (p95) for warm paths.
 - **PR-002:** Retrieval top-k query within 250ms (p95) for warm paths.
 - **PR-003:** Ingest 10 MB PDF within 2 minutes (p95) excluding queue delay.
-- **PR-004:** Runs complete despite client disconnects.
+- **PR-004:** Runs and interactive chat streams resume after client
+  disconnects/timeouts and continue to completion.
 - **PR-005:** Workflow steps are idempotent and safe to retry.
 - **PR-006:** CI completes within 10 minutes for typical PRs (p95).
 - **PR-007:** Implementation runs support hours-long workflows via queued steps
@@ -126,7 +129,8 @@ components.
 - **IR-001:** All model/embedding calls through Vercel AI Gateway.
 - **IR-002:** Relational store is Neon Postgres.
 - **IR-003:** Cache and rate limit via Upstash Redis + Ratelimit.
-- **IR-004:** Orchestrate durable jobs via Upstash QStash.
+- **IR-004:** Orchestrate **background** durable jobs via Upstash QStash
+  (ingestion/fanout); interactive runs use Vercel Workflow DevKit.
 - **IR-005:** Vector search via Upstash Vector (prefer HYBRID indexes when
   provisioning).
 - **IR-006:** File storage via Vercel Blob.

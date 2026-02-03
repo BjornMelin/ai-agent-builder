@@ -18,6 +18,12 @@ See [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-a
 for the cross-cutting “finalization” plan that integrates chat and retrieval
 into the workspace UI, caching, and durable orchestration.
 
+See [SPEC-0022](./SPEC-0022-vercel-workflow-durable-runs-and-streaming-contracts.md)
+for the canonical streaming + resumption API contracts and Workflow DevKit integration.
+
+See [SPEC-0023](./SPEC-0023-ai-elements-workspace-ui-and-interaction-model.md)
+for the AI Elements-based workspace UI interaction model.
+
 ## Context
 
 Users iterate on specs and artifacts via chat. Chat must stream, persist, and use RAG to ground answers in uploads and generated artifacts.

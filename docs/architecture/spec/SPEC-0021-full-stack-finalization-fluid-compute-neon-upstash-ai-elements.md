@@ -59,10 +59,12 @@ notes: "Cross-cutting: records current implementation snapshot and defines the r
 
 This spec is the “stitching document” that finalizes the end-to-end system:
 
-- **Persistence**: Neon Postgres via Drizzle ORM, on Vercel **Fluid Compute** using `pg` pooling + `attachDatabasePool`. [^vercel-attach-db-pool] [^vercel-fluid-compute]
+- **Persistence**: Neon Postgres via Drizzle ORM, on Vercel **Fluid Compute** using `pg` pooling + `attachDatabasePool` ([Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package)) on Vercel Fluid Compute ([Vercel Fluid Compute](https://vercel.com/docs/fluid-compute)).
 - **Ingestion**: Blob → extract → chunk → embed → Upstash Vector, with idempotency and bounded costs.
 - **Retrieval**: project-scoped search and retrieval tool(s), with Redis caching.
-- **Durable orchestration**: QStash-signed route handlers + a step engine, persisted in DB.
+- **Durable orchestration**:
+  - **Interactive runs + chat**: Vercel Workflow DevKit (`workflow` + `@workflow/ai`) with resumable streams ([Vercel Workflow](https://vercel.com/docs/workflow), [Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)).
+  - **Background jobs** (ingestion + fanout): Upstash QStash-signed route handlers ([QStash Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)).
 - **UI**: Next.js App Router workspace that uses **AI Elements** (chat/streaming/workflow UI) + shadcn/ui (everything else).
 
 This spec explicitly documents:
@@ -96,7 +98,7 @@ This section is the authoritative snapshot of the current repository state as of
 - Migrations: `src/db/migrations/**`
 - Runtime client: `src/db/client.ts`
   - Uses `pg` pooling with `drizzle-orm/node-postgres`
-  - On Vercel Fluid Compute, attaches the pool with `attachDatabasePool` (`@vercel/functions`). [^vercel-attach-db-pool]
+  - On Vercel Fluid Compute, attaches the pool with `attachDatabasePool` (`@vercel/functions`) ([Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package)).
 - Integration test (gated by `DATABASE_URL`): `tests/integration/db.test.ts`
 
 ### Ingestion pipeline (Blob → extract → chunk → embed → vector)
@@ -133,6 +135,14 @@ This section is the authoritative snapshot of the current repository state as of
   - `src/lib/data/runs.server.ts`
 - QStash helpers: `src/lib/upstash/qstash.server.ts`
 
+**Note:** The above QStash-based run-step engine is the current implementation baseline. The final architecture (ADR-0026 / SPEC-0022) migrates **interactive runs and chat streaming** to **Vercel Workflow DevKit** ([Vercel Workflow](https://vercel.com/docs/workflow)). QStash remains the durable delivery mechanism for **background jobs** (especially ingestion).
+
+#### Research Notes: Upstash Workflow vs Vercel Workflow (Streaming Path)
+
+We evaluated **Upstash Workflow** (`@upstash/workflow`) as an alternative durable engine for interactive chat/runs. Upstash Workflow’s AI SDK integration guide focuses on durability by routing model HTTP calls through `context.call` via a custom `fetch` implementation ([Upstash Workflow AI SDK integration](https://upstash.com/docs/workflow/integrations/aisdk)).
+
+For this app, the primary UX requirement is **streaming-first, resumable UI** (AI Elements). Workflow DevKit provides a native pattern for resumable streams (run id + `startIndex` cursor) and a transport helper (`WorkflowChatTransport`) that is aligned with AI SDK `useChat` ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams), [WorkflowChatTransport](https://useworkflow.dev/docs/api-reference/workflow-ai/workflow-chat-transport)).
+
 ### UI (Not Yet Implemented)
 
 - No workspace pages under `src/app/(app)/…` exist yet (planned in this spec).
@@ -160,6 +170,7 @@ flowchart LR
   RH --> BLOB[(Vercel Blob)]
   RH --> REDIS[(Upstash Redis)]
   RH --> VECTOR[(Upstash Vector)]
+  RH --> WF[(Vercel Workflow)]
   RH --> QSTASH[(Upstash QStash)]
   RH --> AIGW[Vercel AI Gateway]
 
@@ -182,7 +193,7 @@ All DB and ingestion routes that depend on `pg`/Drizzle must execute on Node.js 
 
 ### Fluid Compute enablement
 
-Fluid Compute is enabled by default for new Vercel projects, but can be explicitly controlled per project via `vercel.json`. [^vercel-fluid-compute] [^vercel-vercel-json]
+Fluid Compute is enabled by default for new Vercel projects, but can be explicitly controlled per project via `vercel.json` ([Vercel Fluid Compute](https://vercel.com/docs/fluid-compute), [Vercel project configuration](https://vercel.com/docs/project-configuration/vercel-json)).
 
 ```jsonc
 {
@@ -210,7 +221,7 @@ We use Vercel’s standard env tiers and keep the contracts aligned with
 ### Neon ↔ Vercel integration (recommended)
 
 Use the Neon marketplace integration with Preview Branching enabled when
-possible. [^neon-vercel-integration]
+possible ([Neon on Vercel integration](https://neon.com/docs/guides/vercel)).
 
 - `DATABASE_URL` is injected per Preview branch automatically.
 - When Neon Auth is enabled, `NEON_AUTH_BASE_URL` is also injected per Preview branch.
@@ -222,7 +233,7 @@ References:
 
 ### Upstash integration (recommended)
 
-Use Vercel Marketplace integrations for: [^vercel-upstash-marketplace]
+Use Vercel Marketplace integrations for: [Upstash joins the Vercel Marketplace](https://vercel.com/changelog/upstash-joins-the-vercel-marketplace)
 
 - Upstash Redis (caching)
 - Upstash Vector (retrieval)
@@ -253,12 +264,14 @@ feature-gated in `src/lib/env.ts` and documented in `docs/ops/env.md`.
 - **Upstash Redis** (optional but strongly recommended for cost control):
   - `UPSTASH_REDIS_REST_URL`
   - `UPSTASH_REDIS_REST_TOKEN`
-- **Upstash QStash** (required for async ingestion and durable runs):
+- **Upstash QStash** (required for async ingestion and background jobs):
   - publish:
     - `QSTASH_TOKEN`
   - verify (inbound webhooks):
     - `QSTASH_CURRENT_SIGNING_KEY`
     - `QSTASH_NEXT_SIGNING_KEY`
+
+**Workflow note:** Vercel Workflow DevKit requires no additional application env vars for the core “start a run and stream it” path when running on Vercel. However, if you use local Workflow observability tooling (`npx workflow web`) or non-Vercel “world” backends, additional `WORKFLOW_*` env vars may apply; those are **not** part of this app’s required env contract ([Workflow DevKit Next.js getting started](https://useworkflow.dev/docs/getting-started/next)).
 
 ### CLI playbooks (verifiable commands)
 
@@ -327,8 +340,8 @@ Direct CLI reference:
 
 Per ADR-0007, all model access is through AI Gateway. This spec sets the final default model IDs:
 
-- Default chat model: `xai/grok-4.1-fast-reasoning` [^ai-gateway-grok-fast-reasoning]
-- Default embedding model: `alibaba/qwen3-embedding-4b` [^ai-gateway-qwen-embedding]
+- Default chat model: `xai/grok-4.1-fast-reasoning` ([AI Gateway model: grok-4.1-fast-reasoning](https://vercel.com/ai-gateway/models/grok-4.1-fast-reasoning))
+- Default embedding model: `alibaba/qwen3-embedding-4b` ([AI Gateway model: qwen3-embedding-4b](https://vercel.com/ai-gateway/models/qwen3-embedding-4b))
 
 Verification command (do not hardcode based on memory; confirm at implementation time):
 
@@ -387,14 +400,24 @@ Code: `src/app/api/runs/route.ts`
 - `POST /api/jobs/ingest-file`
   - QStash-signed ingestion worker (async ingestion)
 - `POST /api/jobs/run-step`
-  - QStash-signed run step executor (durable runs)
+  - QStash-signed run step executor (legacy durable runs baseline; to be migrated to Workflow DevKit per SPEC-0022)
 
-### Chat: `POST /api/chat` (required; not yet implemented)
+### Chat: multi-turn session (required; not yet implemented)
 
 Must be implemented to support the AI Elements chat UI:
 
-- Streaming response via `createAgentUIStreamResponse`
-- Agent runtime via `ToolLoopAgent`
+- **Session start**: `POST /api/chat`
+  - Starts a **workflow run** and returns a resumable UI message stream.
+  - Must include `x-workflow-run-id` response header for reconnection/follow-ups ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)).
+- **Follow-ups**: `POST /api/chat/[runId]`
+  - Resumes a workflow hook to inject a new user message into the **same** workflow run ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling)).
+- **Stream reconnection**: `GET /api/chat/[runId]/stream?startIndex=N`
+  - Uses `getRun(runId)` and `run.getReadable({ startIndex })` to resume exactly from the last received chunk index ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)).
+
+Agent runtime:
+
+- Use `@workflow/ai` `DurableAgent` inside a `"use workflow"` function ([DurableAgent](https://useworkflow.dev/docs/api-reference/workflow-ai/durable-agent)).
+- Put all side-effectful work in `"use step"` functions (DB, network, embeddings, vector/redis, etc.) ([Workflow DevKit Next.js getting started](https://useworkflow.dev/docs/getting-started/next)).
 - Retrieval tool integration via `src/lib/ai/tools/retrieval.server.ts`
 - Model selection via env:
   - `AI_GATEWAY_CHAT_MODEL` (default: `xai/grok-4.1-fast-reasoning`)
@@ -451,7 +474,7 @@ When implementing the UI in Phase 1–3, vendor these AI Elements components
   - `Controls`
   - `Connection`
 
-Reference: AI Elements workflow example: [^ai-elements-workflow]
+Reference: AI Elements workflow example: [AI Elements workflow example](https://ai-sdk.dev/elements/examples/workflow)
 
 - [AI Elements workflow example](https://elements.ai-sdk.dev/examples/workflow)
 
@@ -470,6 +493,9 @@ Local Next.js docs index for this repo: `./.next-docs` (see `AGENTS.md`).
   - Applies migrations and performs CRUD.
 - QStash signature verification contract tests:
   - Unsigned requests must be rejected with 401/403.
+- Workflow chat contract tests:
+  - Starting a chat returns `x-workflow-run-id`.
+  - Reconnect endpoint honors `startIndex` (no duplicated chunks on resume).
 - Ingestion integration test:
   - Given a small text fixture, extraction → chunking → embedding (mock) → vector upsert (mock) persists expected DB state.
 
@@ -505,29 +531,23 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 
 ### Phase 2 — Chat Route Handler + ToolLoopAgent wiring
 
-1. Add `src/app/api/chat/route.ts`:
-   - streams with `createAgentUIStreamResponse`
-   - uses `ToolLoopAgent`
-   - uses `AI_GATEWAY_CHAT_MODEL` defaulting to `xai/grok-4.1-fast-reasoning`
-   - includes retrieval tool `retrieveProjectChunks` (server-only)
-2. Add message persistence to DB (thread + messages tables) or explicitly document the deferred plan if schema is not yet present.
+1. Integrate Vercel Workflow DevKit:
+   - Wrap `next.config.ts` with `withWorkflow(...)` ([Workflow DevKit Next.js getting started](https://useworkflow.dev/docs/getting-started/next)).
+   - Ensure `src/proxy.ts` matcher excludes `.well-known/workflow/` routes ([Workflow DevKit Next.js getting started](https://useworkflow.dev/docs/getting-started/next)).
+2. Add multi-turn chat session endpoints:
+   - `POST /api/chat` (start workflow + stream + `x-workflow-run-id`) ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling))
+   - `POST /api/chat/[runId]` (resume hook for follow-ups) ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling))
+   - `GET /api/chat/[runId]/stream?startIndex=` (resume stream) ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams))
+3. Implement workflow:
+   - `src/workflows/chat/*` (multi-turn loop; user-message stream markers; hook definition) ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling)).
+4. Replace client chat transport with `WorkflowChatTransport` (no `useMemo`/`useCallback`; use `useEffect` + inline functions) ([WorkflowChatTransport](https://useworkflow.dev/docs/api-reference/workflow-ai/workflow-chat-transport)).
+5. Add message persistence to DB (thread + messages tables) or explicitly document the deferred plan if schema is not yet present.
 
 ### Phase 3 — Runs engine (real graph) + workflow UI
 
 1. Expand `src/lib/runs/run-engine.server.ts` from placeholder to a real step DAG aligned with SPEC-0005.
 2. Ensure each step is idempotent and persisted in DB.
 3. Add UI to display run timelines and step details; reuse AI Elements workflow primitives.
-
-## Citations
-
-[^vercel-attach-db-pool]: <https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package>
-[^vercel-fluid-compute]: <https://vercel.com/docs/fluid-compute>
-[^vercel-vercel-json]: <https://vercel.com/docs/project-configuration/vercel-json>
-[^neon-vercel-integration]: <https://neon.com/docs/guides/vercel>
-[^vercel-upstash-marketplace]: <https://vercel.com/changelog/upstash-joins-the-vercel-marketplace>
-[^ai-gateway-grok-fast-reasoning]: <https://vercel.com/ai-gateway/models/grok-4.1-fast-reasoning>
-[^ai-gateway-qwen-embedding]: <https://vercel.com/ai-gateway/models/qwen3-embedding-4b>
-[^ai-elements-workflow]: <https://ai-sdk.dev/elements/examples/workflow>
 
 ### Phase 4 — Cache Components enablement
 

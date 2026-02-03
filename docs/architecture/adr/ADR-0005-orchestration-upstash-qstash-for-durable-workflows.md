@@ -1,12 +1,12 @@
 ---
 ADR: 0005
-Title: Orchestration: Upstash QStash for durable workflows
+Title: Orchestration: Upstash QStash for background jobs (ingestion + fanout)
 Status: Accepted
-Version: 0.3
+Version: 0.4
 Date: 2026-02-03
 Supersedes: []
 Superseded-by: []
-Related: [ADR-0013, ADR-0012]
+Related: [ADR-0013, ADR-0012, ADR-0026]
 Tags: [architecture, reliability]
 References:
   - [QStash Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
@@ -19,15 +19,22 @@ Accepted — 2026-01-30.
 
 ## Description
 
-Use QStash to execute multi-step runs durably and idempotently.
+Use QStash to execute **background jobs** durably and idempotently, with signed
+delivery, retries, and rate limiting.
+
+This ADR no longer governs **interactive runs or chat streaming**. Those are
+handled by Vercel Workflow DevKit per [ADR-0026](./ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md).
 
 See [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
 for the cross-cutting “finalization” plan that ties QStash orchestration into
-run persistence, UI, and step execution patterns.
+ingestion, UI, and background step execution patterns.
 
 ## Context
 
-Full spec generation and research can exceed route execution limits. Durable orchestration ensures work completes even if the user closes the browser. QStash provides serverless-friendly HTTP-based queueing, signature verification, and retries.
+Ingestion and other background jobs (extract/chunk/embed/index) can exceed route
+execution limits and should continue even if the user closes the browser. QStash
+provides serverless-friendly HTTP-based queueing, signature verification, and
+retries.
 
 ## Decision Drivers
 
@@ -55,43 +62,46 @@ Full spec generation and research can exceed route execution limits. Durable orc
 
 ## Decision
 
-We will use **Upstash QStash** to orchestrate run steps, verifying signatures and enforcing step idempotency.
+We will use **Upstash QStash** to orchestrate background jobs (primarily the ingestion pipeline), verifying signatures and enforcing idempotency.
 
 ## Constraints
 
-- Step endpoints must verify QStash signatures.
+- Background job endpoints must verify QStash signatures.
 - Verification requires `QSTASH_CURRENT_SIGNING_KEY` and `QSTASH_NEXT_SIGNING_KEY`.
-- Steps must be idempotent per (runId, stepName).
+- Jobs must be idempotent (e.g., by `(fileId, stage)` and/or content hash).
 - Ensure at-least-once delivery does not duplicate artifacts.
 
 ## High-Level Architecture
 
 ```mermaid
 flowchart LR
-  UI --> Runs[/src/app/api/runs/]
-  Runs --> DB[(Neon)]
-  Runs --> Q[(QStash)]
-  Q --> Step[/src/app/api/jobs/run-step/]
-  Step --> DB
-  Step --> Tools[AI Gateway / Exa / Firecrawl / Vector]
+  UI --> Upload[/src/app/api/upload/]
+  Upload --> DB[(Neon)]
+  Upload --> Q[(QStash)]
+  Q --> Ingest[/src/app/api/jobs/ingest-file/]
+  Ingest --> DB
+  Ingest --> Tools[AI Gateway / Vector / Blob]
 ```
 
 ## Related Requirements
 
 ### Functional Requirements
 
-- **FR-010:** Durable run execution.
-- **FR-011:** Persist step status and outputs.
+- **FR-003:** Upload files to a project.
+- **FR-004:** Store original files durably.
+- **FR-005:** Extract text + structural metadata.
+- **FR-006:** Chunk extracted content.
+- **FR-007:** Embed + index chunks in vector store.
 
 ### Non-Functional Requirements
 
 - **NFR-004:** Observability for each step.
-- **NFR-005:** Deterministic artifacts per step.
+- **NFR-006:** Cost controls for background processing.
 
 ### Performance Requirements
 
-- **PR-004:** Runs survive disconnects.
 - **PR-005:** Idempotent steps.
+- **PR-003:** Ingest 10MB PDF within target (excluding queue delay).
 
 ### Integration Requirements
 
@@ -101,25 +111,34 @@ flowchart LR
 
 ### Architecture Overview
 
-- A run is a DB record with ordered steps.
-- Each step handler acquires a DB lease, executes, writes outputs, and marks status.
+QStash is used to deliver background processing jobs (ingestion and related
+fanout tasks) reliably:
+
+- upload endpoint publishes a QStash message referencing the file/project
+- ingestion worker verifies the signature, loads state from DB, and advances the pipeline
+- retries are expected; all operations must be idempotent
+
+The ingestion pipeline details are defined in:
+
+- [SPEC-0003](../spec/SPEC-0003-upload-ingestion-pipeline.md)
+- [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
 
 ### Implementation Details
 
-- Store `attempt` and `error` in `run_steps`.
-- Provide a UI action to retry a failed step.
-- Cap maximum retries and enforce budgets.
+- Verify QStash signatures on every background job route.
+- Enforce idempotency at the file/content hash boundary (avoid double indexing).
+- Cap retries and enforce budgets to avoid runaway costs.
 
 ### File locations (target)
 
-- `src/app/api/runs/route.ts`
-- `src/app/api/jobs/run-step/route.ts`
+- `src/app/api/upload/route.ts`
+- `src/app/api/jobs/ingest-file/route.ts`
 
 ## Testing
 
-- Integration: replay same step twice yields identical artifacts.
 - Contract: unsigned requests rejected.
-- E2E: run completes after client disconnect.
+- Integration: replay same job twice yields the same DB/vector state (idempotent).
+- E2E: ingestion completes after client disconnect.
 
 ## Implementation Notes
 
@@ -151,3 +170,4 @@ flowchart LR
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.
+- **0.4 (2026-02-03)**: Re-scoped to background jobs (ingestion + fanout); interactive runs moved to ADR-0026.
