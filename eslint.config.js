@@ -93,7 +93,7 @@ module.exports = [
       },
     },
   },
-    // Registry-installed components (shadcn/ui + AI Elements):
+  // Registry-installed components (shadcn/ui + AI Elements):
   // Keep linting and type-checking for correctness, but disable doc-enforcement rules
   // that are usually too noisy for generated/copied component templates.
   {
