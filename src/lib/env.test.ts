@@ -58,7 +58,9 @@ describe("env feature gates", () => {
       },
       async () => {
         const { env } = await loadEnv();
-        expect(env.aiGateway.baseUrl).toBe("https://ai-gateway.vercel.sh/v3/ai");
+        expect(env.aiGateway.baseUrl).toBe(
+          "https://ai-gateway.vercel.sh/v3/ai",
+        );
       },
     );
   });
