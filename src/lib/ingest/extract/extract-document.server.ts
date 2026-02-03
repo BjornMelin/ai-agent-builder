@@ -223,6 +223,33 @@ async function extractXlsx(
   return sections;
 }
 
+async function extractSections(
+  mimeType: string,
+  bytes: Uint8Array,
+): Promise<readonly ExtractedSection[]> {
+  switch (mimeType) {
+    case "text/plain":
+    case "text/markdown": {
+      const text = normalizeWhitespace(decodeUtf8(bytes));
+      return text.length === 0 ? [] : [{ ref: "text", text }];
+    }
+    case "application/pdf":
+      return await extractPdf(bytes);
+    case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+      return await extractDocx(bytes);
+    case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+      return await extractPptx(bytes);
+    case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+      return await extractXlsx(bytes);
+    default:
+      throw new AppError(
+        "unsupported_file_type",
+        400,
+        `Unsupported file type: ${mimeType}`,
+      );
+  }
+}
+
 /**
  * Extract a document into a normalized section-based text model.
  *
@@ -239,29 +266,7 @@ export async function extractDocument(
     bytes: Uint8Array;
   }>,
 ): Promise<ExtractedDoc> {
-  const sections = await (async (): Promise<readonly ExtractedSection[]> => {
-    switch (input.mimeType) {
-      case "text/plain":
-      case "text/markdown": {
-        const text = normalizeWhitespace(decodeUtf8(input.bytes));
-        return text.length === 0 ? [] : [{ ref: "text", text }];
-      }
-      case "application/pdf":
-        return await extractPdf(input.bytes);
-      case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        return await extractDocx(input.bytes);
-      case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-        return await extractPptx(input.bytes);
-      case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-        return await extractXlsx(input.bytes);
-      default:
-        throw new AppError(
-          "unsupported_file_type",
-          400,
-          `Unsupported file type: ${input.mimeType}`,
-        );
-    }
-  })();
+  const sections = await extractSections(input.mimeType, input.bytes);
 
   if (sections.length === 0) {
     throw new AppError("extract_failed", 400, "No extractable text found.");
