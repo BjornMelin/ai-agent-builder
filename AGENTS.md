@@ -58,8 +58,9 @@ bun run fetch:models           # Update AI model catalog (requires AI_GATEWAY_AP
 
 ## AI Gateway
 
-- Prefer `ai` package `gateway(...)` usage for model routing.
-- OpenAI-compatible base URL is `https://ai-gateway.vercel.sh/v1`.
+- Prefer the AI SDK's `gateway(...)` / `createGateway(...)` provider for model routing.
+- AI SDK Gateway provider base URL is `https://ai-gateway.vercel.sh/v3/ai` (default; configurable via `AI_GATEWAY_BASE_URL`).
+- OpenAI-compatible base URL is `https://ai-gateway.vercel.sh/v1` (used for OpenAI SDK compatibility and `GET /models`).
 - `bun run fetch:models` writes a model catalog JSON (default: `docs/ai-gateway-models.json`).
 
 ## Documentation standards
