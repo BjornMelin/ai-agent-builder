@@ -101,9 +101,17 @@ describe("GET /api/chat/:runId/stream", () => {
       new Request("http://localhost/api/chat/run_1/stream?startIndex=2.5"),
       { params: Promise.resolve({ runId: "run_1" }) },
     );
+    const alphabeticPayload = await alphabetic.json();
+    const decimalPayload = await decimal.json();
 
     expect(alphabetic.status).toBe(400);
     expect(decimal.status).toBe(400);
+    expect(alphabeticPayload).toMatchObject({
+      error: { code: "bad_request", message: "Invalid startIndex." },
+    });
+    expect(decimalPayload).toMatchObject({
+      error: { code: "bad_request", message: "Invalid startIndex." },
+    });
     expect(state.getRun).not.toHaveBeenCalled();
   });
 

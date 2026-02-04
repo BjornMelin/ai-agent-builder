@@ -437,7 +437,7 @@ export const StackTraceContent = memo((props: StackTraceContentProps) => {
     <CollapsibleContent
       className={cn(
         "overflow-auto border-t bg-muted/30",
-        "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=open]:animate-in",
+        "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=open]:animate-in motion-reduce:animate-none motion-reduce:transition-none motion-reduce:duration-0 motion-reduce:transform-none",
         className,
       )}
       style={{ maxHeight }}

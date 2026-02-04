@@ -34,7 +34,9 @@ const parseStartIndex = (startIndexRaw: string | null) => {
  * @param req - HTTP request.
  * @param context - Route params.
  * @returns UI message stream response or JSON error.
- * @throws AppError - When `startIndex` is invalid.
+ * @throws AppError - With code "bad_request" when `startIndex` is invalid.
+ * @throws AppError - With code "not_found" when the run cannot be found.
+ * @throws AppError - With code "forbidden" when the run's project is not accessible.
  */
 export async function GET(
   req: Request,
