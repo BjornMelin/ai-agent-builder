@@ -30,9 +30,11 @@ const createRunSchema = z.strictObject({
  */
 export async function POST(req: Request) {
   try {
-    await requireAppUserApi();
+    const authPromise = requireAppUserApi();
+    const bodyPromise = req.json().catch(() => null);
+    await authPromise;
 
-    const body = await req.json().catch(() => null);
+    const body = await bodyPromise;
     const parsed = createRunSchema.safeParse(body);
     if (!parsed.success) {
       throw new AppError("bad_request", 400, "Invalid request body.");

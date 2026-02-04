@@ -49,8 +49,7 @@ export async function GET(
   req: Request,
 ): Promise<NextResponse<SearchResponse | JsonError>> {
   try {
-    await requireAppUserApi();
-
+    const authPromise = requireAppUserApi();
     const url = new URL(req.url);
     const q = (url.searchParams.get("q") ?? "").trim();
     const projectId = (url.searchParams.get("projectId") ?? "").trim();
@@ -58,6 +57,8 @@ export async function GET(
     if (q.length === 0) {
       throw new AppError("bad_request", 400, "Missing q.");
     }
+
+    await authPromise;
 
     if (projectId) {
       const hits = await retrieveProjectChunks({ projectId, q });
