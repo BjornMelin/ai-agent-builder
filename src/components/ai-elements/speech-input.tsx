@@ -96,13 +96,8 @@ const detectSpeechInputMode = (): SpeechInputMode => {
  * It automatically detects the best available mode for speech input and provides a button
  * to start/stop the recording or recognition process.
  *
- * @param props - The props for the {@link SpeechInput} component.
- * @param props.className - Optional CSS class name for the recording button.
- * @param props.onTranscriptionChange - Callback called when new transcript text is available.
- * @param props.onAudioRecorded - Callback called when an audio recording is complete (MediaRecorder fallback).
- * @param props.lang - The language code for speech recognition (defaults to "en-US").
- * @param props.rest - Additional props spread to the underlying {@link Button}.
- * @returns A {@link JSX.Element} containing the speech input button and animated indicators.
+ * @param props - Speech callbacks and button props.
+ * @returns A button that starts and stops speech capture.
  */
 export const SpeechInput = ({
   className,

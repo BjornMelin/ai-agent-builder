@@ -34,20 +34,35 @@ export interface QueueTodo {
 
 export type QueueItemProps = ComponentProps<"li">;
 
-export const QueueItem = ({ className, ...props }: QueueItemProps) => (
-  <li
-    className={cn(
-      "group flex flex-col gap-1 rounded-md px-3 py-1 text-sm transition-colors hover:bg-muted",
-      className,
-    )}
-    {...props}
-  />
-);
+/**
+ * Renders a queue list item container.
+ *
+ * @param props - `<li>` props for the queue item.
+ * @returns A styled queue item element.
+ */
+export const QueueItem = (props: QueueItemProps) => {
+  const { className, ...rest } = props;
+  return (
+    <li
+      className={cn(
+        "group flex flex-col gap-1 rounded-md px-3 py-1 text-sm transition-colors hover:bg-muted",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type QueueItemIndicatorProps = ComponentProps<"span"> & {
   status?: "pending" | "completed";
 };
 
+/**
+ * Renders a status dot for a queue item.
+ *
+ * @param props - Indicator props including queue status.
+ * @returns A status indicator element.
+ */
 export const QueueItemIndicator = ({
   status = "pending",
   className,
@@ -69,6 +84,12 @@ export type QueueItemContentProps = ComponentProps<"span"> & {
   status?: "pending" | "completed";
 };
 
+/**
+ * Renders the main text content for a queue item.
+ *
+ * @param props - Content props including queue status.
+ * @returns A styled queue item content element.
+ */
 export const QueueItemContent = ({
   status = "pending",
   className,
@@ -90,6 +111,12 @@ export type QueueItemDescriptionProps = ComponentProps<"div"> & {
   status?: "pending" | "completed";
 };
 
+/**
+ * Renders secondary description text for a queue item.
+ *
+ * @param props - Description props including queue status.
+ * @returns A queue item description element.
+ */
 export const QueueItemDescription = ({
   status = "pending",
   className,
@@ -109,6 +136,12 @@ export const QueueItemDescription = ({
 
 export type QueueItemActionsProps = ComponentProps<"div">;
 
+/**
+ * Renders a container for queue item action buttons.
+ *
+ * @param props - Action container props.
+ * @returns A queue item actions container.
+ */
 export const QueueItemActions = ({
   className,
   ...props
@@ -121,6 +154,12 @@ export type QueueItemActionProps = Omit<
   "variant" | "size"
 >;
 
+/**
+ * Renders an action button for a queue item.
+ *
+ * @param props - Button props for the action.
+ * @returns A styled queue action button.
+ */
 export const QueueItemAction = ({
   className,
   ...props
@@ -139,6 +178,12 @@ export const QueueItemAction = ({
 
 export type QueueItemAttachmentProps = ComponentProps<"div">;
 
+/**
+ * Renders a container for queue item attachments.
+ *
+ * @param props - Attachment container props.
+ * @returns A queue attachment wrapper.
+ */
 export const QueueItemAttachment = ({
   className,
   ...props
@@ -148,6 +193,12 @@ export const QueueItemAttachment = ({
 
 export type QueueItemImageProps = ComponentProps<typeof Image>;
 
+/**
+ * Renders a small preview image attachment.
+ *
+ * @param props - Image props for the attachment preview.
+ * @returns An image element, or `null` when `src` is missing.
+ */
 export const QueueItemImage = ({
   className,
   src,
@@ -178,6 +229,12 @@ export const QueueItemImage = ({
 
 export type QueueItemFileProps = ComponentProps<"span">;
 
+/**
+ * Renders a compact file attachment pill.
+ *
+ * @param props - File label props.
+ * @returns A file attachment element.
+ */
 export const QueueItemFile = ({
   children,
   className,
@@ -197,6 +254,12 @@ export const QueueItemFile = ({
 
 export type QueueListProps = ComponentProps<typeof ScrollArea>;
 
+/**
+ * Renders the scrollable list region for queue items.
+ *
+ * @param props - Scroll area props.
+ * @returns A queue list container.
+ */
 export const QueueList = ({
   children,
   className,
@@ -212,6 +275,12 @@ export const QueueList = ({
 // QueueSection - collapsible section container
 export type QueueSectionProps = ComponentProps<typeof Collapsible>;
 
+/**
+ * Renders a collapsible queue section.
+ *
+ * @param props - Collapsible props for the section.
+ * @returns A queue section container.
+ */
 export const QueueSection = ({
   className,
   defaultOpen = true,
@@ -223,6 +292,12 @@ export const QueueSection = ({
 // QueueSectionTrigger - section header/trigger
 export type QueueSectionTriggerProps = ComponentProps<"button">;
 
+/**
+ * Renders the clickable trigger for a queue section.
+ *
+ * @param props - Button props for the section trigger.
+ * @returns A queue section trigger button.
+ */
 export const QueueSectionTrigger = ({
   children,
   className,
@@ -249,6 +324,12 @@ export type QueueSectionLabelProps = ComponentProps<"span"> & {
   icon?: ReactNode;
 };
 
+/**
+ * Renders section label content with optional count and icon.
+ *
+ * @param props - Label data and span props.
+ * @returns A queue section label.
+ */
 export const QueueSectionLabel = ({
   count,
   label,
@@ -270,6 +351,12 @@ export type QueueSectionContentProps = ComponentProps<
   typeof CollapsibleContent
 >;
 
+/**
+ * Renders collapsible content for a queue section.
+ *
+ * @param props - Content props for the section body.
+ * @returns A queue section content container.
+ */
 export const QueueSectionContent = ({
   className,
   ...props
@@ -279,6 +366,12 @@ export const QueueSectionContent = ({
 
 export type QueueProps = ComponentProps<"div">;
 
+/**
+ * Renders the root container for the queue UI.
+ *
+ * @param props - Root container props.
+ * @returns A queue root element.
+ */
 export const Queue = ({ className, ...props }: QueueProps) => (
   <div
     className={cn(

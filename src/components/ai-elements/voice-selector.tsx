@@ -49,8 +49,8 @@ const VoiceSelectorContext = createContext<VoiceSelectorContextValue | null>(
 /**
  * Hook to access the voice selector context.
  *
- * @returns - The voice selector context value.
- * @throws {Error} - If called outside of a VoiceSelector component.
+ * @returns The voice selector context value.
+ * @throws An error when used outside a `VoiceSelector`.
  */
 export const useVoiceSelector = () => {
   const context = useContext(VoiceSelectorContext);
