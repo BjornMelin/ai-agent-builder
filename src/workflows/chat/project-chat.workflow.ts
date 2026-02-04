@@ -32,8 +32,10 @@ export async function projectChat(
   const { workflowRunId: runId } = getWorkflowMetadata();
   const writable = getWritable<UIMessageChunk>();
   const messages: ModelMessage[] = await convertToModelMessages(
-    initialMessages.map(({ id: _id, ...rest }) => rest),
-    { tools: chatTools },
+    initialMessages,
+    {
+      tools: chatTools,
+    },
   );
 
   // Write markers for initial user messages so replay can reconstruct order.
@@ -60,32 +62,35 @@ export async function projectChat(
   const hook = chatMessageHook.create({ token: runId });
   let turnNumber = 0;
 
-  while (true) {
-    turnNumber += 1;
+  try {
+    while (true) {
+      turnNumber += 1;
 
-    const result = await agent.stream({
-      experimental_context: { projectId },
-      maxSteps: 12,
-      messages,
-      preventClose: true,
-      sendFinish: false,
-      sendStart: turnNumber === 1,
-      writable,
-    });
-    messages.push(...result.messages.slice(messages.length));
+      const result = await agent.stream({
+        experimental_context: { projectId },
+        maxSteps: 12,
+        messages,
+        preventClose: true,
+        sendFinish: false,
+        sendStart: turnNumber === 1,
+        writable,
+      });
+      messages.push(...result.messages.slice(messages.length));
 
-    const { message: followUp } = await hook;
-    if (followUp === "/done") break;
+      const { message: followUp } = await hook;
+      if (followUp === "/done") break;
 
-    const followUpId = `user-${runId}-${turnNumber}`;
+      const followUpId = `user-${runId}-${turnNumber}`;
 
-    await writeUserMessageMarker(writable, {
-      content: followUp,
-      messageId: followUpId,
-    });
-    messages.push({ content: followUp, role: "user" });
+      await writeUserMessageMarker(writable, {
+        content: followUp,
+        messageId: followUpId,
+      });
+      messages.push({ content: followUp, role: "user" });
+    }
+  } finally {
+    await writeStreamClose(writable);
   }
 
-  await writeStreamClose(writable);
   return { messages };
 }

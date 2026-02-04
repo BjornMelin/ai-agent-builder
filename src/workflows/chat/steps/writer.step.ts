@@ -22,7 +22,7 @@ export async function writeUserMessageMarker(
   const timestamp = Date.now();
   const writer = writable.getWriter();
   try {
-    await writer.write({
+    const markerChunk: UIMessageChunk = {
       data: {
         content: input.content,
         id: input.messageId,
@@ -30,7 +30,8 @@ export async function writeUserMessageMarker(
         type: "user-message",
       },
       type: "data-workflow",
-    } as UIMessageChunk);
+    };
+    await writer.write(markerChunk);
   } finally {
     writer.releaseLock();
   }
@@ -48,13 +49,14 @@ export async function writeStreamClose(
 
   const writer = writable.getWriter();
   try {
-    await writer.write({ type: "finish" } as UIMessageChunk);
+    const finishChunk: UIMessageChunk = { type: "finish" };
+    await writer.write(finishChunk);
     await writer.close();
   } finally {
     try {
       writer.releaseLock();
     } catch {
-      // Lock might already be released by writer.close()
+      // Ignore if lock was already released elsewhere.
     }
   }
 }

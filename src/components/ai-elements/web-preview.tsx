@@ -43,6 +43,7 @@ const sanitizeUrl = (rawUrl: string) => {
   }
 };
 
+/** Shared state exposed by `WebPreview` to its subcomponents. */
 export interface WebPreviewContextValue {
   url: string;
   setUrl: (url: string) => void;
@@ -60,6 +61,7 @@ const useWebPreview = () => {
   return context;
 };
 
+/** Props for the `WebPreview` root container. */
 export type WebPreviewProps = ComponentProps<"div"> & {
   defaultUrl?: string;
   onUrlChange?: (url: string) => void;
@@ -103,6 +105,7 @@ export const WebPreview = (props: WebPreviewProps) => {
   );
 };
 
+/** Props for the `WebPreviewNavigation` container. */
 export type WebPreviewNavigationProps = ComponentProps<"div">;
 
 /**
@@ -123,6 +126,7 @@ export const WebPreviewNavigation = (props: WebPreviewNavigationProps) => {
   );
 };
 
+/** Props for the `WebPreviewNavigationButton` component. */
 export type WebPreviewNavigationButtonProps = ComponentProps<typeof Button> & {
   tooltip?: string;
 };
@@ -166,6 +170,7 @@ export const WebPreviewNavigationButton = (
   );
 };
 
+/** Props for the `WebPreviewUrl` input. */
 export type WebPreviewUrlProps = ComponentProps<typeof Input>;
 
 /**
@@ -206,13 +211,14 @@ export const WebPreviewUrl = (props: WebPreviewUrlProps) => {
       className="h-8 flex-1 text-sm"
       onChange={handleChange}
       onKeyDown={handleKeyDown}
-      placeholder="Enter URL..."
+      placeholder="Enter URL…"
       value={isControlled ? value : inputValue}
       {...rest}
     />
   );
 };
 
+/** Props for the `WebPreviewBody` iframe. */
 export type WebPreviewBodyProps = ComponentProps<"iframe"> & {
   loading?: ReactNode;
 };
@@ -242,6 +248,7 @@ export const WebPreviewBody = (props: WebPreviewBodyProps) => {
   );
 };
 
+/** Props for the `WebPreviewConsole` section. */
 export type WebPreviewConsoleProps = ComponentProps<"div"> & {
   logs?: Array<{
     level: "log" | "warn" | "error";

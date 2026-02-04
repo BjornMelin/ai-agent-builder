@@ -12,6 +12,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
+/** A primitive message part used by queued messages. */
 export interface QueueMessagePart {
   type: string;
   text?: string;
@@ -20,11 +21,13 @@ export interface QueueMessagePart {
   mediaType?: string;
 }
 
+/** A queued message displayed in the queue UI. */
 export interface QueueMessage {
   id: string;
   parts: QueueMessagePart[];
 }
 
+/** A queued to-do item entry. */
 export interface QueueTodo {
   id: string;
   title: string;
@@ -32,6 +35,7 @@ export interface QueueTodo {
   status?: "pending" | "completed";
 }
 
+/** Props for the QueueItem component. */
 export type QueueItemProps = ComponentProps<"li">;
 
 /**
@@ -53,6 +57,7 @@ export const QueueItem = (props: QueueItemProps) => {
   );
 };
 
+/** Props for the QueueItemIndicator component. */
 export type QueueItemIndicatorProps = ComponentProps<"span"> & {
   status?: "pending" | "completed";
 };
@@ -79,6 +84,7 @@ export const QueueItemIndicator = (props: QueueItemIndicatorProps) => {
   );
 };
 
+/** Props for the QueueItemContent component. */
 export type QueueItemContentProps = ComponentProps<"span"> & {
   status?: "pending" | "completed";
 };
@@ -105,6 +111,7 @@ export const QueueItemContent = (props: QueueItemContentProps) => {
   );
 };
 
+/** Props for the QueueItemDescription component. */
 export type QueueItemDescriptionProps = ComponentProps<"div"> & {
   status?: "pending" | "completed";
 };
@@ -131,6 +138,7 @@ export const QueueItemDescription = (props: QueueItemDescriptionProps) => {
   );
 };
 
+/** Props for the QueueItemActions component. */
 export type QueueItemActionsProps = ComponentProps<"div">;
 
 /**
@@ -144,6 +152,7 @@ export const QueueItemActions = (props: QueueItemActionsProps) => {
   return <div className={cn("flex gap-1", className)} {...rest} />;
 };
 
+/** Props for the QueueItemAction component. */
 export type QueueItemActionProps = Omit<
   ComponentProps<typeof Button>,
   "variant" | "size"
@@ -171,6 +180,7 @@ export const QueueItemAction = (props: QueueItemActionProps) => {
   );
 };
 
+/** Props for the QueueItemAttachment component. */
 export type QueueItemAttachmentProps = ComponentProps<"div">;
 
 /**
@@ -186,6 +196,7 @@ export const QueueItemAttachment = (props: QueueItemAttachmentProps) => {
   );
 };
 
+/** Props for the QueueItemImage component. */
 export type QueueItemImageProps = ComponentProps<typeof Image>;
 
 /**
@@ -218,6 +229,7 @@ export const QueueItemImage = (props: QueueItemImageProps) => {
   );
 };
 
+/** Props for the QueueItemFile component. */
 export type QueueItemFileProps = ComponentProps<"span">;
 
 /**
@@ -242,6 +254,7 @@ export const QueueItemFile = (props: QueueItemFileProps) => {
   );
 };
 
+/** Props for the QueueList component. */
 export type QueueListProps = ComponentProps<typeof ScrollArea>;
 
 /**
@@ -261,7 +274,7 @@ export const QueueList = (props: QueueListProps) => {
   );
 };
 
-// QueueSection - collapsible section container
+/** Props for the QueueSection component. */
 export type QueueSectionProps = ComponentProps<typeof Collapsible>;
 
 /**
@@ -281,7 +294,7 @@ export const QueueSection = (props: QueueSectionProps) => {
   );
 };
 
-// QueueSectionTrigger - section header/trigger
+/** Props for the QueueSectionTrigger component. */
 export type QueueSectionTriggerProps = ComponentProps<"button">;
 
 /**
@@ -308,7 +321,7 @@ export const QueueSectionTrigger = (props: QueueSectionTriggerProps) => {
   );
 };
 
-// QueueSectionLabel - label content with icon and count
+/** Props for the QueueSectionLabel component. */
 export type QueueSectionLabelProps = ComponentProps<"span"> & {
   count?: number;
   label: string;
@@ -327,14 +340,12 @@ export const QueueSectionLabel = (props: QueueSectionLabelProps) => {
     <span className={cn("flex items-center gap-2", className)} {...rest}>
       <ChevronDownIcon className="size-4 transition-transform group-data-[state=closed]:-rotate-90" />
       {icon}
-      <span>
-        {count} {label}
-      </span>
+      <span>{count === undefined ? label : `${count} ${label}`}</span>
     </span>
   );
 };
 
-// QueueSectionContent - collapsible content area
+/** Props for the QueueSectionContent component. */
 export type QueueSectionContentProps = ComponentProps<
   typeof CollapsibleContent
 >;
@@ -350,6 +361,7 @@ export const QueueSectionContent = (props: QueueSectionContentProps) => {
   return <CollapsibleContent className={cn(className)} {...rest} />;
 };
 
+/** Props for the Queue root container. */
 export type QueueProps = ComponentProps<"div">;
 
 /**

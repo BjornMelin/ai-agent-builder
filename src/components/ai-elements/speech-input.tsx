@@ -62,6 +62,7 @@ declare global {
 
 type SpeechInputMode = "speech-recognition" | "media-recorder" | "none";
 
+/** Props for the `SpeechInput` component. */
 export type SpeechInputProps = ComponentProps<typeof Button> & {
   onTranscriptionChange?: (text: string) => void;
   /**
@@ -116,6 +117,7 @@ export const SpeechInput = (props: SpeechInputProps) => {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const transcriptionChangeRef = useRef(onTranscriptionChange);
 
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
@@ -138,6 +140,10 @@ export const SpeechInput = (props: SpeechInputProps) => {
       mediaQuery.removeEventListener("change", updatePreference);
     };
   }, []);
+
+  useEffect(() => {
+    transcriptionChangeRef.current = onTranscriptionChange;
+  }, [onTranscriptionChange]);
 
   // Initialize Speech Recognition when mode is speech-recognition
   useEffect(() => {
@@ -173,7 +179,7 @@ export const SpeechInput = (props: SpeechInputProps) => {
       }
 
       if (finalTranscript) {
-        onTranscriptionChange?.(finalTranscript);
+        transcriptionChangeRef.current?.(finalTranscript);
       }
     };
 
@@ -190,7 +196,7 @@ export const SpeechInput = (props: SpeechInputProps) => {
         recognitionRef.current.stop();
       }
     };
-  }, [mode, onTranscriptionChange, lang]);
+  }, [mode, lang]);
 
   // Start MediaRecorder recording
   const startMediaRecorder = async () => {
@@ -227,7 +233,7 @@ export const SpeechInput = (props: SpeechInputProps) => {
           try {
             const transcript = await onAudioRecorded(audioBlob);
             if (transcript) {
-              onTranscriptionChange?.(transcript);
+              transcriptionChangeRef.current?.(transcript);
             }
           } catch (error) {
             console.error("Transcription error:", error);
@@ -274,6 +280,7 @@ export const SpeechInput = (props: SpeechInputProps) => {
       if (isListening) {
         stopMediaRecorder();
       } else {
+        // Fire-and-forget is intentional here; UI state handles in-flight recording.
         void startMediaRecorder().catch((error) => {
           console.error("Critical error starting MediaRecorder:", error);
           setIsListening(false);
@@ -310,6 +317,7 @@ export const SpeechInput = (props: SpeechInputProps) => {
 
       {/* Main record button */}
       <Button
+        aria-label={isListening ? "Stop speech input" : "Start speech input"}
         className={cn(
           "relative z-10 rounded-full transition-all duration-300",
           isListening

@@ -6,6 +6,7 @@ import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** Props for the Conversation component. */
 export type ConversationProps = ComponentProps<typeof StickToBottom>;
 
 /**
@@ -28,6 +29,7 @@ export const Conversation = (props: ConversationProps) => {
   );
 };
 
+/** Props for the ConversationContent component. */
 export type ConversationContentProps = ComponentProps<
   typeof StickToBottom.Content
 >;
@@ -49,6 +51,7 @@ export const ConversationContent = (props: ConversationContentProps) => {
   );
 };
 
+/** Props for the ConversationEmptyState component. */
 export type ConversationEmptyStateProps = ComponentProps<"div"> & {
   title?: string;
   description?: string;
@@ -94,6 +97,7 @@ export const ConversationEmptyState = (props: ConversationEmptyStateProps) => {
   );
 };
 
+/** Props for the ConversationScrollButton component. */
 export type ConversationScrollButtonProps = ComponentProps<typeof Button>;
 
 /**
@@ -114,7 +118,9 @@ export const ConversationScrollButton = (
         "absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full dark:bg-background dark:hover:bg-muted",
         className,
       )}
-      onClick={scrollToBottom}
+      onClick={() => {
+        scrollToBottom();
+      }}
       size="icon"
       type="button"
       variant="outline"

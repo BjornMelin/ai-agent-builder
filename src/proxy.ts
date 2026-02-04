@@ -30,6 +30,6 @@ export const config = {
     // - the Neon Auth API proxy
     // - QStash jobs (signature-verified webhooks)
     // - Workflow DevKit internal endpoints
-    "/((?!_next|_vercel|favicon.ico|auth|api/auth|api/jobs|.well-known/workflow/).*)",
+    "/((?!_next|_vercel|favicon\\.ico|auth|api/auth|api/jobs|\\.well-known/workflow/).*)",
   ],
 };

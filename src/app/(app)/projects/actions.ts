@@ -6,6 +6,7 @@ import { requireAppUser } from "@/lib/auth/require-app-user";
 import { normalizeError } from "@/lib/core/errors";
 import { createProject } from "@/lib/data/projects.server";
 
+/** Result state for the create-project server action. */
 export type CreateProjectActionState =
   | Readonly<{ status: "idle" }>
   | Readonly<{ status: "error"; message: string }>;
@@ -42,6 +43,7 @@ function isRedirectError(err: unknown): boolean {
  * @param _prevState - Previous action state (unused).
  * @param formData - Form payload from the client.
  * @returns Next action state.
+ * @throws Error Re-throws Next.js redirect control-flow errors.
  */
 export async function createProjectAction(
   _prevState: CreateProjectActionState,
@@ -101,6 +103,6 @@ export async function createProjectAction(
 /**
  * Initial state used by createProjectAction.
  *
- * @returns The initial state object for project creation, based on initialState.
+ * @returns The initial idle state before form submission starts.
  */
 export const createProjectInitialState = initialState;

@@ -492,10 +492,19 @@ export const PromptInput = (props: PromptInputProps) => {
       return [];
     }
 
-    const capacity =
+    const singleSelectionCapacity = allowMultiple
+      ? undefined
+      : 1 - currentCount;
+    const maxFilesCapacity =
       typeof maxFiles === "number"
         ? Math.max(0, maxFiles - currentCount)
         : undefined;
+    const capacity =
+      singleSelectionCapacity === undefined
+        ? maxFilesCapacity
+        : maxFilesCapacity === undefined
+          ? Math.max(0, singleSelectionCapacity)
+          : Math.max(0, Math.min(singleSelectionCapacity, maxFilesCapacity));
     const capped =
       typeof capacity === "number" ? sized.slice(0, capacity) : sized;
     if (typeof capacity === "number" && sized.length > capacity) {
@@ -920,7 +929,11 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
     }
 
     if (files.length > 0) {
-      event.preventDefault();
+      const hasText =
+        event.clipboardData.getData("text/plain").trim().length > 0;
+      if (!hasText) {
+        event.preventDefault();
+      }
       attachments.add(files);
     }
   };
@@ -1078,7 +1091,9 @@ export const PromptInputActionMenuContent = (
   props: PromptInputActionMenuContentProps,
 ) => {
   const { className, ...rest } = props;
-  return <DropdownMenuContent align="start" className={cn(className)} {...rest} />;
+  return (
+    <DropdownMenuContent align="start" className={cn(className)} {...rest} />
+  );
 };
 
 export type PromptInputActionMenuItemProps = ComponentProps<
@@ -1206,7 +1221,9 @@ export type PromptInputSelectContentProps = ComponentProps<
  * @param props - Select content props.
  * @returns The select dropdown content.
  */
-export const PromptInputSelectContent = (props: PromptInputSelectContentProps) => {
+export const PromptInputSelectContent = (
+  props: PromptInputSelectContentProps,
+) => {
   const { className, ...rest } = props;
   return <SelectContent className={cn(className)} {...rest} />;
 };
@@ -1383,7 +1400,9 @@ export type PromptInputCommandInputProps = ComponentProps<typeof CommandInput>;
  * @param props - Command input props.
  * @returns The command input.
  */
-export const PromptInputCommandInput = (props: PromptInputCommandInputProps) => {
+export const PromptInputCommandInput = (
+  props: PromptInputCommandInputProps,
+) => {
   const { className, ...rest } = props;
   return <CommandInput className={cn(className)} {...rest} />;
 };
@@ -1409,7 +1428,9 @@ export type PromptInputCommandEmptyProps = ComponentProps<typeof CommandEmpty>;
  * @param props - Empty state props.
  * @returns The command empty component.
  */
-export const PromptInputCommandEmpty = (props: PromptInputCommandEmptyProps) => {
+export const PromptInputCommandEmpty = (
+  props: PromptInputCommandEmptyProps,
+) => {
   const { className, ...rest } = props;
   return <CommandEmpty className={cn(className)} {...rest} />;
 };
@@ -1422,7 +1443,9 @@ export type PromptInputCommandGroupProps = ComponentProps<typeof CommandGroup>;
  * @param props - Command group props.
  * @returns The command group.
  */
-export const PromptInputCommandGroup = (props: PromptInputCommandGroupProps) => {
+export const PromptInputCommandGroup = (
+  props: PromptInputCommandGroupProps,
+) => {
   const { className, ...rest } = props;
   return <CommandGroup className={cn(className)} {...rest} />;
 };

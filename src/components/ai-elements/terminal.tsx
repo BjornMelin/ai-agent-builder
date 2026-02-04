@@ -179,8 +179,8 @@ export const TerminalActions = (props: TerminalActionsProps) => {
 };
 
 export type TerminalCopyButtonProps = ComponentProps<typeof Button> & {
-  onCopy?: () => void;
-  onError?: (error: Error) => void;
+  onCopy?: () => void | Promise<void>;
+  onError?: (error: Error) => void | Promise<void>;
   timeout?: number;
 };
 
@@ -201,20 +201,33 @@ export const TerminalCopyButton = (props: TerminalCopyButtonProps) => {
   } = props;
   const [isCopied, setIsCopied] = useState(false);
   const { output } = useContext(TerminalContext);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    },
+    [],
+  );
 
   const copyToClipboard = async () => {
     if (typeof window === "undefined" || !navigator?.clipboard?.writeText) {
-      onError?.(new Error("Clipboard API not available"));
+      await onError?.(new Error("Clipboard API not available"));
       return;
     }
 
     try {
       await navigator.clipboard.writeText(output);
       setIsCopied(true);
-      onCopy?.();
-      setTimeout(() => setIsCopied(false), timeout);
+      await onCopy?.();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => setIsCopied(false), timeout);
     } catch (error) {
-      onError?.(error as Error);
+      await onError?.(error as Error);
     }
   };
 
@@ -222,6 +235,7 @@ export const TerminalCopyButton = (props: TerminalCopyButtonProps) => {
 
   return (
     <Button
+      aria-label={isCopied ? "Copied terminal output" : "Copy terminal output"}
       className={cn(
         "size-7 shrink-0 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100",
         className,
@@ -254,6 +268,7 @@ export const TerminalClearButton = (props: TerminalClearButtonProps) => {
 
   return (
     <Button
+      aria-label="Clear terminal output"
       className={cn(
         "size-7 shrink-0 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100",
         className,
@@ -301,7 +316,7 @@ export const TerminalContent = (props: TerminalContentProps) => {
         <pre className="whitespace-pre-wrap break-words">
           <Ansi>{output}</Ansi>
           {mode === "streaming" ? (
-            <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-zinc-100" />
+            <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-zinc-100 motion-reduce:animate-none" />
           ) : null}
         </pre>
       )}

@@ -470,7 +470,7 @@ const TokensWithCost = ({
   costText,
 }: {
   tokens?: number;
-  costText?: string;
+  costText: string | undefined;
 }) => (
   <span>
     {tokens === undefined

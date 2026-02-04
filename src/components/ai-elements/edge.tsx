@@ -119,17 +119,12 @@ const Animated = ({ id, source, target, markerEnd, style }: EdgeProps) => {
     };
 
     updatePreference();
-    if ("addEventListener" in mediaQuery) {
+    if (typeof mediaQuery.addEventListener === "function") {
       mediaQuery.addEventListener("change", updatePreference);
       return () => {
         mediaQuery.removeEventListener("change", updatePreference);
       };
     }
-
-    mediaQuery.addListener(updatePreference);
-    return () => {
-      mediaQuery.removeListener(updatePreference);
-    };
   }, []);
 
   if (!(sourceNode && targetNode)) {

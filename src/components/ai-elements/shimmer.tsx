@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { type ElementType, memo, useEffect, useState } from "react";
+import { type ElementType, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /** Props for the Shimmer component. */
@@ -34,17 +34,12 @@ const ShimmerComponent = ({
     };
 
     updatePreference();
-    if ("addEventListener" in mediaQuery) {
+    if (typeof mediaQuery.addEventListener === "function") {
       mediaQuery.addEventListener("change", updatePreference);
       return () => {
         mediaQuery.removeEventListener("change", updatePreference);
       };
     }
-
-    mediaQuery.addListener(updatePreference);
-    return () => {
-      mediaQuery.removeListener(updatePreference);
-    };
   }, []);
 
   const style = {
@@ -70,15 +65,15 @@ const ShimmerComponent = ({
         )}
         initial={{ backgroundPosition: "100% center" }}
         style={style}
-        transition={
-          prefersReducedMotion
-            ? undefined
-            : {
+        {...(prefersReducedMotion
+          ? {}
+          : {
+              transition: {
                 duration,
-                ease: "linear",
+                ease: "linear" as const,
                 repeat: Number.POSITIVE_INFINITY,
-              }
-        }
+              },
+            })}
       >
         {children}
       </motion.span>
@@ -89,4 +84,4 @@ const ShimmerComponent = ({
 /**
  * Animated text shimmer effect for loading or emphasis states.
  */
-export const Shimmer = memo(ShimmerComponent);
+export const Shimmer = ShimmerComponent;

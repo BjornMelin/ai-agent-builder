@@ -178,7 +178,7 @@ export type ConfirmationActionsProps = ComponentProps<"div">;
  * Renders action buttons only when approval is requested.
  *
  * @param props - Div props for the actions container.
- * @returns A actions container or null when not applicable.
+ * @returns An actions container or null when not applicable.
  */
 export const ConfirmationActions = (props: ConfirmationActionsProps) => {
   const { className, ...rest } = props;

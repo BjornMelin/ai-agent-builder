@@ -1,6 +1,6 @@
 "use client";
 
-import { Progress as ProgressPrimitive } from "radix-ui";
+import * as ProgressPrimitive from "@radix-ui/react-progress";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
@@ -15,7 +15,10 @@ export function Progress(
   props: React.ComponentProps<typeof ProgressPrimitive.Root>,
 ) {
   const { className, value, ...rest } = props;
-  const clampedValue = Math.max(0, Math.min(100, Number(value || 0)));
+  const numericValue =
+    typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  const clampedValue =
+    numericValue === undefined ? 0 : Math.max(0, Math.min(100, numericValue));
 
   return (
     <ProgressPrimitive.Root
@@ -24,7 +27,7 @@ export function Progress(
         "bg-primary/20 relative h-2 w-full overflow-hidden rounded-full",
         className,
       )}
-      value={clampedValue}
+      value={numericValue === undefined ? undefined : clampedValue}
       {...rest}
     >
       <ProgressPrimitive.Indicator

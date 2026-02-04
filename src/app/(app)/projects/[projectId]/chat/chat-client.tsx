@@ -49,13 +49,6 @@ type UserMessageMarker = Readonly<{
 type AppUIMessage = UIMessage<unknown, UIDataTypes, UITools>;
 type AppUIMessagePart = AppUIMessage["parts"][number];
 
-function extractTextParts(message: AppUIMessage): string {
-  return message.parts
-    .filter((p) => p.type === "text")
-    .map((p) => p.text)
-    .join("");
-}
-
 function isUserMessageMarker(data: unknown): data is UserMessageMarker {
   if (!data || typeof data !== "object") return false;
   const value = data as Partial<UserMessageMarker>;
@@ -71,12 +64,11 @@ function reconstructMessages(
   rawMessages: readonly AppUIMessage[],
 ): AppUIMessage[] {
   const result: AppUIMessage[] = [];
-  const seenContent = new Set<string>();
+  const seenUserMessageIds = new Set<string>();
 
   for (const msg of rawMessages) {
     if (msg.role !== "user") continue;
-    const text = extractTextParts(msg);
-    if (text) seenContent.add(text);
+    seenUserMessageIds.add(msg.id);
   }
 
   for (const msg of rawMessages) {
@@ -107,8 +99,8 @@ function reconstructMessages(
             partIndex += 1;
           }
 
-          if (!seenContent.has(marker.content)) {
-            seenContent.add(marker.content);
+          if (!seenUserMessageIds.has(marker.id)) {
+            seenUserMessageIds.add(marker.id);
             result.push({
               id: marker.id,
               parts: [{ text: marker.content, type: "text" }],
@@ -141,11 +133,22 @@ function reconstructMessages(
  * @returns The chat UI for the project.
  */
 export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
-  const storageKey = `workflow:chat:${props.projectId}:runId`;
+  const legacyStorageKey = `workflow:chat:${props.projectId}:runId`;
+  const storageKey = `workflow:chat:v1:${props.projectId}:runId`;
   const [runId, setRunId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     try {
-      return window.localStorage.getItem(storageKey);
+      const v1RunId = window.localStorage.getItem(storageKey);
+      if (v1RunId) {
+        return v1RunId;
+      }
+      const legacyRunId = window.localStorage.getItem(legacyStorageKey);
+      if (legacyRunId) {
+        window.localStorage.setItem(storageKey, legacyRunId);
+        window.localStorage.removeItem(legacyStorageKey);
+        return legacyRunId;
+      }
+      return null;
     } catch (error) {
       console.warn("[ChatClient] Failed to read runId from storage:", error);
       return null;
@@ -157,16 +160,38 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       api: "/api/chat",
       onChatEnd: () => {
         setRunId(null);
-        window.localStorage.removeItem(storageKey);
+        try {
+          window.localStorage.removeItem(storageKey);
+        } catch (error) {
+          console.warn(
+            "[ChatClient] Failed to clear runId from storage:",
+            error,
+          );
+        }
       },
       onChatSendMessage: (response) => {
         const workflowRunId = response.headers.get("x-workflow-run-id");
         if (!workflowRunId) return;
         setRunId(workflowRunId);
-        window.localStorage.setItem(storageKey, workflowRunId);
+        try {
+          window.localStorage.setItem(storageKey, workflowRunId);
+        } catch (error) {
+          console.warn(
+            "[ChatClient] Failed to persist runId to storage:",
+            error,
+          );
+        }
       },
       prepareReconnectToStreamRequest: async () => {
-        const stored = window.localStorage.getItem(storageKey);
+        let stored: string | null = null;
+        try {
+          stored = window.localStorage.getItem(storageKey);
+        } catch (error) {
+          console.warn(
+            "[ChatClient] Failed to read runId for stream reconnect:",
+            error,
+          );
+        }
         if (!stored) {
           return {};
         }
@@ -279,11 +304,22 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       return;
     }
 
-    await fetch(`/api/chat/${runId}`, {
-      body: JSON.stringify({ message: "/done" }),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    });
+    try {
+      const response = await fetch(`/api/chat/${runId}`, {
+        body: JSON.stringify({ message: "/done" }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to end session.");
+      }
+      setComposerError(null);
+    } catch (error) {
+      setComposerError(
+        error instanceof Error ? error.message : "Failed to end session.",
+      );
+    }
   }
 
   return (
@@ -304,7 +340,13 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
           >
             Stop
           </Button>
-          <Button onClick={() => endSession()} type="button" variant="outline">
+          <Button
+            onClick={() => {
+              void endSession();
+            }}
+            type="button"
+            variant="outline"
+          >
             End session
           </Button>
         </div>
