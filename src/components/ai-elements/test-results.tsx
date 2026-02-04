@@ -38,6 +38,7 @@ interface TestResultsContextType {
 
 const TestResultsContext = createContext<TestResultsContextType>({});
 
+/** Props for the `TestResultsProps` type. */
 export type TestResultsProps = HTMLAttributes<HTMLDivElement> & {
   summary?: TestResultsSummaryData;
 };
@@ -70,6 +71,7 @@ export const TestResults = (props: TestResultsProps) => {
   );
 };
 
+/** Props for the `TestResultsHeaderProps` type. */
 export type TestResultsHeaderProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -93,6 +95,7 @@ export const TestResultsHeader = (props: TestResultsHeaderProps) => {
   );
 };
 
+/** Props for the `TestResultsSummaryProps` type. */
 export type TestResultsSummaryProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -144,6 +147,7 @@ export const TestResultsSummary = (props: TestResultsSummaryProps) => {
   );
 };
 
+/** Props for the `TestResultsDurationProps` type. */
 export type TestResultsDurationProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
@@ -174,6 +178,7 @@ export const TestResultsDuration = (props: TestResultsDurationProps) => {
   );
 };
 
+/** Props for the `TestResultsProgressProps` type. */
 export type TestResultsProgressProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -198,13 +203,22 @@ export const TestResultsProgress = (props: TestResultsProgressProps) => {
     <div className={cn("space-y-2", className)} {...rest}>
       {children ?? (
         <>
-          <div className="flex h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            aria-label="Test pass rate"
+            aria-valuemax={100}
+            aria-valuemin={0}
+            aria-valuenow={
+              Number.isFinite(passedPercent) ? Math.round(passedPercent) : 0
+            }
+            className="flex h-2 overflow-hidden rounded-full bg-muted"
+            role="progressbar"
+          >
             <div
-              className="bg-green-500 transition-all"
+              className="bg-green-500 transition-all motion-reduce:transition-none"
               style={{ width: `${passedPercent}%` }}
             />
             <div
-              className="bg-red-500 transition-all"
+              className="bg-red-500 transition-all motion-reduce:transition-none"
               style={{ width: `${failedPercent}%` }}
             />
           </div>
@@ -220,6 +234,7 @@ export const TestResultsProgress = (props: TestResultsProgressProps) => {
   );
 };
 
+/** Props for the `TestResultsContentProps` type. */
 export type TestResultsContentProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -247,6 +262,7 @@ const TestSuiteContext = createContext<TestSuiteContextType>({
   status: "passed",
 });
 
+/** Props for the `TestSuiteProps` type. */
 export type TestSuiteProps = ComponentProps<typeof Collapsible> & {
   name: string;
   status: TestStatusKey;
@@ -269,6 +285,7 @@ export const TestSuite = (props: TestSuiteProps) => {
   );
 };
 
+/** Props for the `TestSuiteNameProps` type. */
 export type TestSuiteNameProps = ComponentProps<typeof CollapsibleTrigger>;
 
 /**
@@ -296,6 +313,7 @@ export const TestSuiteName = (props: TestSuiteNameProps) => {
   );
 };
 
+/** Props for the `TestSuiteStatsProps` type. */
 export type TestSuiteStatsProps = HTMLAttributes<HTMLDivElement> & {
   passed?: number;
   failed?: number;
@@ -345,6 +363,7 @@ export const TestSuiteStats = (props: TestSuiteStatsProps) => {
   );
 };
 
+/** Props for the `TestSuiteContentProps` type. */
 export type TestSuiteContentProps = ComponentProps<typeof CollapsibleContent>;
 
 /**
@@ -373,6 +392,7 @@ const TestContext = createContext<TestContextType>({
   status: "passed",
 });
 
+/** Props for the `TestProps` type. */
 export type TestProps = HTMLAttributes<HTMLDivElement> & {
   name: string;
   status: TestStatusKey;
@@ -417,7 +437,9 @@ const statusStyles: Record<TestStatusKey, string> = {
 const statusIcons: Record<TestStatusKey, ReactNode> = {
   failed: <XCircleIcon className="size-4" />,
   passed: <CheckCircle2Icon className="size-4" />,
-  running: <CircleDotIcon className="size-4 animate-pulse" />,
+  running: (
+    <CircleDotIcon className="size-4 animate-pulse motion-reduce:animate-none" />
+  ),
   skipped: <CircleIcon className="size-4" />,
 };
 
@@ -427,6 +449,7 @@ const TestStatusIcon = ({ status }: { status: TestStatusKey }) => (
   </span>
 );
 
+/** Props for the `TestStatusProps` type. */
 export type TestStatusProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
@@ -446,6 +469,7 @@ export const TestStatus = (props: TestStatusProps) => {
   );
 };
 
+/** Props for the `TestNameProps` type. */
 export type TestNameProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
@@ -465,6 +489,7 @@ export const TestName = (props: TestNameProps) => {
   );
 };
 
+/** Props for the `TestDurationProps` type. */
 export type TestDurationProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
@@ -491,6 +516,7 @@ export const TestDuration = (props: TestDurationProps) => {
   );
 };
 
+/** Props for the `TestErrorProps` type. */
 export type TestErrorProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -514,6 +540,7 @@ export const TestError = (props: TestErrorProps) => {
   );
 };
 
+/** Props for the `TestErrorMessageProps` type. */
 export type TestErrorMessageProps = HTMLAttributes<HTMLParagraphElement>;
 
 /**
@@ -537,6 +564,7 @@ export const TestErrorMessage = (props: TestErrorMessageProps) => {
   );
 };
 
+/** Props for the `TestErrorStackProps` type. */
 export type TestErrorStackProps = HTMLAttributes<HTMLPreElement>;
 
 /**

@@ -23,6 +23,7 @@ const PackageInfoContext = createContext<PackageInfoContextType>({
   name: "",
 });
 
+/** Props for the `PackageInfoProps` type. */
 export type PackageInfoProps = HTMLAttributes<HTMLDivElement> & {
   name: string;
   currentVersion?: string;
@@ -74,6 +75,7 @@ export const PackageInfo = (props: PackageInfoProps) => {
   );
 };
 
+/** Props for the `PackageInfoHeaderProps` type. */
 export type PackageInfoHeaderProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -94,6 +96,7 @@ export const PackageInfoHeader = (props: PackageInfoHeaderProps) => {
   );
 };
 
+/** Props for the `PackageInfoNameProps` type. */
 export type PackageInfoNameProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -108,7 +111,10 @@ export const PackageInfoName = (props: PackageInfoNameProps) => {
 
   return (
     <div className={cn("flex items-center gap-2", className)} {...rest}>
-      <PackageIcon className="size-4 text-muted-foreground" />
+      <PackageIcon
+        aria-hidden="true"
+        className="size-4 text-muted-foreground"
+      />
       <span className="font-medium font-mono text-sm">{children ?? name}</span>
     </div>
   );
@@ -124,13 +130,14 @@ const changeTypeStyles: Record<ChangeType, string> = {
 };
 
 const changeTypeIcons: Record<ChangeType, ReactNode> = {
-  added: <PlusIcon className="size-3" />,
-  major: <ArrowRightIcon className="size-3" />,
-  minor: <ArrowRightIcon className="size-3" />,
-  patch: <ArrowRightIcon className="size-3" />,
-  removed: <MinusIcon className="size-3" />,
+  added: <PlusIcon aria-hidden="true" className="size-3" />,
+  major: <ArrowRightIcon aria-hidden="true" className="size-3" />,
+  minor: <ArrowRightIcon aria-hidden="true" className="size-3" />,
+  patch: <ArrowRightIcon aria-hidden="true" className="size-3" />,
+  removed: <MinusIcon aria-hidden="true" className="size-3" />,
 };
 
+/** Props for the `PackageInfoChangeTypeProps` type. */
 export type PackageInfoChangeTypeProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -163,6 +170,7 @@ export const PackageInfoChangeType = (props: PackageInfoChangeTypeProps) => {
   );
 };
 
+/** Props for the `PackageInfoVersionProps` type. */
 export type PackageInfoVersionProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -202,6 +210,7 @@ export const PackageInfoVersion = (props: PackageInfoVersionProps) => {
   );
 };
 
+/** Props for the `PackageInfoDescriptionProps` type. */
 export type PackageInfoDescriptionProps = HTMLAttributes<HTMLParagraphElement>;
 
 /**
@@ -222,6 +231,7 @@ export const PackageInfoDescription = (props: PackageInfoDescriptionProps) => {
   );
 };
 
+/** Props for the `PackageInfoContentProps` type. */
 export type PackageInfoContentProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -239,6 +249,7 @@ export const PackageInfoContent = (props: PackageInfoContentProps) => {
   );
 };
 
+/** Props for the `PackageInfoDependenciesProps` type. */
 export type PackageInfoDependenciesProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -261,6 +272,7 @@ export const PackageInfoDependencies = (
   );
 };
 
+/** Props for the `PackageInfoDependencyProps` type. */
 export type PackageInfoDependencyProps = HTMLAttributes<HTMLDivElement> & {
   name: string;
   version?: string;

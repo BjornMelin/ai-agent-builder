@@ -7,24 +7,22 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Renders the Accordion component.
+ * Root container for collapsible accordion sections.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Radix accordion root props controlling selection mode and active items.
+ * @returns The accordion root that manages item expansion state.
  */
 function Accordion(
   props: React.ComponentProps<typeof AccordionPrimitive.Root>,
 ) {
-  const { ...rest } = props;
-
-  return <AccordionPrimitive.Root data-slot="accordion" {...rest} />;
+  return <AccordionPrimitive.Root data-slot="accordion" {...props} />;
 }
 
 /**
- * Renders the AccordionItem component.
+ * One collapsible item within the accordion.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Radix accordion item props including `value`.
+ * @returns The styled accordion item wrapper.
  */
 function AccordionItem(
   props: React.ComponentProps<typeof AccordionPrimitive.Item>,
@@ -41,10 +39,10 @@ function AccordionItem(
 }
 
 /**
- * Renders the AccordionTrigger component.
+ * Trigger button that toggles an accordion item.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Radix accordion trigger props plus trigger content.
+ * @returns The accordion trigger inside an accessible header.
  */
 function AccordionTrigger(
   props: React.ComponentProps<typeof AccordionPrimitive.Trigger>,
@@ -62,17 +60,17 @@ function AccordionTrigger(
         {...rest}
       >
         {children}
-        <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4 shrink-0 translate-y-0.5 transition-transform duration-200" />
+        <ChevronDownIcon className="text-muted-foreground pointer-events-none size-4 shrink-0 translate-y-0.5 transition-transform duration-200 motion-reduce:transition-none" />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   );
 }
 
 /**
- * Renders the AccordionContent component.
+ * Expandable panel content for an accordion item.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Radix accordion content props and panel children.
+ * @returns The accordion content region with open/close animations.
  */
 function AccordionContent(
   props: React.ComponentProps<typeof AccordionPrimitive.Content>,
@@ -82,7 +80,7 @@ function AccordionContent(
   return (
     <AccordionPrimitive.Content
       data-slot="accordion-content"
-      className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm"
+      className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down motion-reduce:animate-none overflow-hidden text-sm"
       {...rest}
     >
       <div className={cn("pt-0 pb-4", className)}>{children}</div>

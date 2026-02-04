@@ -25,10 +25,12 @@ import { cn } from "@/lib/utils";
 // Types
 // ============================================================================
 
+/** Type definition for `AttachmentData`. */
 export type AttachmentData =
   | (FileUIPart & { id: string })
   | (SourceDocumentUIPart & { id: string });
 
+/** Type definition for `AttachmentMediaCategory`. */
 export type AttachmentMediaCategory =
   | "image"
   | "video"
@@ -37,6 +39,7 @@ export type AttachmentMediaCategory =
   | "source"
   | "unknown";
 
+/** Type definition for `AttachmentVariant`. */
 export type AttachmentVariant = "grid" | "inline" | "list";
 
 // ============================================================================
@@ -137,6 +140,7 @@ export const useAttachmentContext = () => {
 // Attachments - Container
 // ============================================================================
 
+/** Props for the `AttachmentsProps` type. */
 export type AttachmentsProps = HTMLAttributes<HTMLDivElement> & {
   variant?: AttachmentVariant;
 };
@@ -172,6 +176,7 @@ export const Attachments = (props: AttachmentsProps) => {
 // Attachment - Item
 // ============================================================================
 
+/** Props for the `AttachmentProps` type. */
 export type AttachmentProps = HTMLAttributes<HTMLDivElement> & {
   data: AttachmentData;
   onRemove?: () => void;
@@ -225,6 +230,7 @@ export const Attachment = (props: AttachmentProps) => {
 // AttachmentPreview - Media preview
 // ============================================================================
 
+/** Props for the `AttachmentPreviewProps` type. */
 export type AttachmentPreviewProps = HTMLAttributes<HTMLDivElement> & {
   fallbackIcon?: ReactNode;
 };
@@ -247,7 +253,7 @@ export const AttachmentPreview = (props: AttachmentPreviewProps) => {
     isGrid: boolean,
   ) => {
     const isBlob = url.startsWith("blob:") || url.startsWith("data:");
-    const size = isGrid ? 96 : 20;
+    const size = isGrid ? 96 : variant === "list" ? 48 : 20;
 
     return (
       <Image
@@ -310,6 +316,7 @@ export const AttachmentPreview = (props: AttachmentPreviewProps) => {
 // AttachmentInfo - Name and type display
 // ============================================================================
 
+/** Props for the `AttachmentInfoProps` type. */
 export type AttachmentInfoProps = HTMLAttributes<HTMLDivElement> & {
   metaVisibility?: "hidden" | "shown";
 };
@@ -346,6 +353,7 @@ export const AttachmentInfo = (props: AttachmentInfoProps) => {
 // AttachmentRemove - Remove button
 // ============================================================================
 
+/** Props for the `AttachmentRemoveProps` type. */
 export type AttachmentRemoveProps = ComponentProps<typeof Button> & {
   label?: string;
 };
@@ -401,6 +409,7 @@ export const AttachmentRemove = (props: AttachmentRemoveProps) => {
 // AttachmentHoverCard - Hover preview
 // ============================================================================
 
+/** Props for the `AttachmentHoverCardProps` type. */
 export type AttachmentHoverCardProps = ComponentProps<typeof HoverCard>;
 
 /**
@@ -410,10 +419,11 @@ export type AttachmentHoverCardProps = ComponentProps<typeof HoverCard>;
  * @returns The hover card wrapper.
  */
 export const AttachmentHoverCard = (props: AttachmentHoverCardProps) => {
-  const { openDelay = 0, closeDelay = 0, ...rest } = props;
+  const { openDelay = 200, closeDelay = 0, ...rest } = props;
   return <HoverCard closeDelay={closeDelay} openDelay={openDelay} {...rest} />;
 };
 
+/** Props for the `AttachmentHoverCardTriggerProps` type. */
 export type AttachmentHoverCardTriggerProps = ComponentProps<
   typeof HoverCardTrigger
 >;
@@ -428,6 +438,7 @@ export const AttachmentHoverCardTrigger = (
   props: AttachmentHoverCardTriggerProps,
 ) => <HoverCardTrigger {...props} />;
 
+/** Props for the `AttachmentHoverCardContentProps` type. */
 export type AttachmentHoverCardContentProps = ComponentProps<
   typeof HoverCardContent
 >;
@@ -455,6 +466,7 @@ export const AttachmentHoverCardContent = (
 // AttachmentEmpty - Empty state
 // ============================================================================
 
+/** Props for the `AttachmentEmptyProps` type. */
 export type AttachmentEmptyProps = HTMLAttributes<HTMLDivElement>;
 
 /**
