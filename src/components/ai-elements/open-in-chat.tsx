@@ -322,6 +322,7 @@ export const OpenInChatGPT = (props: OpenInChatGPTProps) => {
   );
 };
 
+/** Props for the OpenInClaude component. */
 export type OpenInClaudeProps = ComponentProps<typeof DropdownMenuItem>;
 
 /**
@@ -348,6 +349,7 @@ export const OpenInClaude = (props: OpenInClaudeProps) => {
   );
 };
 
+/** Props for the OpenInT3 component. */
 export type OpenInT3Props = ComponentProps<typeof DropdownMenuItem>;
 
 /**
@@ -374,6 +376,7 @@ export const OpenInT3 = (props: OpenInT3Props) => {
   );
 };
 
+/** Props for the OpenInScira component. */
 export type OpenInSciraProps = ComponentProps<typeof DropdownMenuItem>;
 
 /**
@@ -400,6 +403,7 @@ export const OpenInScira = (props: OpenInSciraProps) => {
   );
 };
 
+/** Props for the OpenInv0 component. */
 export type OpenInv0Props = ComponentProps<typeof DropdownMenuItem>;
 
 /**
@@ -426,6 +430,7 @@ export const OpenInv0 = (props: OpenInv0Props) => {
   );
 };
 
+/** Props for the OpenInCursor component. */
 export type OpenInCursorProps = ComponentProps<typeof DropdownMenuItem>;
 
 /**

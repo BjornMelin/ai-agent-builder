@@ -64,6 +64,53 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
+type GlobalDropHandler = (files: FileList) => void;
+
+const globalDropHandlers = new Set<GlobalDropHandler>();
+let globalDropListenersAttached = false;
+
+const handleGlobalDragOver = (event: DragEvent) => {
+  if (event.dataTransfer?.types?.includes("Files")) {
+    event.preventDefault();
+  }
+};
+
+const handleGlobalDrop = (event: DragEvent) => {
+  if (event.dataTransfer?.types?.includes("Files")) {
+    event.preventDefault();
+  }
+  const droppedFiles = event.dataTransfer?.files;
+  if (!droppedFiles || droppedFiles.length === 0) {
+    return;
+  }
+  for (const handler of globalDropHandlers) {
+    handler(droppedFiles);
+  }
+};
+
+const subscribeToGlobalDrop = (handler: GlobalDropHandler) => {
+  globalDropHandlers.add(handler);
+
+  if (!globalDropListenersAttached && typeof document !== "undefined") {
+    document.addEventListener("dragover", handleGlobalDragOver);
+    document.addEventListener("drop", handleGlobalDrop);
+    globalDropListenersAttached = true;
+  }
+
+  return () => {
+    globalDropHandlers.delete(handler);
+    if (
+      globalDropListenersAttached &&
+      globalDropHandlers.size === 0 &&
+      typeof document !== "undefined"
+    ) {
+      document.removeEventListener("dragover", handleGlobalDragOver);
+      document.removeEventListener("drop", handleGlobalDrop);
+      globalDropListenersAttached = false;
+    }
+  };
+};
+
 // ============================================================================
 // Provider Context & Types
 // ============================================================================
@@ -653,26 +700,9 @@ export const PromptInput = (props: PromptInputProps) => {
     if (!useGlobalDrop) {
       return;
     }
-
-    const onDragOver = (e: DragEvent) => {
-      if (e.dataTransfer?.types?.includes("Files")) {
-        e.preventDefault();
-      }
-    };
-    const onDrop = (e: DragEvent) => {
-      if (e.dataTransfer?.types?.includes("Files")) {
-        e.preventDefault();
-      }
-      if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-        addRef.current(e.dataTransfer.files);
-      }
-    };
-    document.addEventListener("dragover", onDragOver);
-    document.addEventListener("drop", onDrop);
-    return () => {
-      document.removeEventListener("dragover", onDragOver);
-      document.removeEventListener("drop", onDrop);
-    };
+    return subscribeToGlobalDrop((files) => {
+      addRef.current(files);
+    });
   }, [useGlobalDrop]);
 
   useEffect(
@@ -1142,10 +1172,13 @@ export const PromptInputSubmit = (props: PromptInputSubmitProps) => {
     status,
     onStop,
     onClick,
+    disabled,
     children,
     ...rest
   } = props;
   const isGenerating = status === "submitted" || status === "streaming";
+  const canStop = isGenerating && typeof onStop === "function";
+  const ariaLabel = canStop ? "Stop" : isGenerating ? "Generating" : "Submit";
 
   let Icon = <CornerDownLeftIcon className="size-4" />;
 
@@ -1158,9 +1191,13 @@ export const PromptInputSubmit = (props: PromptInputSubmitProps) => {
   }
 
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-    if (isGenerating && onStop) {
+    if (canStop) {
       e.preventDefault();
       onStop();
+      return;
+    }
+    if (isGenerating && !onStop) {
+      e.preventDefault();
       return;
     }
     onClick?.(e);
@@ -1168,13 +1205,14 @@ export const PromptInputSubmit = (props: PromptInputSubmitProps) => {
 
   return (
     <InputGroupButton
-      aria-label={isGenerating ? "Stop" : "Submit"}
+      {...rest}
+      aria-label={ariaLabel}
       className={cn(className)}
+      disabled={Boolean(disabled) || (isGenerating && !onStop)}
       onClick={handleClick}
       size={size}
-      type={isGenerating && onStop ? "button" : "submit"}
+      type={canStop || isGenerating ? "button" : "submit"}
       variant={variant}
-      {...rest}
     >
       {children ?? Icon}
     </InputGroupButton>

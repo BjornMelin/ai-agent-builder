@@ -323,7 +323,9 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       setComposerError(null);
       return true;
     } catch (error) {
-      console.error("Follow-up error:", error);
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Follow-up error:", error);
+      }
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
       setComposerError(
         error instanceof Error ? error.message : "Something went wrong.",

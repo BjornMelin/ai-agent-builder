@@ -7,16 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 
-type UploadResponse = Readonly<{
-  files: readonly Readonly<{
-    id: string;
-    name: string;
-    mimeType: string;
-    sizeBytes: number;
-    storageKey: string;
-  }>[];
-}>;
-
 /**
  * Upload form that posts to the `/api/upload` route handler.
  *
@@ -81,7 +71,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
     }
 
     // Best-effort parse (useful for debugging); UI refresh is the real update.
-    await res.json().catch(() => null as unknown as UploadResponse);
+    await res.json().catch(() => null);
 
     setStatus("success");
     setFiles(null);
@@ -116,7 +106,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
           {status === "uploading" ? (
             <span
               aria-hidden="true"
-              className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+              className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
             />
           ) : null}
           <span>Upload</span>

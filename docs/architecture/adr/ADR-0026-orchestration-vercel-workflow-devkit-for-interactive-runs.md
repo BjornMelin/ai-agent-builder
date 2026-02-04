@@ -140,7 +140,7 @@ We will:
 ## Constraints
 
 - Workflow DevKit requires:
-  - wrapping `next.config.ts` with `withWorkflow(...)` to enable directives. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
+  - wrapping `next.config.ts` with `withWorkflow(…)` to enable directives. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
   - excluding `.well-known/workflow/` from the Next.js `proxy.ts` matcher to avoid blocking internal workflow routes. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
 - QStash endpoints must verify signatures (and be idempotent) for ingestion workers. [Upstash QStash: Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
 - Client-side code must not use `useMemo`/`useCallback` (repo non-negotiable); resumable transport must be implemented via `useEffect` + state + refs.

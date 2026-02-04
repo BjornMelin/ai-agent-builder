@@ -109,32 +109,29 @@ export const SnippetInput = (props: SnippetInputProps) => {
 };
 
 /**
- * Props for the {@link SnippetCopyButton} component.
+ * Props for the SnippetCopyButton component.
  *
- * @param onCopy - Callback function called when the code is successfully copied.
- * @param onError - Callback function called when an error occurs or the Clipboard API is unavailable.
- * @param timeout - Duration in milliseconds to wait before resetting the "copied" state. Defaults to 2000.
- * @param children - Optional custom content to display inside the button.
- * @param className - Optional CSS class name for the button.
- * @param props - Additional props spread to the underlying {@link InputGroupButton}.
+ * Extends `InputGroupButton` props with optional copy callbacks and reset timing.
  */
 export type SnippetCopyButtonProps = ComponentProps<typeof InputGroupButton> & {
+  /** Callback invoked after a successful copy operation. */
   onCopy?: () => void;
+  /** Callback invoked when copying fails or Clipboard APIs are unavailable. */
   onError?: (error: Error) => void;
+  /** Milliseconds to keep the copied state active before resetting. */
   timeout?: number;
 };
 
 /**
- * A copy-to-clipboard button component designed to work within a {@link Snippet} context.
+ * A copy-to-clipboard button component for snippet content.
  *
  * The component uses the `copyToClipboard` helper to check for Clipboard API availability,
  * calling `onError` if it is unavailable. On success, it writes the code from
- * {@link SnippetContext} to the clipboard, sets the `isCopied` state, calls `onCopy`, and
+ * snippet context to the clipboard, sets the `isCopied` state, calls `onCopy`, and
  * schedules a reset of the `isCopied` state after the specified `timeout` via `timeoutRef`.
  *
  * It includes a `useEffect` cleanup that clears the `timeoutRef` to prevent side effects after
- * unmounting. Visually, the component perform a swap between {@link CopyIcon} and
- * {@link CheckIcon} based on the current copy state.
+ * unmounting. Visually, the component swaps between copy and check icons based on state.
  *
  * @param props - Copy callbacks, timeout, and button props.
  * @returns A button that copies the current snippet code to the clipboard.
@@ -186,7 +183,7 @@ export const SnippetCopyButton = (props: SnippetCopyButtonProps) => {
     <InputGroupButton
       aria-label="Copy"
       className={className}
-      onClick={copyToClipboard}
+      onClick={() => void copyToClipboard()}
       size="icon-sm"
       title="Copy"
       {...rest}

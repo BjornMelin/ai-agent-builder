@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
+/** Props for the TaskItemFile component. */
 export type TaskItemFileProps = ComponentProps<"div">;
 
 /**
@@ -33,6 +34,7 @@ export const TaskItemFile = (props: TaskItemFileProps) => {
   );
 };
 
+/** Props for the TaskItem component. */
 export type TaskItemProps = ComponentProps<"div">;
 
 /**
@@ -51,6 +53,7 @@ export const TaskItem = (props: TaskItemProps) => {
   );
 };
 
+/** Props for the Task component. */
 export type TaskProps = ComponentProps<typeof Collapsible>;
 
 /**
@@ -71,6 +74,7 @@ export const Task = (props: TaskProps) => {
   );
 };
 
+/** Props for the TaskTrigger component. */
 export type TaskTriggerProps = ComponentProps<typeof CollapsibleTrigger> & {
   title: string;
 };
@@ -97,6 +101,7 @@ export const TaskTrigger = (props: TaskTriggerProps) => {
   );
 };
 
+/** Props for the TaskContent component. */
 export type TaskContentProps = ComponentProps<typeof CollapsibleContent>;
 
 /**

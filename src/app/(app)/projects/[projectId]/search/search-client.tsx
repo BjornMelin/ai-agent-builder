@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,8 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [q, setQ] = useState(() => searchParams.get("q") ?? "");
+  const urlQuery = searchParams.get("q") ?? "";
+  const [q, setQ] = useState(urlQuery);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<readonly SearchResult[]>([]);
@@ -45,6 +46,10 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
   const searchInputId = `project-search-${props.projectId}`;
   const searchStatusId = `project-search-status-${props.projectId}`;
   const searchErrorId = `project-search-error-${props.projectId}`;
+
+  useEffect(() => {
+    setQ(urlQuery);
+  }, [urlQuery]);
 
   const syncQueryInUrl = (query: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -129,7 +134,7 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
           {status === "loading" ? (
             <span
               aria-hidden="true"
-              className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+              className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
             />
           ) : null}
           <span>Search</span>

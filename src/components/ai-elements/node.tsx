@@ -46,6 +46,7 @@ export const Node = (props: NodeProps) => {
   );
 };
 
+/** Props for the NodeHeader component. */
 export type NodeHeaderProps = ComponentProps<typeof CardHeader>;
 
 /**
@@ -67,6 +68,7 @@ export const NodeHeader = (props: NodeHeaderProps) => {
   );
 };
 
+/** Props for the NodeTitle component. */
 export type NodeTitleProps = ComponentProps<typeof CardTitle>;
 
 /**
@@ -77,6 +79,7 @@ export type NodeTitleProps = ComponentProps<typeof CardTitle>;
  */
 export const NodeTitle = (props: NodeTitleProps) => <CardTitle {...props} />;
 
+/** Props for the NodeDescription component. */
 export type NodeDescriptionProps = ComponentProps<typeof CardDescription>;
 
 /**
@@ -89,6 +92,7 @@ export const NodeDescription = (props: NodeDescriptionProps) => (
   <CardDescription {...props} />
 );
 
+/** Props for the NodeAction component. */
 export type NodeActionProps = ComponentProps<typeof CardAction>;
 
 /**
@@ -99,6 +103,7 @@ export type NodeActionProps = ComponentProps<typeof CardAction>;
  */
 export const NodeAction = (props: NodeActionProps) => <CardAction {...props} />;
 
+/** Props for the NodeContent component. */
 export type NodeContentProps = ComponentProps<typeof CardContent>;
 
 /**
@@ -112,6 +117,7 @@ export const NodeContent = (props: NodeContentProps) => {
   return <CardContent className={cn("p-3", className)} {...rest} />;
 };
 
+/** Props for the NodeFooter component. */
 export type NodeFooterProps = ComponentProps<typeof CardFooter>;
 
 /**

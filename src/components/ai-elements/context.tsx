@@ -144,10 +144,10 @@ export const ContextTrigger = (props: ContextTriggerProps) => {
     <HoverCardTrigger asChild>
       {children ?? (
         <Button
-          aria-label={accessibleLabel}
           type="button"
           variant="ghost"
           {...rest}
+          aria-label={accessibleLabel}
         >
           <span className="font-medium text-muted-foreground">
             {renderedPercent}

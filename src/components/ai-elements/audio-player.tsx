@@ -68,6 +68,7 @@ export const AudioPlayer = (props: AudioPlayerProps) => {
   );
 };
 
+/** Props for `AudioPlayerElement` supporting src or speech-result audio data. */
 export type AudioPlayerElementProps = Omit<ComponentProps<"audio">, "src"> &
   (
     | {
@@ -84,18 +85,31 @@ export type AudioPlayerElementProps = Omit<ComponentProps<"audio">, "src"> &
  * @param props - Audio element props with either `src` or encoded speech data.
  * @returns The audio media element.
  */
-export const AudioPlayerElement = (props: AudioPlayerElementProps) => (
-  <audio
-    data-slot="audio-player-element"
-    slot="media"
-    src={
-      "src" in props
-        ? props.src
-        : `data:${props.data.mediaType};base64,${props.data.base64}`
-    }
-    {...props}
-  />
-);
+export const AudioPlayerElement = (props: AudioPlayerElementProps) => {
+  if ("src" in props) {
+    const { src, ...audioProps } = props;
+    return (
+      <audio
+        data-slot="audio-player-element"
+        slot="media"
+        src={src}
+        {...audioProps}
+      />
+    );
+  }
+
+  const { data, ...audioProps } = props;
+  const src = `data:${data.mediaType};base64,${data.base64}`;
+
+  return (
+    <audio
+      data-slot="audio-player-element"
+      slot="media"
+      src={src}
+      {...audioProps}
+    />
+  );
+};
 
 /** Props for the AudioPlayerControlBar component. */
 export type AudioPlayerControlBarProps = ComponentProps<typeof MediaControlBar>;

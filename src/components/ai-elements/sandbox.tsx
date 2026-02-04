@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { getStatusBadge } from "./tool";
 
+/** Props for the Sandbox root component. */
 export type SandboxRootProps = ComponentProps<typeof Collapsible>;
 
 /**
@@ -34,6 +35,7 @@ export const Sandbox = (props: SandboxRootProps) => {
   );
 };
 
+/** Props for the SandboxHeader component. */
 export interface SandboxHeaderProps {
   title?: string;
   state: ToolUIPart["state"];
@@ -66,6 +68,7 @@ export const SandboxHeader = (props: SandboxHeaderProps) => {
   );
 };
 
+/** Props for the SandboxContent component. */
 export type SandboxContentProps = ComponentProps<typeof CollapsibleContent>;
 
 /**
@@ -87,6 +90,7 @@ export const SandboxContent = (props: SandboxContentProps) => {
   );
 };
 
+/** Props for the SandboxTabs component. */
 export type SandboxTabsProps = ComponentProps<typeof Tabs>;
 
 /**
@@ -100,6 +104,7 @@ export const SandboxTabs = (props: SandboxTabsProps) => {
   return <Tabs className={cn("w-full gap-0", className)} {...rest} />;
 };
 
+/** Props for the SandboxTabsBar component. */
 export type SandboxTabsBarProps = ComponentProps<"div">;
 
 /**
@@ -121,6 +126,7 @@ export const SandboxTabsBar = (props: SandboxTabsBarProps) => {
   );
 };
 
+/** Props for the SandboxTabsList component. */
 export type SandboxTabsListProps = ComponentProps<typeof TabsList>;
 
 /**
@@ -142,6 +148,7 @@ export const SandboxTabsList = (props: SandboxTabsListProps) => {
   );
 };
 
+/** Props for the SandboxTabsTrigger component. */
 export type SandboxTabsTriggerProps = ComponentProps<typeof TabsTrigger>;
 
 /**
@@ -163,6 +170,7 @@ export const SandboxTabsTrigger = (props: SandboxTabsTriggerProps) => {
   );
 };
 
+/** Props for the SandboxTabContent component. */
 export type SandboxTabContentProps = ComponentProps<typeof TabsContent>;
 
 /**

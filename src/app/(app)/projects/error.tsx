@@ -64,8 +64,14 @@ export default function ProjectsError(
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => reset()}>Retry</Button>
-            <Button onClick={() => location.reload()} variant="outline">
+            <Button aria-label="Retry loading projects" onClick={() => reset()}>
+              Retry
+            </Button>
+            <Button
+              aria-label="Reload projects"
+              onClick={() => location.reload()}
+              variant="outline"
+            >
               Reload
             </Button>
           </div>

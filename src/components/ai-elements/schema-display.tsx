@@ -60,7 +60,10 @@ export type SchemaDisplayProps = HTMLAttributes<HTMLDivElement> & {
   parameters?: SchemaParameter[];
   requestBody?: SchemaProperty[];
   responseBody?: SchemaProperty[];
+  maxDepth?: number;
 };
+
+const DEFAULT_MAX_SCHEMA_DEPTH = 8;
 
 /**
  * Renders an API schema display and provides schema context to child components.
@@ -76,6 +79,7 @@ export const SchemaDisplay = (props: SchemaDisplayProps) => {
     parameters,
     requestBody,
     responseBody,
+    maxDepth = DEFAULT_MAX_SCHEMA_DEPTH,
     className,
     children,
     ...rest
@@ -112,10 +116,10 @@ export const SchemaDisplay = (props: SchemaDisplayProps) => {
                 <SchemaDisplayParameters />
               ) : null}
               {requestBody && requestBody.length > 0 ? (
-                <SchemaDisplayRequest />
+                <SchemaDisplayRequest maxDepth={maxDepth} />
               ) : null}
               {responseBody && responseBody.length > 0 ? (
-                <SchemaDisplayResponse />
+                <SchemaDisplayResponse maxDepth={maxDepth} />
               ) : null}
             </SchemaDisplayContent>
           </>
@@ -359,7 +363,9 @@ export const SchemaDisplayParameter = (props: SchemaDisplayParameterProps) => {
 };
 
 /** Props for the `SchemaDisplayRequest` component. */
-export type SchemaDisplayRequestProps = ComponentProps<typeof Collapsible>;
+export type SchemaDisplayRequestProps = ComponentProps<typeof Collapsible> & {
+  maxDepth?: number;
+};
 
 /**
  * Renders the request body schema section.
@@ -368,7 +374,12 @@ export type SchemaDisplayRequestProps = ComponentProps<typeof Collapsible>;
  * @returns The request body section.
  */
 export const SchemaDisplayRequest = (props: SchemaDisplayRequestProps) => {
-  const { className, children, ...rest } = props;
+  const {
+    className,
+    children,
+    maxDepth = DEFAULT_MAX_SCHEMA_DEPTH,
+    ...rest
+  } = props;
   const { requestBody } = useContext(SchemaDisplayContext);
 
   return (
@@ -385,6 +396,7 @@ export const SchemaDisplayRequest = (props: SchemaDisplayRequestProps) => {
                 key={`request.${prop.name}:${index}`}
                 {...prop}
                 depth={0}
+                maxDepth={maxDepth}
                 pathPrefix="request"
               />
             ))}
@@ -395,7 +407,9 @@ export const SchemaDisplayRequest = (props: SchemaDisplayRequestProps) => {
 };
 
 /** Props for the `SchemaDisplayResponse` component. */
-export type SchemaDisplayResponseProps = ComponentProps<typeof Collapsible>;
+export type SchemaDisplayResponseProps = ComponentProps<typeof Collapsible> & {
+  maxDepth?: number;
+};
 
 /**
  * Renders the response body schema section.
@@ -404,7 +418,12 @@ export type SchemaDisplayResponseProps = ComponentProps<typeof Collapsible>;
  * @returns The response section.
  */
 export const SchemaDisplayResponse = (props: SchemaDisplayResponseProps) => {
-  const { className, children, ...rest } = props;
+  const {
+    className,
+    children,
+    maxDepth = DEFAULT_MAX_SCHEMA_DEPTH,
+    ...rest
+  } = props;
   const { responseBody } = useContext(SchemaDisplayContext);
 
   return (
@@ -421,6 +440,7 @@ export const SchemaDisplayResponse = (props: SchemaDisplayResponseProps) => {
                 key={`response.${prop.name}:${index}`}
                 {...prop}
                 depth={0}
+                maxDepth={maxDepth}
                 pathPrefix="response"
               />
             ))}
@@ -453,9 +473,8 @@ export type SchemaDisplayPropertyProps = HTMLAttributes<HTMLDivElement> &
   SchemaProperty & {
     depth?: number;
     pathPrefix?: string;
+    maxDepth?: number;
   };
-
-const MAX_SCHEMA_DEPTH = 8;
 
 /**
  * Renders a schema property, including nested object/array children.
@@ -473,6 +492,7 @@ export const SchemaDisplayProperty = (props: SchemaDisplayPropertyProps) => {
     items,
     depth = 0,
     pathPrefix = "",
+    maxDepth = DEFAULT_MAX_SCHEMA_DEPTH,
     className,
     ...rest
   } = props;
@@ -480,7 +500,7 @@ export const SchemaDisplayProperty = (props: SchemaDisplayPropertyProps) => {
   const paddingLeft = 40 + depth * 16;
   const nodePath = pathPrefix ? `${pathPrefix}.${name}` : name;
 
-  if (depth >= MAX_SCHEMA_DEPTH) {
+  if (depth >= maxDepth) {
     return (
       <div
         className={cn("py-3 pr-4", className)}
@@ -540,6 +560,7 @@ export const SchemaDisplayProperty = (props: SchemaDisplayPropertyProps) => {
                 key={`${nodePath}.${prop.name}:${index}`}
                 {...prop}
                 depth={depth + 1}
+                maxDepth={maxDepth}
                 pathPrefix={nodePath}
               />
             ))}
@@ -548,6 +569,7 @@ export const SchemaDisplayProperty = (props: SchemaDisplayPropertyProps) => {
                 key={`${nodePath}.${name}.items`}
                 {...items}
                 depth={depth + 1}
+                maxDepth={maxDepth}
                 name={`${name}[]`}
                 pathPrefix={nodePath}
               />
