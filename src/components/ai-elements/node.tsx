@@ -48,38 +48,84 @@ export const Node = (props: NodeProps) => {
 
 export type NodeHeaderProps = ComponentProps<typeof CardHeader>;
 
-export const NodeHeader = ({ className, ...props }: NodeHeaderProps) => (
-  <CardHeader
-    className={cn("gap-0.5 rounded-t-md border-b bg-secondary p-3!", className)}
-    {...props}
-  />
-);
+/**
+ * Renders the header area for a node card.
+ *
+ * @param props - Props forwarded to `CardHeader`.
+ * @returns A styled node header.
+ */
+export const NodeHeader = (props: NodeHeaderProps) => {
+  const { className, ...rest } = props;
+  return (
+    <CardHeader
+      className={cn(
+        "gap-0.5 rounded-t-md border-b bg-secondary p-3!",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type NodeTitleProps = ComponentProps<typeof CardTitle>;
 
+/**
+ * Renders the title text for a node.
+ *
+ * @param props - Props forwarded to `CardTitle`.
+ * @returns A node title element.
+ */
 export const NodeTitle = (props: NodeTitleProps) => <CardTitle {...props} />;
 
 export type NodeDescriptionProps = ComponentProps<typeof CardDescription>;
 
+/**
+ * Renders supporting text for a node.
+ *
+ * @param props - Props forwarded to `CardDescription`.
+ * @returns A node description element.
+ */
 export const NodeDescription = (props: NodeDescriptionProps) => (
   <CardDescription {...props} />
 );
 
 export type NodeActionProps = ComponentProps<typeof CardAction>;
 
+/**
+ * Renders an action slot in the node header.
+ *
+ * @param props - Props forwarded to `CardAction`.
+ * @returns A node action element.
+ */
 export const NodeAction = (props: NodeActionProps) => <CardAction {...props} />;
 
 export type NodeContentProps = ComponentProps<typeof CardContent>;
 
-export const NodeContent = ({ className, ...props }: NodeContentProps) => (
-  <CardContent className={cn("p-3", className)} {...props} />
-);
+/**
+ * Renders the main content section of a node.
+ *
+ * @param props - Props forwarded to `CardContent`.
+ * @returns A styled node content section.
+ */
+export const NodeContent = (props: NodeContentProps) => {
+  const { className, ...rest } = props;
+  return <CardContent className={cn("p-3", className)} {...rest} />;
+};
 
 export type NodeFooterProps = ComponentProps<typeof CardFooter>;
 
-export const NodeFooter = ({ className, ...props }: NodeFooterProps) => (
-  <CardFooter
-    className={cn("rounded-b-md border-t bg-secondary p-3!", className)}
-    {...props}
-  />
-);
+/**
+ * Renders the footer area for a node card.
+ *
+ * @param props - Props forwarded to `CardFooter`.
+ * @returns A styled node footer.
+ */
+export const NodeFooter = (props: NodeFooterProps) => {
+  const { className, ...rest } = props;
+  return (
+    <CardFooter
+      className={cn("rounded-b-md border-t bg-secondary p-3!", className)}
+      {...rest}
+    />
+  );
+};

@@ -14,16 +14,25 @@ import { getStatusBadge } from "./tool";
 
 export type SandboxRootProps = ComponentProps<typeof Collapsible>;
 
-export const Sandbox = ({ className, ...props }: SandboxRootProps) => (
-  <Collapsible
-    className={cn(
-      "not-prose group mb-4 w-full overflow-hidden rounded-md border",
-      className,
-    )}
-    defaultOpen
-    {...props}
-  />
-);
+/**
+ * Provides the root collapsible container for sandbox tool output.
+ *
+ * @param props - Props forwarded to `Collapsible`.
+ * @returns A styled sandbox container.
+ */
+export const Sandbox = (props: SandboxRootProps) => {
+  const { className, ...rest } = props;
+  return (
+    <Collapsible
+      className={cn(
+        "not-prose group mb-4 w-full overflow-hidden rounded-md border",
+        className,
+      )}
+      defaultOpen
+      {...rest}
+    />
+  );
+};
 
 export interface SandboxHeaderProps {
   title?: string;
@@ -31,96 +40,138 @@ export interface SandboxHeaderProps {
   className?: string;
 }
 
-export const SandboxHeader = ({
-  className,
-  title,
-  state,
-  ...props
-}: SandboxHeaderProps) => (
-  <CollapsibleTrigger
-    className={cn(
-      "flex w-full items-center justify-between gap-4 p-3",
-      className,
-    )}
-    {...props}
-  >
-    <div className="flex items-center gap-2">
-      <Code className="size-4 text-muted-foreground" />
-      <span className="font-medium text-sm">{title}</span>
-      {getStatusBadge(state)}
-    </div>
-    <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-  </CollapsibleTrigger>
-);
+/**
+ * Renders the sandbox header with title and tool execution state.
+ *
+ * @param props - Header fields and trigger props.
+ * @returns A collapsible trigger for the sandbox section.
+ */
+export const SandboxHeader = (props: SandboxHeaderProps) => {
+  const { className, title, state, ...rest } = props;
+  return (
+    <CollapsibleTrigger
+      className={cn(
+        "flex w-full items-center justify-between gap-4 p-3",
+        className,
+      )}
+      {...rest}
+    >
+      <div className="flex items-center gap-2">
+        <Code className="size-4 text-muted-foreground" />
+        <span className="font-medium text-sm">{title}</span>
+        {getStatusBadge(state)}
+      </div>
+      <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+    </CollapsibleTrigger>
+  );
+};
 
 export type SandboxContentProps = ComponentProps<typeof CollapsibleContent>;
 
-export const SandboxContent = ({
-  className,
-  ...props
-}: SandboxContentProps) => (
-  <CollapsibleContent
-    className={cn(
-      "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
-      className,
-    )}
-    {...props}
-  />
-);
+/**
+ * Renders the collapsible body container for sandbox content.
+ *
+ * @param props - Props forwarded to `CollapsibleContent`.
+ * @returns A sandbox content wrapper.
+ */
+export const SandboxContent = (props: SandboxContentProps) => {
+  const { className, ...rest } = props;
+  return (
+    <CollapsibleContent
+      className={cn(
+        "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type SandboxTabsProps = ComponentProps<typeof Tabs>;
 
-export const SandboxTabs = ({ className, ...props }: SandboxTabsProps) => (
-  <Tabs className={cn("w-full gap-0", className)} {...props} />
-);
+/**
+ * Renders the tabs root used inside sandbox content.
+ *
+ * @param props - Props forwarded to `Tabs`.
+ * @returns A styled tabs container.
+ */
+export const SandboxTabs = (props: SandboxTabsProps) => {
+  const { className, ...rest } = props;
+  return <Tabs className={cn("w-full gap-0", className)} {...rest} />;
+};
 
 export type SandboxTabsBarProps = ComponentProps<"div">;
 
-export const SandboxTabsBar = ({
-  className,
-  ...props
-}: SandboxTabsBarProps) => (
-  <div
-    className={cn(
-      "flex w-full items-center border-border border-t border-b",
-      className,
-    )}
-    {...props}
-  />
-);
+/**
+ * Renders the horizontal bar that contains sandbox tab controls.
+ *
+ * @param props - Props for the bar container.
+ * @returns A sandbox tabs bar element.
+ */
+export const SandboxTabsBar = (props: SandboxTabsBarProps) => {
+  const { className, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "flex w-full items-center border-border border-t border-b",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type SandboxTabsListProps = ComponentProps<typeof TabsList>;
 
-export const SandboxTabsList = ({
-  className,
-  ...props
-}: SandboxTabsListProps) => (
-  <TabsList
-    className={cn("h-auto rounded-none border-0 bg-transparent p-0", className)}
-    {...props}
-  />
-);
+/**
+ * Renders the list container for sandbox tab triggers.
+ *
+ * @param props - Props forwarded to `TabsList`.
+ * @returns A styled tabs list.
+ */
+export const SandboxTabsList = (props: SandboxTabsListProps) => {
+  const { className, ...rest } = props;
+  return (
+    <TabsList
+      className={cn(
+        "h-auto rounded-none border-0 bg-transparent p-0",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type SandboxTabsTriggerProps = ComponentProps<typeof TabsTrigger>;
 
-export const SandboxTabsTrigger = ({
-  className,
-  ...props
-}: SandboxTabsTriggerProps) => (
-  <TabsTrigger
-    className={cn(
-      "rounded-none border-0 border-transparent border-b-2 px-4 py-2 font-medium text-muted-foreground text-sm transition-colors data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none",
-      className,
-    )}
-    {...props}
-  />
-);
+/**
+ * Renders one selectable tab trigger for sandbox views.
+ *
+ * @param props - Props forwarded to `TabsTrigger`.
+ * @returns A styled tabs trigger.
+ */
+export const SandboxTabsTrigger = (props: SandboxTabsTriggerProps) => {
+  const { className, ...rest } = props;
+  return (
+    <TabsTrigger
+      className={cn(
+        "rounded-none border-0 border-transparent border-b-2 px-4 py-2 font-medium text-muted-foreground text-sm transition-colors data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type SandboxTabContentProps = ComponentProps<typeof TabsContent>;
 
-export const SandboxTabContent = ({
-  className,
-  ...props
-}: SandboxTabContentProps) => (
-  <TabsContent className={cn("mt-0 text-sm", className)} {...props} />
-);
+/**
+ * Renders the panel content for a sandbox tab.
+ *
+ * @param props - Props forwarded to `TabsContent`.
+ * @returns A tab content panel.
+ */
+export const SandboxTabContent = (props: SandboxTabContentProps) => {
+  const { className, ...rest } = props;
+  return <TabsContent className={cn("mt-0 text-sm", className)} {...rest} />;
+};

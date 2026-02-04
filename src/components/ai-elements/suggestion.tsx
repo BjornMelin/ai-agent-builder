@@ -7,33 +7,49 @@ import { cn } from "@/lib/utils";
 
 export type SuggestionsProps = ComponentProps<typeof ScrollArea>;
 
-export const Suggestions = ({
-  className,
-  children,
-  ...props
-}: SuggestionsProps) => (
-  <ScrollArea className="w-full overflow-x-auto whitespace-nowrap" {...props}>
-    <div className={cn("flex w-max flex-nowrap items-center gap-2", className)}>
-      {children}
-    </div>
-    <ScrollBar className="hidden" orientation="horizontal" />
-  </ScrollArea>
-);
+/**
+ * Renders a horizontally scrollable container for suggestion chips.
+ *
+ * @param props - Props forwarded to `ScrollArea`.
+ * @returns A scrollable suggestions row.
+ */
+export const Suggestions = (props: SuggestionsProps) => {
+  const { className, children, ...rest } = props;
+
+  return (
+    <ScrollArea className="w-full overflow-x-auto whitespace-nowrap" {...rest}>
+      <div
+        className={cn("flex w-max flex-nowrap items-center gap-2", className)}
+      >
+        {children}
+      </div>
+      <ScrollBar className="hidden" orientation="horizontal" />
+    </ScrollArea>
+  );
+};
 
 export type SuggestionProps = Omit<ComponentProps<typeof Button>, "onClick"> & {
   suggestion: string;
   onClick?: (suggestion: string) => void;
 };
 
-export const Suggestion = ({
-  suggestion,
-  onClick,
-  className,
-  variant = "outline",
-  size = "sm",
-  children,
-  ...props
-}: SuggestionProps) => {
+/**
+ * Renders a single suggestion button and reports the suggestion value on click.
+ *
+ * @param props - Suggestion content and button props.
+ * @returns A suggestion button element.
+ */
+export const Suggestion = (props: SuggestionProps) => {
+  const {
+    suggestion,
+    onClick,
+    className,
+    variant = "outline",
+    size = "sm",
+    children,
+    ...rest
+  } = props;
+
   const handleClick = () => {
     onClick?.(suggestion);
   };
@@ -45,7 +61,7 @@ export const Suggestion = ({
       size={size}
       type="button"
       variant={variant}
-      {...props}
+      {...rest}
     >
       {children || suggestion}
     </Button>

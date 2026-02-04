@@ -42,35 +42,60 @@ export type SnippetProps = ComponentProps<typeof InputGroup> & {
  * @param props - Component properties, including the `code` to share and standard InputGroup layout props.
  * @returns The rendered snippet container.
  */
-export const Snippet = ({ className, code, children, ...props }: SnippetProps) => (
-  <SnippetContext.Provider value={{ code }}>
-    <InputGroup className={cn("font-mono", className)} {...props}>
-      {children}
-    </InputGroup>
-  </SnippetContext.Provider>
-);
+export const Snippet = (props: SnippetProps) => {
+  const { className, code, children, ...rest } = props;
+  return (
+    <SnippetContext.Provider value={{ code }}>
+      <InputGroup className={cn("font-mono", className)} {...rest}>
+        {children}
+      </InputGroup>
+    </SnippetContext.Provider>
+  );
+};
 
 export type SnippetAddonProps = ComponentProps<typeof InputGroupAddon>;
 
+/**
+ * Renders an add-on slot for snippet input groups.
+ *
+ * @param props - Props forwarded to `InputGroupAddon`.
+ * @returns An input-group add-on element.
+ */
 export const SnippetAddon = (props: SnippetAddonProps) => (
   <InputGroupAddon {...props} />
 );
 
 export type SnippetTextProps = ComponentProps<typeof InputGroupText>;
 
-export const SnippetText = ({ className, ...props }: SnippetTextProps) => (
-  <InputGroupText
-    className={cn("pl-2 font-normal text-muted-foreground", className)}
-    {...props}
-  />
-);
+/**
+ * Renders inline text preceding snippet input content.
+ *
+ * @param props - Props forwarded to `InputGroupText`.
+ * @returns A styled snippet text element.
+ */
+export const SnippetText = (props: SnippetTextProps) => {
+  const { className, ...rest } = props;
+  return (
+    <InputGroupText
+      className={cn("pl-2 font-normal text-muted-foreground", className)}
+      {...rest}
+    />
+  );
+};
 
 export type SnippetInputProps = Omit<
   ComponentProps<typeof InputGroupInput>,
   "readOnly" | "value"
 >;
 
-export const SnippetInput = ({ className, ...props }: SnippetInputProps) => {
+/**
+ * Renders a read-only input bound to the snippet code context.
+ *
+ * @param props - Props forwarded to `InputGroupInput`.
+ * @returns A read-only snippet input field.
+ */
+export const SnippetInput = (props: SnippetInputProps) => {
+  const { className, ...rest } = props;
   const { code } = useContext(SnippetContext);
 
   return (
@@ -78,7 +103,7 @@ export const SnippetInput = ({ className, ...props }: SnippetInputProps) => {
       className={cn("text-foreground", className)}
       readOnly
       value={code}
-      {...props}
+      {...rest}
     />
   );
 };
@@ -110,15 +135,19 @@ export type SnippetCopyButtonProps = ComponentProps<typeof InputGroupButton> & {
  * It includes a `useEffect` cleanup that clears the `timeoutRef` to prevent side effects after
  * unmounting. Visually, the component perform a swap between {@link CopyIcon} and
  * {@link CheckIcon} based on the current copy state.
+ *
+ * @param props - Copy callbacks, timeout, and button props.
+ * @returns A button that copies the current snippet code to the clipboard.
  */
-export const SnippetCopyButton = ({
-  onCopy,
-  onError,
-  timeout = 2000,
-  children,
-  className,
-  ...props
-}: SnippetCopyButtonProps) => {
+export const SnippetCopyButton = (props: SnippetCopyButtonProps) => {
+  const {
+    onCopy,
+    onError,
+    timeout = 2000,
+    children,
+    className,
+    ...rest
+  } = props;
   const [isCopied, setIsCopied] = useState(false);
   const timeoutRef = useRef<number>(0);
   const { code } = useContext(SnippetContext);
@@ -160,7 +189,7 @@ export const SnippetCopyButton = ({
       onClick={copyToClipboard}
       size="icon-sm"
       title="Copy"
-      {...props}
+      {...rest}
     >
       {children ?? <Icon className="size-3.5" size={14} />}
     </InputGroupButton>

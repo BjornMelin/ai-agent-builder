@@ -8,29 +8,46 @@ import { cn } from "@/lib/utils";
 
 export type ConversationProps = ComponentProps<typeof StickToBottom>;
 
-export const Conversation = ({ className, ...props }: ConversationProps) => (
-  <StickToBottom
-    className={cn("relative flex-1 overflow-y-hidden", className)}
-    initial="smooth"
-    resize="smooth"
-    role="log"
-    {...props}
-  />
-);
+/**
+ * Provides the scroll container for chat messages with bottom-stick behavior.
+ *
+ * @param props - Props forwarded to `StickToBottom`.
+ * @returns A stick-to-bottom conversation container.
+ */
+export const Conversation = (props: ConversationProps) => {
+  const { className, ...rest } = props;
+
+  return (
+    <StickToBottom
+      className={cn("relative flex-1 overflow-y-hidden", className)}
+      initial="smooth"
+      resize="smooth"
+      role="log"
+      {...rest}
+    />
+  );
+};
 
 export type ConversationContentProps = ComponentProps<
   typeof StickToBottom.Content
 >;
 
-export const ConversationContent = ({
-  className,
-  ...props
-}: ConversationContentProps) => (
-  <StickToBottom.Content
-    className={cn("flex flex-col gap-8 p-4", className)}
-    {...props}
-  />
-);
+/**
+ * Renders the message list wrapper inside the conversation container.
+ *
+ * @param props - Props forwarded to `StickToBottom.Content`.
+ * @returns A content wrapper for conversation messages.
+ */
+export const ConversationContent = (props: ConversationContentProps) => {
+  const { className, ...rest } = props;
+
+  return (
+    <StickToBottom.Content
+      className={cn("flex flex-col gap-8 p-4", className)}
+      {...rest}
+    />
+  );
+};
 
 export type ConversationEmptyStateProps = ComponentProps<"div"> & {
   title?: string;
@@ -38,34 +55,44 @@ export type ConversationEmptyStateProps = ComponentProps<"div"> & {
   icon?: ReactNode;
 };
 
-export const ConversationEmptyState = ({
-  className,
-  title = "No messages yet",
-  description = "Start a conversation to see messages here",
-  icon,
-  children,
-  ...props
-}: ConversationEmptyStateProps) => (
-  <div
-    className={cn(
-      "flex size-full flex-col items-center justify-center gap-3 p-8 text-center",
-      className,
-    )}
-    {...props}
-  >
-    {children ?? (
-      <>
-        {icon ? <div className="text-muted-foreground">{icon}</div> : null}
-        <div className="space-y-1">
-          <h3 className="font-medium text-sm">{title}</h3>
-          {description ? (
-            <p className="text-muted-foreground text-sm">{description}</p>
-          ) : null}
-        </div>
-      </>
-    )}
-  </div>
-);
+/**
+ * Displays a centered placeholder when no conversation messages are present.
+ *
+ * @param props - Empty state content and container props.
+ * @returns A conversation empty-state panel.
+ */
+export const ConversationEmptyState = (props: ConversationEmptyStateProps) => {
+  const {
+    className,
+    title = "No messages yet",
+    description = "Start a conversation to see messages here",
+    icon,
+    children,
+    ...rest
+  } = props;
+
+  return (
+    <div
+      className={cn(
+        "flex size-full flex-col items-center justify-center gap-3 p-8 text-center",
+        className,
+      )}
+      {...rest}
+    >
+      {children ?? (
+        <>
+          {icon ? <div className="text-muted-foreground">{icon}</div> : null}
+          <div className="space-y-1">
+            <h3 className="font-medium text-sm">{title}</h3>
+            {description ? (
+              <p className="text-muted-foreground text-sm">{description}</p>
+            ) : null}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 export type ConversationScrollButtonProps = ComponentProps<typeof Button>;
 
