@@ -28,6 +28,8 @@ export const config = {
     // - static assets / internals
     // - auth UI routes
     // - the Neon Auth API proxy
-    "/((?!_next|_vercel|favicon.ico|auth|api/auth).*)",
+    // - QStash jobs (signature-verified webhooks)
+    // - Workflow DevKit internal endpoints
+    "/((?!_next|_vercel|favicon.ico|auth|api/auth|api/jobs|.well-known/workflow/).*)",
   ],
 };
