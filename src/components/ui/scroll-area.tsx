@@ -1,15 +1,15 @@
 "use client";
 
-import { ScrollArea as ScrollAreaPrimitive } from "radix-ui";
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
 /**
- * Renders the ScrollArea component.
+ * Renders a scroll container with a styled viewport and custom scrollbar.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Root props forwarded to Radix ScrollArea, including children and class names.
+ * @returns A scroll area root with viewport, scrollbar, and corner primitives.
  */
 function ScrollArea(
   props: React.ComponentProps<typeof ScrollAreaPrimitive.Root>,
@@ -24,7 +24,7 @@ function ScrollArea(
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
+        className="focus-visible:ring-ring/50 size-full rounded-[inherit] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
@@ -35,10 +35,10 @@ function ScrollArea(
 }
 
 /**
- * Renders the ScrollBar component.
+ * Renders the scrollbar track and thumb for a given orientation.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Scrollbar props including orientation and class overrides.
+ * @returns A Radix scrollbar element with an orientation-aware layout.
  */
 function ScrollBar(
   props: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
@@ -50,7 +50,7 @@ function ScrollBar(
       data-slot="scroll-area-scrollbar"
       orientation={orientation}
       className={cn(
-        "flex touch-none p-px transition-colors select-none",
+        "flex touch-none select-none p-px",
         orientation === "vertical" &&
           "h-full w-2.5 border-l border-l-transparent",
         orientation === "horizontal" &&

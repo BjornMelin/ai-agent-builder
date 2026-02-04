@@ -143,12 +143,17 @@ const getHighlighter = (
     return cached;
   }
 
-  const highlighterPromise = import("shiki").then(({ createHighlighter }) =>
-    createHighlighter({
-      langs: [language],
-      themes: ["github-light", "github-dark"],
-    }),
-  );
+  const highlighterPromise = import("shiki")
+    .then(({ createHighlighter }) =>
+      createHighlighter({
+        langs: [language],
+        themes: ["github-light", "github-dark"],
+      }),
+    )
+    .catch((error: unknown) => {
+      highlighterCache.delete(language);
+      throw error;
+    });
 
   highlighterCache.set(language, highlighterPromise);
   return highlighterPromise;
@@ -171,12 +176,16 @@ const createRawTokens = (code: string): TokenizedCode => ({
 });
 
 /**
- * Returns cached tokens when available and triggers async highlighting.
+ * Highlights code with cached Shiki highlighters and asynchronous token delivery.
  *
- * @param code - The code string to tokenize.
- * @param language - The language identifier for highlighting.
- * @param callback - Optional callback for async token results.
- * @returns Cached tokens when available, otherwise null while highlighting.
+ * @remarks
+ * When tokens are already cached for the same code/language pair, this returns them synchronously.
+ * On cache miss it returns `null`, starts tokenization in the background, and invokes subscribers on completion.
+ *
+ * @param code - Source code to highlight.
+ * @param language - Language used for tokenization.
+ * @param callback - Optional listener invoked when async tokenization completes.
+ * @returns Cached tokens when available; otherwise `null` while highlighting is in flight.
  */
 export function highlightCode(
   code: string,

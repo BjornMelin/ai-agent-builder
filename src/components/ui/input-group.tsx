@@ -8,10 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 /**
- * Renders the InputGroup component.
+ * Groups input controls, text, and actions into a single styled field container.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Fieldset props applied to the group wrapper, including state and accessibility attributes.
+ * @returns A fieldset that coordinates focus and invalid styling across child controls.
  */
 function InputGroup(props: React.ComponentProps<"fieldset">) {
   const { className, ...rest } = props;
@@ -21,7 +21,7 @@ function InputGroup(props: React.ComponentProps<"fieldset">) {
       data-slot="input-group"
       className={cn(
         "m-0 min-w-0 border-0 p-0",
-        "group/input-group border-input dark:bg-input/30 relative flex w-full items-center rounded-md border shadow-xs transition-[color,box-shadow] outline-none",
+        "group/input-group border-input dark:bg-input/30 relative flex w-full items-center rounded-md border shadow-xs outline-none",
         "h-9 min-w-0 has-[>textarea]:h-auto",
 
         // Variants based on alignment.
@@ -65,10 +65,10 @@ const inputGroupAddonVariants = cva(
 );
 
 /**
- * Renders the InputGroupAddon component.
+ * Renders decorative or helper content adjacent to input controls.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Div props plus alignment variants controlling addon placement.
+ * @returns An addon container aligned to the selected edge of the input group.
  */
 function InputGroupAddon(
   props: React.ComponentProps<"div"> &
@@ -105,10 +105,10 @@ const inputGroupButtonVariants = cva(
 );
 
 /**
- * Renders the InputGroupButton component.
+ * Renders a button variant tuned for placement inside an input group.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Button props with optional compact size variant overrides.
+ * @returns A styled button intended for inline use within input groups.
  */
 function InputGroupButton(
   props: Omit<React.ComponentProps<typeof Button>, "size"> &
@@ -134,10 +134,10 @@ function InputGroupButton(
 }
 
 /**
- * Renders the InputGroupText component.
+ * Renders inline text content within an input group addon area.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Span props used for labels, hints, or keyboard shortcut text.
+ * @returns A text span with icon-friendly inline layout styles.
  */
 function InputGroupText(props: React.ComponentProps<"span">) {
   const { className, ...rest } = props;
@@ -154,10 +154,10 @@ function InputGroupText(props: React.ComponentProps<"span">) {
 }
 
 /**
- * Renders the InputGroupInput component.
+ * Renders an input control styled for seamless embedding in an input group.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Input props forwarded to the underlying Input primitive.
+ * @returns An input element with borderless group-integrated styling.
  */
 function InputGroupInput(props: React.ComponentProps<"input">) {
   const { className, ...rest } = props;
@@ -175,10 +175,10 @@ function InputGroupInput(props: React.ComponentProps<"input">) {
 }
 
 /**
- * Renders the InputGroupTextarea component.
+ * Renders a textarea control styled for multi-line input groups.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Textarea props forwarded to the underlying Textarea primitive.
+ * @returns A textarea element with group-integrated spacing and focus styles.
  */
 function InputGroupTextarea(props: React.ComponentProps<"textarea">) {
   const { className, ...rest } = props;

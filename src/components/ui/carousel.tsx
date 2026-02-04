@@ -8,6 +8,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** Embla API instance exposed to consumers for advanced carousel control. */
 type CarouselApi = UseEmblaCarouselType[1];
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;
 type CarouselOptions = UseCarouselParameters[0];
@@ -47,10 +48,10 @@ function useCarousel() {
 }
 
 /**
- * Renders the Carousel component.
+ * Creates an Embla-backed carousel section with keyboard navigation and shared context.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Section props plus carousel options, plugins, orientation, and optional API callback.
+ * @returns The carousel provider and root section used by carousel subcomponents.
  */
 function Carousel(props: React.ComponentProps<"section"> & CarouselProps) {
   const {
@@ -82,6 +83,17 @@ function Carousel(props: React.ComponentProps<"section"> & CarouselProps) {
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (orientation === "vertical") {
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        scrollPrev();
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        scrollNext();
+      }
+      return;
+    }
+
     if (event.key === "ArrowLeft") {
       event.preventDefault();
       scrollPrev();
@@ -141,10 +153,10 @@ function Carousel(props: React.ComponentProps<"section"> & CarouselProps) {
 }
 
 /**
- * Renders the CarouselContent component.
+ * Renders the scrollable track container that Embla uses as the slide viewport.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Div props forwarded to the inner track element.
+ * @returns A viewport wrapper with an orientation-aware track.
  */
 function CarouselContent(props: React.ComponentProps<"div">) {
   const { className, ...rest } = props;
@@ -170,22 +182,20 @@ function CarouselContent(props: React.ComponentProps<"div">) {
 }
 
 /**
- * Renders the CarouselItem component.
+ * Renders a single slide item within the carousel track.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Div props forwarded to the slide container.
+ * @returns A flex-basis slide container with orientation-aware spacing.
  */
-function CarouselItem(props: React.ComponentProps<"fieldset">) {
+function CarouselItem(props: React.ComponentProps<"div">) {
   const { className, ...rest } = props;
 
   const { orientation } = useCarousel();
 
   return (
-    <fieldset
-      aria-roledescription="slide"
+    <div
       data-slot="carousel-item"
       className={cn(
-        "m-0 min-w-0 border-0 p-0",
         "min-w-0 shrink-0 grow-0 basis-full",
         orientation === "horizontal" ? "pl-4" : "pt-4",
         className,
@@ -196,10 +206,10 @@ function CarouselItem(props: React.ComponentProps<"fieldset">) {
 }
 
 /**
- * Renders the CarouselPrevious component.
+ * Renders the previous-slide control button.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Button props for the previous control.
+ * @returns A positioned control button bound to carousel previous navigation.
  */
 function CarouselPrevious(props: React.ComponentProps<typeof Button>) {
   const { className, variant = "outline", size = "icon", ...rest } = props;
@@ -229,10 +239,10 @@ function CarouselPrevious(props: React.ComponentProps<typeof Button>) {
 }
 
 /**
- * Renders the CarouselNext component.
+ * Renders the next-slide control button.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Button props for the next control.
+ * @returns A positioned control button bound to carousel next navigation.
  */
 function CarouselNext(props: React.ComponentProps<typeof Button>) {
   const { className, variant = "outline", size = "icon", ...rest } = props;

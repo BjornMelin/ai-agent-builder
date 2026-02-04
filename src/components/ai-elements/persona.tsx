@@ -127,6 +127,30 @@ const useTheme = (enabled: boolean) => {
   return theme;
 };
 
+const usePrefersReducedMotion = () => {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => {
+      setPrefersReducedMotion(mediaQuery.matches);
+    };
+
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updatePreference);
+    };
+  }, []);
+
+  return prefersReducedMotion;
+};
+
 interface PersonaWithModelProps {
   rive: ReturnType<typeof useRive>["rive"];
   source: (typeof sources)[keyof typeof sources];
@@ -249,8 +273,10 @@ export const Persona: FC<PersonaProps> = memo((props) => {
     >,
   }));
 
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   const { rive, RiveComponent } = useRive({
-    autoplay: true,
+    autoplay: !prefersReducedMotion,
     onLoad: stableCallbacks.onLoad,
     onLoadError: stableCallbacks.onLoadError,
     onPause: stableCallbacks.onPause,
@@ -260,6 +286,19 @@ export const Persona: FC<PersonaProps> = memo((props) => {
     src: source.source,
     stateMachines: stateMachine,
   });
+
+  useEffect(() => {
+    if (!rive) {
+      return;
+    }
+
+    if (prefersReducedMotion) {
+      rive.pause();
+      return;
+    }
+
+    rive.play();
+  }, [rive, prefersReducedMotion]);
 
   const listeningInput = useStateMachineInput(rive, stateMachine, "listening");
   const thinkingInput = useStateMachineInput(rive, stateMachine, "thinking");
