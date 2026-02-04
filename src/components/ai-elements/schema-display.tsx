@@ -15,9 +15,11 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+/** Supported HTTP method values shown in schema headers. */
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-interface SchemaParameter {
+/** A parameter entry displayed in the schema parameter list. */
+export interface SchemaParameter {
   name: string;
   type: string;
   presence?: "required" | "optional";
@@ -25,7 +27,8 @@ interface SchemaParameter {
   location?: "path" | "query" | "header";
 }
 
-interface SchemaProperty {
+/** A property entry displayed in request/response schema trees. */
+export interface SchemaProperty {
   name: string;
   type: string;
   presence?: "required" | "optional";
@@ -34,7 +37,8 @@ interface SchemaProperty {
   items?: SchemaProperty;
 }
 
-interface SchemaDisplayContextType {
+/** Context value shared by schema display child components. */
+export interface SchemaDisplayContextType {
   method: HttpMethod;
   path: string;
   description?: string;
@@ -48,6 +52,7 @@ const SchemaDisplayContext = createContext<SchemaDisplayContextType>({
   path: "",
 });
 
+/** Props for the `SchemaDisplay` component. */
 export type SchemaDisplayProps = HTMLAttributes<HTMLDivElement> & {
   method: HttpMethod;
   path: string;
@@ -120,6 +125,7 @@ export const SchemaDisplay = (props: SchemaDisplayProps) => {
   );
 };
 
+/** Props for the `SchemaDisplayHeader` component. */
 export type SchemaDisplayHeaderProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -149,6 +155,7 @@ const methodStyles: Record<HttpMethod, string> = {
   PUT: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
 };
 
+/** Props for the `SchemaDisplayMethod` component. */
 export type SchemaDisplayMethodProps = ComponentProps<typeof Badge>;
 
 /**
@@ -172,6 +179,7 @@ export const SchemaDisplayMethod = (props: SchemaDisplayMethodProps) => {
   );
 };
 
+/** Props for the `SchemaDisplayPath` component. */
 export type SchemaDisplayPathProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
@@ -223,6 +231,7 @@ export const SchemaDisplayPath = (props: SchemaDisplayPathProps) => {
   );
 };
 
+/** Props for the `SchemaDisplayDescription` component. */
 export type SchemaDisplayDescriptionProps =
   HTMLAttributes<HTMLParagraphElement>;
 
@@ -251,6 +260,7 @@ export const SchemaDisplayDescription = (
   );
 };
 
+/** Props for the `SchemaDisplayContent` component. */
 export type SchemaDisplayContentProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -268,6 +278,7 @@ export const SchemaDisplayContent = (props: SchemaDisplayContentProps) => {
   );
 };
 
+/** Props for the `SchemaDisplayParameters` component. */
 export type SchemaDisplayParametersProps = ComponentProps<typeof Collapsible>;
 
 /**
@@ -303,6 +314,7 @@ export const SchemaDisplayParameters = (
   );
 };
 
+/** Props for the `SchemaDisplayParameter` component. */
 export type SchemaDisplayParameterProps = HTMLAttributes<HTMLDivElement> &
   SchemaParameter;
 
@@ -343,6 +355,7 @@ export const SchemaDisplayParameter = (props: SchemaDisplayParameterProps) => {
   );
 };
 
+/** Props for the `SchemaDisplayRequest` component. */
 export type SchemaDisplayRequestProps = ComponentProps<typeof Collapsible>;
 
 /**
@@ -364,8 +377,13 @@ export const SchemaDisplayRequest = (props: SchemaDisplayRequestProps) => {
       <CollapsibleContent>
         <div className="border-t">
           {children ??
-            requestBody?.map((prop) => (
-              <SchemaDisplayProperty key={prop.name} {...prop} depth={0} />
+            requestBody?.map((prop, index) => (
+              <SchemaDisplayProperty
+                key={`request.${prop.name}:${index}`}
+                {...prop}
+                depth={0}
+                pathPrefix="request"
+              />
             ))}
         </div>
       </CollapsibleContent>
@@ -373,6 +391,7 @@ export const SchemaDisplayRequest = (props: SchemaDisplayRequestProps) => {
   );
 };
 
+/** Props for the `SchemaDisplayResponse` component. */
 export type SchemaDisplayResponseProps = ComponentProps<typeof Collapsible>;
 
 /**
@@ -394,8 +413,13 @@ export const SchemaDisplayResponse = (props: SchemaDisplayResponseProps) => {
       <CollapsibleContent>
         <div className="border-t">
           {children ??
-            responseBody?.map((prop) => (
-              <SchemaDisplayProperty key={prop.name} {...prop} depth={0} />
+            responseBody?.map((prop, index) => (
+              <SchemaDisplayProperty
+                key={`response.${prop.name}:${index}`}
+                {...prop}
+                depth={0}
+                pathPrefix="response"
+              />
             ))}
         </div>
       </CollapsibleContent>
@@ -403,6 +427,7 @@ export const SchemaDisplayResponse = (props: SchemaDisplayResponseProps) => {
   );
 };
 
+/** Props for the `SchemaDisplayBody` component. */
 export type SchemaDisplayBodyProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -420,10 +445,14 @@ export const SchemaDisplayBody = (props: SchemaDisplayBodyProps) => {
   );
 };
 
+/** Props for the `SchemaDisplayProperty` component. */
 export type SchemaDisplayPropertyProps = HTMLAttributes<HTMLDivElement> &
   SchemaProperty & {
     depth?: number;
+    pathPrefix?: string;
   };
+
+const MAX_SCHEMA_DEPTH = 8;
 
 /**
  * Renders a schema property, including nested object/array children.
@@ -440,11 +469,34 @@ export const SchemaDisplayProperty = (props: SchemaDisplayPropertyProps) => {
     properties,
     items,
     depth = 0,
+    pathPrefix = "",
     className,
     ...rest
   } = props;
   const hasChildren = properties || items;
   const paddingLeft = 40 + depth * 16;
+  const nodePath = pathPrefix ? `${pathPrefix}.${name}` : name;
+
+  if (depth >= MAX_SCHEMA_DEPTH) {
+    return (
+      <div
+        className={cn("py-3 pr-4", className)}
+        style={{ paddingLeft }}
+        {...rest}
+      >
+        <div className="flex items-center gap-2">
+          <span className="size-4" />
+          <span className="font-mono text-sm">{name}</span>
+          <Badge className="text-xs" variant="outline">
+            {type}
+          </Badge>
+          <Badge className="text-xs" variant="secondary">
+            depth limit reached
+          </Badge>
+        </div>
+      </div>
+    );
+  }
 
   if (hasChildren) {
     return (
@@ -480,11 +532,12 @@ export const SchemaDisplayProperty = (props: SchemaDisplayPropertyProps) => {
         ) : null}
         <CollapsibleContent>
           <div className="divide-y border-t">
-            {properties?.map((prop) => (
+            {properties?.map((prop, index) => (
               <SchemaDisplayProperty
-                key={prop.name}
+                key={`${nodePath}.${prop.name}:${index}`}
                 {...prop}
                 depth={depth + 1}
+                pathPrefix={nodePath}
               />
             ))}
             {items ? (
@@ -492,6 +545,7 @@ export const SchemaDisplayProperty = (props: SchemaDisplayPropertyProps) => {
                 {...items}
                 depth={depth + 1}
                 name={`${name}[]`}
+                pathPrefix={nodePath}
               />
             ) : null}
           </div>
@@ -528,6 +582,7 @@ export const SchemaDisplayProperty = (props: SchemaDisplayPropertyProps) => {
   );
 };
 
+/** Props for the `SchemaDisplayExample` component. */
 export type SchemaDisplayExampleProps = HTMLAttributes<HTMLPreElement>;
 
 /**

@@ -30,6 +30,7 @@ const getSourceLabel = (source: string) => {
   }
 };
 
+/** Props for the `InlineCitation` component. */
 export type InlineCitationProps = ComponentProps<"span">;
 
 /**
@@ -48,6 +49,7 @@ export const InlineCitation = (props: InlineCitationProps) => {
   );
 };
 
+/** Props for the `InlineCitationText` component. */
 export type InlineCitationTextProps = ComponentProps<"span">;
 
 /**
@@ -66,6 +68,7 @@ export const InlineCitationText = (props: InlineCitationTextProps) => {
   );
 };
 
+/** Props for the `InlineCitationCard` component. */
 export type InlineCitationCardProps = ComponentProps<typeof HoverCard>;
 
 /**
@@ -75,9 +78,10 @@ export type InlineCitationCardProps = ComponentProps<typeof HoverCard>;
  * @returns The citation hover card.
  */
 export const InlineCitationCard = (props: InlineCitationCardProps) => (
-  <HoverCard closeDelay={0} openDelay={0} {...props} />
+  <HoverCard closeDelay={0} openDelay={200} {...props} />
 );
 
+/** Props for the `InlineCitationCardTrigger` component. */
 export type InlineCitationCardTriggerProps = ComponentProps<typeof Badge> & {
   sources: string[];
 };
@@ -112,6 +116,7 @@ export const InlineCitationCardTrigger = (
   );
 };
 
+/** Props for the `InlineCitationCardBody` component. */
 export type InlineCitationCardBodyProps = ComponentProps<"div">;
 
 /**
@@ -137,6 +142,7 @@ const useCarouselApi = () => {
   return context;
 };
 
+/** Props for the `InlineCitationCarousel` component. */
 export type InlineCitationCarouselProps = ComponentProps<typeof Carousel>;
 
 /**
@@ -158,6 +164,7 @@ export const InlineCitationCarousel = (props: InlineCitationCarouselProps) => {
   );
 };
 
+/** Props for the `InlineCitationCarouselContent` component. */
 export type InlineCitationCarouselContentProps = ComponentProps<
   typeof CarouselContent
 >;
@@ -172,6 +179,7 @@ export const InlineCitationCarouselContent = (
   props: InlineCitationCarouselContentProps,
 ) => <CarouselContent {...props} />;
 
+/** Props for the `InlineCitationCarouselItem` component. */
 export type InlineCitationCarouselItemProps = ComponentProps<
   typeof CarouselItem
 >;
@@ -194,6 +202,7 @@ export const InlineCitationCarouselItem = (
   );
 };
 
+/** Props for the `InlineCitationCarouselHeader` component. */
 export type InlineCitationCarouselHeaderProps = ComponentProps<"div">;
 
 /**
@@ -217,6 +226,7 @@ export const InlineCitationCarouselHeader = (
   );
 };
 
+/** Props for the `InlineCitationCarouselIndex` component. */
 export type InlineCitationCarouselIndexProps = ComponentProps<"div">;
 
 /**
@@ -230,7 +240,7 @@ export const InlineCitationCarouselIndex = (
 ) => {
   const { children, className, ...rest } = props;
   const api = useCarouselApi();
-  const { current, count } = useSyncExternalStore(
+  const snapshot = useSyncExternalStore(
     (onStoreChange) => {
       if (!api) {
         return () => {};
@@ -242,11 +252,11 @@ export const InlineCitationCarouselIndex = (
         api.off("reInit", onStoreChange);
       };
     },
-    () => ({
-      count: api?.scrollSnapList().length ?? 0,
-      current: (api?.selectedScrollSnap() ?? -1) + 1,
-    }),
+    () =>
+      `${(api?.selectedScrollSnap() ?? -1) + 1}:${api?.scrollSnapList().length ?? 0}`,
+    () => "0:0",
   );
+  const [current, count] = snapshot.split(":");
 
   return (
     <div
@@ -261,6 +271,7 @@ export const InlineCitationCarouselIndex = (
   );
 };
 
+/** Props for the `InlineCitationCarouselPrev` component. */
 export type InlineCitationCarouselPrevProps = ComponentProps<"button">;
 
 /**
@@ -282,7 +293,10 @@ export const InlineCitationCarouselPrev = (
   return (
     <button
       aria-label="Previous"
-      className={cn("shrink-0", className)}
+      className={cn(
+        "inline-flex size-6 shrink-0 items-center justify-center",
+        className,
+      )}
       onClick={handleClick}
       type="button"
       {...rest}
@@ -292,6 +306,7 @@ export const InlineCitationCarouselPrev = (
   );
 };
 
+/** Props for the `InlineCitationCarouselNext` component. */
 export type InlineCitationCarouselNextProps = ComponentProps<"button">;
 
 /**
@@ -313,7 +328,10 @@ export const InlineCitationCarouselNext = (
   return (
     <button
       aria-label="Next"
-      className={cn("shrink-0", className)}
+      className={cn(
+        "inline-flex size-6 shrink-0 items-center justify-center",
+        className,
+      )}
       onClick={handleClick}
       type="button"
       {...rest}
@@ -323,6 +341,7 @@ export const InlineCitationCarouselNext = (
   );
 };
 
+/** Props for the `InlineCitationSource` component. */
 export type InlineCitationSourceProps = ComponentProps<"div"> & {
   title?: string;
   url?: string;
@@ -357,6 +376,7 @@ export const InlineCitationSource = (props: InlineCitationSourceProps) => {
   );
 };
 
+/** Props for the `InlineCitationQuote` component. */
 export type InlineCitationQuoteProps = ComponentProps<"blockquote">;
 
 /**
