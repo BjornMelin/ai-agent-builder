@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
+/** Props for the horizontally scrollable suggestions container. */
 export type SuggestionsProps = ComponentProps<typeof ScrollArea>;
 
 /**
@@ -28,6 +29,7 @@ export const Suggestions = (props: SuggestionsProps) => {
   );
 };
 
+/** Props for a single clickable suggestion chip. */
 export type SuggestionProps = Omit<ComponentProps<typeof Button>, "onClick"> & {
   suggestion: string;
   onClick?: (suggestion: string) => void;

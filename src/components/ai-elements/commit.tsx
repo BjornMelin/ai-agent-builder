@@ -64,14 +64,15 @@ export const CommitHeader = (props: CommitHeaderProps) => {
   const { className, children, ...rest } = props;
   return (
     <CollapsibleTrigger asChild {...rest}>
-      <div
+      <button
         className={cn(
           "group flex cursor-pointer items-center justify-between gap-4 p-3 text-left transition-colors hover:opacity-80",
           className,
         )}
+        type="button"
       >
         {children}
-      </div>
+      </button>
     </CollapsibleTrigger>
   );
 };
@@ -253,7 +254,7 @@ export const CommitTimestamp = (props: CommitTimestampProps) => {
         : absSeconds < 60 * 60 * 24
           ? [Math.round(diffSeconds / (60 * 60)), "hour"]
           : [Math.round(diffSeconds / (60 * 60 * 24)), "day"];
-  const formatted = new Intl.RelativeTimeFormat("en", {
+  const formatted = new Intl.RelativeTimeFormat(undefined, {
     numeric: "auto",
   }).format(value, unit as Intl.RelativeTimeFormatUnit);
 

@@ -250,15 +250,17 @@ export type MicSelectorItemProps = ComponentProps<typeof CommandItem>;
  * @returns A microphone option item.
  */
 export const MicSelectorItem = (props: MicSelectorItemProps) => {
+  const { onSelect, ...rest } = props;
   const { onValueChange, onOpenChange } = useContext(MicSelectorContext);
 
   return (
     <CommandItem
+      {...rest}
       onSelect={(currentValue) => {
+        onSelect?.(currentValue);
         onValueChange?.(currentValue);
         onOpenChange?.(false);
       }}
-      {...props}
     />
   );
 };
