@@ -1,0 +1,113 @@
+"use client";
+
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+type SearchResult =
+  | Readonly<{
+      type: "project";
+      id: string;
+      title: string;
+      href: string;
+    }>
+  | Readonly<{
+      type: "chunk";
+      id: string;
+      score: number;
+      title: string;
+      snippet: string;
+      href: string;
+    }>;
+
+type SearchResponse = Readonly<{ results: readonly SearchResult[] }>;
+
+/**
+ * Search client (project-scoped).
+ *
+ * @param props - Component props.
+ * @returns The search UI for the project.
+ */
+export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [results, setResults] = useState<readonly SearchResult[]>([]);
+
+  async function runSearch() {
+    const query = q.trim();
+    if (query.length === 0) return;
+
+    setStatus("loading");
+    setError(null);
+
+    const url = new URL("/api/search", window.location.origin);
+    url.searchParams.set("q", query);
+    url.searchParams.set("projectId", props.projectId);
+
+    const res = await fetch(url.toString(), { method: "GET" });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null);
+      setError(payload?.error?.message ?? "Search failed.");
+      setStatus("error");
+      return;
+    }
+
+    const payload = (await res.json()) as SearchResponse;
+    setResults(payload.results);
+    setStatus("idle");
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <Input
+          onChange={(e) => setQ(e.currentTarget.value)}
+          placeholder="Search this project…"
+          value={q}
+        />
+        <Button disabled={status === "loading"} onClick={() => runSearch()}>
+          {status === "loading" ? "Searching…" : "Search"}
+        </Button>
+      </div>
+
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+
+      {results.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          {q.trim().length === 0
+            ? "Enter a query to search."
+            : "No results yet."}
+        </p>
+      ) : (
+        <ul
+          className="grid gap-2"
+          style={{
+            containIntrinsicSize: "auto 200px",
+            contentVisibility: "auto",
+          }}
+        >
+          {results.map((r) => (
+            <li
+              className="flex flex-col gap-1 rounded-md border bg-card px-3 py-2"
+              key={`${r.type}-${r.id}`}
+            >
+              <a
+                className="font-medium underline-offset-4 hover:underline"
+                href={r.href}
+              >
+                {r.title}
+              </a>
+              {r.type === "chunk" ? (
+                <p className="text-muted-foreground text-sm">
+                  {r.snippet || "(no snippet)"}
+                </p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
