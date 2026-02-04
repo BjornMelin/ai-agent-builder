@@ -3,6 +3,17 @@ import type { NextConfig } from "next";
 import { withWorkflow } from "workflow/next";
 
 const nextConfig: NextConfig = {
+  images: {
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    dangerouslyAllowSVG: true,
+    remotePatterns: [
+      {
+        hostname: "models.dev",
+        pathname: "/logos/**",
+        protocol: "https",
+      },
+    ],
+  },
   /* config options here */
   reactCompiler: true,
   turbopack: {
