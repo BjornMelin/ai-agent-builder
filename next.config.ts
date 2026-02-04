@@ -2,6 +2,7 @@ import path from "node:path";
 import type { NextConfig } from "next";
 import { withWorkflow } from "workflow/next";
 
+/** Base Next.js configuration for app runtime, images, and build behavior. */
 const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
@@ -18,13 +19,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  /* config options here */
   reactCompiler: true,
   turbopack: {
     root: path.resolve(__dirname),
   },
 };
 
+/** Next.js config enhanced with Workflow route/build integration. */
 export default withWorkflow(nextConfig, {
   workflows: {
     // Reduce build memory/time by scanning only our workflow definitions.

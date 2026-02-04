@@ -50,7 +50,7 @@ const VoiceSelectorContext = createContext<VoiceSelectorContextValue | null>(
  * Hook to access the voice selector context.
  *
  * @returns The voice selector context value.
- * @throws An error when used outside a `VoiceSelector`.
+ * @throws Error when used outside a `VoiceSelector`.
  */
 export const useVoiceSelector = () => {
   const context = useContext(VoiceSelectorContext);
@@ -150,7 +150,7 @@ export const VoiceSelectorContent = (props: VoiceSelectorContentProps) => {
   return (
     <DialogContent className={cn("p-0", className)} {...rest}>
       <DialogTitle className="sr-only">{title}</DialogTitle>
-      <Command className="**:data-[slot=command-input-wrapper]:h-auto">
+      <Command className="[&_[data-slot=command-input-wrapper]]:h-auto">
         {children}
       </Command>
     </DialogContent>
