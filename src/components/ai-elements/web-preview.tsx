@@ -7,7 +7,13 @@ import type {
   KeyboardEvent,
   ReactNode,
 } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -60,6 +66,8 @@ const useWebPreview = () => {
   }
   return context;
 };
+
+const subscribeNoop = () => () => {};
 
 /** Props for the `WebPreview` root container. */
 export type WebPreviewProps = ComponentProps<"div"> & {
@@ -271,11 +279,11 @@ export type WebPreviewConsoleProps = ComponentProps<"div"> & {
 export const WebPreviewConsole = (props: WebPreviewConsoleProps) => {
   const { className, logs = [], children, ...rest } = props;
   const { consoleOpen, setConsoleOpen } = useWebPreview();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false,
+  );
 
   return (
     <Collapsible

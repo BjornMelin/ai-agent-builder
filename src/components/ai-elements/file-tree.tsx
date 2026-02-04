@@ -13,6 +13,9 @@ import {
   createContext,
   type HTMLAttributes,
   isValidElement,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactElement,
   type ReactNode,
   useContext,
   useState,
@@ -319,23 +322,20 @@ export const FileTreeActions = (props: FileTreeActionsProps) => {
 
         const original = child.props as Record<string, unknown>;
 
-        return cloneElement(
-          child as React.ReactElement<Record<string, unknown>>,
-          {
-            onClick: (event: React.MouseEvent) => {
-              event.stopPropagation();
-              if (typeof original.onClick === "function") {
-                original.onClick(event);
-              }
-            },
-            onKeyDown: (event: React.KeyboardEvent) => {
-              event.stopPropagation();
-              if (typeof original.onKeyDown === "function") {
-                original.onKeyDown(event);
-              }
-            },
+        return cloneElement(child as ReactElement<Record<string, unknown>>, {
+          onClick: (event: MouseEvent) => {
+            event.stopPropagation();
+            if (typeof original.onClick === "function") {
+              original.onClick(event);
+            }
           },
-        );
+          onKeyDown: (event: KeyboardEvent) => {
+            event.stopPropagation();
+            if (typeof original.onKeyDown === "function") {
+              original.onKeyDown(event);
+            }
+          },
+        });
       })}
     </div>
   );
