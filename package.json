@@ -7,6 +7,7 @@
   },
   "scripts": {
     "build": "bun --bun next build",
+    "build:vercel": "bun run db:migrate && bun run build",
     "ci": "bun run lint && bun run typecheck && bun run test && bun run build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

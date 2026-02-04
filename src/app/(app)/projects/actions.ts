@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { requireAppUser } from "@/lib/auth/require-app-user";
+import { normalizeError } from "@/lib/core/errors";
 import { createProject } from "@/lib/data/projects.server";
 
 export type CreateProjectActionState =
@@ -42,8 +43,12 @@ export async function createProjectAction(
 ): Promise<CreateProjectActionState> {
   await requireAppUser();
 
-  const rawName = String(formData.get("name") ?? "");
-  const rawSlug = String(formData.get("slug") ?? "");
+  const isDemo = String(formData.get("demo") ?? "") === "true";
+
+  const rawName = isDemo ? "Demo project" : String(formData.get("name") ?? "");
+  const rawSlug = isDemo
+    ? `demo-${Date.now()}`
+    : String(formData.get("slug") ?? "");
 
   const name = rawName.trim();
   if (name.length === 0) {
@@ -71,9 +76,8 @@ export async function createProjectAction(
         continue;
       }
 
-      const message =
-        err instanceof Error ? err.message : "Failed to create project.";
-      return { message, status: "error" };
+      const normalized = normalizeError(err);
+      return { message: normalized.message, status: "error" };
     }
   }
 

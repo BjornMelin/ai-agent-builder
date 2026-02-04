@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CreateProjectForm } from "@/app/(app)/projects/create-project-form";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listProjects } from "@/lib/data/projects.server";
 
@@ -38,9 +39,19 @@ export default async function ProjectsPage() {
         </CardHeader>
         <CardContent>
           {projects.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No projects yet. Create one to get started.
-            </p>
+            <div className="flex flex-col gap-3">
+              <p className="text-muted-foreground text-sm">
+                No projects yet. Create one to get started.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild size="sm">
+                  <a href="#create-project-name">Create your first project</a>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <a href="#create-project-name">Create a demo project</a>
+                </Button>
+              </div>
+            </div>
           ) : (
             <ul
               className="grid gap-2"

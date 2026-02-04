@@ -1,7 +1,20 @@
+import { config as loadDotenv } from "dotenv";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { closeDb, getDb } from "@/db/client";
 import * as schema from "@/db/schema";
+
+// Next.js intentionally does not load `.env.local` in `NODE_ENV=test`.
+// Integration tests depend on local DB credentials, so we load it explicitly.
+loadDotenv({ override: false, path: ".env.local", quiet: true });
+
+if (
+  (!process.env.DATABASE_URL || process.env.DATABASE_URL.length === 0) &&
+  process.env.DATABASE_URL_UNPOOLED &&
+  process.env.DATABASE_URL_UNPOOLED.length > 0
+) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL_UNPOOLED;
+}
 
 const describeDb = process.env.DATABASE_URL ? describe : describe.skip;
 

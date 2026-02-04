@@ -5,10 +5,11 @@ import { cache } from "react";
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
+import { isUndefinedTableError } from "@/lib/db/postgres-errors";
 
 /**
  * JSON-safe project DTO.
- *
+ * 
  * Prefer returning DTOs (not Drizzle rows) from the DAL to avoid leaking
  * server-only fields and to keep values serializable across RSC boundaries.
  */
@@ -65,10 +66,23 @@ export async function createProject(
   }
 
   const db = getDb();
-  const [row] = await db
-    .insert(schema.projectsTable)
-    .values({ name, slug })
-    .returning();
+  let row: schema.Project | undefined;
+  try {
+    [row] = await db
+      .insert(schema.projectsTable)
+      .values({ name, slug })
+      .returning();
+  } catch (err) {
+    if (isUndefinedTableError(err)) {
+      throw new AppError(
+        "db_not_migrated",
+        500,
+        "Database is not migrated. Run migrations and try again.",
+        err,
+      );
+    }
+    throw err;
+  }
 
   if (!row) {
     throw new AppError("db_insert_failed", 500, "Failed to create project.");
@@ -120,12 +134,24 @@ export const getProjectBySlug = cache(
 const listProjectsCached = cache(
   async (limit: number, offset: number): Promise<ProjectDto[]> => {
     const db = getDb();
-    const rows = await db.query.projectsTable.findMany({
-      limit,
-      offset,
-      orderBy: (t, { desc }) => [desc(t.createdAt)],
-    });
-    return rows.map(toProjectDto);
+    try {
+      const rows = await db.query.projectsTable.findMany({
+        limit,
+        offset,
+        orderBy: (t, { desc }) => [desc(t.createdAt)],
+      });
+      return rows.map(toProjectDto);
+    } catch (err) {
+      if (isUndefinedTableError(err)) {
+        throw new AppError(
+          "db_not_migrated",
+          500,
+          "Database is not migrated. Run migrations and refresh the page.",
+          err,
+        );
+      }
+      throw err;
+    }
   },
 );
 

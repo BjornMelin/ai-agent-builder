@@ -5,7 +5,9 @@ import { defineConfig } from "drizzle-kit";
 // (Configs are allowed to read process.env directly; app runtime code should use `src/lib/env.ts`.)
 loadEnvConfig(process.cwd());
 
-const databaseUrl = process.env.DATABASE_URL;
+// Prefer unpooled connections for schema changes/migrations (safer DDL defaults).
+const databaseUrl =
+  process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
 
 const drizzleCommand = process.argv
   .slice(2)

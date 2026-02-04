@@ -1,6 +1,10 @@
 import path from "node:path";
+import { loadEnvConfig } from "@next/env";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { configDefaults, defineConfig } from "vitest/config";
+
+// Ensure `.env*` values are available in tests, matching Next.js behavior.
+loadEnvConfig(process.cwd());
 
 const testInclude = [
   "src/**/*.{test,spec}.{ts,tsx}",

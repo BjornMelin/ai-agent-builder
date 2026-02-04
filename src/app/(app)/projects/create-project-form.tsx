@@ -54,6 +54,15 @@ export function CreateProjectForm() {
         <Button disabled={isPending} type="submit">
           {isPending ? "Creating…" : "Create project"}
         </Button>
+        <Button
+          disabled={isPending}
+          name="demo"
+          type="submit"
+          value="true"
+          variant="secondary"
+        >
+          Create demo
+        </Button>
         <p className="text-muted-foreground text-sm">
           Projects scope uploads, retrieval, runs, and chat.
         </p>
