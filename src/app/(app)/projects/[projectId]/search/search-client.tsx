@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -30,10 +32,29 @@ type SearchResponse = Readonly<{ results: readonly SearchResult[] }>;
  * @returns The search UI for the project.
  */
 export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
-  const [q, setQ] = useState("");
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [q, setQ] = useState(() => searchParams.get("q") ?? "");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<readonly SearchResult[]>([]);
+
+  const syncQueryInUrl = (query: string) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (query.length > 0) {
+      nextParams.set("q", query);
+    } else {
+      nextParams.delete("q");
+    }
+    const nextQueryString = nextParams.toString();
+    router.replace(
+      nextQueryString ? `${pathname}?${nextQueryString}` : pathname,
+      {
+        scroll: false,
+      },
+    );
+  };
 
   async function runSearch() {
     const query = q.trim();
@@ -41,22 +62,28 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
 
     setStatus("loading");
     setError(null);
+    syncQueryInUrl(query);
 
-    const url = new URL("/api/search", window.location.origin);
-    url.searchParams.set("q", query);
-    url.searchParams.set("projectId", props.projectId);
+    try {
+      const url = new URL("/api/search", window.location.origin);
+      url.searchParams.set("q", query);
+      url.searchParams.set("projectId", props.projectId);
 
-    const res = await fetch(url.toString(), { method: "GET" });
-    if (!res.ok) {
-      const payload = await res.json().catch(() => null);
-      setError(payload?.error?.message ?? "Search failed.");
+      const res = await fetch(url.toString(), { method: "GET" });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        setError(payload?.error?.message ?? "Search failed.");
+        setStatus("error");
+        return;
+      }
+
+      const payload = (await res.json()) as SearchResponse;
+      setResults(payload.results);
+      setStatus("idle");
+    } catch {
+      setError("Network error. Please try again.");
       setStatus("error");
-      return;
     }
-
-    const payload = (await res.json()) as SearchResponse;
-    setResults(payload.results);
-    setStatus("idle");
   }
 
   return (
@@ -67,7 +94,10 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
           placeholder="Search this project…"
           value={q}
         />
-        <Button disabled={status === "loading"} onClick={() => runSearch()}>
+        <Button
+          disabled={status === "loading"}
+          onClick={() => void runSearch()}
+        >
           {status === "loading" ? "Searching…" : "Search"}
         </Button>
       </div>
@@ -93,12 +123,12 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
               className="flex flex-col gap-1 rounded-md border bg-card px-3 py-2"
               key={`${r.type}-${r.id}`}
             >
-              <a
+              <Link
                 className="font-medium underline-offset-4 hover:underline"
                 href={r.href}
               >
                 {r.title}
-              </a>
+              </Link>
               {r.type === "chunk" ? (
                 <p className="text-muted-foreground text-sm">
                   {r.snippet || "(no snippet)"}

@@ -5,7 +5,7 @@ import { withWorkflow } from "workflow/next";
 /** Base Next.js configuration for app runtime, images, and build behavior. */
 const nextConfig: NextConfig = {
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    optimizePackageImports: ["lucide-react", "radix-ui"],
   },
   images: {
     contentDispositionType: "attachment",

@@ -14,8 +14,15 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { CodeBlock } from "./code-block";
 
+/** Props for the Agent container. */
 export type AgentProps = ComponentProps<"div">;
 
+/**
+ * Renders the root container for an agent execution block.
+ *
+ * @param props - Div props for the agent shell container.
+ * @returns A bordered container that wraps agent sections.
+ */
 export const Agent = memo(({ className, ...props }: AgentProps) => (
   <div
     className={cn("not-prose w-full rounded-md border", className)}
@@ -23,11 +30,18 @@ export const Agent = memo(({ className, ...props }: AgentProps) => (
   />
 ));
 
+/** Props for the agent header row. */
 export type AgentHeaderProps = ComponentProps<"div"> & {
   name: string;
   model?: string;
 };
 
+/**
+ * Renders the header containing the agent name and optional model badge.
+ *
+ * @param props - Header props including agent name and model label.
+ * @returns A header row with icon and metadata.
+ */
 export const AgentHeader = memo(
   ({ className, name, model, ...props }: AgentHeaderProps) => (
     <div
@@ -50,18 +64,32 @@ export const AgentHeader = memo(
   ),
 );
 
+/** Props for the Agent content section. */
 export type AgentContentProps = ComponentProps<"div">;
 
+/**
+ * Renders the content region for agent details.
+ *
+ * @param props - Div props for the agent content wrapper.
+ * @returns A padded content container for agent subsections.
+ */
 export const AgentContent = memo(
   ({ className, ...props }: AgentContentProps) => (
     <div className={cn("space-y-4 p-4 pt-0", className)} {...props} />
   ),
 );
 
+/** Props for the agent instructions block. */
 export type AgentInstructionsProps = ComponentProps<"div"> & {
   children: string;
 };
 
+/**
+ * Renders the instruction text used for the agent run.
+ *
+ * @param props - Div props and instruction text content.
+ * @returns A labeled instruction panel.
+ */
 export const AgentInstructions = memo(
   ({ className, children, ...props }: AgentInstructionsProps) => (
     <div className={cn("space-y-2", className)} {...props}>
@@ -75,8 +103,15 @@ export const AgentInstructions = memo(
   ),
 );
 
+/** Props for the tools accordion section. */
 export type AgentToolsProps = ComponentProps<typeof Accordion>;
 
+/**
+ * Renders the tools section wrapper and accordion container.
+ *
+ * @param props - Accordion props forwarded to the tools list.
+ * @returns A tools section with heading and accordion root.
+ */
 export const AgentTools = memo(({ className, ...props }: AgentToolsProps) => (
   <div className={cn("space-y-2", className)}>
     <span className="font-medium text-muted-foreground text-sm">Tools</span>
@@ -84,17 +119,24 @@ export const AgentTools = memo(({ className, ...props }: AgentToolsProps) => (
   </div>
 ));
 
+/** Props for a single tool entry in the tools accordion. */
 export type AgentToolProps = ComponentProps<typeof AccordionItem> & {
   tool: Tool;
 };
 
+/**
+ * Renders one tool definition row with description and schema preview.
+ *
+ * @param props - Accordion item props plus the tool metadata.
+ * @returns A collapsible tool item with formatted schema output.
+ */
 export const AgentTool = memo(
   ({ className, tool, value, ...props }: AgentToolProps) => {
     const schema =
       "jsonSchema" in tool && tool.jsonSchema
         ? tool.jsonSchema
-        : tool.inputSchema;
-    const schemaText = schema ? JSON.stringify(schema, null, 2) : "No schema";
+        : (tool.inputSchema ?? {});
+    const schemaText = JSON.stringify(schema, null, 2);
 
     return (
       <AccordionItem
@@ -115,10 +157,17 @@ export const AgentTool = memo(
   },
 );
 
+/** Props for the output schema section. */
 export type AgentOutputProps = ComponentProps<"div"> & {
   schema: string;
 };
 
+/**
+ * Renders the declared output schema for the agent.
+ *
+ * @param props - Div props with a schema string rendered as TypeScript.
+ * @returns An output schema section with a syntax-highlighted code block.
+ */
 export const AgentOutput = memo(
   ({ className, schema, ...props }: AgentOutputProps) => (
     <div className={cn("space-y-2", className)} {...props}>

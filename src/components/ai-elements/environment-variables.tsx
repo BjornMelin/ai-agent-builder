@@ -6,6 +6,8 @@ import {
   createContext,
   type HTMLAttributes,
   useContext,
+  useEffect,
+  useRef,
   useState,
 } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -314,12 +316,23 @@ export const EnvironmentVariableCopyButton = (
     onError,
     timeout = 2000,
     copyFormat = "value",
+    "aria-label": ariaLabel,
     children,
     className,
     ...rest
   } = props;
   const [isCopied, setIsCopied] = useState(false);
+  const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { name, value } = useContext(EnvironmentVariableContext);
+
+  useEffect(
+    () => () => {
+      if (resetTimeoutRef.current !== null) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   const copyToClipboard = async () => {
     if (typeof window === "undefined" || !navigator?.clipboard?.writeText) {
@@ -338,16 +351,28 @@ export const EnvironmentVariableCopyButton = (
       await navigator.clipboard.writeText(textToCopy);
       setIsCopied(true);
       onCopy?.();
-      setTimeout(() => setIsCopied(false), timeout);
+      if (resetTimeoutRef.current !== null) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+      resetTimeoutRef.current = setTimeout(() => {
+        setIsCopied(false);
+      }, timeout);
     } catch (error) {
       onError?.(error as Error);
     }
   };
 
   const Icon = isCopied ? CheckIcon : CopyIcon;
+  const defaultAriaLabel =
+    copyFormat === "name"
+      ? "Copy environment variable name"
+      : copyFormat === "export"
+        ? "Copy environment variable export command"
+        : "Copy environment variable value";
 
   return (
     <Button
+      aria-label={ariaLabel ?? defaultAriaLabel}
       className={cn("size-6 shrink-0", className)}
       onClick={copyToClipboard}
       size="icon"

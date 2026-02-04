@@ -62,14 +62,16 @@ export const FileTree = (props: FileTreeProps) => {
   const expandedPaths = controlledExpanded ?? internalExpanded;
 
   const togglePath = (path: string) => {
-    const newExpanded = new Set(expandedPaths);
-    if (newExpanded.has(path)) {
-      newExpanded.delete(path);
-    } else {
-      newExpanded.add(path);
-    }
-    setInternalExpanded(newExpanded);
-    onExpandedChange?.(newExpanded);
+    setInternalExpanded((previousExpanded) => {
+      const nextExpanded = new Set(controlledExpanded ?? previousExpanded);
+      if (nextExpanded.has(path)) {
+        nextExpanded.delete(path);
+      } else {
+        nextExpanded.add(path);
+      }
+      onExpandedChange?.(nextExpanded);
+      return nextExpanded;
+    });
   };
 
   return (
@@ -130,8 +132,16 @@ export const FileTreeFolder = (props: FileTreeFolderProps) => {
     <FileTreeFolderContext.Provider value={{ isExpanded, name, path }}>
       <Collapsible onOpenChange={() => togglePath(path)} open={isExpanded}>
         <div
+          aria-expanded={isExpanded}
           aria-selected={isSelected}
           className={cn("", className)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              togglePath(path);
+              onSelect?.(path);
+            }
+          }}
           role="treeitem"
           tabIndex={0}
           {...rest}
