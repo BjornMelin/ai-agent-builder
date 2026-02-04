@@ -232,7 +232,7 @@ function CarouselPrevious(props: React.ComponentProps<typeof Button>) {
       onClick={scrollPrev}
       {...rest}
     >
-      <ArrowLeft />
+      <ArrowLeft aria-hidden="true" />
       <span className="sr-only">Previous slide</span>
     </Button>
   );
@@ -265,7 +265,7 @@ function CarouselNext(props: React.ComponentProps<typeof Button>) {
       onClick={scrollNext}
       {...rest}
     >
-      <ArrowRight />
+      <ArrowRight aria-hidden="true" />
       <span className="sr-only">Next slide</span>
     </Button>
   );
