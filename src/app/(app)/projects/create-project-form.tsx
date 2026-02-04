@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   createProjectAction,
   createProjectInitialState,
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
  * @returns The create project form UI.
  */
 export function CreateProjectForm() {
+  const [submittedAction, setSubmittedAction] = useState<string | null>(null);
   const [state, formAction, isPending] = useActionState(
     createProjectAction,
     createProjectInitialState,
@@ -25,6 +26,13 @@ export function CreateProjectForm() {
       action={formAction}
       aria-describedby={state.status === "error" ? errorId : undefined}
       className="flex flex-col gap-3"
+      onSubmit={(e) => {
+        const submitter = (e.nativeEvent as SubmitEvent)
+          .submitter as HTMLButtonElement | null;
+        setSubmittedAction(
+          submitter?.getAttribute("name") === "demo" ? "demo" : "create",
+        );
+      }}
     >
       <div className="grid gap-2 md:grid-cols-2">
         <div className="grid gap-1">
@@ -59,9 +67,13 @@ export function CreateProjectForm() {
       ) : null}
 
       <div className="flex items-center gap-3">
-        <Button aria-busy={isPending} disabled={isPending} type="submit">
+        <Button
+          aria-busy={isPending && submittedAction === "create"}
+          disabled={isPending}
+          type="submit"
+        >
           <span className="inline-flex items-center gap-2">
-            {isPending ? (
+            {isPending && submittedAction === "create" ? (
               <span
                 aria-hidden="true"
                 className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
@@ -71,13 +83,22 @@ export function CreateProjectForm() {
           </span>
         </Button>
         <Button
+          aria-busy={isPending && submittedAction === "demo"}
           disabled={isPending}
           name="demo"
           type="submit"
           value="true"
           variant="secondary"
         >
-          Create demo
+          <span className="inline-flex items-center gap-2">
+            {isPending && submittedAction === "demo" ? (
+              <span
+                aria-hidden="true"
+                className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+              />
+            ) : null}
+            <span>Create demo</span>
+          </span>
         </Button>
         <p className="text-muted-foreground text-sm">
           Projects scope uploads, retrieval, runs, and chat.

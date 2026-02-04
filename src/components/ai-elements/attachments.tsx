@@ -384,7 +384,7 @@ export const AttachmentRemove = (props: AttachmentRemoveProps) => {
           "[&>svg]:size-3",
         ],
         variant === "inline" && [
-          "size-5 rounded p-0",
+          "size-6 rounded p-0",
           "opacity-0 transition-opacity group-hover:opacity-100",
           "[&>svg]:size-2.5",
         ],

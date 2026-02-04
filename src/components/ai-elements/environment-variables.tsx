@@ -374,7 +374,7 @@ export const EnvironmentVariableCopyButton = (
     <Button
       aria-label={ariaLabel ?? defaultAriaLabel}
       className={cn("size-6 shrink-0", className)}
-      onClick={copyToClipboard}
+      onClick={() => void copyToClipboard()}
       size="icon"
       variant="ghost"
       {...rest}

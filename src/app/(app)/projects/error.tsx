@@ -26,10 +26,11 @@ export default function ProjectsError(
 
   const isDev = process.env.NODE_ENV !== "production";
   const message = error?.message ?? "Unexpected error.";
+  const lowerMessage = message.toLowerCase();
   const looksLikeMigrations =
-    message.toLowerCase().includes("not migrated") ||
-    message.toLowerCase().includes("relation") ||
-    message.toLowerCase().includes("undefined_table");
+    lowerMessage.includes("not migrated") ||
+    lowerMessage.includes("relation") ||
+    lowerMessage.includes("undefined_table");
 
   return (
     <div className="flex flex-col gap-6 pt-6">

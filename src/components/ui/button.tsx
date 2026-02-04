@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * Supports the `variant` keys `default`, `destructive`, `outline`, `secondary`, `ghost`, and `link`,
  * plus the `size` keys `default`, `sm`, `lg`, `xs`, `icon`, `icon-sm`, `icon-lg`, and `icon-xs`.
  */
-const buttonVariants = cva(
+export const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     defaultVariants: {
@@ -55,7 +55,7 @@ const buttonVariants = cva(
  * @param props - Button HTML props plus `variant`, `size`, and `asChild` for style and rendering behavior.
  * @returns A button-like element with consistent app button styling and data attributes.
  */
-function Button(
+export function Button(
   props: React.ComponentProps<"button"> &
     VariantProps<typeof buttonVariants> & {
       asChild?: boolean;
@@ -81,5 +81,3 @@ function Button(
     />
   );
 }
-
-export { Button, buttonVariants };

@@ -120,6 +120,7 @@ export const TranscriptionSegment = (props: TranscriptionSegmentProps) => {
         data-active={isActive}
         data-index={index}
         data-slot="transcription-segment"
+        {...rest}
       >
         {segment.text}
       </span>

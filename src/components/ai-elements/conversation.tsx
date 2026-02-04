@@ -120,7 +120,7 @@ export const ConversationScrollButton = (
         className,
       )}
       onClick={() => {
-        scrollToBottom();
+        void scrollToBottom();
       }}
       size="icon"
       type="button"

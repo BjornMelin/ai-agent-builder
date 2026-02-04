@@ -285,6 +285,21 @@ export const InlineCitationCarouselPrev = (
 ) => {
   const { className, ...rest } = props;
   const api = useCarouselApi();
+  const canScrollPrev = useSyncExternalStore(
+    (onStoreChange) => {
+      if (!api) {
+        return () => {};
+      }
+      api.on("select", onStoreChange);
+      api.on("reInit", onStoreChange);
+      return () => {
+        api.off("select", onStoreChange);
+        api.off("reInit", onStoreChange);
+      };
+    },
+    () => api?.canScrollPrev() ?? false,
+    () => false,
+  );
 
   const handleClick = () => {
     api?.scrollPrev();
@@ -292,11 +307,14 @@ export const InlineCitationCarouselPrev = (
 
   return (
     <button
+      aria-disabled={!canScrollPrev}
       aria-label="Previous"
       className={cn(
-        "inline-flex size-6 shrink-0 items-center justify-center",
+        "inline-flex size-6 shrink-0 items-center justify-center transition-opacity",
+        !canScrollPrev && "cursor-not-allowed opacity-50",
         className,
       )}
+      disabled={!canScrollPrev}
       onClick={handleClick}
       type="button"
       {...rest}
@@ -320,6 +338,21 @@ export const InlineCitationCarouselNext = (
 ) => {
   const { className, ...rest } = props;
   const api = useCarouselApi();
+  const canScrollNext = useSyncExternalStore(
+    (onStoreChange) => {
+      if (!api) {
+        return () => {};
+      }
+      api.on("select", onStoreChange);
+      api.on("reInit", onStoreChange);
+      return () => {
+        api.off("select", onStoreChange);
+        api.off("reInit", onStoreChange);
+      };
+    },
+    () => api?.canScrollNext() ?? false,
+    () => false,
+  );
 
   const handleClick = () => {
     api?.scrollNext();
@@ -327,11 +360,14 @@ export const InlineCitationCarouselNext = (
 
   return (
     <button
+      aria-disabled={!canScrollNext}
       aria-label="Next"
       className={cn(
-        "inline-flex size-6 shrink-0 items-center justify-center",
+        "inline-flex size-6 shrink-0 items-center justify-center transition-opacity",
+        !canScrollNext && "cursor-not-allowed opacity-50",
         className,
       )}
+      disabled={!canScrollNext}
       onClick={handleClick}
       type="button"
       {...rest}

@@ -9,7 +9,9 @@ import type { ComponentProps } from "react";
  * @param props - Props forwarded to Radix Collapsible.Root.
  * @returns A collapsible root element with shared open/closed state.
  */
-function Collapsible(props: ComponentProps<typeof CollapsiblePrimitive.Root>) {
+export function Collapsible(
+  props: ComponentProps<typeof CollapsiblePrimitive.Root>,
+) {
   return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />;
 }
 
@@ -19,7 +21,7 @@ function Collapsible(props: ComponentProps<typeof CollapsiblePrimitive.Root>) {
  * @param props - Props forwarded to Radix Collapsible.CollapsibleTrigger.
  * @returns A trigger element connected to the nearest collapsible root.
  */
-function CollapsibleTrigger(
+export function CollapsibleTrigger(
   props: ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>,
 ) {
   return (
@@ -36,7 +38,7 @@ function CollapsibleTrigger(
  * @param props - Props forwarded to Radix Collapsible.CollapsibleContent.
  * @returns A content element shown or hidden based on collapsible state.
  */
-function CollapsibleContent(
+export function CollapsibleContent(
   props: ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>,
 ) {
   return (
@@ -46,5 +48,3 @@ function CollapsibleContent(
     />
   );
 }
-
-export { Collapsible, CollapsibleTrigger, CollapsibleContent };

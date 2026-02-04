@@ -273,7 +273,7 @@ export const FileTreeName = (props: FileTreeNameProps) => {
 };
 
 /** Props for the FileTreeActions component. */
-export type FileTreeActionsProps = HTMLAttributes<HTMLFieldSetElement>;
+export type FileTreeActionsProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * Renders an actions container for a file tree item.
@@ -284,16 +284,13 @@ export type FileTreeActionsProps = HTMLAttributes<HTMLFieldSetElement>;
 export const FileTreeActions = (props: FileTreeActionsProps) => {
   const { className, children, ...rest } = props;
   return (
-    <fieldset
-      className={cn(
-        "m-0 ml-auto flex min-w-0 items-center gap-1 border-0 p-0",
-        className,
-      )}
+    <div
+      className={cn("ml-auto flex items-center gap-1", className)}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
       {...rest}
     >
       {children}
-    </fieldset>
+    </div>
   );
 };

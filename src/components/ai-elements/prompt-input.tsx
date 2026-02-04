@@ -345,7 +345,7 @@ export type PromptInputActionAddAttachmentsProps = ComponentProps<
 export const PromptInputActionAddAttachments = (
   props: PromptInputActionAddAttachmentsProps,
 ) => {
-  const { label = "Add photos or files", ...rest } = props;
+  const { label = "Add photos or files…", ...rest } = props;
   const attachments = usePromptInputAttachments();
 
   return (
@@ -854,7 +854,7 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
     onChange,
     onKeyDown,
     className,
-    placeholder = "What would you like to know?",
+    placeholder = "Ask about pricing, features, or setup… (e.g., “How do I set up X?”)",
     ...rest
   } = props;
   const controller = useOptionalPromptInputController();

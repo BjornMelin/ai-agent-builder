@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,9 @@ type SearchResponse = Readonly<{ results: readonly SearchResult[] }>;
  * Search client (project-scoped).
  *
  * @param props - Component props.
+ * @param props.projectId - Required project identifier used to scope
+ *   search requests/results; must be a non-empty route-segment string (for
+ *   example a UUID or slug).
  * @returns The search UI for the project.
  */
 export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
@@ -36,9 +39,17 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [q, setQ] = useState(() => searchParams.get("q") ?? "");
+
+  useEffect(() => {
+    const urlQ = searchParams.get("q") ?? "";
+    if (urlQ !== q) {
+      setQ(urlQ);
+    }
+  }, [searchParams]);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<readonly SearchResult[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
   const searchInputId = `project-search-${props.projectId}`;
   const searchStatusId = `project-search-status-${props.projectId}`;
   const searchErrorId = `project-search-error-${props.projectId}`;
@@ -63,6 +74,7 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
     const query = q.trim();
     if (query.length === 0) return;
 
+    setHasSearched(true);
     setStatus("loading");
     setError(null);
     syncQueryInUrl(query);
@@ -131,11 +143,15 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
       ) : null}
 
       {results.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          {q.trim().length === 0
-            ? "Enter a query to search."
-            : "No results yet."}
-        </p>
+        q.trim().length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            Enter a query to search.
+          </p>
+        ) : status === "loading" ? (
+          <p className="text-muted-foreground text-sm">Searching…</p>
+        ) : hasSearched ? (
+          <p className="text-muted-foreground text-sm">No results found.</p>
+        ) : null
       ) : (
         <ul
           className="grid gap-2"

@@ -6,10 +6,12 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Renders the Avatar component.
+ * Renders the primary avatar container with size-aware styling.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Root primitive props including an optional `size`
+ *   ("default" | "sm" | "lg") and `className`.
+ *   Props are forwarded to `AvatarPrimitive.Root`.
+ * @returns Returns an `AvatarPrimitive.Root` JSX element representing the avatar shell with `data-slot="avatar"` and corresponding data-size attributes.
  */
 export function Avatar(
   props: React.ComponentProps<typeof AvatarPrimitive.Root> & {
@@ -32,10 +34,12 @@ export function Avatar(
 }
 
 /**
- * Renders the AvatarImage component.
+ * Renders the avatar image source.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Image primitive props including `src`, `alt`, and `className`.
+ *   Props are forwarded to `AvatarPrimitive.Image`.
+ * @returns Returns an `AvatarPrimitive.Image` JSX element for
+ *   rendering the avatar source with `data-slot="avatar-image"`.
  */
 export function AvatarImage(
   props: React.ComponentProps<typeof AvatarPrimitive.Image>,
@@ -52,10 +56,12 @@ export function AvatarImage(
 }
 
 /**
- * Renders the AvatarFallback component.
+ * Renders a fallback container for the avatar when no image is available.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Fallback primitive props including `className` and children.
+ *   Props are forwarded to `AvatarPrimitive.Fallback`.
+ * @returns Returns an `AvatarPrimitive.Fallback` JSX element with
+ *   `data-slot="avatar-fallback"` and theme-aware styling.
  */
 export function AvatarFallback(
   props: React.ComponentProps<typeof AvatarPrimitive.Fallback>,
@@ -75,10 +81,12 @@ export function AvatarFallback(
 }
 
 /**
- * Renders the AvatarBadge component.
+ * Renders a decorative status badge or dot overlaid on the avatar.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Standard span props including `className` and children.
+ *   Props are forwarded to the underlying span element.
+ * @returns Returns a `span` JSX element representing a status badge with
+ *   `data-slot="avatar-badge"`.
  */
 export function AvatarBadge(props: React.ComponentProps<"span">) {
   const { className, ...rest } = props;
@@ -99,10 +107,12 @@ export function AvatarBadge(props: React.ComponentProps<"span">) {
 }
 
 /**
- * Renders the AvatarGroup component.
+ * Renders a horizontal stack of avatars.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Standard div props including `className` and children.
+ *   Props are forwarded to the underlying div element.
+ * @returns Returns a `div` JSX element representing a group container with
+ *   `data-slot="avatar-group"`.
  */
 export function AvatarGroup(props: React.ComponentProps<"div">) {
   const { className, ...rest } = props;
@@ -120,10 +130,12 @@ export function AvatarGroup(props: React.ComponentProps<"div">) {
 }
 
 /**
- * Renders the AvatarGroupCount component.
+ * Renders a visual count indicator for remaining items in an avatar group.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Standard div props including `className` and children.
+ *   Props are forwarded to the underlying div element.
+ * @returns Returns a `div` JSX element representing a group overflow count with
+ *   `data-slot="avatar-group-count"`.
  */
 export function AvatarGroupCount(props: React.ComponentProps<"div">) {
   const { className, ...rest } = props;

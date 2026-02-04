@@ -13,12 +13,12 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * Renders the Command component.
+ * Renders the root cmdk command container.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - `React.ComponentProps<typeof CommandPrimitive>` passed to cmdk's root, including optional `className`; remaining props are forwarded via `{...rest}`.
+ * @returns Returns a JSX.Element rendering the Command root with passed props and `data-slot="command"`/merged `className` for styling.
  */
-function Command(props: React.ComponentProps<typeof CommandPrimitive>) {
+export function Command(props: React.ComponentProps<typeof CommandPrimitive>) {
   const { className, ...rest } = props;
 
   return (
@@ -34,12 +34,12 @@ function Command(props: React.ComponentProps<typeof CommandPrimitive>) {
 }
 
 /**
- * Renders the CommandDialog component.
+ * Renders a command palette inside the shared dialog shell.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Dialog props plus optional `title?: string`, `description?: string`, `className?: string`, and `showCloseButton?: boolean`; defaults are `"Command Palette"`, `"Search for a command to run..."`, and `true`, and remaining props are forwarded via `{...rest}`.
+ * @returns Returns a JSX.Element rendering the Command dialog with passed props, dialog metadata defaults, and styled content wrappers.
  */
-function CommandDialog(
+export function CommandDialog(
   props: React.ComponentProps<typeof Dialog> & {
     title?: string;
     description?: string;
@@ -75,12 +75,12 @@ function CommandDialog(
 }
 
 /**
- * Renders the CommandInput component.
+ * Renders the cmdk input row with search icon and text input.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - `React.ComponentProps<typeof CommandPrimitive.Input>` for the cmdk input; controls input attributes/events, optional `className`, defaults `aria-label` to `"Search"` when omitted, and forwards remaining props via `{...rest}`.
+ * @returns Returns a JSX.Element rendering the Command input wrapper and input with `data-slot` attributes and merged `className` for styling.
  */
-function CommandInput(
+export function CommandInput(
   props: React.ComponentProps<typeof CommandPrimitive.Input>,
 ) {
   const { className, ...rest } = props;
@@ -106,12 +106,12 @@ function CommandInput(
 }
 
 /**
- * Renders the CommandList component.
+ * Renders the scrollable list container for command results.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - `React.ComponentProps<typeof CommandPrimitive.List>` for the cmdk list, including optional `className`; remaining props are forwarded via `{...rest}`.
+ * @returns Returns a JSX.Element rendering the Command list with passed props and `data-slot="command-list"`/merged `className` for styling.
  */
-function CommandList(
+export function CommandList(
   props: React.ComponentProps<typeof CommandPrimitive.List>,
 ) {
   const { className, ...rest } = props;
@@ -129,12 +129,12 @@ function CommandList(
 }
 
 /**
- * Renders the CommandEmpty component.
+ * Renders the empty-state content shown when no command results match.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - `React.ComponentProps<typeof CommandPrimitive.Empty>` for cmdk empty state content; props are forwarded via `{...rest}`.
+ * @returns Returns a JSX.Element rendering the Command empty state with passed props and `data-slot="command-empty"` styling hooks.
  */
-function CommandEmpty(
+export function CommandEmpty(
   props: React.ComponentProps<typeof CommandPrimitive.Empty>,
 ) {
   const { ...rest } = props;
@@ -149,12 +149,12 @@ function CommandEmpty(
 }
 
 /**
- * Renders the CommandGroup component.
+ * Renders a grouped command section and heading styles.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - `React.ComponentProps<typeof CommandPrimitive.Group>` controlling group content/attributes with optional `className`; remaining props are forwarded via `{...rest}`.
+ * @returns Returns a JSX.Element rendering the Command group with passed props and `data-slot="command-group"`/merged `className` for styling.
  */
-function CommandGroup(
+export function CommandGroup(
   props: React.ComponentProps<typeof CommandPrimitive.Group>,
 ) {
   const { className, ...rest } = props;
@@ -172,12 +172,12 @@ function CommandGroup(
 }
 
 /**
- * Renders the CommandSeparator component.
+ * Renders a visual separator between command sections.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - `React.ComponentProps<typeof CommandPrimitive.Separator>` controlling separator attributes with optional `className`; remaining props are forwarded via `{...rest}`.
+ * @returns Returns a JSX.Element rendering the Command separator with passed props and `data-slot="command-separator"`/merged `className` for styling.
  */
-function CommandSeparator(
+export function CommandSeparator(
   props: React.ComponentProps<typeof CommandPrimitive.Separator>,
 ) {
   const { className, ...rest } = props;
@@ -192,12 +192,12 @@ function CommandSeparator(
 }
 
 /**
- * Renders the CommandItem component.
+ * Renders an individual selectable command item.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - `React.ComponentProps<typeof CommandPrimitive.Item>` controlling item behavior/attributes with optional `className`; remaining props are forwarded via `{...rest}`.
+ * @returns Returns a JSX.Element rendering the Command item with passed props and `data-slot="command-item"`/merged `className` for styling.
  */
-function CommandItem(
+export function CommandItem(
   props: React.ComponentProps<typeof CommandPrimitive.Item>,
 ) {
   const { className, ...rest } = props;
@@ -215,12 +215,12 @@ function CommandItem(
 }
 
 /**
- * Renders the CommandShortcut component.
+ * Renders trailing shortcut text for a command item.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - `React.ComponentProps<"span">` for the shortcut label element, including optional `className` and standard span attributes/events; remaining props are forwarded via `{...rest}`.
+ * @returns Returns a JSX.Element rendering the Command shortcut with passed props and `data-slot="command-shortcut"`/merged `className` for styling.
  */
-function CommandShortcut(props: React.ComponentProps<"span">) {
+export function CommandShortcut(props: React.ComponentProps<"span">) {
   const { className, ...rest } = props;
 
   return (
@@ -234,15 +234,3 @@ function CommandShortcut(props: React.ComponentProps<"span">) {
     />
   );
 }
-
-export {
-  Command,
-  CommandDialog,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandShortcut,
-  CommandSeparator,
-};
