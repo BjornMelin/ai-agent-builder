@@ -85,10 +85,13 @@ export const CheckpointTrigger = (props: CheckpointTriggerProps) => {
     tooltip,
     ...rest
   } = props;
+  const accessibleLabel =
+    rest["aria-label"] ?? (typeof tooltip === "string" ? tooltip : undefined);
   return tooltip ? (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
+          aria-label={accessibleLabel}
           className={className}
           size={size}
           type="button"
@@ -104,6 +107,7 @@ export const CheckpointTrigger = (props: CheckpointTriggerProps) => {
     </Tooltip>
   ) : (
     <Button
+      aria-label={accessibleLabel}
       className={className}
       size={size}
       type="button"

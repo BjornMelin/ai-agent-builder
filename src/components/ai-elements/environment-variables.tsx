@@ -379,7 +379,7 @@ export const EnvironmentVariableCopyButton = (
       variant="ghost"
       {...rest}
     >
-      {children ?? <Icon size={12} />}
+      {children ?? <Icon aria-hidden="true" size={12} />}
     </Button>
   );
 };

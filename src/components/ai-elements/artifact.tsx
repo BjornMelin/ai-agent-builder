@@ -169,7 +169,8 @@ export const ArtifactAction = (props: ArtifactActionProps) => {
     variant = "ghost",
     ...rest
   } = props;
-  const accessibleName = tooltip || label || rest["aria-label"];
+  const accessibleName =
+    tooltip || label || rest["aria-label"] || "Artifact action";
 
   const button = (
     <Button
@@ -182,7 +183,7 @@ export const ArtifactAction = (props: ArtifactActionProps) => {
       variant={variant}
       {...rest}
     >
-      {Icon ? <Icon className="size-4" /> : children}
+      {Icon ? <Icon aria-hidden="true" className="size-4" /> : children}
       {accessibleName && <span className="sr-only">{accessibleName}</span>}
     </Button>
   );

@@ -127,6 +127,7 @@ export const AudioPlayerPlayButton = (props: AudioPlayerPlayButtonProps) => {
   return (
     <Button asChild size="icon-sm" variant="outline">
       <MediaPlayButton
+        aria-label={rest["aria-label"] ?? "Play or pause audio"}
         className={cn("bg-transparent", className)}
         data-slot="audio-player-play-button"
         {...rest}
@@ -152,6 +153,7 @@ export const AudioPlayerSeekBackwardButton = (
   return (
     <Button asChild size="icon-sm" variant="outline">
       <MediaSeekBackwardButton
+        aria-label={rest["aria-label"] ?? `Seek back ${seekOffset} seconds`}
         data-slot="audio-player-seek-backward-button"
         seekOffset={seekOffset}
         {...rest}
@@ -177,6 +179,7 @@ export const AudioPlayerSeekForwardButton = (
   return (
     <Button asChild size="icon-sm" variant="outline">
       <MediaSeekForwardButton
+        aria-label={rest["aria-label"] ?? `Seek forward ${seekOffset} seconds`}
         data-slot="audio-player-seek-forward-button"
         seekOffset={seekOffset}
         {...rest}

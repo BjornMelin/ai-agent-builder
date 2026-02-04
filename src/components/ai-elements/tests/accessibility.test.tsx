@@ -1,6 +1,14 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { ArtifactAction } from "@/components/ai-elements/artifact";
+import {
+  AudioPlayerPlayButton,
+  AudioPlayerSeekBackwardButton,
+  AudioPlayerSeekForwardButton,
+} from "@/components/ai-elements/audio-player";
+import { CheckpointTrigger } from "@/components/ai-elements/checkpoint";
+import { Context, ContextTrigger } from "@/components/ai-elements/context";
 import {
   FileTree,
   FileTreeFile,
@@ -36,6 +44,37 @@ describe("ai-elements accessibility defaults", () => {
     expect(html).toContain('aria-label="Preview URL"');
   });
 
+  it("applies a fallback accessible name for web preview icon controls", () => {
+    const html = renderToStaticMarkup(
+      <WebPreview>
+        <WebPreviewNavigation>
+          <WebPreviewNavigationButton />
+        </WebPreviewNavigation>
+      </WebPreview>,
+    );
+
+    expect(html).toContain('aria-label="Web preview action"');
+  });
+
+  it("derives checkpoint trigger accessible name from tooltip", () => {
+    const html = renderToStaticMarkup(<CheckpointTrigger tooltip="Restore" />);
+    expect(html).toContain('aria-label="Restore"');
+  });
+
+  it("uses a fallback accessible name for artifact icon actions", () => {
+    const html = renderToStaticMarkup(<ArtifactAction />);
+    expect(html).toContain("Artifact action");
+  });
+
+  it("includes a descriptive accessible name for context usage trigger", () => {
+    const html = renderToStaticMarkup(
+      <Context maxTokens={1000} usedTokens={420}>
+        <ContextTrigger />
+      </Context>,
+    );
+    expect(html).toContain("Model context usage:");
+  });
+
   it("assigns a default accessible name to stack trace copy control", () => {
     const html = renderToStaticMarkup(
       <StackTrace trace={"Error: Boom\nat run (/tmp/app.ts:10:2)"}>
@@ -46,7 +85,7 @@ describe("ai-elements accessibility defaults", () => {
     expect(html).toContain('aria-label="Copy stack trace"');
   });
 
-  it("renders keyboard-native tree items as buttons", () => {
+  it("renders keyboard-native file tree items as buttons", () => {
     const html = renderToStaticMarkup(
       <FileTree>
         <FileTreeFolder name="src" path="src">
@@ -56,7 +95,22 @@ describe("ai-elements accessibility defaults", () => {
     );
 
     expect(html).toContain("<button");
-    expect(html).toContain('role="treeitem"');
+    expect(html).not.toContain('role="treeitem"');
+    expect(html).toContain('aria-controls="file-tree-content-src"');
+  });
+
+  it("provides default labels for audio player icon controls", () => {
+    const html = renderToStaticMarkup(
+      <>
+        <AudioPlayerPlayButton />
+        <AudioPlayerSeekBackwardButton />
+        <AudioPlayerSeekForwardButton />
+      </>,
+    );
+
+    expect(html).toContain('aria-label="Play or pause audio"');
+    expect(html).toContain('aria-label="Seek back 10 seconds"');
+    expect(html).toContain('aria-label="Seek forward 10 seconds"');
   });
 
   it("provides default accessible names for command search inputs", () => {

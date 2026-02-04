@@ -127,7 +127,7 @@ export const ConversationScrollButton = (
       variant="outline"
       {...rest}
     >
-      <ArrowDownIcon className="size-4" />
+      <ArrowDownIcon aria-hidden="true" className="size-4" />
     </Button>
   ) : null;
 };

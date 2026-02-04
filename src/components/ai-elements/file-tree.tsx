@@ -33,6 +33,9 @@ const FileTreeContext = createContext<FileTreeContextType>({
   togglePath: () => undefined,
 });
 
+const getTreeContentId = (path: string) =>
+  `file-tree-content-${path.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+
 /** Props for the FileTree component. */
 export type FileTreeProps = HTMLAttributes<HTMLDivElement> & {
   expanded?: Set<string>;
@@ -100,7 +103,6 @@ export const FileTree = (props: FileTreeProps) => {
           "rounded-lg border bg-background font-mono text-sm",
           className,
         )}
-        role="tree"
         {...rest}
       >
         <div className="p-2">{children}</div>
@@ -139,14 +141,15 @@ export const FileTreeFolder = (props: FileTreeFolderProps) => {
     useContext(FileTreeContext);
   const isExpanded = expandedPaths.has(path);
   const isSelected = selectedPath === path;
+  const contentId = getTreeContentId(path);
 
   return (
     <FileTreeFolderContext.Provider value={{ isExpanded, name, path }}>
       <Collapsible onOpenChange={() => togglePath(path)} open={isExpanded}>
         <CollapsibleTrigger asChild>
           <button
+            aria-controls={contentId}
             aria-expanded={isExpanded}
-            aria-selected={isSelected}
             className={cn(
               "flex w-full items-center gap-1 rounded px-2 py-1 text-left transition-colors hover:bg-muted/50",
               isSelected && "bg-muted",
@@ -158,11 +161,11 @@ export const FileTreeFolder = (props: FileTreeFolderProps) => {
                 onSelect?.(path);
               }
             }}
-            role="treeitem"
             type="button"
             {...rest}
           >
             <ChevronRightIcon
+              aria-hidden="true"
               className={cn(
                 "size-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-reduce:transform-none motion-reduce:transition-none",
                 isExpanded && "motion-safe:rotate-90",
@@ -170,15 +173,21 @@ export const FileTreeFolder = (props: FileTreeFolderProps) => {
             />
             <FileTreeIcon>
               {isExpanded ? (
-                <FolderOpenIcon className="size-4 text-blue-500" />
+                <FolderOpenIcon
+                  aria-hidden="true"
+                  className="size-4 text-blue-500"
+                />
               ) : (
-                <FolderIcon className="size-4 text-blue-500" />
+                <FolderIcon
+                  aria-hidden="true"
+                  className="size-4 text-blue-500"
+                />
               )}
             </FileTreeIcon>
             <FileTreeName>{name}</FileTreeName>
           </button>
         </CollapsibleTrigger>
-        <CollapsibleContent>
+        <CollapsibleContent id={contentId}>
           <div className="ml-4 border-l pl-2">{children}</div>
         </CollapsibleContent>
       </Collapsible>
@@ -217,7 +226,6 @@ export const FileTreeFile = (props: FileTreeFileProps) => {
   return (
     <FileTreeFileContext.Provider value={{ name, path }}>
       <button
-        aria-selected={isSelected}
         className={cn(
           "flex w-full cursor-pointer items-center gap-1 rounded px-2 py-1 text-left transition-colors hover:bg-muted/50",
           isSelected && "bg-muted",
@@ -229,7 +237,6 @@ export const FileTreeFile = (props: FileTreeFileProps) => {
             onSelect?.(path);
           }
         }}
-        role="treeitem"
         type="button"
         {...rest}
       >
@@ -237,7 +244,12 @@ export const FileTreeFile = (props: FileTreeFileProps) => {
           <>
             <span className="size-4" /> {/* Spacer for alignment */}
             <FileTreeIcon>
-              {icon ?? <FileIcon className="size-4 text-muted-foreground" />}
+              {icon ?? (
+                <FileIcon
+                  aria-hidden="true"
+                  className="size-4 text-muted-foreground"
+                />
+              )}
             </FileTreeIcon>
             <FileTreeName>{name}</FileTreeName>
           </>

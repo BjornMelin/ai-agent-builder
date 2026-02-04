@@ -308,7 +308,7 @@ export const InlineCitationCarouselPrev = (
   return (
     <button
       aria-disabled={!canScrollPrev}
-      aria-label="Previous"
+      aria-label="Previous citation"
       className={cn(
         "inline-flex size-6 shrink-0 items-center justify-center transition-opacity",
         !canScrollPrev && "cursor-not-allowed opacity-50",
@@ -319,7 +319,10 @@ export const InlineCitationCarouselPrev = (
       type="button"
       {...rest}
     >
-      <ArrowLeftIcon className="size-4 text-muted-foreground" />
+      <ArrowLeftIcon
+        aria-hidden="true"
+        className="size-4 text-muted-foreground"
+      />
     </button>
   );
 };
@@ -361,7 +364,7 @@ export const InlineCitationCarouselNext = (
   return (
     <button
       aria-disabled={!canScrollNext}
-      aria-label="Next"
+      aria-label="Next citation"
       className={cn(
         "inline-flex size-6 shrink-0 items-center justify-center transition-opacity",
         !canScrollNext && "cursor-not-allowed opacity-50",
@@ -372,7 +375,10 @@ export const InlineCitationCarouselNext = (
       type="button"
       {...rest}
     >
-      <ArrowRightIcon className="size-4 text-muted-foreground" />
+      <ArrowRightIcon
+        aria-hidden="true"
+        className="size-4 text-muted-foreground"
+      />
     </button>
   );
 };

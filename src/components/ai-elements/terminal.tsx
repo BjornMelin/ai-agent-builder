@@ -251,7 +251,7 @@ export const TerminalCopyButton = (props: TerminalCopyButtonProps) => {
       variant="ghost"
       {...rest}
     >
-      {children ?? <Icon size={14} />}
+      {children ?? <Icon aria-hidden="true" size={14} />}
     </Button>
   );
 };
@@ -285,7 +285,7 @@ export const TerminalClearButton = (props: TerminalClearButtonProps) => {
       variant="ghost"
       {...rest}
     >
-      {children ?? <Trash2Icon size={14} />}
+      {children ?? <Trash2Icon aria-hidden="true" size={14} />}
     </Button>
   );
 };

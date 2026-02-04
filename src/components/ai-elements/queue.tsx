@@ -250,7 +250,7 @@ export const QueueItemFile = (props: QueueItemFileProps) => {
       )}
       {...rest}
     >
-      <PaperclipIcon size={12} />
+      <PaperclipIcon aria-hidden="true" size={12} />
       <span className="max-w-[100px] truncate">{children}</span>
     </span>
   );
@@ -340,7 +340,10 @@ export const QueueSectionLabel = (props: QueueSectionLabelProps) => {
   const { count, label, icon, className, ...rest } = props;
   return (
     <span className={cn("flex items-center gap-2", className)} {...rest}>
-      <ChevronDownIcon className="size-4 transition-transform group-data-[state=closed]:-rotate-90" />
+      <ChevronDownIcon
+        aria-hidden="true"
+        className="size-4 transition-transform group-data-[state=closed]:-rotate-90"
+      />
       {icon}
       <span>{count === undefined ? label : `${count} ${label}`}</span>
     </span>

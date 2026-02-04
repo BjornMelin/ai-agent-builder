@@ -335,7 +335,7 @@ export const MessageBranchPrevious = (props: MessageBranchPreviousProps) => {
       variant="ghost"
       {...rest}
     >
-      {children ?? <ChevronLeftIcon size={14} />}
+      {children ?? <ChevronLeftIcon aria-hidden="true" size={14} />}
     </Button>
   );
 };
@@ -365,7 +365,7 @@ export const MessageBranchNext = (props: MessageBranchNextProps) => {
       variant="ghost"
       {...rest}
     >
-      {children ?? <ChevronRightIcon size={14} />}
+      {children ?? <ChevronRightIcon aria-hidden="true" size={14} />}
     </Button>
   );
 };

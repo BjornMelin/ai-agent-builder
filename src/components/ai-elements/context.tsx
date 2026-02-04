@@ -81,9 +81,8 @@ const ContextIcon = () => {
 
   return (
     <svg
-      aria-label="Model context usage"
+      aria-hidden="true"
       height="20"
-      role="img"
       style={{ color: "currentcolor" }}
       viewBox={`0 0 ${ICON_VIEWBOX} ${ICON_VIEWBOX}`}
       width="20"
@@ -138,11 +137,18 @@ export const ContextTrigger = (props: ContextTriggerProps) => {
     maximumFractionDigits: 1,
     style: "percent",
   }).format(usedPercent);
+  const accessibleLabel =
+    rest["aria-label"] ?? `Model context usage: ${renderedPercent}`;
 
   return (
     <HoverCardTrigger asChild>
       {children ?? (
-        <Button type="button" variant="ghost" {...rest}>
+        <Button
+          aria-label={accessibleLabel}
+          type="button"
+          variant="ghost"
+          {...rest}
+        >
           <span className="font-medium text-muted-foreground">
             {renderedPercent}
           </span>

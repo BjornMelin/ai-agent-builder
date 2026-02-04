@@ -191,7 +191,7 @@ export const SnippetCopyButton = (props: SnippetCopyButtonProps) => {
       title="Copy"
       {...rest}
     >
-      {children ?? <Icon className="size-3.5" size={14} />}
+      {children ?? <Icon aria-hidden="true" className="size-3.5" size={14} />}
     </InputGroupButton>
   );
 };

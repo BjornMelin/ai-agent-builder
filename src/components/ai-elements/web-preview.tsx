@@ -142,7 +142,8 @@ export const WebPreviewNavigationButton = (
 ) => {
   const { onClick, disabled, tooltip, children, ...rest } = props;
   const accessibleLabel =
-    rest["aria-label"] ?? (typeof tooltip === "string" ? tooltip : undefined);
+    rest["aria-label"] ??
+    (typeof tooltip === "string" ? tooltip : "Web preview action");
   const button = (
     <Button
       aria-label={accessibleLabel}
@@ -285,6 +286,7 @@ export const WebPreviewConsole = (props: WebPreviewConsoleProps) => {
         >
           Console
           <ChevronDownIcon
+            aria-hidden="true"
             className={cn(
               "h-4 w-4 transition-transform duration-200",
               consoleOpen && "rotate-180",

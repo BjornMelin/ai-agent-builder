@@ -92,7 +92,7 @@ export const CommitHash = (props: CommitHashProps) => {
   const { className, children, ...rest } = props;
   return (
     <span className={cn("font-mono text-xs", className)} {...rest}>
-      <GitCommitIcon className="mr-1 inline-block size-3" />
+      <GitCommitIcon aria-hidden="true" className="mr-1 inline-block size-3" />
       {children}
     </span>
   );
@@ -372,7 +372,7 @@ export const CommitCopyButton = (props: CommitCopyButtonProps) => {
       variant="ghost"
       {...rest}
     >
-      {children ?? <Icon size={14} />}
+      {children ?? <Icon aria-hidden="true" size={14} />}
     </Button>
   );
 };
