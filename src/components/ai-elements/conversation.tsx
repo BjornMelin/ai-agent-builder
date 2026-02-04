@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDownIcon } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
+import { type ComponentProps, createElement, type ReactNode } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,7 @@ export const ConversationContent = (props: ConversationContentProps) => {
 /** Props for the ConversationEmptyState component. */
 export type ConversationEmptyStateProps = ComponentProps<"div"> & {
   title?: string;
+  headingTag?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
   description?: string;
   icon?: ReactNode;
 };
@@ -68,6 +69,7 @@ export const ConversationEmptyState = (props: ConversationEmptyStateProps) => {
   const {
     className,
     title = "No messages yet",
+    headingTag = "h3",
     description = "Start a conversation to see messages here",
     icon,
     children,
@@ -86,7 +88,11 @@ export const ConversationEmptyState = (props: ConversationEmptyStateProps) => {
         <>
           {icon ? <div className="text-muted-foreground">{icon}</div> : null}
           <div className="space-y-1">
-            <h3 className="font-medium text-sm">{title}</h3>
+            {createElement(
+              headingTag,
+              { className: "font-medium text-sm" },
+              title,
+            )}
             {description ? (
               <p className="text-muted-foreground text-sm">{description}</p>
             ) : null}

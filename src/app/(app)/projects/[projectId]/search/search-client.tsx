@@ -64,7 +64,13 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
 
   async function runSearch() {
     const query = q.trim();
-    if (query.length === 0) return;
+    if (query.length === 0) {
+      setResults([]);
+      setStatus("idle");
+      setError(null);
+      syncQueryInUrl(query);
+      return;
+    }
 
     setHasSearched(true);
     setStatus("loading");

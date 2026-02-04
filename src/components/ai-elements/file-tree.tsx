@@ -7,9 +7,12 @@ import {
   FolderOpenIcon,
 } from "lucide-react";
 import {
+  Children,
   type ComponentProps,
+  cloneElement,
   createContext,
   type HTMLAttributes,
+  isValidElement,
   type ReactNode,
   useContext,
   useState,
@@ -306,15 +309,34 @@ export type FileTreeActionsProps = HTMLAttributes<HTMLDivElement>;
  */
 export const FileTreeActions = (props: FileTreeActionsProps) => {
   const { className, children, ...rest } = props;
+
   return (
-    <div
-      className={cn("ml-auto flex items-center gap-1", className)}
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
-      role="none"
-      {...rest}
-    >
-      {children}
+    <div className={cn("ml-auto flex items-center gap-1", className)} {...rest}>
+      {Children.map(children, (child) => {
+        if (!isValidElement(child)) {
+          return child;
+        }
+
+        const original = child.props as Record<string, unknown>;
+
+        return cloneElement(
+          child as React.ReactElement<Record<string, unknown>>,
+          {
+            onClick: (event: React.MouseEvent) => {
+              event.stopPropagation();
+              if (typeof original.onClick === "function") {
+                original.onClick(event);
+              }
+            },
+            onKeyDown: (event: React.KeyboardEvent) => {
+              event.stopPropagation();
+              if (typeof original.onKeyDown === "function") {
+                original.onKeyDown(event);
+              }
+            },
+          },
+        );
+      })}
     </div>
   );
 };

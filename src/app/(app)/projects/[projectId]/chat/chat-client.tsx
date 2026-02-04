@@ -82,7 +82,9 @@ function reportChatStorageError(
     return;
   }
 
-  console.error(message, fields);
+  if (process.env.NODE_ENV !== "production") {
+    console.error(message, fields);
+  }
 }
 
 function isUserMessageMarker(data: unknown): data is UserMessageMarker {
@@ -165,7 +167,7 @@ function reconstructMessages(
 /**
  * Streaming multi-turn chat client for a project.
  *
- * @param props - Component props.
+ * @param props - Props object for the chat client in `chat-client.tsx`; requires `projectId` (string), a non-empty project identifier used for chat-session storage keys and chat API routing.
  * @returns The chat UI for the project.
  */
 export function ProjectChatClient(props: Readonly<{ projectId: string }>) {

@@ -111,6 +111,9 @@ const CodeBlockContext = createContext<CodeBlockContextType>({
   code: "",
 });
 
+/** Maximum number of entries retained in code-block caches. */
+export const CODE_BLOCK_CACHE_MAX_ENTRIES = 200;
+
 // Highlighter cache (singleton per language)
 const highlighterCache = new Map<
   string,
@@ -122,6 +125,45 @@ const tokensCache = new Map<string, TokenizedCode>();
 
 // Subscribers for async token updates
 const subscribers = new Map<string, Set<(result: TokenizedCode) => void>>();
+
+const getCacheValue = <K, V>(cache: Map<K, V>, key: K): V | undefined => {
+  const value = cache.get(key);
+  if (value === undefined) {
+    return undefined;
+  }
+
+  cache.delete(key);
+  cache.set(key, value);
+  return value;
+};
+
+const setCacheValue = <K, V>(
+  cache: Map<K, V>,
+  key: K,
+  value: V,
+  onEvict?: (evictedKey: K) => void,
+) => {
+  if (cache.has(key)) {
+    cache.delete(key);
+  }
+  cache.set(key, value);
+
+  while (cache.size > CODE_BLOCK_CACHE_MAX_ENTRIES) {
+    const oldestKey = cache.keys().next().value as K | undefined;
+    if (oldestKey === undefined) {
+      break;
+    }
+    cache.delete(oldestKey);
+    onEvict?.(oldestKey);
+  }
+};
+
+/** Clears all code-block highlighting caches and pending subscribers. */
+export const clearCaches = () => {
+  highlighterCache.clear();
+  tokensCache.clear();
+  subscribers.clear();
+};
 
 const hashCode = (code: string) => {
   let hash = 2166136261;
@@ -138,7 +180,7 @@ const getTokensCacheKey = (code: string, language: BundledLanguage) =>
 const getHighlighter = (
   language: BundledLanguage,
 ): Promise<HighlighterGeneric<BundledLanguage, BundledTheme>> => {
-  const cached = highlighterCache.get(language);
+  const cached = getCacheValue(highlighterCache, language);
   if (cached) {
     return cached;
   }
@@ -155,7 +197,7 @@ const getHighlighter = (
       throw error;
     });
 
-  highlighterCache.set(language, highlighterPromise);
+  setCacheValue(highlighterCache, language, highlighterPromise);
   return highlighterPromise;
 };
 
@@ -195,17 +237,20 @@ export function highlightCode(
   const tokensCacheKey = getTokensCacheKey(code, language);
 
   // Return cached result if available
-  const cached = tokensCache.get(tokensCacheKey);
+  const cached = getCacheValue(tokensCache, tokensCacheKey);
   if (cached) {
     return cached;
   }
 
   // Subscribe callback if provided
   if (callback) {
-    if (!subscribers.has(tokensCacheKey)) {
-      subscribers.set(tokensCacheKey, new Set());
+    const cachedSubscribers = getCacheValue(subscribers, tokensCacheKey);
+    if (cachedSubscribers) {
+      cachedSubscribers.add(callback);
+      setCacheValue(subscribers, tokensCacheKey, cachedSubscribers);
+    } else {
+      setCacheValue(subscribers, tokensCacheKey, new Set([callback]));
     }
-    subscribers.get(tokensCacheKey)?.add(callback);
   }
 
   // Start highlighting in background
@@ -229,7 +274,9 @@ export function highlightCode(
       };
 
       // Cache the result
-      tokensCache.set(tokensCacheKey, tokenized);
+      setCacheValue(tokensCache, tokensCacheKey, tokenized, (evictedKey) => {
+        subscribers.delete(evictedKey);
+      });
 
       // Notify all subscribers
       const subs = subscribers.get(tokensCacheKey);
@@ -424,7 +471,7 @@ export const CodeBlockContent = (props: CodeBlockContentProps) => {
   const { code, language, lineNumbers = "hide" } = props;
   const showLineNumbers = lineNumbers === "show";
   const tokensCacheKey = getTokensCacheKey(code, language);
-  const cachedTokens = tokensCache.get(tokensCacheKey);
+  const cachedTokens = getCacheValue(tokensCache, tokensCacheKey);
   const [tokenizedState, setTokenizedState] = useState<{
     key: string;
     tokenized: TokenizedCode | null;

@@ -26,6 +26,7 @@ type UploadResponse = Readonly<{
 export function UploadClient(props: Readonly<{ projectId: string }>) {
   const router = useRouter();
   const [files, setFiles] = useState<FileList | null>(null);
+  const [inputKey, setInputKey] = useState(0);
   const [asyncIngest, setAsyncIngest] = useState(true);
   const [status, setStatus] = useState<
     "idle" | "uploading" | "success" | "error"
@@ -84,6 +85,8 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
 
     setStatus("success");
     setFiles(null);
+    setInputKey((currentKey) => currentKey + 1);
+
     router.refresh();
   }
 
@@ -99,13 +102,24 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
           }
           aria-invalid={status === "error"}
           id={fileInputId}
+          key={inputKey}
           multiple
           onChange={(e) => setFiles(e.currentTarget.files)}
           type="file"
         />
 
-        <Button disabled={status === "uploading"} type="submit">
-          {status === "uploading" ? "Uploading…" : "Upload"}
+        <Button
+          aria-busy={status === "uploading"}
+          disabled={status === "uploading"}
+          type="submit"
+        >
+          {status === "uploading" ? (
+            <span
+              aria-hidden="true"
+              className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+            />
+          ) : null}
+          <span>Upload</span>
         </Button>
       </div>
 

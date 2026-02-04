@@ -299,7 +299,7 @@ export const SchemaDisplayParameters = (
         <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
         <span className="font-medium text-sm">Parameters</span>
         <Badge className="ml-auto text-xs" variant="secondary">
-          {parameters?.length}
+          {parameters?.length ?? 0}
         </Badge>
       </CollapsibleTrigger>
       <CollapsibleContent>

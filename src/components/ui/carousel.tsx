@@ -36,7 +36,7 @@ const CarouselContext = React.createContext<CarouselContextProps | null>(null);
  * Returns the carousel context.
  *
  * @returns The carousel context used by child components.
- * @throws {Error} If used outside a `<Carousel />` provider.
+ * @throws Error - If used outside a `<Carousel />` provider.
  */
 function useCarousel() {
   const context = React.useContext(CarouselContext);
@@ -83,7 +83,17 @@ function Carousel(props: React.ComponentProps<"section"> & CarouselProps) {
     api?.scrollNext();
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const isFormControl =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLSelectElement ||
+      target instanceof HTMLTextAreaElement ||
+      target.isContentEditable;
+    if (isFormControl) return;
+
     if (orientation === "vertical") {
       if (event.key === "ArrowUp") {
         event.preventDefault();

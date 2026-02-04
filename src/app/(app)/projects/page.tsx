@@ -3,7 +3,11 @@ import { CreateProjectForm } from "@/app/(app)/projects/create-project-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listProjects } from "@/lib/data/projects.server";
-
+/**
+ * Next.js route segment rendering mode. Allowed values include `"auto"`,
+ * `"force-dynamic"`, `"error"`, and `"force-static"`; this page uses
+ * `"force-dynamic"` to always render dynamically.
+ */
 export const dynamic = "force-dynamic";
 
 /**

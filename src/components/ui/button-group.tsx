@@ -1,11 +1,12 @@
+import { Slot as SlotPrimitive } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Slot as SlotPrimitive } from "radix-ui";
 import type { ComponentProps } from "react";
+
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 /** Shared style variants for grouped button layouts. */
-const buttonGroupVariants = cva(
+export const buttonGroupVariants = cva(
   "flex w-fit items-stretch [&>*]:focus-visible:z-10 [&>*]:focus-visible:relative [&>[data-slot=select-trigger]:not([class*='w-'])]:w-fit [&>input]:flex-1 has-[select[aria-hidden=true]:last-child]:[&>[data-slot=select-trigger]:last-of-type]:rounded-r-md has-[>[data-slot=button-group]]:gap-2",
   {
     defaultVariants: {
@@ -28,7 +29,7 @@ const buttonGroupVariants = cva(
  * @param props - Fieldset props plus `orientation` controlling horizontal or vertical segmentation.
  * @returns A segmented fieldset container for grouped controls.
  */
-function ButtonGroup(
+export function ButtonGroup(
   props: ComponentProps<"fieldset"> & VariantProps<typeof buttonGroupVariants>,
 ) {
   const { className, orientation, ...rest } = props;
@@ -53,14 +54,14 @@ function ButtonGroup(
  * @param props - Text container props with optional slot rendering via `asChild`.
  * @returns A styled text container that matches grouped control chrome.
  */
-function ButtonGroupText(
+export function ButtonGroupText(
   props: ComponentProps<"div"> & {
     asChild?: boolean;
   },
 ) {
   const { className, asChild = false, ...rest } = props;
 
-  const Comp = asChild ? SlotPrimitive.Slot : "div";
+  const Comp = asChild ? SlotPrimitive : "div";
 
   return (
     <Comp
@@ -79,7 +80,7 @@ function ButtonGroupText(
  * @param props - Separator props including optional orientation.
  * @returns A separator tuned for button-group spacing and borders.
  */
-function ButtonGroupSeparator(props: ComponentProps<typeof Separator>) {
+export function ButtonGroupSeparator(props: ComponentProps<typeof Separator>) {
   const { className, orientation = "vertical", ...rest } = props;
 
   return (
@@ -94,10 +95,3 @@ function ButtonGroupSeparator(props: ComponentProps<typeof Separator>) {
     />
   );
 }
-
-export {
-  ButtonGroup,
-  ButtonGroupSeparator,
-  ButtonGroupText,
-  buttonGroupVariants,
-};

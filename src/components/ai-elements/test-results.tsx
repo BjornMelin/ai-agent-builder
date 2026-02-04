@@ -306,9 +306,11 @@ export const TestSuiteName = (props: TestSuiteNameProps) => {
       )}
       {...rest}
     >
-      <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
+      <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none group-data-[state=open]:rotate-90" />
       <TestStatusIcon status={status} />
-      <span className="font-medium text-sm">{children ?? name}</span>
+      <span className="min-w-0 truncate font-medium text-sm">
+        {children ?? name}
+      </span>
     </CollapsibleTrigger>
   );
 };
@@ -483,7 +485,7 @@ export const TestName = (props: TestNameProps) => {
   const { name } = useContext(TestContext);
 
   return (
-    <span className={cn("flex-1", className)} {...rest}>
+    <span className={cn("min-w-0 flex-1 truncate", className)} {...rest}>
       {children ?? name}
     </span>
   );

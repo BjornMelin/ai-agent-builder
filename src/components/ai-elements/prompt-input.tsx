@@ -747,12 +747,6 @@ export const PromptInput = (props: PromptInputProps) => {
           return (formData.get("message") as string) || "";
         })();
 
-    // Reset form immediately after capturing text to avoid race condition
-    // where user input during async blob conversion would be lost
-    if (!usingProvider) {
-      form.reset();
-    }
-
     // Convert blob URLs to data URLs asynchronously before submission.
     try {
       const convertedFiles: FileUIPart[] = await Promise.all(
@@ -773,8 +767,18 @@ export const PromptInput = (props: PromptInputProps) => {
       clear();
       if (usingProvider) {
         controller.textInput.clear();
+      } else {
+        form.reset();
       }
     } catch (error) {
+      if (!usingProvider) {
+        const messageField = form.elements.namedItem("message");
+        if (messageField instanceof HTMLTextAreaElement) {
+          messageField.value = text;
+        }
+      } else {
+        controller.textInput.setInput(text);
+      }
       onError?.({
         code: "submit",
         message:
