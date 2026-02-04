@@ -43,8 +43,9 @@ export async function GET(
   context: Readonly<{ params: Promise<{ runId: string }> }>,
 ): Promise<Response> {
   try {
-    await requireAppUserApi();
-    const params = await context.params;
+    const authPromise = requireAppUserApi();
+    const paramsPromise = context.params;
+    const [, params] = await Promise.all([authPromise, paramsPromise]);
     const { searchParams } = new URL(req.url);
     const startIndex = parseStartIndex(searchParams.get("startIndex"));
     const { runId } = params;
