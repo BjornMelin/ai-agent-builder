@@ -30,20 +30,24 @@ export type MessageProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 /**
- * Root container for a chat message.
- * @param {object} props - Component properties.
- * @returns {JSX.Element} The rendered message container.
+ * Renders the root container for a chat message.
+ *
+ * @param props - Message container props.
+ * @returns The message container.
  */
-export const Message = ({ className, from, ...props }: MessageProps) => (
-  <div
-    className={cn(
-      "group flex w-full max-w-[95%] flex-col gap-2",
-      from === "user" ? "is-user ml-auto justify-end" : "is-assistant",
-      className,
-    )}
-    {...props}
-  />
-);
+export const Message = (props: MessageProps) => {
+  const { className, from, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "group flex w-full max-w-[95%] flex-col gap-2",
+        from === "user" ? "is-user ml-auto justify-end" : "is-assistant",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 /**
  * Props for the MessageContent component.
@@ -51,27 +55,27 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
 export type MessageContentProps = HTMLAttributes<HTMLDivElement>;
 
 /**
- * Main content area of a message, with distinct styling for user and assistant.
- * @param {object} props - Component properties.
- * @returns {JSX.Element} The rendered message content.
+ * Renders the main message content area.
+ *
+ * @param props - Message content props.
+ * @returns The message content element.
  */
-export const MessageContent = ({
-  children,
-  className,
-  ...props
-}: MessageContentProps) => (
-  <div
-    className={cn(
-      "is-user:dark flex w-fit min-w-0 max-w-full flex-col gap-2 overflow-hidden text-sm",
-      "group-[.is-user]:ml-auto group-[.is-user]:rounded-lg group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground",
-      "group-[.is-assistant]:text-foreground",
-      className,
-    )}
-    {...props}
-  >
-    {children}
-  </div>
-);
+export const MessageContent = (props: MessageContentProps) => {
+  const { children, className, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "is-user:dark flex w-fit min-w-0 max-w-full flex-col gap-2 overflow-hidden text-sm",
+        "group-[.is-user]:ml-auto group-[.is-user]:rounded-lg group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground",
+        "group-[.is-assistant]:text-foreground",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};
 
 /**
  * Props for the MessageActions component.
@@ -79,19 +83,19 @@ export const MessageContent = ({
 export type MessageActionsProps = ComponentProps<"div">;
 
 /**
- * Container for action buttons associated with a message.
- * @param {object} props - Component properties.
- * @returns {JSX.Element} The rendered actions container.
+ * Renders a container for message action buttons.
+ *
+ * @param props - Actions container props.
+ * @returns The actions container.
  */
-export const MessageActions = ({
-  className,
-  children,
-  ...props
-}: MessageActionsProps) => (
-  <div className={cn("flex items-center gap-1", className)} {...props}>
-    {children}
-  </div>
-);
+export const MessageActions = (props: MessageActionsProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div className={cn("flex items-center gap-1", className)} {...rest}>
+      {children}
+    </div>
+  );
+};
 
 /**
  * Props for an individual MessageAction.
@@ -104,20 +108,22 @@ export type MessageActionProps = ComponentProps<typeof Button> & {
 };
 
 /**
- * An action button for a message, optionally with a tooltip.
- * @param {object} props - Component properties.
- * @returns {JSX.Element} The rendered action button.
+ * Renders a message action button with optional tooltip.
+ *
+ * @param props - Action button props.
+ * @returns The action button element.
  */
-export const MessageAction = ({
-  tooltip,
-  children,
-  label,
-  variant = "ghost",
-  size = "icon-sm",
-  ...props
-}: MessageActionProps) => {
+export const MessageAction = (props: MessageActionProps) => {
+  const {
+    tooltip,
+    children,
+    label,
+    variant = "ghost",
+    size = "icon-sm",
+    ...rest
+  } = props;
   const button = (
-    <Button size={size} type="button" variant={variant} {...props}>
+    <Button size={size} type="button" variant={variant} {...rest}>
       {children}
       <span className="sr-only">{label || tooltip}</span>
     </Button>
@@ -178,18 +184,23 @@ export type MessageBranchProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 /**
- * Provides context for multi-branch messages (e.g., edited responses).
- * @param {object} props - Component properties.
- * @returns {JSX.Element} The rendered branch provider.
+ * Provides branch state for multi-version messages.
+ *
+ * @param props - Branch container props.
+ * @returns The branch context provider.
  */
-export const MessageBranch = ({
-  defaultBranch = 0,
-  onBranchChange,
-  className,
-  ...props
-}: MessageBranchProps) => {
+export const MessageBranch = (props: MessageBranchProps) => {
+  const {
+    defaultBranch = 0,
+    onBranchChange,
+    className,
+    ...rest
+  } = props;
   const [currentBranch, setCurrentBranch] = useState(defaultBranch);
   const [branches, setBranches] = useState<ReactElement[]>([]);
+  const totalBranches = branches.length;
+  const activeBranch =
+    totalBranches > 0 ? Math.min(currentBranch, totalBranches - 1) : 0;
 
   const handleBranchChange = React.useCallback(
     (newBranch: number) => {
@@ -199,44 +210,36 @@ export const MessageBranch = ({
     [onBranchChange],
   );
 
-  useEffect(() => {
-    if (branches.length > 0) {
-      const clampedBranch = Math.max(
-        0,
-        Math.min(currentBranch, branches.length - 1),
-      );
-      if (clampedBranch !== currentBranch) {
-        handleBranchChange(clampedBranch);
-      }
-    }
-  }, [branches.length, currentBranch, handleBranchChange]);
-
   const goToPrevious = () => {
-    const newBranch =
-      currentBranch > 0 ? currentBranch - 1 : branches.length - 1;
+    if (totalBranches <= 1) {
+      return;
+    }
+    const newBranch = activeBranch > 0 ? activeBranch - 1 : totalBranches - 1;
     handleBranchChange(newBranch);
   };
 
   const goToNext = () => {
-    const newBranch =
-      currentBranch < branches.length - 1 ? currentBranch + 1 : 0;
+    if (totalBranches <= 1) {
+      return;
+    }
+    const newBranch = activeBranch < totalBranches - 1 ? activeBranch + 1 : 0;
     handleBranchChange(newBranch);
   };
 
   const contextValue: MessageBranchContextType = {
     branches,
-    currentBranch,
+    currentBranch: activeBranch,
     goToNext,
     goToPrevious,
     setBranches,
-    totalBranches: branches.length,
+    totalBranches,
   };
 
   return (
     <MessageBranchContext.Provider value={contextValue}>
       <div
         className={cn("grid w-full gap-2 [&>div]:pb-0", className)}
-        {...props}
+        {...rest}
       />
     </MessageBranchContext.Provider>
   );
@@ -248,14 +251,13 @@ export const MessageBranch = ({
 export type MessageBranchContentProps = HTMLAttributes<HTMLDivElement>;
 
 /**
- * Render the content of the currently active branch.
- * @param {object} props - Component properties.
- * @returns {JSX.Element[]} The rendered branch content list.
+ * Renders only the currently selected branch content.
+ *
+ * @param props - Branch content props.
+ * @returns A list containing visible branch content wrappers.
  */
-export const MessageBranchContent = ({
-  children,
-  ...props
-}: MessageBranchContentProps) => {
+export const MessageBranchContent = (props: MessageBranchContentProps) => {
+  const { children, ...rest } = props;
   const { currentBranch, setBranches } = useMessageBranch();
   const childrenArray = React.Children.toArray(children).filter(
     Boolean,
@@ -272,7 +274,7 @@ export const MessageBranchContent = ({
         index === currentBranch ? "block" : "hidden",
       )}
       key={branch.key ?? index}
-      {...props}
+      {...rest}
     >
       {branch}
     </div>
@@ -288,15 +290,13 @@ export type MessageBranchSelectorProps = ComponentProps<typeof ButtonGroup> & {
 };
 
 /**
- * A selector for navigating between different message branches.
- * @param {object} props - Component properties.
- * @returns {JSX.Element | null} The rendered branch selector or null if only one branch exists.
+ * Renders branch navigation controls when multiple branches exist.
+ *
+ * @param props - Branch selector props.
+ * @returns The selector or `null` when only one branch exists.
  */
-export const MessageBranchSelector = ({
-  className,
-  from: _from,
-  ...props
-}: MessageBranchSelectorProps) => {
+export const MessageBranchSelector = (props: MessageBranchSelectorProps) => {
+  const { className, from: _from, ...rest } = props;
   const { totalBranches } = useMessageBranch();
 
   // Don't render if there's only one branch
@@ -311,7 +311,7 @@ export const MessageBranchSelector = ({
         className,
       )}
       orientation="horizontal"
-      {...props}
+      {...rest}
     />
   );
 };
@@ -322,14 +322,13 @@ export const MessageBranchSelector = ({
 export type MessageBranchPreviousProps = ComponentProps<typeof Button>;
 
 /**
- * A button to navigate to the previous message branch.
- * @param {object} props - Component properties.
- * @returns {JSX.Element} The rendered previous button.
+ * Renders a button that selects the previous branch.
+ *
+ * @param props - Previous-button props.
+ * @returns The previous branch button.
  */
-export const MessageBranchPrevious = ({
-  children,
-  ...props
-}: MessageBranchPreviousProps) => {
+export const MessageBranchPrevious = (props: MessageBranchPreviousProps) => {
+  const { children, ...rest } = props;
   const { goToPrevious, totalBranches } = useMessageBranch();
 
   return (
@@ -340,7 +339,7 @@ export const MessageBranchPrevious = ({
       size="icon-sm"
       type="button"
       variant="ghost"
-      {...props}
+      {...rest}
     >
       {children ?? <ChevronLeftIcon size={14} />}
     </Button>
@@ -353,14 +352,13 @@ export const MessageBranchPrevious = ({
 export type MessageBranchNextProps = ComponentProps<typeof Button>;
 
 /**
- * A button to navigate to the next message branch.
- * @param {object} props - Component properties.
- * @returns {JSX.Element} The rendered next button.
+ * Renders a button that selects the next branch.
+ *
+ * @param props - Next-button props.
+ * @returns The next branch button.
  */
-export const MessageBranchNext = ({
-  children,
-  ...props
-}: MessageBranchNextProps) => {
+export const MessageBranchNext = (props: MessageBranchNextProps) => {
+  const { children, ...rest } = props;
   const { goToNext, totalBranches } = useMessageBranch();
 
   return (
@@ -371,7 +369,7 @@ export const MessageBranchNext = ({
       size="icon-sm"
       type="button"
       variant="ghost"
-      {...props}
+      {...rest}
     >
       {children ?? <ChevronRightIcon size={14} />}
     </Button>
@@ -384,14 +382,13 @@ export const MessageBranchNext = ({
 export type MessageBranchPageProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
- * Displays the current branch index and total number of branches.
- * @param {object} props - Component properties.
- * @returns {JSX.Element} The rendered page indicator.
+ * Renders the current branch position text.
+ *
+ * @param props - Page indicator props.
+ * @returns The branch page indicator.
  */
-export const MessageBranchPage = ({
-  className,
-  ...props
-}: MessageBranchPageProps) => {
+export const MessageBranchPage = (props: MessageBranchPageProps) => {
+  const { className, ...rest } = props;
   const { currentBranch, totalBranches } = useMessageBranch();
 
   return (
@@ -400,7 +397,7 @@ export const MessageBranchPage = ({
         "border-none bg-transparent text-muted-foreground shadow-none",
         className,
       )}
-      {...props}
+      {...rest}
     >
       {currentBranch + 1} of {totalBranches}
     </ButtonGroupText>
@@ -413,20 +410,24 @@ export const MessageBranchPage = ({
 export type MessageResponseProps = ComponentProps<typeof StreamdownRenderer>;
 
 /**
- * Renders the body of an assistant message using Streamdown.
- * @param {object} props - Component properties.
- * @returns {JSX.Element} The rendered message response.
+ * Renders assistant response content using Streamdown.
+ *
+ * @param props - Streamdown renderer props.
+ * @returns The rendered response content.
  */
 export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
-    <StreamdownRenderer
-      className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className,
-      )}
-      {...props}
-    />
-  ),
+  (props: MessageResponseProps) => {
+    const { className, ...rest } = props;
+    return (
+      <StreamdownRenderer
+        className={cn(
+          "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+          className,
+        )}
+        {...rest}
+      />
+    );
+  },
   (prevProps, nextProps) => prevProps.children === nextProps.children,
 );
 
@@ -438,22 +439,22 @@ MessageResponse.displayName = "MessageResponse";
 export type MessageToolbarProps = ComponentProps<"div">;
 
 /**
- * A toolbar for message actions, typically displayed at the bottom.
- * @param {object} props - Component properties.
- * @returns {JSX.Element} The rendered message toolbar.
+ * Renders a toolbar row for message-level controls.
+ *
+ * @param props - Toolbar props.
+ * @returns The message toolbar.
  */
-export const MessageToolbar = ({
-  className,
-  children,
-  ...props
-}: MessageToolbarProps) => (
-  <div
-    className={cn(
-      "mt-4 flex w-full items-center justify-between gap-4",
-      className,
-    )}
-    {...props}
-  >
-    {children}
-  </div>
-);
+export const MessageToolbar = (props: MessageToolbarProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "mt-4 flex w-full items-center justify-between gap-4",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};

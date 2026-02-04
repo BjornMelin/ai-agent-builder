@@ -65,13 +65,14 @@ export type WebPreviewProps = ComponentProps<"div"> & {
   onUrlChange?: (url: string) => void;
 };
 
-export const WebPreview = ({
-  className,
-  children,
-  defaultUrl = "",
-  onUrlChange,
-  ...props
-}: WebPreviewProps) => {
+/**
+ * Provides web preview state and renders the root preview container.
+ *
+ * @param props - Root web preview props.
+ * @returns The web preview root.
+ */
+export const WebPreview = (props: WebPreviewProps) => {
+  const { className, children, defaultUrl = "", onUrlChange, ...rest } = props;
   const [url, setUrl] = useState(defaultUrl);
   const [consoleOpen, setConsoleOpen] = useState(false);
 
@@ -94,7 +95,7 @@ export const WebPreview = ({
           "flex size-full flex-col rounded-lg border bg-card",
           className,
         )}
-        {...props}
+        {...rest}
       >
         {children}
       </div>
@@ -104,30 +105,38 @@ export const WebPreview = ({
 
 export type WebPreviewNavigationProps = ComponentProps<"div">;
 
-export const WebPreviewNavigation = ({
-  className,
-  children,
-  ...props
-}: WebPreviewNavigationProps) => (
-  <div
-    className={cn("flex items-center gap-1 border-b p-2", className)}
-    {...props}
-  >
-    {children}
-  </div>
-);
+/**
+ * Renders the navigation bar area for preview controls.
+ *
+ * @param props - Navigation container props.
+ * @returns The navigation bar.
+ */
+export const WebPreviewNavigation = (props: WebPreviewNavigationProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div
+      className={cn("flex items-center gap-1 border-b p-2", className)}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};
 
 export type WebPreviewNavigationButtonProps = ComponentProps<typeof Button> & {
   tooltip?: string;
 };
 
-export const WebPreviewNavigationButton = ({
-  onClick,
-  disabled,
-  tooltip,
-  children,
-  ...props
-}: WebPreviewNavigationButtonProps) => {
+/**
+ * Renders a navigation control button with optional tooltip.
+ *
+ * @param props - Navigation button props.
+ * @returns A button element, optionally wrapped with tooltip UI.
+ */
+export const WebPreviewNavigationButton = (
+  props: WebPreviewNavigationButtonProps,
+) => {
+  const { onClick, disabled, tooltip, children, ...rest } = props;
   const button = (
     <Button
       className="h-8 w-8 p-0 hover:text-foreground"
@@ -135,7 +144,7 @@ export const WebPreviewNavigationButton = ({
       onClick={onClick}
       size="sm"
       variant="ghost"
-      {...props}
+      {...rest}
     >
       {children}
     </Button>
@@ -159,12 +168,14 @@ export const WebPreviewNavigationButton = ({
 
 export type WebPreviewUrlProps = ComponentProps<typeof Input>;
 
-export const WebPreviewUrl = ({
-  value,
-  onChange,
-  onKeyDown,
-  ...props
-}: WebPreviewUrlProps) => {
+/**
+ * Renders and manages the preview URL input field.
+ *
+ * @param props - URL input props.
+ * @returns The URL input component.
+ */
+export const WebPreviewUrl = (props: WebPreviewUrlProps) => {
+  const { value, onChange, onKeyDown, ...rest } = props;
   const { url, setUrl } = useWebPreview();
   const [inputValue, setInputValue] = useState(url);
   const isControlled = value !== undefined;
@@ -197,7 +208,7 @@ export const WebPreviewUrl = ({
       onKeyDown={handleKeyDown}
       placeholder="Enter URL..."
       value={isControlled ? value : inputValue}
-      {...props}
+      {...rest}
     />
   );
 };
@@ -206,12 +217,14 @@ export type WebPreviewBodyProps = ComponentProps<"iframe"> & {
   loading?: ReactNode;
 };
 
-export const WebPreviewBody = ({
-  className,
-  loading,
-  src,
-  ...props
-}: WebPreviewBodyProps) => {
+/**
+ * Renders the iframe body for the web preview.
+ *
+ * @param props - Iframe props plus loading content.
+ * @returns The preview body container.
+ */
+export const WebPreviewBody = (props: WebPreviewBodyProps) => {
+  const { className, loading, src, ...rest } = props;
   const { url } = useWebPreview();
   const resolvedUrl = sanitizeUrl(src ?? url);
 
@@ -222,7 +235,7 @@ export const WebPreviewBody = ({
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
         src={resolvedUrl || undefined}
         title="Preview"
-        {...props}
+        {...rest}
       />
       {loading}
     </div>
@@ -237,12 +250,14 @@ export type WebPreviewConsoleProps = ComponentProps<"div"> & {
   }>;
 };
 
-export const WebPreviewConsole = ({
-  className,
-  logs = [],
-  children,
-  ...props
-}: WebPreviewConsoleProps) => {
+/**
+ * Renders a collapsible console panel for preview logs.
+ *
+ * @param props - Console panel props and log entries.
+ * @returns The preview console panel.
+ */
+export const WebPreviewConsole = (props: WebPreviewConsoleProps) => {
+  const { className, logs = [], children, ...rest } = props;
   const { consoleOpen, setConsoleOpen } = useWebPreview();
 
   return (
@@ -250,7 +265,7 @@ export const WebPreviewConsole = ({
       className={cn("border-t bg-muted/50 font-mono text-sm", className)}
       onOpenChange={setConsoleOpen}
       open={consoleOpen}
-      {...props}
+      {...rest}
     >
       <CollapsibleTrigger asChild>
         <Button

@@ -342,15 +342,15 @@ export type PromptInputActionAddAttachmentsProps = ComponentProps<
  * @param props - Dropdown menu item props including optional label.
  * @returns A dropdown menu item element.
  */
-export const PromptInputActionAddAttachments = ({
-  label = "Add photos or files",
-  ...props
-}: PromptInputActionAddAttachmentsProps) => {
+export const PromptInputActionAddAttachments = (
+  props: PromptInputActionAddAttachmentsProps,
+) => {
+  const { label = "Add photos or files", ...rest } = props;
   const attachments = usePromptInputAttachments();
 
   return (
     <DropdownMenuItem
-      {...props}
+      {...rest}
       onSelect={(e) => {
         e.preventDefault();
         attachments.openFileDialog();
@@ -824,12 +824,16 @@ export const PromptInput = (props: PromptInputProps) => {
 
 export type PromptInputBodyProps = HTMLAttributes<HTMLDivElement>;
 
-export const PromptInputBody = ({
-  className,
-  ...props
-}: PromptInputBodyProps) => (
-  <div className={cn("contents", className)} {...props} />
-);
+/**
+ * Renders the prompt input body wrapper.
+ *
+ * @param props - Body wrapper props.
+ * @returns The body wrapper.
+ */
+export const PromptInputBody = (props: PromptInputBodyProps) => {
+  const { className, ...rest } = props;
+  return <div className={cn("contents", className)} {...rest} />;
+};
 
 export type PromptInputTextareaProps = ComponentProps<
   typeof InputGroupTextarea
@@ -953,52 +957,70 @@ export type PromptInputHeaderProps = Omit<
   "align"
 >;
 
-export const PromptInputHeader = ({
-  className,
-  ...props
-}: PromptInputHeaderProps) => (
-  <InputGroupAddon
-    align="block-end"
-    className={cn("order-first flex-wrap gap-1", className)}
-    {...props}
-  />
-);
+/**
+ * Renders the prompt input header slot.
+ *
+ * @param props - Header addon props.
+ * @returns The header addon.
+ */
+export const PromptInputHeader = (props: PromptInputHeaderProps) => {
+  const { className, ...rest } = props;
+  return (
+    <InputGroupAddon
+      align="block-end"
+      className={cn("order-first flex-wrap gap-1", className)}
+      {...rest}
+    />
+  );
+};
 
 export type PromptInputFooterProps = Omit<
   ComponentProps<typeof InputGroupAddon>,
   "align"
 >;
 
-export const PromptInputFooter = ({
-  className,
-  ...props
-}: PromptInputFooterProps) => (
-  <InputGroupAddon
-    align="block-end"
-    className={cn("justify-between gap-1", className)}
-    {...props}
-  />
-);
+/**
+ * Renders the prompt input footer slot.
+ *
+ * @param props - Footer addon props.
+ * @returns The footer addon.
+ */
+export const PromptInputFooter = (props: PromptInputFooterProps) => {
+  const { className, ...rest } = props;
+  return (
+    <InputGroupAddon
+      align="block-end"
+      className={cn("justify-between gap-1", className)}
+      {...rest}
+    />
+  );
+};
 
 export type PromptInputToolsProps = HTMLAttributes<HTMLDivElement>;
 
-export const PromptInputTools = ({
-  className,
-  ...props
-}: PromptInputToolsProps) => (
-  <div className={cn("flex items-center gap-1", className)} {...props} />
-);
+/**
+ * Renders a tools container for prompt input actions.
+ *
+ * @param props - Tools container props.
+ * @returns The tools container.
+ */
+export const PromptInputTools = (props: PromptInputToolsProps) => {
+  const { className, ...rest } = props;
+  return <div className={cn("flex items-center gap-1", className)} {...rest} />;
+};
 
 export type PromptInputButtonProps = ComponentProps<typeof InputGroupButton>;
 
-export const PromptInputButton = ({
-  variant = "ghost",
-  className,
-  size,
-  ...props
-}: PromptInputButtonProps) => {
+/**
+ * Renders a standardized prompt input button.
+ *
+ * @param props - Button props.
+ * @returns The prompt input button.
+ */
+export const PromptInputButton = (props: PromptInputButtonProps) => {
+  const { variant = "ghost", className, size, ...rest } = props;
   const newSize =
-    size ?? (Children.count(props.children) > 1 ? "sm" : "icon-sm");
+    size ?? (Children.count(rest.children) > 1 ? "sm" : "icon-sm");
 
   return (
     <InputGroupButton
@@ -1006,49 +1028,74 @@ export const PromptInputButton = ({
       size={newSize}
       type="button"
       variant={variant}
-      {...props}
+      {...rest}
     />
   );
 };
 
 export type PromptInputActionMenuProps = ComponentProps<typeof DropdownMenu>;
+/**
+ * Renders the action menu root.
+ *
+ * @param props - Dropdown menu props.
+ * @returns The action menu.
+ */
 export const PromptInputActionMenu = (props: PromptInputActionMenuProps) => (
   <DropdownMenu {...props} />
 );
 
 export type PromptInputActionMenuTriggerProps = PromptInputButtonProps;
 
-export const PromptInputActionMenuTrigger = ({
-  className,
-  children,
-  ...props
-}: PromptInputActionMenuTriggerProps) => (
-  <DropdownMenuTrigger asChild>
-    <PromptInputButton className={className} {...props}>
-      {children ?? <PlusIcon className="size-4" />}
-    </PromptInputButton>
-  </DropdownMenuTrigger>
-);
+/**
+ * Renders the trigger button for the action menu.
+ *
+ * @param props - Trigger button props.
+ * @returns The action menu trigger.
+ */
+export const PromptInputActionMenuTrigger = (
+  props: PromptInputActionMenuTriggerProps,
+) => {
+  const { className, children, ...rest } = props;
+  return (
+    <DropdownMenuTrigger asChild>
+      <PromptInputButton className={className} {...rest}>
+        {children ?? <PlusIcon className="size-4" />}
+      </PromptInputButton>
+    </DropdownMenuTrigger>
+  );
+};
 
 export type PromptInputActionMenuContentProps = ComponentProps<
   typeof DropdownMenuContent
 >;
-export const PromptInputActionMenuContent = ({
-  className,
-  ...props
-}: PromptInputActionMenuContentProps) => (
-  <DropdownMenuContent align="start" className={cn(className)} {...props} />
-);
+/**
+ * Renders the action menu dropdown content.
+ *
+ * @param props - Dropdown content props.
+ * @returns The action menu content.
+ */
+export const PromptInputActionMenuContent = (
+  props: PromptInputActionMenuContentProps,
+) => {
+  const { className, ...rest } = props;
+  return <DropdownMenuContent align="start" className={cn(className)} {...rest} />;
+};
 
 export type PromptInputActionMenuItemProps = ComponentProps<
   typeof DropdownMenuItem
 >;
-export const PromptInputActionMenuItem = ({
-  className,
-  ...props
-}: PromptInputActionMenuItemProps) => (
-  <DropdownMenuItem className={cn(className)} {...props} />
-);
+/**
+ * Renders one action menu item.
+ *
+ * @param props - Dropdown item props.
+ * @returns The action menu item.
+ */
+export const PromptInputActionMenuItem = (
+  props: PromptInputActionMenuItemProps,
+) => {
+  const { className, ...rest } = props;
+  return <DropdownMenuItem className={cn(className)} {...rest} />;
+};
 
 // Note: Actions that perform side-effects (like opening a file dialog)
 // are provided in opt-in modules (e.g., prompt-input-attachments).
@@ -1113,6 +1160,12 @@ export const PromptInputSubmit = (props: PromptInputSubmitProps) => {
 
 export type PromptInputSelectProps = ComponentProps<typeof Select>;
 
+/**
+ * Renders the select root used in prompt controls.
+ *
+ * @param props - Select root props.
+ * @returns The select root.
+ */
 export const PromptInputSelect = (props: PromptInputSelectProps) => (
   <Select {...props} />
 );
@@ -1121,63 +1174,92 @@ export type PromptInputSelectTriggerProps = ComponentProps<
   typeof SelectTrigger
 >;
 
-export const PromptInputSelectTrigger = ({
-  className,
-  ...props
-}: PromptInputSelectTriggerProps) => (
-  <SelectTrigger
-    className={cn(
-      "border-none bg-transparent font-medium text-muted-foreground shadow-none transition-colors",
-      "hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground",
-      className,
-    )}
-    {...props}
-  />
-);
+/**
+ * Renders the select trigger for prompt controls.
+ *
+ * @param props - Select trigger props.
+ * @returns The select trigger.
+ */
+export const PromptInputSelectTrigger = (
+  props: PromptInputSelectTriggerProps,
+) => {
+  const { className, ...rest } = props;
+  return (
+    <SelectTrigger
+      className={cn(
+        "border-none bg-transparent font-medium text-muted-foreground shadow-none transition-colors",
+        "hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type PromptInputSelectContentProps = ComponentProps<
   typeof SelectContent
 >;
 
-export const PromptInputSelectContent = ({
-  className,
-  ...props
-}: PromptInputSelectContentProps) => (
-  <SelectContent className={cn(className)} {...props} />
-);
+/**
+ * Renders select dropdown content.
+ *
+ * @param props - Select content props.
+ * @returns The select dropdown content.
+ */
+export const PromptInputSelectContent = (props: PromptInputSelectContentProps) => {
+  const { className, ...rest } = props;
+  return <SelectContent className={cn(className)} {...rest} />;
+};
 
 export type PromptInputSelectItemProps = ComponentProps<typeof SelectItem>;
 
-export const PromptInputSelectItem = ({
-  className,
-  ...props
-}: PromptInputSelectItemProps) => (
-  <SelectItem className={cn(className)} {...props} />
-);
+/**
+ * Renders one select option item.
+ *
+ * @param props - Select item props.
+ * @returns The select item.
+ */
+export const PromptInputSelectItem = (props: PromptInputSelectItemProps) => {
+  const { className, ...rest } = props;
+  return <SelectItem className={cn(className)} {...rest} />;
+};
 
 export type PromptInputSelectValueProps = ComponentProps<typeof SelectValue>;
 
-export const PromptInputSelectValue = ({
-  className,
-  ...props
-}: PromptInputSelectValueProps) => (
-  <SelectValue className={cn(className)} {...props} />
-);
+/**
+ * Renders the selected option value text.
+ *
+ * @param props - Select value props.
+ * @returns The select value component.
+ */
+export const PromptInputSelectValue = (props: PromptInputSelectValueProps) => {
+  const { className, ...rest } = props;
+  return <SelectValue className={cn(className)} {...rest} />;
+};
 
 export type PromptInputHoverCardProps = ComponentProps<typeof HoverCard>;
 
-export const PromptInputHoverCard = ({
-  openDelay = 0,
-  closeDelay = 0,
-  ...props
-}: PromptInputHoverCardProps) => (
-  <HoverCard closeDelay={closeDelay} openDelay={openDelay} {...props} />
-);
+/**
+ * Renders a hover card root for prompt controls.
+ *
+ * @param props - Hover card props.
+ * @returns The hover card root.
+ */
+export const PromptInputHoverCard = (props: PromptInputHoverCardProps) => {
+  const { openDelay = 0, closeDelay = 0, ...rest } = props;
+  return <HoverCard closeDelay={closeDelay} openDelay={openDelay} {...rest} />;
+};
 
 export type PromptInputHoverCardTriggerProps = ComponentProps<
   typeof HoverCardTrigger
 >;
 
+/**
+ * Renders the hover card trigger element.
+ *
+ * @param props - Hover card trigger props.
+ * @returns The hover card trigger.
+ */
 export const PromptInputHoverCardTrigger = (
   props: PromptInputHoverCardTriggerProps,
 ) => <HoverCardTrigger {...props} />;
@@ -1186,125 +1268,191 @@ export type PromptInputHoverCardContentProps = ComponentProps<
   typeof HoverCardContent
 >;
 
-export const PromptInputHoverCardContent = ({
-  align = "start",
-  ...props
-}: PromptInputHoverCardContentProps) => (
-  <HoverCardContent align={align} {...props} />
-);
+/**
+ * Renders hover card content.
+ *
+ * @param props - Hover card content props.
+ * @returns The hover card content.
+ */
+export const PromptInputHoverCardContent = (
+  props: PromptInputHoverCardContentProps,
+) => {
+  const { align = "start", ...rest } = props;
+  return <HoverCardContent align={align} {...rest} />;
+};
 
 export type PromptInputTabsListProps = HTMLAttributes<HTMLDivElement>;
 
-export const PromptInputTabsList = ({
-  className,
-  ...props
-}: PromptInputTabsListProps) => <div className={cn(className)} {...props} />;
+/**
+ * Renders tabs list wrapper.
+ *
+ * @param props - Tabs list props.
+ * @returns The tabs list wrapper.
+ */
+export const PromptInputTabsList = (props: PromptInputTabsListProps) => {
+  const { className, ...rest } = props;
+  return <div className={cn(className)} {...rest} />;
+};
 
 export type PromptInputTabProps = HTMLAttributes<HTMLDivElement>;
 
-export const PromptInputTab = ({
-  className,
-  ...props
-}: PromptInputTabProps) => <div className={cn(className)} {...props} />;
+/**
+ * Renders a tab container.
+ *
+ * @param props - Tab props.
+ * @returns The tab container.
+ */
+export const PromptInputTab = (props: PromptInputTabProps) => {
+  const { className, ...rest } = props;
+  return <div className={cn(className)} {...rest} />;
+};
 
 export type PromptInputTabLabelProps = HTMLAttributes<HTMLHeadingElement>;
 
-export const PromptInputTabLabel = ({
-  className,
-  ...props
-}: PromptInputTabLabelProps) => (
-  <h3
-    className={cn(
-      "mb-2 px-3 font-medium text-muted-foreground text-xs",
-      className,
-    )}
-    {...props}
-  />
-);
+/**
+ * Renders a section label for a tab.
+ *
+ * @param props - Tab label props.
+ * @returns The tab label heading.
+ */
+export const PromptInputTabLabel = (props: PromptInputTabLabelProps) => {
+  const { className, ...rest } = props;
+  return (
+    <h3
+      className={cn(
+        "mb-2 px-3 font-medium text-muted-foreground text-xs",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type PromptInputTabBodyProps = HTMLAttributes<HTMLDivElement>;
 
-export const PromptInputTabBody = ({
-  className,
-  ...props
-}: PromptInputTabBodyProps) => (
-  <div className={cn("space-y-1", className)} {...props} />
-);
+/**
+ * Renders tab body content.
+ *
+ * @param props - Tab body props.
+ * @returns The tab body container.
+ */
+export const PromptInputTabBody = (props: PromptInputTabBodyProps) => {
+  const { className, ...rest } = props;
+  return <div className={cn("space-y-1", className)} {...rest} />;
+};
 
 export type PromptInputTabItemProps = HTMLAttributes<HTMLDivElement>;
 
-export const PromptInputTabItem = ({
-  className,
-  ...props
-}: PromptInputTabItemProps) => (
-  <div
-    className={cn(
-      "flex items-center gap-2 px-3 py-2 text-xs hover:bg-accent",
-      className,
-    )}
-    {...props}
-  />
-);
+/**
+ * Renders a selectable item within a tab section.
+ *
+ * @param props - Tab item props.
+ * @returns The tab item element.
+ */
+export const PromptInputTabItem = (props: PromptInputTabItemProps) => {
+  const { className, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 px-3 py-2 text-xs hover:bg-accent",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type PromptInputCommandProps = ComponentProps<typeof Command>;
 
-export const PromptInputCommand = ({
-  className,
-  ...props
-}: PromptInputCommandProps) => <Command className={cn(className)} {...props} />;
+/**
+ * Renders command root content.
+ *
+ * @param props - Command root props.
+ * @returns The command root.
+ */
+export const PromptInputCommand = (props: PromptInputCommandProps) => {
+  const { className, ...rest } = props;
+  return <Command className={cn(className)} {...rest} />;
+};
 
 export type PromptInputCommandInputProps = ComponentProps<typeof CommandInput>;
 
-export const PromptInputCommandInput = ({
-  className,
-  ...props
-}: PromptInputCommandInputProps) => (
-  <CommandInput className={cn(className)} {...props} />
-);
+/**
+ * Renders command input.
+ *
+ * @param props - Command input props.
+ * @returns The command input.
+ */
+export const PromptInputCommandInput = (props: PromptInputCommandInputProps) => {
+  const { className, ...rest } = props;
+  return <CommandInput className={cn(className)} {...rest} />;
+};
 
 export type PromptInputCommandListProps = ComponentProps<typeof CommandList>;
 
-export const PromptInputCommandList = ({
-  className,
-  ...props
-}: PromptInputCommandListProps) => (
-  <CommandList className={cn(className)} {...props} />
-);
+/**
+ * Renders command list.
+ *
+ * @param props - Command list props.
+ * @returns The command list.
+ */
+export const PromptInputCommandList = (props: PromptInputCommandListProps) => {
+  const { className, ...rest } = props;
+  return <CommandList className={cn(className)} {...rest} />;
+};
 
 export type PromptInputCommandEmptyProps = ComponentProps<typeof CommandEmpty>;
 
-export const PromptInputCommandEmpty = ({
-  className,
-  ...props
-}: PromptInputCommandEmptyProps) => (
-  <CommandEmpty className={cn(className)} {...props} />
-);
+/**
+ * Renders empty state for command results.
+ *
+ * @param props - Empty state props.
+ * @returns The command empty component.
+ */
+export const PromptInputCommandEmpty = (props: PromptInputCommandEmptyProps) => {
+  const { className, ...rest } = props;
+  return <CommandEmpty className={cn(className)} {...rest} />;
+};
 
 export type PromptInputCommandGroupProps = ComponentProps<typeof CommandGroup>;
 
-export const PromptInputCommandGroup = ({
-  className,
-  ...props
-}: PromptInputCommandGroupProps) => (
-  <CommandGroup className={cn(className)} {...props} />
-);
+/**
+ * Renders grouped command items.
+ *
+ * @param props - Command group props.
+ * @returns The command group.
+ */
+export const PromptInputCommandGroup = (props: PromptInputCommandGroupProps) => {
+  const { className, ...rest } = props;
+  return <CommandGroup className={cn(className)} {...rest} />;
+};
 
 export type PromptInputCommandItemProps = ComponentProps<typeof CommandItem>;
 
-export const PromptInputCommandItem = ({
-  className,
-  ...props
-}: PromptInputCommandItemProps) => (
-  <CommandItem className={cn(className)} {...props} />
-);
+/**
+ * Renders one command item.
+ *
+ * @param props - Command item props.
+ * @returns The command item.
+ */
+export const PromptInputCommandItem = (props: PromptInputCommandItemProps) => {
+  const { className, ...rest } = props;
+  return <CommandItem className={cn(className)} {...rest} />;
+};
 
 export type PromptInputCommandSeparatorProps = ComponentProps<
   typeof CommandSeparator
 >;
 
-export const PromptInputCommandSeparator = ({
-  className,
-  ...props
-}: PromptInputCommandSeparatorProps) => (
-  <CommandSeparator className={cn(className)} {...props} />
-);
+/**
+ * Renders a separator between command groups.
+ *
+ * @param props - Command separator props.
+ * @returns The command separator.
+ */
+export const PromptInputCommandSeparator = (
+  props: PromptInputCommandSeparatorProps,
+) => {
+  const { className, ...rest } = props;
+  return <CommandSeparator className={cn(className)} {...rest} />;
+};

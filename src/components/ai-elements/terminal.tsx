@@ -35,94 +35,112 @@ export type TerminalProps = HTMLAttributes<HTMLDivElement> & {
   onClear?: () => void;
 };
 
-/** @param props - Terminal output and container props. @returns The terminal root element. */
-export const Terminal = ({
-  output,
-  mode = "static",
-  scroll = "auto",
-  onClear,
-  className,
-  children,
-  ...props
-}: TerminalProps) => (
-  <TerminalContext.Provider
-    value={{
-      mode,
-      output,
-      scroll,
-      ...(onClear === undefined ? {} : { onClear }),
-    }}
-  >
-    <div
-      className={cn(
-        "flex flex-col overflow-hidden rounded-lg border bg-zinc-950 text-zinc-100",
-        className,
-      )}
-      {...props}
+/**
+ * Renders the terminal root container and provides terminal state context.
+ *
+ * @param props - Terminal output and container props.
+ * @returns The terminal root element.
+ */
+export const Terminal = (props: TerminalProps) => {
+  const {
+    output,
+    mode = "static",
+    scroll = "auto",
+    onClear,
+    className,
+    children,
+    ...rest
+  } = props;
+  return (
+    <TerminalContext.Provider
+      value={{
+        mode,
+        output,
+        scroll,
+        ...(onClear === undefined ? {} : { onClear }),
+      }}
     >
-      {children ?? (
-        <>
-          <TerminalHeader>
-            <TerminalTitle />
-            <div className="flex items-center gap-1">
-              <TerminalStatus />
-              <TerminalActions>
-                <TerminalCopyButton />
-                {onClear ? <TerminalClearButton /> : null}
-              </TerminalActions>
-            </div>
-          </TerminalHeader>
-          <TerminalContent />
-        </>
-      )}
-    </div>
-  </TerminalContext.Provider>
-);
+      <div
+        className={cn(
+          "flex flex-col overflow-hidden rounded-lg border bg-zinc-950 text-zinc-100",
+          className,
+        )}
+        {...rest}
+      >
+        {children ?? (
+          <>
+            <TerminalHeader>
+              <TerminalTitle />
+              <div className="flex items-center gap-1">
+                <TerminalStatus />
+                <TerminalActions>
+                  <TerminalCopyButton />
+                  {onClear ? <TerminalClearButton /> : null}
+                </TerminalActions>
+              </div>
+            </TerminalHeader>
+            <TerminalContent />
+          </>
+        )}
+      </div>
+    </TerminalContext.Provider>
+  );
+};
 
 export type TerminalHeaderProps = HTMLAttributes<HTMLDivElement>;
 
-/** @param props - Header container props. @returns The terminal header. */
-export const TerminalHeader = ({
-  className,
-  children,
-  ...props
-}: TerminalHeaderProps) => (
-  <div
-    className={cn(
-      "flex items-center justify-between border-zinc-800 border-b px-4 py-2",
-      className,
-    )}
-    {...props}
-  >
-    {children}
-  </div>
-);
+/**
+ * Renders the terminal header row.
+ *
+ * @param props - Header container props.
+ * @returns The terminal header.
+ */
+export const TerminalHeader = (props: TerminalHeaderProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between border-zinc-800 border-b px-4 py-2",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};
 
 export type TerminalTitleProps = HTMLAttributes<HTMLDivElement>;
 
-/** @param props - Title container props. @returns The terminal title row. */
-export const TerminalTitle = ({
-  className,
-  children,
-  ...props
-}: TerminalTitleProps) => (
-  <div
-    className={cn("flex items-center gap-2 text-sm text-zinc-400", className)}
-    {...props}
-  >
-    <TerminalIcon className="size-4" />
-    {children ?? "Terminal"}
-  </div>
-);
+/**
+ * Renders the terminal title area with icon.
+ *
+ * @param props - Title container props.
+ * @returns The terminal title row.
+ */
+export const TerminalTitle = (props: TerminalTitleProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div
+      className={cn("flex items-center gap-2 text-sm text-zinc-400", className)}
+      {...rest}
+    >
+      <TerminalIcon className="size-4" />
+      {children ?? "Terminal"}
+    </div>
+  );
+};
 
 export type TerminalStatusProps = HTMLAttributes<HTMLDivElement>;
 
-/** @param props - Status content props. @returns Streaming status UI or `null`. */
-export const TerminalStatus = ({
-  className,
-  children,
-  ...props
-}: TerminalStatusProps) => {
+/**
+ * Renders the terminal status indicator while output is streaming.
+ *
+ * @param props - Status content props.
+ * @returns Streaming status UI or `null`.
+ */
+export const TerminalStatus = (props: TerminalStatusProps) => {
+  const { className, children, ...rest } = props;
   const { mode } = useContext(TerminalContext);
 
   if (mode !== "streaming") {
@@ -132,7 +150,7 @@ export const TerminalStatus = ({
   return (
     <div
       className={cn("flex items-center gap-2 text-xs text-zinc-400", className)}
-      {...props}
+      {...rest}
     >
       {children ?? (
         <Shimmer as="span" className="w-16">
@@ -145,16 +163,20 @@ export const TerminalStatus = ({
 
 export type TerminalActionsProps = HTMLAttributes<HTMLDivElement>;
 
-/** @param props - Action container props. @returns The terminal actions row. */
-export const TerminalActions = ({
-  className,
-  children,
-  ...props
-}: TerminalActionsProps) => (
-  <div className={cn("flex items-center gap-1", className)} {...props}>
-    {children}
-  </div>
-);
+/**
+ * Renders the action button group in the terminal header.
+ *
+ * @param props - Action container props.
+ * @returns The terminal actions row.
+ */
+export const TerminalActions = (props: TerminalActionsProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div className={cn("flex items-center gap-1", className)} {...rest}>
+      {children}
+    </div>
+  );
+};
 
 export type TerminalCopyButtonProps = ComponentProps<typeof Button> & {
   onCopy?: () => void;
@@ -162,15 +184,21 @@ export type TerminalCopyButtonProps = ComponentProps<typeof Button> & {
   timeout?: number;
 };
 
-/** @param props - Copy button and callback props. @returns A terminal copy button. */
-export const TerminalCopyButton = ({
-  onCopy,
-  onError,
-  timeout = 2000,
-  children,
-  className,
-  ...props
-}: TerminalCopyButtonProps) => {
+/**
+ * Renders a button that copies terminal output to the clipboard.
+ *
+ * @param props - Copy button and callback props.
+ * @returns A terminal copy button.
+ */
+export const TerminalCopyButton = (props: TerminalCopyButtonProps) => {
+  const {
+    onCopy,
+    onError,
+    timeout = 2000,
+    children,
+    className,
+    ...rest
+  } = props;
   const [isCopied, setIsCopied] = useState(false);
   const { output } = useContext(TerminalContext);
 
@@ -201,7 +229,7 @@ export const TerminalCopyButton = ({
       onClick={copyToClipboard}
       size="icon"
       variant="ghost"
-      {...props}
+      {...rest}
     >
       {children ?? <Icon size={14} />}
     </Button>
@@ -210,12 +238,14 @@ export const TerminalCopyButton = ({
 
 export type TerminalClearButtonProps = ComponentProps<typeof Button>;
 
-/** @param props - Clear button props. @returns A clear button or `null`. */
-export const TerminalClearButton = ({
-  children,
-  className,
-  ...props
-}: TerminalClearButtonProps) => {
+/**
+ * Renders a button that clears terminal output.
+ *
+ * @param props - Clear button props.
+ * @returns A clear button or `null`.
+ */
+export const TerminalClearButton = (props: TerminalClearButtonProps) => {
+  const { children, className, ...rest } = props;
   const { onClear } = useContext(TerminalContext);
 
   if (!onClear) {
@@ -231,7 +261,7 @@ export const TerminalClearButton = ({
       onClick={onClear}
       size="icon"
       variant="ghost"
-      {...props}
+      {...rest}
     >
       {children ?? <Trash2Icon size={14} />}
     </Button>
@@ -240,12 +270,14 @@ export const TerminalClearButton = ({
 
 export type TerminalContentProps = HTMLAttributes<HTMLDivElement>;
 
-/** @param props - Content container props. @returns Terminal output content. */
-export const TerminalContent = ({
-  className,
-  children,
-  ...props
-}: TerminalContentProps) => {
+/**
+ * Renders terminal output content and optional auto-scroll behavior.
+ *
+ * @param props - Content container props.
+ * @returns Terminal output content.
+ */
+export const TerminalContent = (props: TerminalContentProps) => {
+  const { className, children, ...rest } = props;
   const { output, mode, scroll } = useContext(TerminalContext);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -263,7 +295,7 @@ export const TerminalContent = ({
         className,
       )}
       ref={containerRef}
-      {...props}
+      {...rest}
     >
       {children ?? (
         <pre className="whitespace-pre-wrap break-words">

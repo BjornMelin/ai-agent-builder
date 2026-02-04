@@ -53,15 +53,22 @@ export type MicSelectorProps = ComponentProps<typeof Popover> & {
   onOpenChange?: (open: boolean) => void;
 };
 
-export const MicSelector = ({
-  defaultValue,
-  value: controlledValue,
-  onValueChange: controlledOnValueChange,
-  defaultOpen = false,
-  open: controlledOpen,
-  onOpenChange: controlledOnOpenChange,
-  ...props
-}: MicSelectorProps) => {
+/**
+ * Provides microphone selection state and popover composition context.
+ *
+ * @param props - Selector root props.
+ * @returns The microphone selector root.
+ */
+export const MicSelector = (props: MicSelectorProps) => {
+  const {
+    defaultValue,
+    value: controlledValue,
+    onValueChange: controlledOnValueChange,
+    defaultOpen = false,
+    open: controlledOpen,
+    onOpenChange: controlledOnOpenChange,
+    ...rest
+  } = props;
   const [value, onValueChange] = useControllableState<string | undefined>({
     defaultProp: defaultValue,
     prop: controlledValue,
@@ -97,17 +104,21 @@ export const MicSelector = ({
         width,
       }}
     >
-      <Popover {...props} onOpenChange={onOpenChange} open={open} />
+      <Popover {...rest} onOpenChange={onOpenChange} open={open} />
     </MicSelectorContext.Provider>
   );
 };
 
 export type MicSelectorTriggerProps = ComponentProps<typeof Button>;
 
-export const MicSelectorTrigger = ({
-  children,
-  ...props
-}: MicSelectorTriggerProps) => {
+/**
+ * Renders the trigger button used to open microphone selection.
+ *
+ * @param props - Trigger button props.
+ * @returns A popover trigger button.
+ */
+export const MicSelectorTrigger = (props: MicSelectorTriggerProps) => {
+  const { children, ...rest } = props;
   const { setWidth } = useContext(MicSelectorContext);
   const ref = useRef<HTMLButtonElement>(null);
 
@@ -134,7 +145,7 @@ export const MicSelectorTrigger = ({
 
   return (
     <PopoverTrigger asChild>
-      <Button variant="outline" {...props} ref={ref}>
+      <Button variant="outline" {...rest} ref={ref}>
         {children}
         <ChevronsUpDownIcon
           className="shrink-0 text-muted-foreground"
@@ -149,11 +160,14 @@ export type MicSelectorContentProps = ComponentProps<typeof Command> & {
   popoverOptions?: ComponentProps<typeof PopoverContent>;
 };
 
-export const MicSelectorContent = ({
-  className,
-  popoverOptions,
-  ...props
-}: MicSelectorContentProps) => {
+/**
+ * Renders the command palette content for microphone options.
+ *
+ * @param props - Command content and popover options.
+ * @returns The selector content panel.
+ */
+export const MicSelectorContent = (props: MicSelectorContentProps) => {
+  const { className, popoverOptions, ...rest } = props;
   const { width, onValueChange, value } = useContext(MicSelectorContext);
 
   return (
@@ -165,7 +179,7 @@ export const MicSelectorContent = ({
       <Command
         {...(onValueChange === undefined ? {} : { onValueChange })}
         {...(value === undefined ? {} : { value })}
-        {...props}
+        {...rest}
       />
     </PopoverContent>
   );
@@ -177,6 +191,12 @@ export type MicSelectorInputProps = ComponentProps<typeof CommandInput> & {
   onValueChange?: (value: string) => void;
 };
 
+/**
+ * Renders the search input for microphone filtering.
+ *
+ * @param props - Command input props.
+ * @returns The microphone search input.
+ */
 export const MicSelectorInput = ({ ...props }: MicSelectorInputProps) => (
   <CommandInput placeholder="Search microphones..." {...props} />
 );
@@ -188,24 +208,40 @@ export type MicSelectorListProps = Omit<
   children: (devices: MediaDeviceInfo[]) => ReactNode;
 };
 
-export const MicSelectorList = ({
-  children,
-  ...props
-}: MicSelectorListProps) => {
+/**
+ * Renders microphone items using a render function.
+ *
+ * @param props - List props with item renderer.
+ * @returns The rendered microphone list.
+ */
+export const MicSelectorList = (props: MicSelectorListProps) => {
+  const { children, ...rest } = props;
   const { data } = useContext(MicSelectorContext);
 
-  return <CommandList {...props}>{children(data)}</CommandList>;
+  return <CommandList {...rest}>{children(data)}</CommandList>;
 };
 
 export type MicSelectorEmptyProps = ComponentProps<typeof CommandEmpty>;
 
-export const MicSelectorEmpty = ({
-  children = "No microphone found.",
-  ...props
-}: MicSelectorEmptyProps) => <CommandEmpty {...props}>{children}</CommandEmpty>;
+/**
+ * Renders empty state text for microphone search.
+ *
+ * @param props - Empty state props.
+ * @returns The empty state component.
+ */
+export const MicSelectorEmpty = (props: MicSelectorEmptyProps) => {
+  const { children = "No microphone found.", ...rest } = props;
+  return <CommandEmpty {...rest}>{children}</CommandEmpty>;
+};
 
 export type MicSelectorItemProps = ComponentProps<typeof CommandItem>;
 
+/**
+ * Renders a selectable microphone item.
+ *
+ * @param props - Command item props.
+ * @returns A microphone option item.
+ */
 export const MicSelectorItem = (props: MicSelectorItemProps) => {
   const { onValueChange, onOpenChange } = useContext(MicSelectorContext);
 
@@ -224,16 +260,19 @@ export type MicSelectorLabelProps = ComponentProps<"span"> & {
   device: MediaDeviceInfo;
 };
 
-export const MicSelectorLabel = ({
-  device,
-  className,
-  ...props
-}: MicSelectorLabelProps) => {
+/**
+ * Renders a microphone label with optional extracted device id.
+ *
+ * @param props - Device label props.
+ * @returns A formatted microphone label.
+ */
+export const MicSelectorLabel = (props: MicSelectorLabelProps) => {
+  const { device, className, ...rest } = props;
   const matches = device.label.match(deviceIdRegex);
 
   if (!matches) {
     return (
-      <span className={className} {...props}>
+      <span className={className} {...rest}>
         {device.label}
       </span>
     );
@@ -243,7 +282,7 @@ export const MicSelectorLabel = ({
   const name = device.label.replace(deviceIdRegex, "");
 
   return (
-    <span className={className} {...props}>
+    <span className={className} {...rest}>
       <span>{name}</span>
       <span className="text-muted-foreground"> ({deviceId})</span>
     </span>
@@ -252,16 +291,20 @@ export const MicSelectorLabel = ({
 
 export type MicSelectorValueProps = ComponentProps<"span">;
 
-export const MicSelectorValue = ({
-  className,
-  ...props
-}: MicSelectorValueProps) => {
+/**
+ * Renders the currently selected microphone label.
+ *
+ * @param props - Value display props.
+ * @returns The selected microphone text.
+ */
+export const MicSelectorValue = (props: MicSelectorValueProps) => {
+  const { className, ...rest } = props;
   const { data, value } = useContext(MicSelectorContext);
   const currentDevice = data.find((d) => d.deviceId === value);
 
   if (!currentDevice) {
     return (
-      <span className={cn("flex-1 text-left", className)} {...props}>
+      <span className={cn("flex-1 text-left", className)} {...rest}>
         Select microphone...
       </span>
     );
@@ -271,7 +314,7 @@ export const MicSelectorValue = ({
     <MicSelectorLabel
       className={cn("flex-1 text-left", className)}
       device={currentDevice}
-      {...props}
+      {...rest}
     />
   );
 };

@@ -33,38 +33,38 @@ export const AudioPlayer = (props: AudioPlayerProps) => {
   const { className, children, style, ...rest } = props;
   return (
     <MediaController
-    audio
-    className={className}
-    data-slot="audio-player"
-    style={
-      {
-        "--media-background-color": "transparent",
-        "--media-button-icon-height": "1rem",
-        "--media-button-icon-width": "1rem",
-        "--media-control-background": "transparent",
-        "--media-control-hover-background": "var(--color-accent)",
-        "--media-control-padding": "0",
-        "--media-font": "var(--font-sans)",
-        "--media-font-size": "10px",
-        "--media-icon-color": "currentColor",
-        "--media-preview-time-background": "var(--color-background)",
-        "--media-preview-time-border-radius": "var(--radius-md)",
-        "--media-preview-time-text-shadow": "none",
-        "--media-primary-color": "var(--color-primary)",
-        "--media-range-bar-color": "var(--color-primary)",
-        "--media-range-track-background": "var(--color-secondary)",
-        "--media-secondary-color": "var(--color-secondary)",
-        "--media-text-color": "var(--color-foreground)",
-        "--media-tooltip-arrow-display": "none",
-        "--media-tooltip-background": "var(--color-background)",
-        "--media-tooltip-border-radius": "var(--radius-md)",
-        ...style,
-      } as CSSProperties
-    }
-    {...rest}
-  >
-    {children}
-  </MediaController>
+      audio
+      className={className}
+      data-slot="audio-player"
+      style={
+        {
+          "--media-background-color": "transparent",
+          "--media-button-icon-height": "1rem",
+          "--media-button-icon-width": "1rem",
+          "--media-control-background": "transparent",
+          "--media-control-hover-background": "var(--color-accent)",
+          "--media-control-padding": "0",
+          "--media-font": "var(--font-sans)",
+          "--media-font-size": "10px",
+          "--media-icon-color": "currentColor",
+          "--media-preview-time-background": "var(--color-background)",
+          "--media-preview-time-border-radius": "var(--radius-md)",
+          "--media-preview-time-text-shadow": "none",
+          "--media-primary-color": "var(--color-primary)",
+          "--media-range-bar-color": "var(--color-primary)",
+          "--media-range-track-background": "var(--color-secondary)",
+          "--media-secondary-color": "var(--color-secondary)",
+          "--media-text-color": "var(--color-foreground)",
+          "--media-tooltip-arrow-display": "none",
+          "--media-tooltip-background": "var(--color-background)",
+          "--media-tooltip-border-radius": "var(--radius-md)",
+          ...style,
+        } as CSSProperties
+      }
+      {...rest}
+    >
+      {children}
+    </MediaController>
   );
 };
 
@@ -125,13 +125,13 @@ export type AudioPlayerPlayButtonProps = ComponentProps<typeof MediaPlayButton>;
 export const AudioPlayerPlayButton = (props: AudioPlayerPlayButtonProps) => {
   const { className, ...rest } = props;
   return (
-  <Button asChild size="icon-sm" variant="outline">
-    <MediaPlayButton
-      className={cn("bg-transparent", className)}
-      data-slot="audio-player-play-button"
-      {...rest}
-    />
-  </Button>
+    <Button asChild size="icon-sm" variant="outline">
+      <MediaPlayButton
+        className={cn("bg-transparent", className)}
+        data-slot="audio-player-play-button"
+        {...rest}
+      />
+    </Button>
   );
 };
 
@@ -150,13 +150,13 @@ export const AudioPlayerSeekBackwardButton = (
 ) => {
   const { seekOffset = 10, ...rest } = props;
   return (
-  <Button asChild size="icon-sm" variant="outline">
-    <MediaSeekBackwardButton
-      data-slot="audio-player-seek-backward-button"
-      seekOffset={seekOffset}
-      {...rest}
-    />
-  </Button>
+    <Button asChild size="icon-sm" variant="outline">
+      <MediaSeekBackwardButton
+        data-slot="audio-player-seek-backward-button"
+        seekOffset={seekOffset}
+        {...rest}
+      />
+    </Button>
   );
 };
 
@@ -175,13 +175,13 @@ export const AudioPlayerSeekForwardButton = (
 ) => {
   const { seekOffset = 10, ...rest } = props;
   return (
-  <Button asChild size="icon-sm" variant="outline">
-    <MediaSeekForwardButton
-      data-slot="audio-player-seek-forward-button"
-      seekOffset={seekOffset}
-      {...rest}
-    />
-  </Button>
+    <Button asChild size="icon-sm" variant="outline">
+      <MediaSeekForwardButton
+        data-slot="audio-player-seek-forward-button"
+        seekOffset={seekOffset}
+        {...rest}
+      />
+    </Button>
   );
 };
 
@@ -198,13 +198,13 @@ export type AudioPlayerTimeDisplayProps = ComponentProps<
 export const AudioPlayerTimeDisplay = (props: AudioPlayerTimeDisplayProps) => {
   const { className, ...rest } = props;
   return (
-  <ButtonGroupText asChild className="bg-transparent">
-    <MediaTimeDisplay
-      className={cn("tabular-nums", className)}
-      data-slot="audio-player-time-display"
-      {...rest}
-    />
-  </ButtonGroupText>
+    <ButtonGroupText asChild className="bg-transparent">
+      <MediaTimeDisplay
+        className={cn("tabular-nums", className)}
+        data-slot="audio-player-time-display"
+        {...rest}
+      />
+    </ButtonGroupText>
   );
 };
 
@@ -219,13 +219,13 @@ export type AudioPlayerTimeRangeProps = ComponentProps<typeof MediaTimeRange>;
 export const AudioPlayerTimeRange = (props: AudioPlayerTimeRangeProps) => {
   const { className, ...rest } = props;
   return (
-  <ButtonGroupText asChild className="bg-transparent">
-    <MediaTimeRange
-      className={cn(className)}
-      data-slot="audio-player-time-range"
-      {...rest}
-    />
-  </ButtonGroupText>
+    <ButtonGroupText asChild className="bg-transparent">
+      <MediaTimeRange
+        className={cn(className)}
+        data-slot="audio-player-time-range"
+        {...rest}
+      />
+    </ButtonGroupText>
   );
 };
 
@@ -244,13 +244,13 @@ export const AudioPlayerDurationDisplay = (
 ) => {
   const { className, ...rest } = props;
   return (
-  <ButtonGroupText asChild className="bg-transparent">
-    <MediaDurationDisplay
-      className={cn("tabular-nums", className)}
-      data-slot="audio-player-duration-display"
-      {...rest}
-    />
-  </ButtonGroupText>
+    <ButtonGroupText asChild className="bg-transparent">
+      <MediaDurationDisplay
+        className={cn("tabular-nums", className)}
+        data-slot="audio-player-duration-display"
+        {...rest}
+      />
+    </ButtonGroupText>
   );
 };
 
@@ -265,13 +265,13 @@ export type AudioPlayerMuteButtonProps = ComponentProps<typeof MediaMuteButton>;
 export const AudioPlayerMuteButton = (props: AudioPlayerMuteButtonProps) => {
   const { className, ...rest } = props;
   return (
-  <ButtonGroupText asChild className="bg-transparent">
-    <MediaMuteButton
-      className={cn(className)}
-      data-slot="audio-player-mute-button"
-      {...rest}
-    />
-  </ButtonGroupText>
+    <ButtonGroupText asChild className="bg-transparent">
+      <MediaMuteButton
+        className={cn(className)}
+        data-slot="audio-player-mute-button"
+        {...rest}
+      />
+    </ButtonGroupText>
   );
 };
 
@@ -288,12 +288,12 @@ export type AudioPlayerVolumeRangeProps = ComponentProps<
 export const AudioPlayerVolumeRange = (props: AudioPlayerVolumeRangeProps) => {
   const { className, ...rest } = props;
   return (
-  <ButtonGroupText asChild className="bg-transparent">
-    <MediaVolumeRange
-      className={cn(className)}
-      data-slot="audio-player-volume-range"
-      {...rest}
-    />
-  </ButtonGroupText>
+    <ButtonGroupText asChild className="bg-transparent">
+      <MediaVolumeRange
+        className={cn(className)}
+        data-slot="audio-player-volume-range"
+        {...rest}
+      />
+    </ButtonGroupText>
   );
 };

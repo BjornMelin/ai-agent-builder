@@ -181,7 +181,9 @@ export type QueueItemAttachmentProps = ComponentProps<"div">;
  */
 export const QueueItemAttachment = (props: QueueItemAttachmentProps) => {
   const { className, ...rest } = props;
-  return <div className={cn("mt-1 flex flex-wrap gap-2", className)} {...rest} />;
+  return (
+    <div className={cn("mt-1 flex flex-wrap gap-2", className)} {...rest} />
+  );
 };
 
 export type QueueItemImageProps = ComponentProps<typeof Image>;
@@ -271,7 +273,11 @@ export type QueueSectionProps = ComponentProps<typeof Collapsible>;
 export const QueueSection = (props: QueueSectionProps) => {
   const { className, defaultOpen = true, ...rest } = props;
   return (
-    <Collapsible className={cn(className)} defaultOpen={defaultOpen} {...rest} />
+    <Collapsible
+      className={cn(className)}
+      defaultOpen={defaultOpen}
+      {...rest}
+    />
   );
 };
 

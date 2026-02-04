@@ -33,17 +33,18 @@ export type CommitProps = ComponentProps<typeof Collapsible>;
 
 /**
  * Root container for a git commit representation.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit container.
  */
-export const Commit = ({ className, children, ...props }: CommitProps) => (
-  <Collapsible
-    className={cn("rounded-lg border bg-background", className)}
-    {...props}
-  >
-    {children}
-  </Collapsible>
-);
+export const Commit = (props: CommitProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <Collapsible className={cn("rounded-lg border bg-background", className)} {...rest}>
+      {children}
+    </Collapsible>
+  );
+};
 
 /**
  * Props for the CommitHeader component.
@@ -52,25 +53,25 @@ export type CommitHeaderProps = ComponentProps<typeof CollapsibleTrigger>;
 
 /**
  * Header section of a commit, typically containing the hash and message.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit header.
  */
-export const CommitHeader = ({
-  className,
-  children,
-  ...props
-}: CommitHeaderProps) => (
-  <CollapsibleTrigger asChild {...props}>
-    <div
-      className={cn(
-        "group flex cursor-pointer items-center justify-between gap-4 p-3 text-left transition-colors hover:opacity-80",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  </CollapsibleTrigger>
-);
+export const CommitHeader = (props: CommitHeaderProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <CollapsibleTrigger asChild {...rest}>
+      <div
+        className={cn(
+          "group flex cursor-pointer items-center justify-between gap-4 p-3 text-left transition-colors hover:opacity-80",
+          className,
+        )}
+      >
+        {children}
+      </div>
+    </CollapsibleTrigger>
+  );
+};
 
 /**
  * Props for the CommitHash component.
@@ -79,19 +80,19 @@ export type CommitHashProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
  * Displays the short hash of a commit.
+ *
  * @param props - Component properties including children (the hash) and className.
  * @returns The rendered commit hash.
  */
-export const CommitHash = ({
-  className,
-  children,
-  ...props
-}: CommitHashProps) => (
-  <span className={cn("font-mono text-xs", className)} {...props}>
-    <GitCommitIcon className="mr-1 inline-block size-3" />
-    {children}
-  </span>
-);
+export const CommitHash = (props: CommitHashProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <span className={cn("font-mono text-xs", className)} {...rest}>
+      <GitCommitIcon className="mr-1 inline-block size-3" />
+      {children}
+    </span>
+  );
+};
 
 /**
  * Props for the CommitMessage component.
@@ -100,18 +101,18 @@ export type CommitMessageProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
  * Displays the commit message.
+ *
  * @param props - Component properties including children (the message) and className.
  * @returns The rendered commit message.
  */
-export const CommitMessage = ({
-  className,
-  children,
-  ...props
-}: CommitMessageProps) => (
-  <span className={cn("font-medium text-sm", className)} {...props}>
-    {children}
-  </span>
-);
+export const CommitMessage = (props: CommitMessageProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <span className={cn("font-medium text-sm", className)} {...rest}>
+      {children}
+    </span>
+  );
+};
 
 /**
  * Props for the CommitMetadata component.
@@ -120,24 +121,24 @@ export type CommitMetadataProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * Container for commit metadata like author and timestamp.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit metadata container.
  */
-export const CommitMetadata = ({
-  className,
-  children,
-  ...props
-}: CommitMetadataProps) => (
-  <div
-    className={cn(
-      "flex items-center gap-2 text-muted-foreground text-xs",
-      className,
-    )}
-    {...props}
-  >
-    {children}
-  </div>
-);
+export const CommitMetadata = (props: CommitMetadataProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 text-muted-foreground text-xs",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};
 
 /**
  * Props for the CommitSeparator component.
@@ -146,18 +147,14 @@ export type CommitSeparatorProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
  * A separator for commit metadata items.
+ *
  * @param props - Component properties including children and className. Defaults to a bullet point.
  * @returns The rendered commit separator.
  */
-export const CommitSeparator = ({
-  className,
-  children,
-  ...props
-}: CommitSeparatorProps) => (
-  <span className={className} {...props}>
-    {children ?? "•"}
-  </span>
-);
+export const CommitSeparator = (props: CommitSeparatorProps) => {
+  const { className, children, ...rest } = props;
+  return <span className={className} {...rest}>{children ?? "•"}</span>;
+};
 
 /**
  * Props for the CommitInfo component.
@@ -166,18 +163,18 @@ export type CommitInfoProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * Detailed information section for a commit.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit info container.
  */
-export const CommitInfo = ({
-  className,
-  children,
-  ...props
-}: CommitInfoProps) => (
-  <div className={cn("flex flex-1 flex-col", className)} {...props}>
-    {children}
-  </div>
-);
+export const CommitInfo = (props: CommitInfoProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div className={cn("flex flex-1 flex-col", className)} {...rest}>
+      {children}
+    </div>
+  );
+};
 
 /**
  * Props for the CommitAuthor component.
@@ -186,18 +183,18 @@ export type CommitAuthorProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * Displays the author of a commit.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit author.
  */
-export const CommitAuthor = ({
-  className,
-  children,
-  ...props
-}: CommitAuthorProps) => (
-  <div className={cn("flex items-center", className)} {...props}>
-    {children}
-  </div>
-);
+export const CommitAuthor = (props: CommitAuthorProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div className={cn("flex items-center", className)} {...rest}>
+      {children}
+    </div>
+  );
+};
 
 /**
  * Props for the CommitAuthorAvatar component.
@@ -209,18 +206,18 @@ export type CommitAuthorAvatarProps = ComponentProps<typeof Avatar> & {
 
 /**
  * Displays the author's avatar or initials.
+ *
  * @param props - Component properties including initials, className, and Avatar props.
  * @returns The rendered author avatar.
  */
-export const CommitAuthorAvatar = ({
-  initials,
-  className,
-  ...props
-}: CommitAuthorAvatarProps) => (
-  <Avatar className={cn("size-8", className)} {...props}>
-    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-  </Avatar>
-);
+export const CommitAuthorAvatar = (props: CommitAuthorAvatarProps) => {
+  const { initials, className, ...rest } = props;
+  return (
+    <Avatar className={cn("size-8", className)} {...rest}>
+      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+    </Avatar>
+  );
+};
 
 /**
  * Props for the CommitTimestamp component.
@@ -232,15 +229,12 @@ export type CommitTimestampProps = HTMLAttributes<HTMLTimeElement> & {
 
 /**
  * Displays the timestamp of a commit, formatted relatively.
+ *
  * @param props - Component properties including date, children, and className.
  * @returns The rendered commit timestamp.
  */
-export const CommitTimestamp = ({
-  date,
-  className,
-  children,
-  ...props
-}: CommitTimestampProps) => {
+export const CommitTimestamp = (props: CommitTimestampProps) => {
+  const { date, className, children, ...rest } = props;
   const formatted = new Intl.RelativeTimeFormat("en", {
     numeric: "auto",
   }).format(
@@ -252,7 +246,7 @@ export const CommitTimestamp = ({
     <time
       className={cn("text-xs", className)}
       dateTime={date.toISOString()}
-      {...props}
+      {...rest}
     >
       {children ?? formatted}
     </time>
@@ -266,26 +260,26 @@ export type CommitActionsProps = HTMLAttributes<HTMLFieldSetElement>;
 
 /**
  * Container for action buttons related to a commit.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit actions container.
  */
-export const CommitActions = ({
-  className,
-  children,
-  ...props
-}: CommitActionsProps) => (
-  <fieldset
-    className={cn(
-      "m-0 flex min-w-0 items-center gap-1 border-0 p-0",
-      className,
-    )}
-    onClick={(e) => e.stopPropagation()}
-    onKeyDown={(e) => e.stopPropagation()}
-    {...props}
-  >
-    {children}
-  </fieldset>
-);
+export const CommitActions = (props: CommitActionsProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <fieldset
+      className={cn(
+        "m-0 flex min-w-0 items-center gap-1 border-0 p-0",
+        className,
+      )}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      {...rest}
+    >
+      {children}
+    </fieldset>
+  );
+};
 
 /**
  * Props for the CommitCopyButton component.
@@ -303,18 +297,13 @@ export type CommitCopyButtonProps = ComponentProps<typeof Button> & {
 
 /**
  * A button to copy the commit hash to the clipboard.
+ *
  * @param props - Component properties including hash, onCopy, onError, timeout, children, and className.
  * @returns The rendered copy button.
  */
-export const CommitCopyButton = ({
-  hash,
-  onCopy,
-  onError,
-  timeout = 2000,
-  children,
-  className,
-  ...props
-}: CommitCopyButtonProps) => {
+export const CommitCopyButton = (props: CommitCopyButtonProps) => {
+  const { hash, onCopy, onError, timeout = 2000, children, className, ...rest } =
+    props;
   const [isCopied, setIsCopied] = useState(false);
   const timeoutRef = useRef<number>(0);
 
@@ -354,7 +343,7 @@ export const CommitCopyButton = ({
       onClick={copyToClipboard}
       size="icon"
       variant="ghost"
-      {...props}
+      {...rest}
     >
       {children ?? <Icon size={14} />}
     </Button>
@@ -368,18 +357,18 @@ export type CommitContentProps = ComponentProps<typeof CollapsibleContent>;
 
 /**
  * Expandable content area for a commit, typically containing file changes.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit content.
  */
-export const CommitContent = ({
-  className,
-  children,
-  ...props
-}: CommitContentProps) => (
-  <CollapsibleContent className={cn("border-t p-3", className)} {...props}>
-    {children}
-  </CollapsibleContent>
-);
+export const CommitContent = (props: CommitContentProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <CollapsibleContent className={cn("border-t p-3", className)} {...rest}>
+      {children}
+    </CollapsibleContent>
+  );
+};
 
 /**
  * Props for the CommitFiles component.
@@ -388,18 +377,18 @@ export type CommitFilesProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * List of files changed in a commit.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit files list.
  */
-export const CommitFiles = ({
-  className,
-  children,
-  ...props
-}: CommitFilesProps) => (
-  <div className={cn("space-y-1", className)} {...props}>
-    {children}
-  </div>
-);
+export const CommitFiles = (props: CommitFilesProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div className={cn("space-y-1", className)} {...rest}>
+      {children}
+    </div>
+  );
+};
 
 /**
  * Props for the CommitFile component.
@@ -408,24 +397,24 @@ export type CommitFileProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * Represents a single file changed in a commit.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit file item.
  */
-export const CommitFile = ({
-  className,
-  children,
-  ...props
-}: CommitFileProps) => (
-  <div
-    className={cn(
-      "flex items-center justify-between gap-2 rounded px-2 py-1 text-sm hover:bg-muted/50",
-      className,
-    )}
-    {...props}
-  >
-    {children}
-  </div>
-);
+export const CommitFile = (props: CommitFileProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-2 rounded px-2 py-1 text-sm hover:bg-muted/50",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};
 
 /**
  * Props for the CommitFileInfo component.
@@ -434,18 +423,18 @@ export type CommitFileInfoProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * Displays information about a changed file like status and icon.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit file info.
  */
-export const CommitFileInfo = ({
-  className,
-  children,
-  ...props
-}: CommitFileInfoProps) => (
-  <div className={cn("flex min-w-0 items-center gap-2", className)} {...props}>
-    {children}
-  </div>
-);
+export const CommitFileInfo = (props: CommitFileInfoProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div className={cn("flex min-w-0 items-center gap-2", className)} {...rest}>
+      {children}
+    </div>
+  );
+};
 
 const fileStatusStyles = {
   added: "text-green-600 dark:text-green-400",
@@ -471,26 +460,25 @@ export type CommitFileStatusProps = HTMLAttributes<HTMLSpanElement> & {
 
 /**
  * Displays the status (e.g., A, M, D, R) of a file change.
+ *
  * @param props - Component properties including status, children, and className.
  * @returns The rendered commit file status.
  */
-export const CommitFileStatus = ({
-  status,
-  className,
-  children,
-  ...props
-}: CommitFileStatusProps) => (
-  <span
-    className={cn(
-      "font-medium font-mono text-xs",
-      fileStatusStyles[status],
-      className,
-    )}
-    {...props}
-  >
-    {children ?? fileStatusLabels[status]}
-  </span>
-);
+export const CommitFileStatus = (props: CommitFileStatusProps) => {
+  const { status, className, children, ...rest } = props;
+  return (
+    <span
+      className={cn(
+        "font-medium font-mono text-xs",
+        fileStatusStyles[status],
+        className,
+      )}
+      {...rest}
+    >
+      {children ?? fileStatusLabels[status]}
+    </span>
+  );
+};
 
 /**
  * Props for the CommitFileIcon component.
@@ -499,18 +487,19 @@ export type CommitFileIconProps = ComponentProps<typeof FileIcon>;
 
 /**
  * Displays the icon for a changed file.
+ *
  * @param props - Component properties including className and FileIcon props.
  * @returns The rendered commit file icon.
  */
-export const CommitFileIcon = ({
-  className,
-  ...props
-}: CommitFileIconProps) => (
-  <FileIcon
-    className={cn("size-3.5 shrink-0 text-muted-foreground", className)}
-    {...props}
-  />
-);
+export const CommitFileIcon = (props: CommitFileIconProps) => {
+  const { className, ...rest } = props;
+  return (
+    <FileIcon
+      className={cn("size-3.5 shrink-0 text-muted-foreground", className)}
+      {...rest}
+    />
+  );
+};
 
 /**
  * Props for the CommitFilePath component.
@@ -519,18 +508,18 @@ export type CommitFilePathProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
  * Displays the path of a changed file.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit file path.
  */
-export const CommitFilePath = ({
-  className,
-  children,
-  ...props
-}: CommitFilePathProps) => (
-  <span className={cn("truncate font-mono text-xs", className)} {...props}>
-    {children}
-  </span>
-);
+export const CommitFilePath = (props: CommitFilePathProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <span className={cn("truncate font-mono text-xs", className)} {...rest}>
+      {children}
+    </span>
+  );
+};
 
 /**
  * Props for the CommitFileChanges component.
@@ -539,24 +528,24 @@ export type CommitFileChangesProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * Container for addition and deletion counts of a file change.
+ *
  * @param props - Component properties including children and className.
  * @returns The rendered commit file changes container.
  */
-export const CommitFileChanges = ({
-  className,
-  children,
-  ...props
-}: CommitFileChangesProps) => (
-  <div
-    className={cn(
-      "flex shrink-0 items-center gap-1 font-mono text-xs",
-      className,
-    )}
-    {...props}
-  >
-    {children}
-  </div>
-);
+export const CommitFileChanges = (props: CommitFileChangesProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-1 font-mono text-xs",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};
 
 /**
  * Props for the CommitFileAdditions component.
@@ -568,15 +557,12 @@ export type CommitFileAdditionsProps = HTMLAttributes<HTMLSpanElement> & {
 
 /**
  * Displays the number of lines added in a file change.
+ *
  * @param props - Component properties including count, children, and className.
  * @returns The rendered commit file additions count.
  */
-export const CommitFileAdditions = ({
-  count,
-  className,
-  children,
-  ...props
-}: CommitFileAdditionsProps) => {
+export const CommitFileAdditions = (props: CommitFileAdditionsProps) => {
+  const { count, className, children, ...rest } = props;
   if (count <= 0) {
     return null;
   }
@@ -584,7 +570,7 @@ export const CommitFileAdditions = ({
   return (
     <span
       className={cn("text-green-600 dark:text-green-400", className)}
-      {...props}
+      {...rest}
     >
       {children ?? (
         <>
@@ -606,15 +592,12 @@ export type CommitFileDeletionsProps = HTMLAttributes<HTMLSpanElement> & {
 
 /**
  * Displays the number of lines deleted in a file change.
+ *
  * @param props - Component properties including count, children, and className.
  * @returns The rendered commit file deletions count.
  */
-export const CommitFileDeletions = ({
-  count,
-  className,
-  children,
-  ...props
-}: CommitFileDeletionsProps) => {
+export const CommitFileDeletions = (props: CommitFileDeletionsProps) => {
+  const { count, className, children, ...rest } = props;
   if (count <= 0) {
     return null;
   }
@@ -622,7 +605,7 @@ export const CommitFileDeletions = ({
   return (
     <span
       className={cn("text-red-600 dark:text-red-400", className)}
-      {...props}
+      {...rest}
     >
       {children ?? (
         <>
