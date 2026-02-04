@@ -458,9 +458,15 @@ export const PromptInput = (props: PromptInputProps) => {
       .filter(Boolean);
 
     return patterns.some((pattern) => {
+      if (pattern === "*/*") {
+        return true;
+      }
       if (pattern.endsWith("/*")) {
         const prefix = pattern.slice(0, -1); // e.g: image/* -> image/
         return f.type.startsWith(prefix);
+      }
+      if (pattern.startsWith(".")) {
+        return f.name.toLowerCase().endsWith(pattern.toLowerCase());
       }
       return f.type === pattern;
     });

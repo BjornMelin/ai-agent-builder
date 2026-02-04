@@ -2,10 +2,12 @@
 
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
-import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
-import React, {
+import {
+  Children,
+  type ComponentProps,
   createContext,
-  memo,
+  type HTMLAttributes,
+  type ReactElement,
   useContext,
   useEffect,
   useState,
@@ -197,13 +199,10 @@ export const MessageBranch = (props: MessageBranchProps) => {
   const activeBranch =
     totalBranches > 0 ? Math.min(currentBranch, totalBranches - 1) : 0;
 
-  const handleBranchChange = React.useCallback(
-    (newBranch: number) => {
-      setCurrentBranch(newBranch);
-      onBranchChange?.(newBranch);
-    },
-    [onBranchChange],
-  );
+  const handleBranchChange = (newBranch: number) => {
+    setCurrentBranch(newBranch);
+    onBranchChange?.(newBranch);
+  };
 
   const goToPrevious = () => {
     if (totalBranches <= 1) {
@@ -254,7 +253,7 @@ export type MessageBranchContentProps = HTMLAttributes<HTMLDivElement>;
 export const MessageBranchContent = (props: MessageBranchContentProps) => {
   const { children, ...rest } = props;
   const { currentBranch, setBranches } = useMessageBranch();
-  const childrenArray = React.Children.toArray(children).filter(
+  const childrenArray = Children.toArray(children).filter(
     Boolean,
   ) as ReactElement[];
 
@@ -410,23 +409,18 @@ export type MessageResponseProps = ComponentProps<typeof StreamdownRenderer>;
  * @param props - Streamdown renderer props.
  * @returns The rendered response content.
  */
-export const MessageResponse = memo(
-  (props: MessageResponseProps) => {
-    const { className, ...rest } = props;
-    return (
-      <StreamdownRenderer
-        className={cn(
-          "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-          className,
-        )}
-        {...rest}
-      />
-    );
-  },
-  (prevProps, nextProps) => prevProps.children === nextProps.children,
-);
-
-MessageResponse.displayName = "MessageResponse";
+export const MessageResponse = (props: MessageResponseProps) => {
+  const { className, ...rest } = props;
+  return (
+    <StreamdownRenderer
+      className={cn(
+        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 /**
  * Props for the MessageToolbar component.

@@ -419,6 +419,12 @@ export const useAudioDevices = () => {
   loadDevicesWithoutPermissionRef.current = loadDevicesWithoutPermission;
 
   useEffect(() => {
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      setLoading(false);
+      setError("Media devices are not available in this browser.");
+      return;
+    }
+
     // Safe to detach: the hook stores failures in `error` state.
     void loadDevicesWithoutPermissionRef.current().catch(() => undefined);
   }, []);
@@ -428,6 +434,10 @@ export const useAudioDevices = () => {
   ).current;
 
   useEffect(() => {
+    if (!navigator.mediaDevices?.addEventListener) {
+      return;
+    }
+
     const handleDeviceChange = () => {
       if (hasPermissionRef.current) {
         // Safe to detach: the hook stores failures in `error` state.
