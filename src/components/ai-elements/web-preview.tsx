@@ -23,6 +23,26 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+const sanitizeUrl = (rawUrl: string) => {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const hasProtocol = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed);
+  const candidate = hasProtocol ? trimmed : `https://${trimmed}`;
+
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return "";
+    }
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+};
+
 export interface WebPreviewContextValue {
   url: string;
   setUrl: (url: string) => void;
@@ -107,27 +127,35 @@ export const WebPreviewNavigationButton = ({
   tooltip,
   children,
   ...props
-}: WebPreviewNavigationButtonProps) => (
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          className="h-8 w-8 p-0 hover:text-foreground"
-          disabled={disabled}
-          onClick={onClick}
-          size="sm"
-          variant="ghost"
-          {...props}
-        >
-          {children}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>{tooltip}</p>
-      </TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-);
+}: WebPreviewNavigationButtonProps) => {
+  const button = (
+    <Button
+      className="h-8 w-8 p-0 hover:text-foreground"
+      disabled={disabled}
+      onClick={onClick}
+      size="sm"
+      variant="ghost"
+      {...props}
+    >
+      {children}
+    </Button>
+  );
+
+  if (!tooltip) {
+    return button;
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent>
+          <p>{tooltip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
 
 export type WebPreviewUrlProps = ComponentProps<typeof Input>;
 
@@ -139,6 +167,7 @@ export const WebPreviewUrl = ({
 }: WebPreviewUrlProps) => {
   const { url, setUrl } = useWebPreview();
   const [inputValue, setInputValue] = useState(url);
+  const isControlled = value !== undefined;
 
   // Sync input value with context URL when it changes externally
   useEffect(() => {
@@ -153,7 +182,10 @@ export const WebPreviewUrl = ({
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       const target = event.target as HTMLInputElement;
-      setUrl(target.value);
+      const sanitized = sanitizeUrl(target.value);
+      if (sanitized) {
+        setUrl(sanitized);
+      }
     }
     onKeyDown?.(event);
   };
@@ -161,10 +193,10 @@ export const WebPreviewUrl = ({
   return (
     <Input
       className="h-8 flex-1 text-sm"
-      onChange={onChange ?? handleChange}
+      onChange={handleChange}
       onKeyDown={handleKeyDown}
       placeholder="Enter URL..."
-      value={value ?? inputValue}
+      value={isControlled ? value : inputValue}
       {...props}
     />
   );
@@ -181,13 +213,14 @@ export const WebPreviewBody = ({
   ...props
 }: WebPreviewBodyProps) => {
   const { url } = useWebPreview();
+  const resolvedUrl = sanitizeUrl(src ?? url);
 
   return (
     <div className="flex-1">
       <iframe
         className={cn("size-full", className)}
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-        src={(src ?? url) || undefined}
+        src={resolvedUrl || undefined}
         title="Preview"
         {...props}
       />

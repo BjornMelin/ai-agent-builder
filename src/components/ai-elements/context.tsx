@@ -29,6 +29,14 @@ interface ContextSchema {
 
 const ContextContext = createContext<ContextSchema | null>(null);
 
+const clampUsagePercent = (usedTokens: number, maxTokens: number) => {
+  if (maxTokens <= 0) {
+    return 0;
+  }
+  const raw = usedTokens / maxTokens;
+  return Math.min(Math.max(raw, 0), 1);
+};
+
 const useContextValue = () => {
   const context = useContext(ContextContext);
 
@@ -39,31 +47,36 @@ const useContextValue = () => {
   return context;
 };
 
+/** Props for the Context provider. */
 export type ContextProps = ComponentProps<typeof HoverCard> & ContextSchema;
 
-export const Context = ({
-  usedTokens,
-  maxTokens,
-  usage,
-  modelId,
-  ...props
-}: ContextProps) => (
-  <ContextContext.Provider
-    value={{
-      maxTokens,
-      usedTokens,
-      ...(usage === undefined ? {} : { usage }),
-      ...(modelId === undefined ? {} : { modelId }),
-    }}
-  >
-    <HoverCard closeDelay={0} openDelay={0} {...props} />
-  </ContextContext.Provider>
-);
+/**
+ * Provides model context usage to context-aware UI elements.
+ *
+ * @param props - Provider props including usage and optional model id.
+ * @returns A provider wrapping the hover card.
+ */
+export const Context = (props: ContextProps) => {
+  const { usedTokens, maxTokens, usage, modelId, ...rest } = props;
+
+  return (
+    <ContextContext.Provider
+      value={{
+        maxTokens,
+        usedTokens,
+        ...(usage === undefined ? {} : { usage }),
+        ...(modelId === undefined ? {} : { modelId }),
+      }}
+    >
+      <HoverCard closeDelay={0} openDelay={0} {...rest} />
+    </ContextContext.Provider>
+  );
+};
 
 const ContextIcon = () => {
   const { usedTokens, maxTokens } = useContextValue();
   const circumference = 2 * Math.PI * ICON_RADIUS;
-  const usedPercent = usedTokens / maxTokens;
+  const usedPercent = clampUsagePercent(usedTokens, maxTokens);
   const dashOffset = circumference * (1 - usedPercent);
 
   return (
@@ -101,11 +114,19 @@ const ContextIcon = () => {
   );
 };
 
+/** Props for the ContextTrigger component. */
 export type ContextTriggerProps = ComponentProps<typeof Button>;
 
-export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
+/**
+ * Renders a trigger button with percent usage and ring icon.
+ *
+ * @param props - Button props and optional custom children.
+ * @returns A hover card trigger element.
+ */
+export const ContextTrigger = (props: ContextTriggerProps) => {
+  const { children, ...rest } = props;
   const { usedTokens, maxTokens } = useContextValue();
-  const usedPercent = usedTokens / maxTokens;
+  const usedPercent = clampUsagePercent(usedTokens, maxTokens);
   const renderedPercent = new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 1,
     style: "percent",
@@ -114,7 +135,7 @@ export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
   return (
     <HoverCardTrigger asChild>
       {children ?? (
-        <Button type="button" variant="ghost" {...props}>
+        <Button type="button" variant="ghost" {...rest}>
           <span className="font-medium text-muted-foreground">
             {renderedPercent}
           </span>
@@ -125,27 +146,38 @@ export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
   );
 };
 
+/** Props for the ContextContent component. */
 export type ContextContentProps = ComponentProps<typeof HoverCardContent>;
 
-export const ContextContent = ({
-  className,
-  ...props
-}: ContextContentProps) => (
-  <HoverCardContent
-    className={cn("min-w-60 divide-y overflow-hidden p-0", className)}
-    {...props}
-  />
-);
+/**
+ * Renders the hover card content container for context usage.
+ *
+ * @param props - Hover card content props.
+ * @returns A hover card content element.
+ */
+export const ContextContent = (props: ContextContentProps) => {
+  const { className, ...rest } = props;
+  return (
+    <HoverCardContent
+      className={cn("min-w-60 divide-y overflow-hidden p-0", className)}
+      {...rest}
+    />
+  );
+};
 
+/** Props for the ContextContentHeader component. */
 export type ContextContentHeaderProps = ComponentProps<"div">;
 
-export const ContextContentHeader = ({
-  children,
-  className,
-  ...props
-}: ContextContentHeaderProps) => {
+/**
+ * Renders the header row with percent and progress bar.
+ *
+ * @param props - Div props and optional custom children.
+ * @returns A header element showing usage metrics.
+ */
+export const ContextContentHeader = (props: ContextContentHeaderProps) => {
+  const { children, className, ...rest } = props;
   const { usedTokens, maxTokens } = useContextValue();
-  const usedPercent = usedTokens / maxTokens;
+  const usedPercent = clampUsagePercent(usedTokens, maxTokens);
   const displayPct = new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 1,
     style: "percent",
@@ -158,7 +190,7 @@ export const ContextContentHeader = ({
   }).format(maxTokens);
 
   return (
-    <div className={cn("w-full space-y-2 p-3", className)} {...props}>
+    <div className={cn("w-full space-y-2 p-3", className)} {...rest}>
       {children ?? (
         <>
           <div className="flex items-center justify-between gap-3 text-xs">
@@ -176,25 +208,35 @@ export const ContextContentHeader = ({
   );
 };
 
+/** Props for the ContextContentBody component. */
 export type ContextContentBodyProps = ComponentProps<"div">;
 
-export const ContextContentBody = ({
-  children,
-  className,
-  ...props
-}: ContextContentBodyProps) => (
-  <div className={cn("w-full p-3", className)} {...props}>
-    {children}
-  </div>
-);
+/**
+ * Renders the main body of the context hover card.
+ *
+ * @param props - Div props and optional children.
+ * @returns A content body element.
+ */
+export const ContextContentBody = (props: ContextContentBodyProps) => {
+  const { children, className, ...rest } = props;
+  return (
+    <div className={cn("w-full p-3", className)} {...rest}>
+      {children}
+    </div>
+  );
+};
 
+/** Props for the ContextContentFooter component. */
 export type ContextContentFooterProps = ComponentProps<"div">;
 
-export const ContextContentFooter = ({
-  children,
-  className,
-  ...props
-}: ContextContentFooterProps) => {
+/**
+ * Renders the total cost row for usage, when available.
+ *
+ * @param props - Div props and optional custom content.
+ * @returns A footer element or null when cost is unavailable.
+ */
+export const ContextContentFooter = (props: ContextContentFooterProps) => {
+  const { children, className, ...rest } = props;
   const { modelId, usage } = useContextValue();
   const costUSD = modelId
     ? getUsage({
@@ -205,10 +247,17 @@ export const ContextContentFooter = ({
         },
       }).costUSD?.totalUSD
     : undefined;
-  const totalCost = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(costUSD ?? 0);
+  const totalCost =
+    costUSD === undefined
+      ? undefined
+      : new Intl.NumberFormat("en-US", {
+          currency: "USD",
+          style: "currency",
+        }).format(costUSD);
+
+  if (!children && totalCost === undefined) {
+    return null;
+  }
 
   return (
     <div
@@ -216,7 +265,7 @@ export const ContextContentFooter = ({
         "flex w-full items-center justify-between gap-3 bg-secondary p-3 text-xs",
         className,
       )}
-      {...props}
+      {...rest}
     >
       {children ?? (
         <>
@@ -228,13 +277,17 @@ export const ContextContentFooter = ({
   );
 };
 
+/** Props for the ContextInputUsage component. */
 export type ContextInputUsageProps = ComponentProps<"div">;
 
-export const ContextInputUsage = ({
-  className,
-  children,
-  ...props
-}: ContextInputUsageProps) => {
+/**
+ * Renders the input-token usage row, including optional cost.
+ *
+ * @param props - Div props and optional custom content.
+ * @returns The input usage row or null when no input tokens exist.
+ */
+export const ContextInputUsage = (props: ContextInputUsageProps) => {
+  const { className, children, ...rest } = props;
   const { usage, modelId } = useContextValue();
   const inputTokens = usage?.inputTokens ?? 0;
 
@@ -252,15 +305,18 @@ export const ContextInputUsage = ({
         usage: { input: inputTokens, output: 0 },
       }).costUSD?.totalUSD
     : undefined;
-  const inputCostText = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(inputCost ?? 0);
+  const inputCostText =
+    inputCost === undefined
+      ? undefined
+      : new Intl.NumberFormat("en-US", {
+          currency: "USD",
+          style: "currency",
+        }).format(inputCost);
 
   return (
     <div
       className={cn("flex items-center justify-between text-xs", className)}
-      {...props}
+      {...rest}
     >
       <span className="text-muted-foreground">Input</span>
       <TokensWithCost costText={inputCostText} tokens={inputTokens} />
@@ -268,13 +324,17 @@ export const ContextInputUsage = ({
   );
 };
 
+/** Props for the ContextOutputUsage component. */
 export type ContextOutputUsageProps = ComponentProps<"div">;
 
-export const ContextOutputUsage = ({
-  className,
-  children,
-  ...props
-}: ContextOutputUsageProps) => {
+/**
+ * Renders the output-token usage row, including optional cost.
+ *
+ * @param props - Div props and optional custom content.
+ * @returns The output usage row or null when no output tokens exist.
+ */
+export const ContextOutputUsage = (props: ContextOutputUsageProps) => {
+  const { className, children, ...rest } = props;
   const { usage, modelId } = useContextValue();
   const outputTokens = usage?.outputTokens ?? 0;
 
@@ -292,15 +352,18 @@ export const ContextOutputUsage = ({
         usage: { input: 0, output: outputTokens },
       }).costUSD?.totalUSD
     : undefined;
-  const outputCostText = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(outputCost ?? 0);
+  const outputCostText =
+    outputCost === undefined
+      ? undefined
+      : new Intl.NumberFormat("en-US", {
+          currency: "USD",
+          style: "currency",
+        }).format(outputCost);
 
   return (
     <div
       className={cn("flex items-center justify-between text-xs", className)}
-      {...props}
+      {...rest}
     >
       <span className="text-muted-foreground">Output</span>
       <TokensWithCost costText={outputCostText} tokens={outputTokens} />
@@ -308,13 +371,17 @@ export const ContextOutputUsage = ({
   );
 };
 
+/** Props for the ContextReasoningUsage component. */
 export type ContextReasoningUsageProps = ComponentProps<"div">;
 
-export const ContextReasoningUsage = ({
-  className,
-  children,
-  ...props
-}: ContextReasoningUsageProps) => {
+/**
+ * Renders the reasoning-token usage row, including optional cost.
+ *
+ * @param props - Div props and optional custom content.
+ * @returns The reasoning usage row or null when no reasoning tokens exist.
+ */
+export const ContextReasoningUsage = (props: ContextReasoningUsageProps) => {
+  const { className, children, ...rest } = props;
   const { usage, modelId } = useContextValue();
   const reasoningTokens = usage?.reasoningTokens ?? 0;
 
@@ -332,15 +399,18 @@ export const ContextReasoningUsage = ({
         usage: { reasoningTokens },
       }).costUSD?.totalUSD
     : undefined;
-  const reasoningCostText = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(reasoningCost ?? 0);
+  const reasoningCostText =
+    reasoningCost === undefined
+      ? undefined
+      : new Intl.NumberFormat("en-US", {
+          currency: "USD",
+          style: "currency",
+        }).format(reasoningCost);
 
   return (
     <div
       className={cn("flex items-center justify-between text-xs", className)}
-      {...props}
+      {...rest}
     >
       <span className="text-muted-foreground">Reasoning</span>
       <TokensWithCost costText={reasoningCostText} tokens={reasoningTokens} />
@@ -348,13 +418,17 @@ export const ContextReasoningUsage = ({
   );
 };
 
+/** Props for the ContextCacheUsage component. */
 export type ContextCacheUsageProps = ComponentProps<"div">;
 
-export const ContextCacheUsage = ({
-  className,
-  children,
-  ...props
-}: ContextCacheUsageProps) => {
+/**
+ * Renders the cache-token usage row, including optional cost.
+ *
+ * @param props - Div props and optional custom content.
+ * @returns The cache usage row or null when no cache tokens exist.
+ */
+export const ContextCacheUsage = (props: ContextCacheUsageProps) => {
+  const { className, children, ...rest } = props;
   const { usage, modelId } = useContextValue();
   const cacheTokens = usage?.cachedInputTokens ?? 0;
 
@@ -372,15 +446,18 @@ export const ContextCacheUsage = ({
         usage: { cacheReads: cacheTokens, input: 0, output: 0 },
       }).costUSD?.totalUSD
     : undefined;
-  const cacheCostText = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(cacheCost ?? 0);
+  const cacheCostText =
+    cacheCost === undefined
+      ? undefined
+      : new Intl.NumberFormat("en-US", {
+          currency: "USD",
+          style: "currency",
+        }).format(cacheCost);
 
   return (
     <div
       className={cn("flex items-center justify-between text-xs", className)}
-      {...props}
+      {...rest}
     >
       <span className="text-muted-foreground">Cache</span>
       <TokensWithCost costText={cacheCostText} tokens={cacheTokens} />

@@ -24,6 +24,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Keep tests blazing fast by avoiding duplicate typechecking work.
+    // CI runs `bun run typecheck` separately.
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
@@ -34,8 +36,6 @@ export default defineConfig({
     include: testInclude,
     passWithNoTests: true,
     pool: "threads",
-    // Keep tests blazing fast by avoiding duplicate typechecking work.
-    // CI runs `bun run typecheck` separately.
     restoreMocks: true,
   },
 });

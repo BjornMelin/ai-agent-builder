@@ -170,8 +170,9 @@ export const TestResultsProgress = ({
     return null;
   }
 
-  const passedPercent = (summary.passed / summary.total) * 100;
-  const failedPercent = (summary.failed / summary.total) * 100;
+  const total = summary.total;
+  const passedPercent = total > 0 ? (summary.passed / total) * 100 : 0;
+  const failedPercent = total > 0 ? (summary.failed / total) * 100 : 0;
 
   return (
     <div className={cn("space-y-2", className)} {...props}>

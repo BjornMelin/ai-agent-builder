@@ -30,6 +30,12 @@ function isUniqueViolation(err: unknown): boolean {
   return code === "23505";
 }
 
+function isRedirectError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const digest = (err as { digest?: unknown }).digest;
+  return typeof digest === "string" && digest.startsWith("NEXT_REDIRECT");
+}
+
 /**
  * Create a new project from a form POST.
  *
@@ -72,6 +78,10 @@ export async function createProjectAction(
       const project = await createProject({ name, slug });
       redirect(`/projects/${project.id}`);
     } catch (err) {
+      if (isRedirectError(err)) {
+        throw err;
+      }
+
       if (isUniqueViolation(err)) {
         continue;
       }
@@ -89,6 +99,8 @@ export async function createProjectAction(
 }
 
 /**
- * Initial state for {@link createProjectAction}.
+ * Initial state used by createProjectAction.
+ *
+ * @returns The initial state object for project creation, based on initialState.
  */
 export const createProjectInitialState = initialState;

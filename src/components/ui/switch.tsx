@@ -5,6 +5,14 @@ import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * A toggle switch component built on top of Radix SwitchPrimitive.Root.
+ *
+ * @param props - The switch component properties.
+ * @param props.size - The size of the switch. Allowed values: "sm" | "default" (defaulting to "default").
+ * Controls the data-size attribute and the rendered dimensions of the switch and thumb.
+ * @returns - The rendered switch component.
+ */
 function Switch({
   className,
   size = "default",

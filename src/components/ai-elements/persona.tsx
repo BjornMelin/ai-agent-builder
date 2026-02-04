@@ -12,6 +12,7 @@ import type { FC, ReactNode } from "react";
 import { memo, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
+/** Represents the Persona animation state for the avatar. */
 export type PersonaState =
   | "idle"
   | "listening"
@@ -179,8 +180,15 @@ const setBooleanInput = (
   }
 };
 
-export const Persona: FC<PersonaProps> = memo(
-  ({
+/**
+ * Renders an animated persona avatar using Rive.
+ *
+ * @param props - Persona props including state and event callbacks.
+ * @returns A persona animation component.
+ * @throws Error if the provided variant is not supported.
+ */
+export const Persona: FC<PersonaProps> = memo((props) => {
+  const {
     variant = "obsidian",
     state = "idle",
     onLoad,
@@ -190,94 +198,88 @@ export const Persona: FC<PersonaProps> = memo(
     onPlay,
     onStop,
     className,
-  }) => {
-    const source = sources[variant];
+  } = props;
+  const source = sources[variant];
 
-    if (!source) {
-      throw new Error(`Invalid variant: ${variant}`);
-    }
+  if (!source) {
+    throw new Error(`Invalid variant: ${variant}`);
+  }
 
-    // Stabilize callbacks to prevent useRive from reinitializing
-    const callbacksRef = useRef({
+  // Stabilize callbacks to prevent useRive from reinitializing
+  const callbacksRef = useRef({
+    onLoad,
+    onLoadError,
+    onPause,
+    onPlay,
+    onReady,
+    onStop,
+  });
+
+  useEffect(() => {
+    callbacksRef.current = {
       onLoad,
       onLoadError,
       onPause,
       onPlay,
       onReady,
       onStop,
-    });
+    };
+  }, [onLoad, onLoadError, onPause, onPlay, onReady, onStop]);
 
-    useEffect(() => {
-      callbacksRef.current = {
-        onLoad,
-        onLoadError,
-        onPause,
-        onPlay,
-        onReady,
-        onStop,
-      };
-    }, [onLoad, onLoadError, onPause, onPlay, onReady, onStop]);
+  const [stableCallbacks] = useState(() => ({
+    onLoad: ((loadedRive) =>
+      callbacksRef.current.onLoad?.(loadedRive)) as NonNullable<
+      RiveParameters["onLoad"]
+    >,
+    onLoadError: ((err) =>
+      callbacksRef.current.onLoadError?.(err)) as NonNullable<
+      RiveParameters["onLoadError"]
+    >,
+    onPause: ((event) => callbacksRef.current.onPause?.(event)) as NonNullable<
+      RiveParameters["onPause"]
+    >,
+    onPlay: ((event) => callbacksRef.current.onPlay?.(event)) as NonNullable<
+      RiveParameters["onPlay"]
+    >,
+    onReady: (() => {
+      callbacksRef.current.onReady?.();
+    }) as NonNullable<(rive: unknown) => void>,
+    onStop: ((event) => callbacksRef.current.onStop?.(event)) as NonNullable<
+      RiveParameters["onStop"]
+    >,
+  }));
 
-    const [stableCallbacks] = useState(() => ({
-      onLoad: ((loadedRive) =>
-        callbacksRef.current.onLoad?.(loadedRive)) as NonNullable<
-        RiveParameters["onLoad"]
-      >,
-      onLoadError: ((err) =>
-        callbacksRef.current.onLoadError?.(err)) as NonNullable<
-        RiveParameters["onLoadError"]
-      >,
-      onPause: ((event) =>
-        callbacksRef.current.onPause?.(event)) as NonNullable<
-        RiveParameters["onPause"]
-      >,
-      onPlay: ((event) => callbacksRef.current.onPlay?.(event)) as NonNullable<
-        RiveParameters["onPlay"]
-      >,
-      onReady: (() => {
-        callbacksRef.current.onReady?.();
-      }) as NonNullable<(rive: unknown) => void>,
-      onStop: ((event) => callbacksRef.current.onStop?.(event)) as NonNullable<
-        RiveParameters["onStop"]
-      >,
-    }));
+  const { rive, RiveComponent } = useRive({
+    autoplay: true,
+    onLoad: stableCallbacks.onLoad,
+    onLoadError: stableCallbacks.onLoadError,
+    onPause: stableCallbacks.onPause,
+    onPlay: stableCallbacks.onPlay,
+    onRiveReady: stableCallbacks.onReady,
+    onStop: stableCallbacks.onStop,
+    src: source.source,
+    stateMachines: stateMachine,
+  });
 
-    const { rive, RiveComponent } = useRive({
-      autoplay: true,
-      onLoad: stableCallbacks.onLoad,
-      onLoadError: stableCallbacks.onLoadError,
-      onPause: stableCallbacks.onPause,
-      onPlay: stableCallbacks.onPlay,
-      onRiveReady: stableCallbacks.onReady,
-      onStop: stableCallbacks.onStop,
-      src: source.source,
-      stateMachines: stateMachine,
-    });
+  const listeningInput = useStateMachineInput(rive, stateMachine, "listening");
+  const thinkingInput = useStateMachineInput(rive, stateMachine, "thinking");
+  const speakingInput = useStateMachineInput(rive, stateMachine, "speaking");
+  const asleepInput = useStateMachineInput(rive, stateMachine, "asleep");
 
-    const listeningInput = useStateMachineInput(
-      rive,
-      stateMachine,
-      "listening",
-    );
-    const thinkingInput = useStateMachineInput(rive, stateMachine, "thinking");
-    const speakingInput = useStateMachineInput(rive, stateMachine, "speaking");
-    const asleepInput = useStateMachineInput(rive, stateMachine, "asleep");
+  useEffect(() => {
+    setBooleanInput(listeningInput, state === "listening");
+    setBooleanInput(thinkingInput, state === "thinking");
+    setBooleanInput(speakingInput, state === "speaking");
+    setBooleanInput(asleepInput, state === "asleep");
+  }, [state, listeningInput, thinkingInput, speakingInput, asleepInput]);
 
-    useEffect(() => {
-      setBooleanInput(listeningInput, state === "listening");
-      setBooleanInput(thinkingInput, state === "thinking");
-      setBooleanInput(speakingInput, state === "speaking");
-      setBooleanInput(asleepInput, state === "asleep");
-    }, [state, listeningInput, thinkingInput, speakingInput, asleepInput]);
+  const Component = source.hasModel ? PersonaWithModel : PersonaWithoutModel;
 
-    const Component = source.hasModel ? PersonaWithModel : PersonaWithoutModel;
-
-    return (
-      <Component rive={rive} source={source}>
-        <RiveComponent className={cn("size-16 shrink-0", className)} />
-      </Component>
-    );
-  },
-);
+  return (
+    <Component rive={rive} source={source}>
+      <RiveComponent className={cn("size-16 shrink-0", className)} />
+    </Component>
+  );
+});
 
 Persona.displayName = "Persona";

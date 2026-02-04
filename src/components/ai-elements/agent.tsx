@@ -94,6 +94,7 @@ export const AgentTool = memo(
       "jsonSchema" in tool && tool.jsonSchema
         ? tool.jsonSchema
         : tool.inputSchema;
+    const schemaText = schema ? JSON.stringify(schema, null, 2) : "No schema";
 
     return (
       <AccordionItem
@@ -106,7 +107,7 @@ export const AgentTool = memo(
         </AccordionTrigger>
         <AccordionContent className="px-3 pb-3">
           <div className="rounded-md bg-muted/50">
-            <CodeBlock code={JSON.stringify(schema, null, 2)} language="json" />
+            <CodeBlock code={schemaText} language="json" />
           </div>
         </AccordionContent>
       </AccordionItem>

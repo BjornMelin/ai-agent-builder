@@ -22,6 +22,14 @@ import {
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 
+const getSourceLabel = (source: string) => {
+  try {
+    return new URL(source).hostname;
+  } catch {
+    return source || "unknown";
+  }
+};
+
 export type InlineCitationProps = ComponentProps<"span">;
 
 export const InlineCitation = ({
@@ -69,7 +77,7 @@ export const InlineCitationCardTrigger = ({
     >
       {sources[0] ? (
         <>
-          {new URL(sources[0]).hostname}{" "}
+          {getSourceLabel(sources[0])}{" "}
           {sources.length > 1 && `+${sources.length - 1}`}
         </>
       ) : (

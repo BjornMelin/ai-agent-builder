@@ -68,6 +68,7 @@ import { cn } from "@/lib/utils";
 // Provider Context & Types
 // ============================================================================
 
+/** Context for managing file attachments in the prompt input. */
 export interface AttachmentsContext {
   files: (FileUIPart & { id: string })[];
   add: (files: File[] | FileList) => void;
@@ -77,16 +78,23 @@ export interface AttachmentsContext {
   fileInputRef: RefObject<HTMLInputElement | null>;
 }
 
+/** Context for managing text input state. */
 export interface TextInputContext {
   value: string;
   setInput: (v: string) => void;
   clear: () => void;
 }
 
+/** Props for the prompt input controller context. */
 export interface PromptInputControllerProps {
   textInput: TextInputContext;
   attachments: AttachmentsContext;
-  /** INTERNAL: Allows PromptInput to register its file textInput + "open" callback */
+  /**
+   * Allows PromptInput to register its file input and open callback.
+   *
+   * @remarks
+   * Internal use only.
+   */
   __registerFileInput: (
     ref: RefObject<HTMLInputElement | null>,
     open: () => void,
@@ -100,6 +108,12 @@ const ProviderAttachmentsContext = createContext<AttachmentsContext | null>(
   null,
 );
 
+/**
+ * Returns the prompt input controller from context.
+ *
+ * @returns The prompt input controller.
+ * @throws Error if used outside of PromptInputProvider.
+ */
 export const usePromptInputController = () => {
   const ctx = useContext(PromptInputController);
   if (!ctx) {
@@ -114,6 +128,12 @@ export const usePromptInputController = () => {
 const useOptionalPromptInputController = () =>
   useContext(PromptInputController);
 
+/**
+ * Returns the provider attachments context.
+ *
+ * @returns The attachments context from PromptInputProvider.
+ * @throws Error if used outside of PromptInputProvider.
+ */
 export const useProviderAttachments = () => {
   const ctx = useContext(ProviderAttachmentsContext);
   if (!ctx) {
@@ -127,18 +147,22 @@ export const useProviderAttachments = () => {
 const useOptionalProviderAttachments = () =>
   useContext(ProviderAttachmentsContext);
 
+/** Props for PromptInputProvider. */
 export type PromptInputProviderProps = PropsWithChildren<{
   initialInput?: string;
 }>;
 
 /**
  * Optional global provider that lifts PromptInput state outside of PromptInput.
+ *
+ * @remarks
  * If you don't use it, PromptInput stays fully self-managed.
+ *
+ * @param props - The provider props including children and optional initial input.
+ * @returns A React element wrapping children with prompt input context.
  */
-export function PromptInputProvider({
-  initialInput: initialTextInput = "",
-  children,
-}: PromptInputProviderProps) {
+export function PromptInputProvider(props: PromptInputProviderProps) {
+  const { initialInput: initialTextInput = "", children } = props;
   // ----- textInput state
   const [textInput, setTextInput] = useState(initialTextInput);
   const clearInput = () => setTextInput("");
@@ -254,6 +278,12 @@ export function PromptInputProvider({
 
 const LocalAttachmentsContext = createContext<AttachmentsContext | null>(null);
 
+/**
+ * Returns the attachments context, preferring local context over provider context.
+ *
+ * @returns The prompt input attachments context.
+ * @throws Error if used outside of PromptInput or PromptInputProvider.
+ */
 export const usePromptInputAttachments = () => {
   // Prefer local context (inside PromptInput) as it has validation, fall back to provider
   const provider = useOptionalProviderAttachments();
@@ -271,6 +301,7 @@ export const usePromptInputAttachments = () => {
 // Referenced Sources (Local to PromptInput)
 // ============================================================================
 
+/** Context for managing referenced source documents in the prompt input. */
 export interface ReferencedSourcesContext {
   sources: (SourceDocumentUIPart & { id: string })[];
   add: (sources: SourceDocumentUIPart[] | SourceDocumentUIPart) => void;
@@ -278,9 +309,16 @@ export interface ReferencedSourcesContext {
   clear: () => void;
 }
 
+/** Context for local referenced sources within a PromptInput component. */
 export const LocalReferencedSourcesContext =
   createContext<ReferencedSourcesContext | null>(null);
 
+/**
+ * Returns the referenced sources context for the current prompt input.
+ *
+ * @returns The referenced sources context.
+ * @throws Error if used outside of LocalReferencedSourcesContext.Provider.
+ */
 export const usePromptInputReferencedSources = () => {
   const ctx = useContext(LocalReferencedSourcesContext);
   if (!ctx) {
@@ -291,12 +329,19 @@ export const usePromptInputReferencedSources = () => {
   return ctx;
 };
 
+/** Props for PromptInputActionAddAttachments component. */
 export type PromptInputActionAddAttachmentsProps = ComponentProps<
   typeof DropdownMenuItem
 > & {
   label?: string;
 };
 
+/**
+ * Dropdown menu item that opens the file dialog to add attachments.
+ *
+ * @param props - Dropdown menu item props including optional label.
+ * @returns A dropdown menu item element.
+ */
 export const PromptInputActionAddAttachments = ({
   label = "Add photos or files",
   ...props
@@ -316,11 +361,18 @@ export const PromptInputActionAddAttachments = ({
   );
 };
 
+/** Message payload submitted from the prompt input. */
 export interface PromptInputMessage {
   text: string;
   files: FileUIPart[];
 }
 
+/**
+ * Props for the PromptInput component.
+ *
+ * @remarks
+ * Supports file attachments via input, drag-and-drop, and paste with validation.
+ */
 export type PromptInputProps = Omit<
   HTMLAttributes<HTMLFormElement>,
   "onSubmit" | "onError"
@@ -344,19 +396,26 @@ export type PromptInputProps = Omit<
   ) => void | Promise<void>;
 };
 
-export const PromptInput = ({
-  className,
-  accept,
-  selection = "multiple",
-  dropMode = "local",
-  hiddenInputSync = "off",
-  maxFiles,
-  maxFileSize,
-  onError,
-  onSubmit,
-  children,
-  ...props
-}: PromptInputProps) => {
+/**
+ * Renders a prompt input form with optional file attachments.
+ *
+ * @param props - Prompt input props including handlers and configuration.
+ * @returns A prompt input form element.
+ */
+export const PromptInput = (props: PromptInputProps) => {
+  const {
+    className,
+    accept,
+    selection = "multiple",
+    dropMode = "local",
+    hiddenInputSync = "off",
+    maxFiles,
+    maxFileSize,
+    onError,
+    onSubmit,
+    children,
+    ...rest
+  } = props;
   // Try to use a provider controller if present
   const controller = useOptionalPromptInputController();
   const usingProvider = !!controller;
@@ -407,16 +466,21 @@ export const PromptInput = ({
     });
   };
 
-  const addLocal = (fileList: File[] | FileList) => {
+  const validateFiles = (fileList: File[] | FileList, currentCount: number) => {
     const incoming = Array.from(fileList);
+    if (incoming.length === 0) {
+      return [] as File[];
+    }
+
     const accepted = incoming.filter((f) => matchesAccept(f));
     if (incoming.length && accepted.length === 0) {
       onError?.({
         code: "accept",
         message: "No files match the accepted types.",
       });
-      return;
+      return [];
     }
+
     const withinSize = (f: File) =>
       maxFileSize ? f.size <= maxFileSize : true;
     const sized = accepted.filter(withinSize);
@@ -425,21 +489,29 @@ export const PromptInput = ({
         code: "max_file_size",
         message: "All files exceed the maximum size.",
       });
-      return;
+      return [];
     }
 
+    const capacity =
+      typeof maxFiles === "number"
+        ? Math.max(0, maxFiles - currentCount)
+        : undefined;
+    const capped =
+      typeof capacity === "number" ? sized.slice(0, capacity) : sized;
+    if (typeof capacity === "number" && sized.length > capacity) {
+      onError?.({
+        code: "max_files",
+        message: "Too many files. Some were not added.",
+      });
+    }
+    return capped;
+  };
+
+  const addLocal = (fileList: File[] | FileList) => {
     setItems((prev) => {
-      const capacity =
-        typeof maxFiles === "number"
-          ? Math.max(0, maxFiles - prev.length)
-          : undefined;
-      const capped =
-        typeof capacity === "number" ? sized.slice(0, capacity) : sized;
-      if (typeof capacity === "number" && sized.length > capacity) {
-        onError?.({
-          code: "max_files",
-          message: "Too many files. Some were not added.",
-        });
+      const capped = validateFiles(fileList, prev.length);
+      if (capped.length === 0) {
+        return prev;
       }
       const next: (FileUIPart & { id: string })[] = [];
       for (const file of capped) {
@@ -467,40 +539,7 @@ export const PromptInput = ({
 
   // Wrapper that validates files before calling provider's add
   const addWithProviderValidation = (fileList: File[] | FileList) => {
-    const incoming = Array.from(fileList);
-    const accepted = incoming.filter((f) => matchesAccept(f));
-    if (incoming.length && accepted.length === 0) {
-      onError?.({
-        code: "accept",
-        message: "No files match the accepted types.",
-      });
-      return;
-    }
-    const withinSize = (f: File) =>
-      maxFileSize ? f.size <= maxFileSize : true;
-    const sized = accepted.filter(withinSize);
-    if (accepted.length > 0 && sized.length === 0) {
-      onError?.({
-        code: "max_file_size",
-        message: "All files exceed the maximum size.",
-      });
-      return;
-    }
-
-    const currentCount = files.length;
-    const capacity =
-      typeof maxFiles === "number"
-        ? Math.max(0, maxFiles - currentCount)
-        : undefined;
-    const capped =
-      typeof capacity === "number" ? sized.slice(0, capacity) : sized;
-    if (typeof capacity === "number" && sized.length > capacity) {
-      onError?.({
-        code: "max_files",
-        message: "Too many files. Some were not added.",
-      });
-    }
-
+    const capped = validateFiles(fileList, files.length);
     if (capped.length > 0) {
       controller?.attachments.add(capped);
     }
@@ -762,7 +801,7 @@ export const PromptInput = ({
         className={cn("w-full", className)}
         onSubmit={handleSubmit}
         ref={formRef}
-        {...props}
+        {...rest}
       >
         <InputGroup className="overflow-hidden">{children}</InputGroup>
       </form>
@@ -796,13 +835,20 @@ export type PromptInputTextareaProps = ComponentProps<
   typeof InputGroupTextarea
 >;
 
-export const PromptInputTextarea = ({
-  onChange,
-  onKeyDown,
-  className,
-  placeholder = "What would you like to know?",
-  ...props
-}: PromptInputTextareaProps) => {
+/**
+ * Textarea for prompt input with submit, paste-to-attach, and shortcut handling.
+ *
+ * @param props - Textarea props including handlers and placeholder text.
+ * @returns A prompt input textarea element.
+ */
+export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
+  const {
+    onChange,
+    onKeyDown,
+    className,
+    placeholder = "What would you like to know?",
+    ...rest
+  } = props;
   const controller = useOptionalPromptInputController();
   const attachments = usePromptInputAttachments();
   const [isComposing, setIsComposing] = useState(false);
@@ -820,7 +866,7 @@ export const PromptInputTextarea = ({
       if (isComposing || e.nativeEvent.isComposing) {
         return;
       }
-      if (e.shiftKey) {
+      if (!(e.metaKey || e.ctrlKey)) {
         return;
       }
       e.preventDefault();
@@ -896,7 +942,7 @@ export const PromptInputTextarea = ({
       onKeyDown={handleKeyDown}
       onPaste={handlePaste}
       placeholder={placeholder}
-      {...props}
+      {...rest}
       {...controlledProps}
     />
   );
@@ -1012,16 +1058,23 @@ export type PromptInputSubmitProps = ComponentProps<typeof InputGroupButton> & {
   onStop?: () => void;
 };
 
-export const PromptInputSubmit = ({
-  className,
-  variant = "default",
-  size = "icon-sm",
-  status,
-  onStop,
-  onClick,
-  children,
-  ...props
-}: PromptInputSubmitProps) => {
+/**
+ * Submit button for prompt input with streaming and stop states.
+ *
+ * @param props - Submit button props including status and stop handler.
+ * @returns A prompt input submit button element.
+ */
+export const PromptInputSubmit = (props: PromptInputSubmitProps) => {
+  const {
+    className,
+    variant = "default",
+    size = "icon-sm",
+    status,
+    onStop,
+    onClick,
+    children,
+    ...rest
+  } = props;
   const isGenerating = status === "submitted" || status === "streaming";
 
   let Icon = <CornerDownLeftIcon className="size-4" />;
@@ -1051,7 +1104,7 @@ export const PromptInputSubmit = ({
       size={size}
       type={isGenerating && onStop ? "button" : "submit"}
       variant={variant}
-      {...props}
+      {...rest}
     >
       {children ?? Icon}
     </InputGroupButton>

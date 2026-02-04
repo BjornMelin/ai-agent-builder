@@ -30,7 +30,10 @@ export function ProjectNavClient(props: Readonly<{ projectId: string }>) {
   return (
     <nav className="flex flex-wrap gap-2">
       {items.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive =
+          item.label === "Overview"
+            ? pathname === item.href
+            : pathname.startsWith(item.href);
         return (
           <Button
             asChild

@@ -48,10 +48,13 @@ export async function writeStreamClose(
 
   const writer = writable.getWriter();
   try {
-    await writer.write({ type: "finish" });
+    await writer.write({ type: "finish" } as UIMessageChunk);
+    await writer.close();
   } finally {
-    writer.releaseLock();
+    try {
+      writer.releaseLock();
+    } catch {
+      // Lock might already be released by writer.close()
+    }
   }
-
-  await writable.close();
 }

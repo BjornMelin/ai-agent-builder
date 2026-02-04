@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "motion/react";
-import { type ElementType, memo } from "react";
+import { type ElementType, memo, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
+/** Props for the Shimmer component. */
 export interface TextShimmerProps {
   children: string;
   as?: ElementType;
@@ -20,6 +21,32 @@ const ShimmerComponent = ({
   spread = 2,
 }: TextShimmerProps) => {
   const dynamicSpread = (children?.length ?? 0) * spread;
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => {
+      setPrefersReducedMotion(mediaQuery.matches);
+    };
+
+    updatePreference();
+    if ("addEventListener" in mediaQuery) {
+      mediaQuery.addEventListener("change", updatePreference);
+      return () => {
+        mediaQuery.removeEventListener("change", updatePreference);
+      };
+    }
+
+    mediaQuery.addListener(updatePreference);
+    return () => {
+      mediaQuery.removeListener(updatePreference);
+    };
+  }, []);
+
   const style = {
     "--spread": `${dynamicSpread}px`,
     backgroundImage:
@@ -31,7 +58,11 @@ const ShimmerComponent = ({
   return (
     <Wrapper>
       <motion.span
-        animate={{ backgroundPosition: "0% center" }}
+        animate={
+          prefersReducedMotion
+            ? { backgroundPosition: "100% center" }
+            : { backgroundPosition: "0% center" }
+        }
         className={cn(
           "relative inline-block bg-[length:250%_100%,auto] bg-clip-text text-transparent",
           "[--bg:linear-gradient(90deg,#0000_calc(50%-var(--spread)),var(--color-background),#0000_calc(50%+var(--spread)))] [background-repeat:no-repeat,padding-box]",
@@ -39,11 +70,15 @@ const ShimmerComponent = ({
         )}
         initial={{ backgroundPosition: "100% center" }}
         style={style}
-        transition={{
-          duration,
-          ease: "linear",
-          repeat: Number.POSITIVE_INFINITY,
-        }}
+        transition={
+          prefersReducedMotion
+            ? undefined
+            : {
+                duration,
+                ease: "linear",
+                repeat: Number.POSITIVE_INFINITY,
+              }
+        }
       >
         {children}
       </motion.span>
@@ -51,4 +86,7 @@ const ShimmerComponent = ({
   );
 };
 
+/**
+ * Animated text shimmer effect for loading or emphasis states.
+ */
 export const Shimmer = memo(ShimmerComponent);

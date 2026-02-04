@@ -69,15 +69,17 @@ export const ConversationEmptyState = ({
 
 export type ConversationScrollButtonProps = ComponentProps<typeof Button>;
 
-export const ConversationScrollButton = ({
-  className,
-  ...props
-}: ConversationScrollButtonProps) => {
+/**
+ * Renders a scroll-to-bottom button when the conversation is not at the bottom.
+ *
+ * @param props - Button props for the scroll control.
+ * @returns A scroll button element or null when already at the bottom.
+ */
+export const ConversationScrollButton = (
+  props: ConversationScrollButtonProps,
+) => {
+  const { className, ...rest } = props;
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
-
-  const handleScrollToBottom = () => {
-    scrollToBottom();
-  };
 
   return !isAtBottom ? (
     <Button
@@ -85,11 +87,11 @@ export const ConversationScrollButton = ({
         "absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full dark:bg-background dark:hover:bg-muted",
         className,
       )}
-      onClick={handleScrollToBottom}
+      onClick={scrollToBottom}
       size="icon"
       type="button"
       variant="outline"
-      {...props}
+      {...rest}
     >
       <ArrowDownIcon className="size-4" />
     </Button>

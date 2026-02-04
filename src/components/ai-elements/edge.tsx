@@ -8,6 +8,7 @@ import {
   Position,
   useInternalNode,
 } from "@xyflow/react";
+import { useEffect, useState } from "react";
 
 const Temporary = ({
   id,
@@ -105,6 +106,31 @@ const getEdgeParams = (
 const Animated = ({ id, source, target, markerEnd, style }: EdgeProps) => {
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => {
+      setPrefersReducedMotion(mediaQuery.matches);
+    };
+
+    updatePreference();
+    if ("addEventListener" in mediaQuery) {
+      mediaQuery.addEventListener("change", updatePreference);
+      return () => {
+        mediaQuery.removeEventListener("change", updatePreference);
+      };
+    }
+
+    mediaQuery.addListener(updatePreference);
+    return () => {
+      mediaQuery.removeListener(updatePreference);
+    };
+  }, []);
 
   if (!(sourceNode && targetNode)) {
     return null;
@@ -132,13 +158,21 @@ const Animated = ({ id, source, target, markerEnd, style }: EdgeProps) => {
         {...(markerEnd === undefined ? {} : { markerEnd })}
         {...(style === undefined ? {} : { style })}
       />
-      <circle fill="var(--primary)" r="4">
-        <animateMotion dur="2s" path={edgePath} repeatCount="indefinite" />
-      </circle>
+      {prefersReducedMotion ? null : (
+        <circle fill="var(--primary)" r="4">
+          <animateMotion dur="2s" path={edgePath} repeatCount="indefinite" />
+        </circle>
+      )}
     </>
   );
 };
 
+/**
+ * Edge renderers for animated and temporary connections.
+ *
+ * @remarks
+ * Use `Edge.Animated` for animated edges and `Edge.Temporary` for dashed edges.
+ */
 export const Edge = {
   Animated,
   Temporary,

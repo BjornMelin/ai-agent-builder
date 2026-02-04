@@ -46,6 +46,12 @@ const VoiceSelectorContext = createContext<VoiceSelectorContextValue | null>(
   null,
 );
 
+/**
+ * Hook to access the voice selector context.
+ *
+ * @returns - The voice selector context value.
+ * @throws {Error} - If called outside of a VoiceSelector component.
+ */
 export const useVoiceSelector = () => {
   const context = useContext(VoiceSelectorContext);
   if (!context) {
@@ -56,22 +62,33 @@ export const useVoiceSelector = () => {
   return context;
 };
 
+/**
+ * Props for the VoiceSelector component.
+ */
 export type VoiceSelectorProps = ComponentProps<typeof Dialog> & {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string | undefined) => void;
 };
 
-export const VoiceSelector = ({
-  value: valueProp,
-  defaultValue,
-  onValueChange,
-  open: openProp,
-  defaultOpen = false,
-  onOpenChange,
-  children,
-  ...props
-}: VoiceSelectorProps) => {
+/**
+ * Main VoiceSelector component that provides context and manages state.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelector = (props: VoiceSelectorProps) => {
+  const {
+    value: valueProp,
+    defaultValue,
+    onValueChange,
+    open: openProp,
+    defaultOpen = false,
+    onOpenChange,
+    children,
+    ...rest
+  } = props;
+
   const [value, setValue] = useControllableState({
     defaultProp: defaultValue,
     prop: valueProp,
@@ -93,93 +110,180 @@ export const VoiceSelector = ({
 
   return (
     <VoiceSelectorContext.Provider value={voiceSelectorContext}>
-      <Dialog onOpenChange={setOpen} open={open} {...props}>
+      <Dialog onOpenChange={setOpen} open={open} {...rest}>
         {children}
       </Dialog>
     </VoiceSelectorContext.Provider>
   );
 };
 
+/**
+ * Props for the VoiceSelectorTrigger component.
+ */
 export type VoiceSelectorTriggerProps = ComponentProps<typeof DialogTrigger>;
 
+/**
+ * Trigger component for the voice selector.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
 export const VoiceSelectorTrigger = (props: VoiceSelectorTriggerProps) => (
   <DialogTrigger {...props} />
 );
 
+/**
+ * Props for the VoiceSelectorContent component.
+ */
 export type VoiceSelectorContentProps = ComponentProps<typeof DialogContent> & {
   title?: ReactNode;
 };
 
-export const VoiceSelectorContent = ({
-  className,
-  children,
-  title = "Voice Selector",
-  ...props
-}: VoiceSelectorContentProps) => (
-  <DialogContent className={cn("p-0", className)} {...props}>
-    <DialogTitle className="sr-only">{title}</DialogTitle>
-    <Command className="**:data-[slot=command-input-wrapper]:h-auto">
-      {children}
-    </Command>
-  </DialogContent>
-);
+/**
+ * Content component for the voice selector dialog.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorContent = (props: VoiceSelectorContentProps) => {
+  const { className, children, title = "Voice Selector", ...rest } = props;
+  return (
+    <DialogContent className={cn("p-0", className)} {...rest}>
+      <DialogTitle className="sr-only">{title}</DialogTitle>
+      <Command className="**:data-[slot=command-input-wrapper]:h-auto">
+        {children}
+      </Command>
+    </DialogContent>
+  );
+};
 
+/**
+ * Props for the VoiceSelectorDialog component.
+ */
 export type VoiceSelectorDialogProps = ComponentProps<typeof CommandDialog>;
 
+/**
+ * Dialog component for the voice selector.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
 export const VoiceSelectorDialog = (props: VoiceSelectorDialogProps) => (
   <CommandDialog {...props} />
 );
 
+/**
+ * Props for the VoiceSelectorInput component.
+ */
 export type VoiceSelectorInputProps = ComponentProps<typeof CommandInput>;
 
-export const VoiceSelectorInput = ({
-  className,
-  ...props
-}: VoiceSelectorInputProps) => (
-  <CommandInput className={cn("h-auto py-3.5", className)} {...props} />
-);
+/**
+ * Input component for the voice selector search.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorInput = (props: VoiceSelectorInputProps) => {
+  const { className, ...rest } = props;
+  return <CommandInput className={cn("h-auto py-3.5", className)} {...rest} />;
+};
 
+/**
+ * Props for the VoiceSelectorList component.
+ */
 export type VoiceSelectorListProps = ComponentProps<typeof CommandList>;
 
+/**
+ * List component for the voice selector items.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
 export const VoiceSelectorList = (props: VoiceSelectorListProps) => (
   <CommandList {...props} />
 );
 
+/**
+ * Props for the VoiceSelectorEmpty component.
+ */
 export type VoiceSelectorEmptyProps = ComponentProps<typeof CommandEmpty>;
 
+/**
+ * Empty state component for the voice selector.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
 export const VoiceSelectorEmpty = (props: VoiceSelectorEmptyProps) => (
   <CommandEmpty {...props} />
 );
 
+/**
+ * Props for the VoiceSelectorGroup component.
+ */
 export type VoiceSelectorGroupProps = ComponentProps<typeof CommandGroup>;
 
+/**
+ * Group component for categorizing voice selector items.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
 export const VoiceSelectorGroup = (props: VoiceSelectorGroupProps) => (
   <CommandGroup {...props} />
 );
 
+/**
+ * Props for the VoiceSelectorItem component.
+ */
 export type VoiceSelectorItemProps = ComponentProps<typeof CommandItem>;
 
-export const VoiceSelectorItem = ({
-  className,
-  ...props
-}: VoiceSelectorItemProps) => (
-  <CommandItem className={cn("px-4 py-2", className)} {...props} />
-);
+/**
+ * Individual item component for a voice selection.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorItem = (props: VoiceSelectorItemProps) => {
+  const { className, ...rest } = props;
+  return <CommandItem className={cn("px-4 py-2", className)} {...rest} />;
+};
 
+/**
+ * Props for the VoiceSelectorShortcut component.
+ */
 export type VoiceSelectorShortcutProps = ComponentProps<typeof CommandShortcut>;
 
+/**
+ * Shortcut component for voice selector items.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
 export const VoiceSelectorShortcut = (props: VoiceSelectorShortcutProps) => (
   <CommandShortcut {...props} />
 );
 
+/**
+ * Props for the VoiceSelectorSeparator component.
+ */
 export type VoiceSelectorSeparatorProps = ComponentProps<
   typeof CommandSeparator
 >;
 
+/**
+ * Separator component for voice selector groups or items.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
 export const VoiceSelectorSeparator = (props: VoiceSelectorSeparatorProps) => (
   <CommandSeparator {...props} />
 );
 
+/**
+ * Props for the VoiceSelectorGender component.
+ */
 export type VoiceSelectorGenderProps = ComponentProps<"span"> & {
   value?:
     | "male"
@@ -190,12 +294,14 @@ export type VoiceSelectorGenderProps = ComponentProps<"span"> & {
     | "intersex";
 };
 
-export const VoiceSelectorGender = ({
-  className,
-  value,
-  children,
-  ...props
-}: VoiceSelectorGenderProps) => {
+/**
+ * Gender indicator component for a voice.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorGender = (props: VoiceSelectorGenderProps) => {
+  const { className, value, children, ...rest } = props;
   let icon: ReactNode | null = null;
 
   switch (value) {
@@ -222,12 +328,15 @@ export const VoiceSelectorGender = ({
   }
 
   return (
-    <span className={cn("text-muted-foreground text-xs", className)} {...props}>
+    <span className={cn("text-muted-foreground text-xs", className)} {...rest}>
       {children ?? icon}
     </span>
   );
 };
 
+/**
+ * Props for the VoiceSelectorAccent component.
+ */
 export type VoiceSelectorAccentProps = ComponentProps<"span"> & {
   value?:
     | "american"
@@ -263,12 +372,14 @@ export type VoiceSelectorAccentProps = ComponentProps<"span"> & {
     | string;
 };
 
-export const VoiceSelectorAccent = ({
-  className,
-  value,
-  children,
-  ...props
-}: VoiceSelectorAccentProps) => {
+/**
+ * Accent indicator component for a voice, typically showing a flag emoji.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorAccent = (props: VoiceSelectorAccentProps) => {
+  const { className, value, children, ...rest } = props;
   let emoji: string | null = null;
 
   switch (value) {
@@ -367,72 +478,126 @@ export const VoiceSelectorAccent = ({
   }
 
   return (
-    <span className={cn("text-muted-foreground text-xs", className)} {...props}>
+    <span className={cn("text-muted-foreground text-xs", className)} {...rest}>
       {children ?? emoji}
     </span>
   );
 };
 
+/**
+ * Props for the VoiceSelectorAge component.
+ */
 export type VoiceSelectorAgeProps = ComponentProps<"span">;
 
-export const VoiceSelectorAge = ({
-  className,
-  ...props
-}: VoiceSelectorAgeProps) => (
-  <span
-    className={cn("text-muted-foreground text-xs tabular-nums", className)}
-    {...props}
-  />
-);
+/**
+ * Age indicator component for a voice.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorAge = (props: VoiceSelectorAgeProps) => {
+  const { className, ...rest } = props;
+  return (
+    <span
+      className={cn("text-muted-foreground text-xs tabular-nums", className)}
+      {...rest}
+    />
+  );
+};
 
+/**
+ * Props for the VoiceSelectorName component.
+ */
 export type VoiceSelectorNameProps = ComponentProps<"span">;
 
-export const VoiceSelectorName = ({
-  className,
-  ...props
-}: VoiceSelectorNameProps) => (
-  <span
-    className={cn("flex-1 truncate text-left font-medium", className)}
-    {...props}
-  />
-);
+/**
+ * Component for displaying the name of a voice.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorName = (props: VoiceSelectorNameProps) => {
+  const { className, ...rest } = props;
+  return (
+    <span
+      className={cn("flex-1 truncate text-left font-medium", className)}
+      {...rest}
+    />
+  );
+};
 
+/**
+ * Props for the VoiceSelectorDescription component.
+ */
 export type VoiceSelectorDescriptionProps = ComponentProps<"span">;
 
-export const VoiceSelectorDescription = ({
-  className,
-  ...props
-}: VoiceSelectorDescriptionProps) => (
-  <span className={cn("text-muted-foreground text-xs", className)} {...props} />
-);
+/**
+ * Component for displaying a description of a voice.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorDescription = (
+  props: VoiceSelectorDescriptionProps,
+) => {
+  const { className, ...rest } = props;
+  return (
+    <span
+      className={cn("text-muted-foreground text-xs", className)}
+      {...rest}
+    />
+  );
+};
 
+/**
+ * Props for the VoiceSelectorAttributes component.
+ */
 export type VoiceSelectorAttributesProps = ComponentProps<"div">;
 
-export const VoiceSelectorAttributes = ({
-  className,
-  children,
-  ...props
-}: VoiceSelectorAttributesProps) => (
-  <div className={cn("flex items-center text-xs", className)} {...props}>
-    {children}
-  </div>
-);
+/**
+ * Container component for voice attributes (gender, age, accent).
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorAttributes = (
+  props: VoiceSelectorAttributesProps,
+) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div className={cn("flex items-center text-xs", className)} {...rest}>
+      {children}
+    </div>
+  );
+};
 
+/**
+ * Props for the VoiceSelectorBullet component.
+ */
 export type VoiceSelectorBulletProps = ComponentProps<"span">;
 
-export const VoiceSelectorBullet = ({
-  className,
-  ...props
-}: VoiceSelectorBulletProps) => (
-  <span
-    aria-hidden="true"
-    className={cn("select-none text-border", className)}
-    {...props}
-  >
-    &bull;
-  </span>
-);
+/**
+ * Bullet separator component for items within attributes.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorBullet = (props: VoiceSelectorBulletProps) => {
+  const { className, ...rest } = props;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("select-none text-border", className)}
+      {...rest}
+    >
+      &bull;
+    </span>
+  );
+};
 
+/**
+ * Props for the VoiceSelectorPreview component.
+ */
 export type VoiceSelectorPreviewProps = Omit<
   ComponentProps<"button">,
   "children"
@@ -441,13 +606,14 @@ export type VoiceSelectorPreviewProps = Omit<
   onPlay?: () => void;
 };
 
-export const VoiceSelectorPreview = ({
-  className,
-  state = "idle",
-  onPlay,
-  onClick,
-  ...props
-}: VoiceSelectorPreviewProps) => {
+/**
+ * Preview button component to play/pause a sample of the voice.
+ *
+ * @param props - The component props.
+ * @returns - The rendered component.
+ */
+export const VoiceSelectorPreview = (props: VoiceSelectorPreviewProps) => {
+  const { className, state = "idle", onPlay, onClick, ...rest } = props;
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     onClick?.(event);
@@ -474,7 +640,7 @@ export const VoiceSelectorPreview = ({
       size="icon-sm"
       type="button"
       variant="outline"
-      {...props}
+      {...rest}
     >
       {icon}
     </Button>

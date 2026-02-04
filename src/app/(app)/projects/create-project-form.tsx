@@ -30,7 +30,7 @@ export function CreateProjectForm() {
             autoComplete="off"
             id="create-project-name"
             name="name"
-            placeholder="My project"
+            placeholder="My project…"
           />
         </div>
         <div className="grid gap-1">
@@ -41,7 +41,7 @@ export function CreateProjectForm() {
             autoComplete="off"
             id="create-project-slug"
             name="slug"
-            placeholder="my-project"
+            placeholder="my-project…"
           />
         </div>
       </div>

@@ -167,7 +167,7 @@ export const PackageInfoVersion = ({
         <>
           {currentVersion ? <span>{currentVersion}</span> : null}
           {currentVersion && newVersion ? (
-            <ArrowRightIcon className="size-3" />
+            <ArrowRightIcon aria-hidden="true" className="size-3" />
           ) : null}
           {newVersion ? (
             <span className="font-medium text-foreground">{newVersion}</span>

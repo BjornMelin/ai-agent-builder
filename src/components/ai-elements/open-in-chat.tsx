@@ -193,59 +193,117 @@ const useOpenInContext = () => {
   return context;
 };
 
+/** Props for the OpenIn component. */
 export type OpenInProps = ComponentProps<typeof DropdownMenu> & {
   query: string;
 };
 
-export const OpenIn = ({ query, ...props }: OpenInProps) => (
-  <OpenInContext.Provider value={{ query }}>
-    <DropdownMenu {...props} />
-  </OpenInContext.Provider>
-);
+/**
+ * Provides query context for opening prompts in external chats.
+ *
+ * @param props - Dropdown menu props including the query string.
+ * @returns A dropdown menu with OpenIn context.
+ */
+export const OpenIn = (props: OpenInProps) => {
+  const { query, ...rest } = props;
+  return (
+    <OpenInContext.Provider value={{ query }}>
+      <DropdownMenu {...rest} />
+    </OpenInContext.Provider>
+  );
+};
 
+/** Props for the OpenInContent component. */
 export type OpenInContentProps = ComponentProps<typeof DropdownMenuContent>;
 
-export const OpenInContent = ({ className, ...props }: OpenInContentProps) => (
-  <DropdownMenuContent
-    align="start"
-    className={cn("w-[240px]", className)}
-    {...props}
-  />
-);
+/**
+ * Renders the dropdown menu content for OpenIn actions.
+ *
+ * @param props - Dropdown menu content props.
+ * @returns A dropdown menu content element.
+ */
+export const OpenInContent = (props: OpenInContentProps) => {
+  const { className, ...rest } = props;
+  return (
+    <DropdownMenuContent
+      align="start"
+      className={cn("w-[240px]", className)}
+      {...rest}
+    />
+  );
+};
 
+/** Props for the OpenInItem component. */
 export type OpenInItemProps = ComponentProps<typeof DropdownMenuItem>;
 
+/**
+ * Renders a dropdown menu item in the OpenIn list.
+ *
+ * @param props - Dropdown menu item props.
+ * @returns A dropdown menu item element.
+ */
 export const OpenInItem = (props: OpenInItemProps) => (
   <DropdownMenuItem {...props} />
 );
 
+/** Props for the OpenInLabel component. */
 export type OpenInLabelProps = ComponentProps<typeof DropdownMenuLabel>;
 
+/**
+ * Renders a label for OpenIn sections.
+ *
+ * @param props - Dropdown menu label props.
+ * @returns A dropdown menu label element.
+ */
 export const OpenInLabel = (props: OpenInLabelProps) => (
   <DropdownMenuLabel {...props} />
 );
 
+/** Props for the OpenInSeparator component. */
 export type OpenInSeparatorProps = ComponentProps<typeof DropdownMenuSeparator>;
 
+/**
+ * Renders a separator between OpenIn sections.
+ *
+ * @param props - Dropdown menu separator props.
+ * @returns A dropdown menu separator element.
+ */
 export const OpenInSeparator = (props: OpenInSeparatorProps) => (
   <DropdownMenuSeparator {...props} />
 );
 
+/** Props for the OpenInTrigger component. */
 export type OpenInTriggerProps = ComponentProps<typeof DropdownMenuTrigger>;
 
-export const OpenInTrigger = ({ children, ...props }: OpenInTriggerProps) => (
-  <DropdownMenuTrigger {...props} asChild>
-    {children ?? (
-      <Button type="button" variant="outline">
-        Open in chat
-        <ChevronDownIcon className="size-4" />
-      </Button>
-    )}
-  </DropdownMenuTrigger>
-);
+/**
+ * Renders the trigger button for the OpenIn menu.
+ *
+ * @param props - Trigger props and optional children.
+ * @returns A dropdown menu trigger element.
+ */
+export const OpenInTrigger = (props: OpenInTriggerProps) => {
+  const { children, ...rest } = props;
+  return (
+    <DropdownMenuTrigger {...rest} asChild>
+      {children ?? (
+        <Button type="button" variant="outline">
+          Open in chat
+          <ChevronDownIcon className="size-4" />
+        </Button>
+      )}
+    </DropdownMenuTrigger>
+  );
+};
 
+/** Props for the OpenInChatGPT component. */
 export type OpenInChatGPTProps = ComponentProps<typeof DropdownMenuItem>;
 
+/**
+ * Renders a ChatGPT open action.
+ *
+ * @param props - Dropdown menu item props.
+ * @returns A menu item linking to ChatGPT.
+ */
 export const OpenInChatGPT = (props: OpenInChatGPTProps) => {
   const { query } = useOpenInContext();
   return (
@@ -266,6 +324,12 @@ export const OpenInChatGPT = (props: OpenInChatGPTProps) => {
 
 export type OpenInClaudeProps = ComponentProps<typeof DropdownMenuItem>;
 
+/**
+ * Renders a Claude open action.
+ *
+ * @param props - Dropdown menu item props.
+ * @returns A menu item linking to Claude.
+ */
 export const OpenInClaude = (props: OpenInClaudeProps) => {
   const { query } = useOpenInContext();
   return (
@@ -286,6 +350,12 @@ export const OpenInClaude = (props: OpenInClaudeProps) => {
 
 export type OpenInT3Props = ComponentProps<typeof DropdownMenuItem>;
 
+/**
+ * Renders a T3 open action.
+ *
+ * @param props - Dropdown menu item props.
+ * @returns A menu item linking to T3 Chat.
+ */
 export const OpenInT3 = (props: OpenInT3Props) => {
   const { query } = useOpenInContext();
   return (
@@ -306,6 +376,12 @@ export const OpenInT3 = (props: OpenInT3Props) => {
 
 export type OpenInSciraProps = ComponentProps<typeof DropdownMenuItem>;
 
+/**
+ * Renders a Scira open action.
+ *
+ * @param props - Dropdown menu item props.
+ * @returns A menu item linking to Scira.
+ */
 export const OpenInScira = (props: OpenInSciraProps) => {
   const { query } = useOpenInContext();
   return (
@@ -326,6 +402,12 @@ export const OpenInScira = (props: OpenInSciraProps) => {
 
 export type OpenInv0Props = ComponentProps<typeof DropdownMenuItem>;
 
+/**
+ * Renders a v0 open action.
+ *
+ * @param props - Dropdown menu item props.
+ * @returns A menu item linking to v0.
+ */
 export const OpenInv0 = (props: OpenInv0Props) => {
   const { query } = useOpenInContext();
   return (
@@ -346,6 +428,12 @@ export const OpenInv0 = (props: OpenInv0Props) => {
 
 export type OpenInCursorProps = ComponentProps<typeof DropdownMenuItem>;
 
+/**
+ * Renders a Cursor open action.
+ *
+ * @param props - Dropdown menu item props.
+ * @returns A menu item linking to Cursor.
+ */
 export const OpenInCursor = (props: OpenInCursorProps) => {
   const { query } = useOpenInContext();
   return (

@@ -29,6 +29,7 @@ const useTranscription = () => {
   return context;
 };
 
+/** Props for the Transcription component. */
 export type TranscriptionProps = Omit<ComponentProps<"div">, "children"> & {
   segments: TranscriptionSegmentData[];
   currentTime?: number;
@@ -36,14 +37,21 @@ export type TranscriptionProps = Omit<ComponentProps<"div">, "children"> & {
   children: (segment: TranscriptionSegmentData, index: number) => ReactNode;
 };
 
-export const Transcription = ({
-  segments,
-  currentTime: externalCurrentTime,
-  onSeek,
-  className,
-  children,
-  ...props
-}: TranscriptionProps) => {
+/**
+ * Renders a segmented transcription with time-aware highlighting.
+ *
+ * @param props - Transcription props including segments and time handlers.
+ * @returns A transcription container element.
+ */
+export const Transcription = (props: TranscriptionProps) => {
+  const {
+    segments,
+    currentTime: externalCurrentTime,
+    onSeek,
+    className,
+    children,
+    ...rest
+  } = props;
   const [currentTime, setCurrentTime] = useControllableState({
     defaultProp: 0,
     prop: externalCurrentTime,
@@ -65,7 +73,7 @@ export const Transcription = ({
           className,
         )}
         data-slot="transcription"
-        {...props}
+        {...rest}
       >
         {segments
           .filter((segment) => segment.text.trim())
@@ -75,18 +83,20 @@ export const Transcription = ({
   );
 };
 
+/** Props for the TranscriptionSegment component. */
 export type TranscriptionSegmentProps = ComponentProps<"button"> & {
   segment: TranscriptionSegmentData;
   index: number;
 };
 
-export const TranscriptionSegment = ({
-  segment,
-  index,
-  className,
-  onClick,
-  ...props
-}: TranscriptionSegmentProps) => {
+/**
+ * Renders a clickable transcription segment.
+ *
+ * @param props - Segment props including segment data and index.
+ * @returns A transcription segment button element.
+ */
+export const TranscriptionSegment = (props: TranscriptionSegmentProps) => {
+  const { segment, index, className, onClick, ...rest } = props;
   const { currentTime, onSeek } = useTranscription();
 
   const isActive =
@@ -116,7 +126,7 @@ export const TranscriptionSegment = ({
       data-slot="transcription-segment"
       onClick={handleClick}
       type="button"
-      {...props}
+      {...rest}
     >
       {segment.text}
     </button>

@@ -123,11 +123,17 @@ const tokensCache = new Map<string, TokenizedCode>();
 // Subscribers for async token updates
 const subscribers = new Map<string, Set<(result: TokenizedCode) => void>>();
 
-const getTokensCacheKey = (code: string, language: BundledLanguage) => {
-  const start = code.slice(0, 100);
-  const end = code.length > 100 ? code.slice(-100) : "";
-  return `${language}:${code.length}:${start}:${end}`;
+const hashCode = (code: string) => {
+  let hash = 2166136261;
+  for (let index = 0; index < code.length; index += 1) {
+    hash ^= code.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 };
+
+const getTokensCacheKey = (code: string, language: BundledLanguage) =>
+  `${language}:${hashCode(code)}`;
 
 const getHighlighter = (
   language: BundledLanguage,
@@ -164,7 +170,14 @@ const createRawTokens = (code: string): TokenizedCode => ({
   ),
 });
 
-// Synchronous highlight with callback for async results
+/**
+ * Returns cached tokens when available and triggers async highlighting.
+ *
+ * @param code - The code string to tokenize.
+ * @param language - The language identifier for highlighting.
+ * @param callback - Optional callback for async token results.
+ * @returns Cached tokens when available, otherwise null while highlighting.
+ */
 export function highlightCode(
   code: string,
   language: BundledLanguage,
@@ -218,8 +231,7 @@ export function highlightCode(
         subscribers.delete(tokensCacheKey);
       }
     })
-    .catch((error) => {
-      console.error("Failed to highlight code:", error);
+    .catch(() => {
       subscribers.delete(tokensCacheKey);
     });
 

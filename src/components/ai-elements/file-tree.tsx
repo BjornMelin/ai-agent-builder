@@ -32,6 +32,7 @@ const FileTreeContext = createContext<FileTreeContextType>({
   togglePath: () => undefined,
 });
 
+/** Props for the FileTree component. */
 export type FileTreeProps = HTMLAttributes<HTMLDivElement> & {
   expanded?: Set<string>;
   defaultExpanded?: Set<string>;
@@ -40,16 +41,23 @@ export type FileTreeProps = HTMLAttributes<HTMLDivElement> & {
   onExpandedChange?: (expanded: Set<string>) => void;
 };
 
-export const FileTree = ({
-  expanded: controlledExpanded,
-  defaultExpanded = new Set(),
-  selectedPath,
-  onSelect,
-  onExpandedChange,
-  className,
-  children,
-  ...props
-}: FileTreeProps) => {
+/**
+ * Renders a file tree container with expansion and selection state.
+ *
+ * @param props - Tree props including expansion and selection handlers.
+ * @returns A file tree element with context.
+ */
+export const FileTree = (props: FileTreeProps) => {
+  const {
+    expanded: controlledExpanded,
+    defaultExpanded = new Set(),
+    selectedPath,
+    onSelect,
+    onExpandedChange,
+    className,
+    children,
+    ...rest
+  } = props;
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
   const expandedPaths = controlledExpanded ?? internalExpanded;
 
@@ -79,7 +87,7 @@ export const FileTree = ({
           className,
         )}
         role="tree"
-        {...props}
+        {...rest}
       >
         <div className="p-2">{children}</div>
       </div>
@@ -99,18 +107,20 @@ const FileTreeFolderContext = createContext<FileTreeFolderContextType>({
   path: "",
 });
 
+/** Props for the FileTreeFolder component. */
 export type FileTreeFolderProps = HTMLAttributes<HTMLDivElement> & {
   path: string;
   name: string;
 };
 
-export const FileTreeFolder = ({
-  path,
-  name,
-  className,
-  children,
-  ...props
-}: FileTreeFolderProps) => {
+/**
+ * Renders a folder row with collapsible children.
+ *
+ * @param props - Folder props including path and name.
+ * @returns A folder tree item element.
+ */
+export const FileTreeFolder = (props: FileTreeFolderProps) => {
+  const { path, name, className, children, ...rest } = props;
   const { expandedPaths, togglePath, selectedPath, onSelect } =
     useContext(FileTreeContext);
   const isExpanded = expandedPaths.has(path);
@@ -124,7 +134,7 @@ export const FileTreeFolder = ({
           className={cn("", className)}
           role="treeitem"
           tabIndex={0}
-          {...props}
+          {...rest}
         >
           <CollapsibleTrigger asChild>
             <button
@@ -170,20 +180,21 @@ const FileTreeFileContext = createContext<FileTreeFileContextType>({
   path: "",
 });
 
+/** Props for the FileTreeFile component. */
 export type FileTreeFileProps = HTMLAttributes<HTMLDivElement> & {
   path: string;
   name: string;
   icon?: ReactNode;
 };
 
-export const FileTreeFile = ({
-  path,
-  name,
-  icon,
-  className,
-  children,
-  ...props
-}: FileTreeFileProps) => {
+/**
+ * Renders a selectable file row.
+ *
+ * @param props - File props including path, name, and optional icon.
+ * @returns A file tree item element.
+ */
+export const FileTreeFile = (props: FileTreeFileProps) => {
+  const { path, name, icon, className, children, ...rest } = props;
   const { selectedPath, onSelect } = useContext(FileTreeContext);
   const isSelected = selectedPath === path;
 
@@ -199,12 +210,13 @@ export const FileTreeFile = ({
         onClick={() => onSelect?.(path)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
             onSelect?.(path);
           }
         }}
         role="treeitem"
         tabIndex={0}
-        {...props}
+        {...rest}
       >
         {children ?? (
           <>
@@ -220,46 +232,64 @@ export const FileTreeFile = ({
   );
 };
 
+/** Props for the FileTreeIcon component. */
 export type FileTreeIconProps = HTMLAttributes<HTMLSpanElement>;
 
-export const FileTreeIcon = ({
-  className,
-  children,
-  ...props
-}: FileTreeIconProps) => (
-  <span className={cn("shrink-0", className)} {...props}>
-    {children}
-  </span>
-);
+/**
+ * Renders a leading icon for a file tree item.
+ *
+ * @param props - Span props and optional children.
+ * @returns An icon wrapper element.
+ */
+export const FileTreeIcon = (props: FileTreeIconProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <span className={cn("shrink-0", className)} {...rest}>
+      {children}
+    </span>
+  );
+};
 
+/** Props for the FileTreeName component. */
 export type FileTreeNameProps = HTMLAttributes<HTMLSpanElement>;
 
-export const FileTreeName = ({
-  className,
-  children,
-  ...props
-}: FileTreeNameProps) => (
-  <span className={cn("truncate", className)} {...props}>
-    {children}
-  </span>
-);
+/**
+ * Renders the file or folder name.
+ *
+ * @param props - Span props and optional children.
+ * @returns A name element.
+ */
+export const FileTreeName = (props: FileTreeNameProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <span className={cn("truncate", className)} {...rest}>
+      {children}
+    </span>
+  );
+};
 
+/** Props for the FileTreeActions component. */
 export type FileTreeActionsProps = HTMLAttributes<HTMLFieldSetElement>;
 
-export const FileTreeActions = ({
-  className,
-  children,
-  ...props
-}: FileTreeActionsProps) => (
-  <fieldset
-    className={cn(
-      "m-0 ml-auto flex min-w-0 items-center gap-1 border-0 p-0",
-      className,
-    )}
-    onClick={(e) => e.stopPropagation()}
-    onKeyDown={(e) => e.stopPropagation()}
-    {...props}
-  >
-    {children}
-  </fieldset>
-);
+/**
+ * Renders an actions container for a file tree item.
+ *
+ * @param props - Fieldset props and optional children.
+ * @returns An actions container element.
+ */
+export const FileTreeActions = (props: FileTreeActionsProps) => {
+  const { className, children, ...rest } = props;
+  return (
+    <fieldset
+      className={cn(
+        "m-0 ml-auto flex min-w-0 items-center gap-1 border-0 p-0",
+        className,
+      )}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      {...rest}
+    >
+      {children}
+    </fieldset>
+  );
+};

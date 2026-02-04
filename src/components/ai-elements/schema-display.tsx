@@ -164,12 +164,6 @@ export const SchemaDisplayPath = ({
 }: SchemaDisplayPathProps) => {
   const { path } = useContext(SchemaDisplayContext);
 
-  // Highlight path parameters
-  const highlightedPath = path.replace(
-    /\{([^}]+)\}/g,
-    '<span class="text-blue-600 dark:text-blue-400">{$1}</span>',
-  );
-
   if (children !== undefined) {
     return (
       <span className={cn("font-mono text-sm", className)} {...props}>
@@ -178,13 +172,34 @@ export const SchemaDisplayPath = ({
     );
   }
 
+  const parts = path
+    .split(/(\{[^}]+\})/g)
+    .filter(Boolean)
+    .reduce(
+      (acc, part) => {
+        const offset = acc.offset;
+        acc.items.push({ offset, part });
+        acc.offset += part.length;
+        return acc;
+      },
+      { items: [] as Array<{ offset: number; part: string }>, offset: 0 },
+    ).items;
+
   return (
-    <span
-      className={cn("font-mono text-sm", className)}
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: "needed for parameter highlighting"
-      dangerouslySetInnerHTML={{ __html: highlightedPath }}
-      {...props}
-    />
+    <span className={cn("font-mono text-sm", className)} {...props}>
+      {parts.map(({ part, offset }) =>
+        part.startsWith("{") && part.endsWith("}") ? (
+          <span
+            className="text-blue-600 dark:text-blue-400"
+            key={`${offset}-${part}`}
+          >
+            {part}
+          </span>
+        ) : (
+          <span key={`${offset}-${part}`}>{part}</span>
+        ),
+      )}
+    </span>
   );
 };
 

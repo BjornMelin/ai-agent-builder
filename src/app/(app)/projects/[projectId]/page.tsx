@@ -34,7 +34,7 @@ export default async function ProjectOverviewPage(
         <CardContent>
           <p className="text-2xl font-semibold">{files.length}</p>
           <p className="text-muted-foreground text-sm">
-            Showing the most recent upload only (P0).
+            Showing the most recent upload only.
           </p>
         </CardContent>
       </Card>
@@ -45,7 +45,7 @@ export default async function ProjectOverviewPage(
         <CardContent>
           <p className="text-2xl font-semibold">{runs.length}</p>
           <p className="text-muted-foreground text-sm">
-            Showing the most recent run only (P0).
+            Showing the most recent run only.
           </p>
         </CardContent>
       </Card>

@@ -28,6 +28,7 @@ export default async function ProjectSettingsPage() {
   const qstashPublish = safeFeature(() => env.qstashPublish);
   const qstashVerify = safeFeature(() => env.qstashVerify);
 
+  const nf = new Intl.NumberFormat();
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
@@ -38,19 +39,27 @@ export default async function ProjectSettingsPage() {
           <dl className="grid gap-3">
             <div>
               <dt className="text-muted-foreground">Max vector topK</dt>
-              <dd className="font-medium">{budgets.maxVectorTopK}</dd>
+              <dd className="font-medium">
+                {nf.format(budgets.maxVectorTopK)}
+              </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Max upload bytes</dt>
-              <dd className="font-medium">{budgets.maxUploadBytes}</dd>
+              <dd className="font-medium">
+                {nf.format(budgets.maxUploadBytes)}
+              </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Max embed batch size</dt>
-              <dd className="font-medium">{budgets.maxEmbedBatchSize}</dd>
+              <dd className="font-medium">
+                {nf.format(budgets.maxEmbedBatchSize)}
+              </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Tool cache TTL (s)</dt>
-              <dd className="font-medium">{budgets.toolCacheTtlSeconds}</dd>
+              <dd className="font-medium">
+                {nf.format(budgets.toolCacheTtlSeconds)}
+              </dd>
             </div>
           </dl>
         </CardContent>

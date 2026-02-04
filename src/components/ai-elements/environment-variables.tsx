@@ -24,20 +24,28 @@ const EnvironmentVariablesContext =
     visibility: "masked",
   });
 
+/** Props for the EnvironmentVariables component. */
 export type EnvironmentVariablesProps = HTMLAttributes<HTMLDivElement> & {
   visibility?: "masked" | "visible";
   defaultVisibility?: "masked" | "visible";
   onVisibilityChange?: (visibility: "masked" | "visible") => void;
 };
 
-export const EnvironmentVariables = ({
-  visibility: controlledVisibility,
-  defaultVisibility = "masked",
-  onVisibilityChange,
-  className,
-  children,
-  ...props
-}: EnvironmentVariablesProps) => {
+/**
+ * Provides environment variable visibility context and layout.
+ *
+ * @param props - Container props including visibility controls.
+ * @returns A wrapper providing visibility context.
+ */
+export const EnvironmentVariables = (props: EnvironmentVariablesProps) => {
+  const {
+    visibility: controlledVisibility,
+    defaultVisibility = "masked",
+    onVisibilityChange,
+    className,
+    children,
+    ...rest
+  } = props;
   const [internalVisibility, setInternalVisibility] =
     useState(defaultVisibility);
   const visibility = controlledVisibility ?? internalVisibility;
@@ -51,7 +59,7 @@ export const EnvironmentVariables = ({
     <EnvironmentVariablesContext.Provider value={{ setVisibility, visibility }}>
       <div
         className={cn("rounded-lg border bg-background", className)}
-        {...props}
+        {...rest}
       >
         {children}
       </div>
@@ -59,42 +67,65 @@ export const EnvironmentVariables = ({
   );
 };
 
+/** Props for the EnvironmentVariablesHeader component. */
 export type EnvironmentVariablesHeaderProps = HTMLAttributes<HTMLDivElement>;
 
-export const EnvironmentVariablesHeader = ({
-  className,
-  children,
-  ...props
-}: EnvironmentVariablesHeaderProps) => (
-  <div
-    className={cn(
-      "flex items-center justify-between border-b px-4 py-3",
-      className,
-    )}
-    {...props}
-  >
-    {children}
-  </div>
-);
+/**
+ * Renders the header row for environment variables.
+ *
+ * @param props - Header container props.
+ * @returns A header container element.
+ */
+export const EnvironmentVariablesHeader = (
+  props: EnvironmentVariablesHeaderProps,
+) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between border-b px-4 py-3",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
+    </div>
+  );
+};
 
+/** Props for the EnvironmentVariablesTitle component. */
 export type EnvironmentVariablesTitleProps = HTMLAttributes<HTMLHeadingElement>;
 
-export const EnvironmentVariablesTitle = ({
-  className,
-  children,
-  ...props
-}: EnvironmentVariablesTitleProps) => (
-  <h3 className={cn("font-medium text-sm", className)} {...props}>
-    {children ?? "Environment Variables"}
-  </h3>
-);
+/**
+ * Renders the environment variables title.
+ *
+ * @param props - Title props including optional children.
+ * @returns A title element for the section.
+ */
+export const EnvironmentVariablesTitle = (
+  props: EnvironmentVariablesTitleProps,
+) => {
+  const { className, children, ...rest } = props;
+  return (
+    <h3 className={cn("font-medium text-sm", className)} {...rest}>
+      {children ?? "Environment Variables"}
+    </h3>
+  );
+};
 
+/** Props for the EnvironmentVariablesToggle component. */
 export type EnvironmentVariablesToggleProps = ComponentProps<typeof Switch>;
 
-export const EnvironmentVariablesToggle = ({
-  className,
-  ...props
-}: EnvironmentVariablesToggleProps) => {
+/**
+ * Renders a visibility toggle for environment variables.
+ *
+ * @param props - Switch props for the toggle.
+ * @returns A toggle control for showing or masking values.
+ */
+export const EnvironmentVariablesToggle = (
+  props: EnvironmentVariablesToggleProps,
+) => {
+  const { className, ...rest } = props;
   const { visibility, setVisibility } = useContext(EnvironmentVariablesContext);
   const showValues = visibility === "visible";
 
@@ -109,23 +140,31 @@ export const EnvironmentVariablesToggle = ({
         onCheckedChange={(checked) =>
           setVisibility(checked ? "visible" : "masked")
         }
-        {...props}
+        {...rest}
       />
     </div>
   );
 };
 
+/** Props for the EnvironmentVariablesContent component. */
 export type EnvironmentVariablesContentProps = HTMLAttributes<HTMLDivElement>;
 
-export const EnvironmentVariablesContent = ({
-  className,
-  children,
-  ...props
-}: EnvironmentVariablesContentProps) => (
-  <div className={cn("divide-y", className)} {...props}>
-    {children}
-  </div>
-);
+/**
+ * Renders the content container for environment variables.
+ *
+ * @param props - Content container props.
+ * @returns A content wrapper element.
+ */
+export const EnvironmentVariablesContent = (
+  props: EnvironmentVariablesContentProps,
+) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div className={cn("divide-y", className)} {...rest}>
+      {children}
+    </div>
+  );
+};
 
 interface EnvironmentVariableContextType {
   name: string;
@@ -138,73 +177,97 @@ const EnvironmentVariableContext =
     value: "",
   });
 
+/** Props for the EnvironmentVariable component. */
 export type EnvironmentVariableProps = HTMLAttributes<HTMLDivElement> & {
   name: string;
   value: string;
 };
 
-export const EnvironmentVariable = ({
-  name,
-  value,
-  className,
-  children,
-  ...props
-}: EnvironmentVariableProps) => (
-  <EnvironmentVariableContext.Provider value={{ name, value }}>
-    <div
-      className={cn(
-        "flex items-center justify-between gap-4 px-4 py-3",
-        className,
-      )}
-      {...props}
-    >
-      {children ?? (
-        <>
-          <div className="flex items-center gap-2">
-            <EnvironmentVariableName />
-          </div>
-          <EnvironmentVariableValue />
-        </>
-      )}
-    </div>
-  </EnvironmentVariableContext.Provider>
-);
+/**
+ * Renders a single environment variable row.
+ *
+ * @param props - Row props including name and value.
+ * @returns A row with name/value display and context.
+ */
+export const EnvironmentVariable = (props: EnvironmentVariableProps) => {
+  const { name, value, className, children, ...rest } = props;
+  return (
+    <EnvironmentVariableContext.Provider value={{ name, value }}>
+      <div
+        className={cn(
+          "flex items-center justify-between gap-4 px-4 py-3",
+          className,
+        )}
+        {...rest}
+      >
+        {children ?? (
+          <>
+            <div className="flex items-center gap-2">
+              <EnvironmentVariableName />
+            </div>
+            <EnvironmentVariableValue />
+          </>
+        )}
+      </div>
+    </EnvironmentVariableContext.Provider>
+  );
+};
 
+/** Props for the EnvironmentVariableGroup component. */
 export type EnvironmentVariableGroupProps = HTMLAttributes<HTMLDivElement>;
 
-export const EnvironmentVariableGroup = ({
-  className,
-  children,
-  ...props
-}: EnvironmentVariableGroupProps) => (
-  <div className={cn("flex items-center gap-2", className)} {...props}>
-    {children}
-  </div>
-);
+/**
+ * Renders a group container for variable-related elements.
+ *
+ * @param props - Group container props.
+ * @returns A grouped container element.
+ */
+export const EnvironmentVariableGroup = (
+  props: EnvironmentVariableGroupProps,
+) => {
+  const { className, children, ...rest } = props;
+  return (
+    <div className={cn("flex items-center gap-2", className)} {...rest}>
+      {children}
+    </div>
+  );
+};
 
+/** Props for the EnvironmentVariableName component. */
 export type EnvironmentVariableNameProps = HTMLAttributes<HTMLSpanElement>;
 
-export const EnvironmentVariableName = ({
-  className,
-  children,
-  ...props
-}: EnvironmentVariableNameProps) => {
+/**
+ * Renders the environment variable name.
+ *
+ * @param props - Span props and optional children.
+ * @returns A name element for the variable.
+ */
+export const EnvironmentVariableName = (
+  props: EnvironmentVariableNameProps,
+) => {
+  const { className, children, ...rest } = props;
   const { name } = useContext(EnvironmentVariableContext);
 
   return (
-    <span className={cn("font-mono text-sm", className)} {...props}>
+    <span className={cn("font-mono text-sm", className)} {...rest}>
       {children ?? name}
     </span>
   );
 };
 
+/** Props for the EnvironmentVariableValue component. */
 export type EnvironmentVariableValueProps = HTMLAttributes<HTMLSpanElement>;
 
-export const EnvironmentVariableValue = ({
-  className,
-  children,
-  ...props
-}: EnvironmentVariableValueProps) => {
+/**
+ * Renders the environment variable value, masked or visible.
+ *
+ * @param props - Span props and optional children.
+ * @returns A value element for the variable.
+ */
+export const EnvironmentVariableValue = (
+  props: EnvironmentVariableValueProps,
+) => {
+  const { className, children, ...rest } = props;
   const { value } = useContext(EnvironmentVariableContext);
   const { visibility } = useContext(EnvironmentVariablesContext);
   const showValues = visibility === "visible";
@@ -220,13 +283,14 @@ export const EnvironmentVariableValue = ({
         !showValues && "select-none",
         className,
       )}
-      {...props}
+      {...rest}
     >
       {children ?? displayValue}
     </span>
   );
 };
 
+/** Props for the EnvironmentVariableCopyButton component. */
 export type EnvironmentVariableCopyButtonProps = ComponentProps<
   typeof Button
 > & {
@@ -236,15 +300,24 @@ export type EnvironmentVariableCopyButtonProps = ComponentProps<
   copyFormat?: "name" | "value" | "export";
 };
 
-export const EnvironmentVariableCopyButton = ({
-  onCopy,
-  onError,
-  timeout = 2000,
-  copyFormat = "value",
-  children,
-  className,
-  ...props
-}: EnvironmentVariableCopyButtonProps) => {
+/**
+ * Renders a copy button for environment variable values.
+ *
+ * @param props - Button props including copy behavior.
+ * @returns A copy button element.
+ */
+export const EnvironmentVariableCopyButton = (
+  props: EnvironmentVariableCopyButtonProps,
+) => {
+  const {
+    onCopy,
+    onError,
+    timeout = 2000,
+    copyFormat = "value",
+    children,
+    className,
+    ...rest
+  } = props;
   const [isCopied, setIsCopied] = useState(false);
   const { name, value } = useContext(EnvironmentVariableContext);
 
@@ -279,21 +352,29 @@ export const EnvironmentVariableCopyButton = ({
       onClick={copyToClipboard}
       size="icon"
       variant="ghost"
-      {...props}
+      {...rest}
     >
       {children ?? <Icon size={12} />}
     </Button>
   );
 };
 
+/** Props for the EnvironmentVariableRequired component. */
 export type EnvironmentVariableRequiredProps = ComponentProps<typeof Badge>;
 
-export const EnvironmentVariableRequired = ({
-  className,
-  children,
-  ...props
-}: EnvironmentVariableRequiredProps) => (
-  <Badge className={cn("text-xs", className)} variant="secondary" {...props}>
-    {children ?? "Required"}
-  </Badge>
-);
+/**
+ * Renders a "Required" badge for environment variables.
+ *
+ * @param props - Badge props and optional children.
+ * @returns A badge element indicating requirement.
+ */
+export const EnvironmentVariableRequired = (
+  props: EnvironmentVariableRequiredProps,
+) => {
+  const { className, children, ...rest } = props;
+  return (
+    <Badge className={cn("text-xs", className)} variant="secondary" {...rest}>
+      {children ?? "Required"}
+    </Badge>
+  );
+};

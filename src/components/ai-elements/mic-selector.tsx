@@ -276,13 +276,31 @@ export const MicSelectorValue = ({
   );
 };
 
+/**
+ * Enumerates available microphone devices and tracks permission state.
+ *
+ * @returns Device list, loading state, error info, and a loadDevices helper.
+ */
 export const useAudioDevices = () => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasPermission, setHasPermission] = useState(false);
+  const loadInFlightRef = useRef(false);
+
+  const beginLoad = () => {
+    if (loadInFlightRef.current) {
+      return false;
+    }
+    loadInFlightRef.current = true;
+    return true;
+  };
 
   const loadDevicesWithoutPermission = async () => {
+    if (!beginLoad()) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -300,12 +318,13 @@ export const useAudioDevices = () => {
       setError(message);
       console.error("Error getting audio devices:", message);
     } finally {
+      loadInFlightRef.current = false;
       setLoading(false);
     }
   };
 
   const loadDevicesWithPermission = async () => {
-    if (loading) {
+    if (!beginLoad()) {
       return;
     }
 
@@ -335,6 +354,7 @@ export const useAudioDevices = () => {
       setError(message);
       console.error("Error getting audio devices:", message);
     } finally {
+      loadInFlightRef.current = false;
       setLoading(false);
     }
   };
@@ -349,7 +369,7 @@ export const useAudioDevices = () => {
   loadDevicesWithoutPermissionRef.current = loadDevicesWithoutPermission;
 
   useEffect(() => {
-    void loadDevicesWithoutPermissionRef.current();
+    void loadDevicesWithoutPermissionRef.current().catch(() => undefined);
   }, []);
 
   const stableLoadDevices = useRef(() =>
@@ -359,10 +379,10 @@ export const useAudioDevices = () => {
   useEffect(() => {
     const handleDeviceChange = () => {
       if (hasPermissionRef.current) {
-        void loadDevicesWithPermissionRef.current();
+        void loadDevicesWithPermissionRef.current().catch(() => undefined);
         return;
       }
-      void loadDevicesWithoutPermissionRef.current();
+      void loadDevicesWithoutPermissionRef.current().catch(() => undefined);
     };
 
     navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);

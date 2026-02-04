@@ -36,75 +36,88 @@ const useChainOfThought = () => {
   return context;
 };
 
+/** Props for the ChainOfThought component. */
 export type ChainOfThoughtProps = ComponentProps<"div"> & {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 };
 
-export const ChainOfThought = memo(
-  ({
+/**
+ * Renders a collapsible chain-of-thought container with shared state.
+ *
+ * @param props - Container props including open state controls.
+ * @returns A chain-of-thought container element.
+ */
+export const ChainOfThought = memo((props: ChainOfThoughtProps) => {
+  const {
     className,
     open,
     defaultOpen = false,
     onOpenChange,
     children,
-    ...props
-  }: ChainOfThoughtProps) => {
-    const [isOpen, setIsOpen] = useControllableState({
-      defaultProp: defaultOpen,
-      prop: open,
-      ...(onOpenChange === undefined ? {} : { onChange: onOpenChange }),
-    });
+    ...rest
+  } = props;
+  const [isOpen, setIsOpen] = useControllableState({
+    defaultProp: defaultOpen,
+    prop: open,
+    ...(onOpenChange === undefined ? {} : { onChange: onOpenChange }),
+  });
 
-    const chainOfThoughtContext: ChainOfThoughtContextValue = {
-      isOpen,
-      setIsOpen,
-    };
+  const chainOfThoughtContext: ChainOfThoughtContextValue = {
+    isOpen,
+    setIsOpen,
+  };
 
-    return (
-      <ChainOfThoughtContext.Provider value={chainOfThoughtContext}>
-        <div className={cn("not-prose w-full space-y-4", className)} {...props}>
-          {children}
-        </div>
-      </ChainOfThoughtContext.Provider>
-    );
-  },
-);
+  return (
+    <ChainOfThoughtContext.Provider value={chainOfThoughtContext}>
+      <div className={cn("not-prose w-full space-y-4", className)} {...rest}>
+        {children}
+      </div>
+    </ChainOfThoughtContext.Provider>
+  );
+});
 
+/** Props for the ChainOfThoughtHeader component. */
 export type ChainOfThoughtHeaderProps = ComponentProps<
   typeof CollapsibleTrigger
 >;
 
-export const ChainOfThoughtHeader = memo(
-  ({ className, children, ...props }: ChainOfThoughtHeaderProps) => {
-    const { isOpen, setIsOpen } = useChainOfThought();
+/**
+ * Renders the chain-of-thought header trigger.
+ *
+ * @param props - Trigger props and optional children.
+ * @returns A header trigger element.
+ */
+export const ChainOfThoughtHeader = memo((props: ChainOfThoughtHeaderProps) => {
+  const { className, children, ...rest } = props;
+  const { isOpen, setIsOpen } = useChainOfThought();
 
-    return (
-      <Collapsible onOpenChange={setIsOpen} open={isOpen}>
-        <CollapsibleTrigger
+  return (
+    <Collapsible onOpenChange={setIsOpen} open={isOpen}>
+      <CollapsibleTrigger
+        className={cn(
+          "flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground",
+          className,
+        )}
+        {...rest}
+      >
+        <BrainIcon className="size-4" />
+        <span className="flex-1 text-left">
+          {children ?? "Chain of Thought"}
+        </span>
+        <ChevronDownIcon
           className={cn(
-            "flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground",
-            className,
+            "size-4 transition-transform",
+            isOpen ? "rotate-180" : "rotate-0",
           )}
-          {...props}
-        >
-          <BrainIcon className="size-4" />
-          <span className="flex-1 text-left">
-            {children ?? "Chain of Thought"}
-          </span>
-          <ChevronDownIcon
-            className={cn(
-              "size-4 transition-transform",
-              isOpen ? "rotate-180" : "rotate-0",
-            )}
-          />
-        </CollapsibleTrigger>
-      </Collapsible>
-    );
-  },
-);
+        />
+      </CollapsibleTrigger>
+    </Collapsible>
+  );
+});
 
+/** Props for the ChainOfThoughtStep component. */
 export type ChainOfThoughtStepProps = ComponentProps<"div"> & {
   icon?: LucideIcon;
   label: ReactNode;
@@ -112,79 +125,112 @@ export type ChainOfThoughtStepProps = ComponentProps<"div"> & {
   status?: "complete" | "active" | "pending";
 };
 
-export const ChainOfThoughtStep = memo(
-  ({
+/**
+ * Renders a single chain-of-thought step.
+ *
+ * @param props - Step props including label, description, and status.
+ * @returns A chain-of-thought step element.
+ */
+export const ChainOfThoughtStep = memo((props: ChainOfThoughtStepProps) => {
+  const {
     className,
     icon: Icon = DotIcon,
     label,
     description,
     status = "complete",
     children,
-    ...props
-  }: ChainOfThoughtStepProps) => {
-    const statusStyles = {
-      active: "text-foreground",
-      complete: "text-muted-foreground",
-      pending: "text-muted-foreground/50",
-    };
+    ...rest
+  } = props;
+  const statusStyles = {
+    active: "text-foreground",
+    complete: "text-muted-foreground",
+    pending: "text-muted-foreground/50",
+  };
 
+  return (
+    <div
+      className={cn(
+        "flex gap-2 text-sm",
+        statusStyles[status],
+        "fade-in-0 slide-in-from-top-2 animate-in",
+        className,
+      )}
+      {...rest}
+    >
+      <div className="relative mt-0.5">
+        <Icon className="size-4" />
+        <div className="absolute top-7 bottom-0 left-1/2 -mx-px w-px bg-border" />
+      </div>
+      <div className="flex-1 space-y-2 overflow-hidden">
+        <div>{label}</div>
+        {description ? (
+          <div className="text-muted-foreground text-xs">{description}</div>
+        ) : null}
+        {children}
+      </div>
+    </div>
+  );
+});
+
+/** Props for the ChainOfThoughtSearchResults component. */
+export type ChainOfThoughtSearchResultsProps = ComponentProps<"div">;
+
+/**
+ * Renders a container for search result badges.
+ *
+ * @param props - Div props for the results container.
+ * @returns A results container element.
+ */
+export const ChainOfThoughtSearchResults = memo(
+  (props: ChainOfThoughtSearchResultsProps) => {
+    const { className, ...rest } = props;
     return (
       <div
-        className={cn(
-          "flex gap-2 text-sm",
-          statusStyles[status],
-          "fade-in-0 slide-in-from-top-2 animate-in",
-          className,
-        )}
-        {...props}
-      >
-        <div className="relative mt-0.5">
-          <Icon className="size-4" />
-          <div className="absolute top-7 bottom-0 left-1/2 -mx-px w-px bg-border" />
-        </div>
-        <div className="flex-1 space-y-2 overflow-hidden">
-          <div>{label}</div>
-          {description ? (
-            <div className="text-muted-foreground text-xs">{description}</div>
-          ) : null}
-          {children}
-        </div>
-      </div>
+        className={cn("flex flex-wrap items-center gap-2", className)}
+        {...rest}
+      />
     );
   },
 );
 
-export type ChainOfThoughtSearchResultsProps = ComponentProps<"div">;
-
-export const ChainOfThoughtSearchResults = memo(
-  ({ className, ...props }: ChainOfThoughtSearchResultsProps) => (
-    <div
-      className={cn("flex flex-wrap items-center gap-2", className)}
-      {...props}
-    />
-  ),
-);
-
+/** Props for the ChainOfThoughtSearchResult component. */
 export type ChainOfThoughtSearchResultProps = ComponentProps<typeof Badge>;
 
+/**
+ * Renders a single search result badge.
+ *
+ * @param props - Badge props and optional children.
+ * @returns A badge element.
+ */
 export const ChainOfThoughtSearchResult = memo(
-  ({ className, children, ...props }: ChainOfThoughtSearchResultProps) => (
-    <Badge
-      className={cn("gap-1 px-2 py-0.5 font-normal text-xs", className)}
-      variant="secondary"
-      {...props}
-    >
-      {children}
-    </Badge>
-  ),
+  (props: ChainOfThoughtSearchResultProps) => {
+    const { className, children, ...rest } = props;
+    return (
+      <Badge
+        className={cn("gap-1 px-2 py-0.5 font-normal text-xs", className)}
+        variant="secondary"
+        {...rest}
+      >
+        {children}
+      </Badge>
+    );
+  },
 );
 
+/** Props for the ChainOfThoughtContent component. */
 export type ChainOfThoughtContentProps = ComponentProps<
   typeof CollapsibleContent
 >;
 
+/**
+ * Renders the collapsible content for chain-of-thought steps.
+ *
+ * @param props - Collapsible content props and optional children.
+ * @returns A collapsible content element.
+ */
 export const ChainOfThoughtContent = memo(
-  ({ className, children, ...props }: ChainOfThoughtContentProps) => {
+  (props: ChainOfThoughtContentProps) => {
+    const { className, children, ...rest } = props;
     const { isOpen } = useChainOfThought();
 
     return (
@@ -195,7 +241,7 @@ export const ChainOfThoughtContent = memo(
             "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
             className,
           )}
-          {...props}
+          {...rest}
         >
           {children}
         </CollapsibleContent>
@@ -204,13 +250,21 @@ export const ChainOfThoughtContent = memo(
   },
 );
 
+/** Props for the ChainOfThoughtImage component. */
 export type ChainOfThoughtImageProps = ComponentProps<"div"> & {
   caption?: string;
 };
 
-export const ChainOfThoughtImage = memo(
-  ({ className, children, caption, ...props }: ChainOfThoughtImageProps) => (
-    <div className={cn("mt-2 space-y-2", className)} {...props}>
+/**
+ * Renders an image block with an optional caption.
+ *
+ * @param props - Image container props including caption.
+ * @returns An image container element.
+ */
+export const ChainOfThoughtImage = memo((props: ChainOfThoughtImageProps) => {
+  const { className, children, caption, ...rest } = props;
+  return (
+    <div className={cn("mt-2 space-y-2", className)} {...rest}>
       <div className="relative flex max-h-[22rem] items-center justify-center overflow-hidden rounded-lg bg-muted p-3">
         {children}
       </div>
@@ -218,8 +272,8 @@ export const ChainOfThoughtImage = memo(
         <p className="text-muted-foreground text-xs">{caption}</p>
       ) : null}
     </div>
-  ),
-);
+  );
+});
 
 ChainOfThought.displayName = "ChainOfThought";
 ChainOfThoughtHeader.displayName = "ChainOfThoughtHeader";

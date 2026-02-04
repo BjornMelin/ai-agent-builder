@@ -9,7 +9,7 @@ import { isUndefinedTableError } from "@/lib/db/postgres-errors";
 
 /**
  * JSON-safe project DTO.
- * 
+ *
  * Prefer returning DTOs (not Drizzle rows) from the DAL to avoid leaking
  * server-only fields and to keep values serializable across RSC boundaries.
  */

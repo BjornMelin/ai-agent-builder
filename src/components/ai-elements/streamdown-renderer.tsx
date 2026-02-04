@@ -3,6 +3,9 @@
 import dynamic from "next/dynamic";
 import type { StreamdownRendererProps } from "./streamdown-renderer-inner";
 
+/**
+ * Client-only Streamdown renderer with lazy loading.
+ */
 const StreamdownRenderer = dynamic<StreamdownRendererProps>(
   () => import("./streamdown-renderer-inner"),
   {
@@ -14,4 +17,5 @@ const StreamdownRenderer = dynamic<StreamdownRendererProps>(
 );
 
 export { StreamdownRenderer };
+/** Props for the StreamdownRenderer component. */
 export type { StreamdownRendererProps };
