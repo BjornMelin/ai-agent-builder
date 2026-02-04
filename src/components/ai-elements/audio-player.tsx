@@ -23,13 +23,16 @@ export type AudioPlayerProps = Omit<
   "audio"
 >;
 
-export const AudioPlayer = ({
-  className,
-  children,
-  style,
-  ...props
-}: AudioPlayerProps) => (
-  <MediaController
+/**
+ * Renders the root audio player controller.
+ *
+ * @param props - Media controller props.
+ * @returns The audio player root element.
+ */
+export const AudioPlayer = (props: AudioPlayerProps) => {
+  const { className, children, style, ...rest } = props;
+  return (
+    <MediaController
     audio
     className={className}
     data-slot="audio-player"
@@ -58,11 +61,12 @@ export const AudioPlayer = ({
         ...style,
       } as CSSProperties
     }
-    {...props}
+    {...rest}
   >
     {children}
   </MediaController>
-);
+  );
+};
 
 export type AudioPlayerElementProps = Omit<ComponentProps<"audio">, "src"> &
   (
@@ -74,7 +78,13 @@ export type AudioPlayerElementProps = Omit<ComponentProps<"audio">, "src"> &
       }
   );
 
-export const AudioPlayerElement = ({ ...props }: AudioPlayerElementProps) => (
+/**
+ * Renders the audio media element from direct src or speech result data.
+ *
+ * @param props - Audio element props with either `src` or encoded speech data.
+ * @returns The audio media element.
+ */
+export const AudioPlayerElement = (props: AudioPlayerElementProps) => (
   <audio
     data-slot="audio-player-element"
     slot="media"
@@ -89,141 +99,201 @@ export const AudioPlayerElement = ({ ...props }: AudioPlayerElementProps) => (
 
 export type AudioPlayerControlBarProps = ComponentProps<typeof MediaControlBar>;
 
-export const AudioPlayerControlBar = ({
-  children,
-  ...props
-}: AudioPlayerControlBarProps) => (
-  <MediaControlBar data-slot="audio-player-control-bar" {...props}>
-    <ButtonGroup orientation="horizontal">{children}</ButtonGroup>
-  </MediaControlBar>
-);
+/**
+ * Renders the player control bar and button group wrapper.
+ *
+ * @param props - Control bar props.
+ * @returns The control bar wrapper.
+ */
+export const AudioPlayerControlBar = (props: AudioPlayerControlBarProps) => {
+  const { children, ...rest } = props;
+  return (
+    <MediaControlBar data-slot="audio-player-control-bar" {...rest}>
+      <ButtonGroup orientation="horizontal">{children}</ButtonGroup>
+    </MediaControlBar>
+  );
+};
 
 export type AudioPlayerPlayButtonProps = ComponentProps<typeof MediaPlayButton>;
 
-export const AudioPlayerPlayButton = ({
-  className,
-  ...props
-}: AudioPlayerPlayButtonProps) => (
+/**
+ * Renders the play/pause control button.
+ *
+ * @param props - Play button props.
+ * @returns The play button component.
+ */
+export const AudioPlayerPlayButton = (props: AudioPlayerPlayButtonProps) => {
+  const { className, ...rest } = props;
+  return (
   <Button asChild size="icon-sm" variant="outline">
     <MediaPlayButton
       className={cn("bg-transparent", className)}
       data-slot="audio-player-play-button"
-      {...props}
+      {...rest}
     />
   </Button>
-);
+  );
+};
 
 export type AudioPlayerSeekBackwardButtonProps = ComponentProps<
   typeof MediaSeekBackwardButton
 >;
 
-export const AudioPlayerSeekBackwardButton = ({
-  seekOffset = 10,
-  ...props
-}: AudioPlayerSeekBackwardButtonProps) => (
+/**
+ * Renders the backward seek control.
+ *
+ * @param props - Seek backward button props.
+ * @returns The seek backward button.
+ */
+export const AudioPlayerSeekBackwardButton = (
+  props: AudioPlayerSeekBackwardButtonProps,
+) => {
+  const { seekOffset = 10, ...rest } = props;
+  return (
   <Button asChild size="icon-sm" variant="outline">
     <MediaSeekBackwardButton
       data-slot="audio-player-seek-backward-button"
       seekOffset={seekOffset}
-      {...props}
+      {...rest}
     />
   </Button>
-);
+  );
+};
 
 export type AudioPlayerSeekForwardButtonProps = ComponentProps<
   typeof MediaSeekForwardButton
 >;
 
-export const AudioPlayerSeekForwardButton = ({
-  seekOffset = 10,
-  ...props
-}: AudioPlayerSeekForwardButtonProps) => (
+/**
+ * Renders the forward seek control.
+ *
+ * @param props - Seek forward button props.
+ * @returns The seek forward button.
+ */
+export const AudioPlayerSeekForwardButton = (
+  props: AudioPlayerSeekForwardButtonProps,
+) => {
+  const { seekOffset = 10, ...rest } = props;
+  return (
   <Button asChild size="icon-sm" variant="outline">
     <MediaSeekForwardButton
       data-slot="audio-player-seek-forward-button"
       seekOffset={seekOffset}
-      {...props}
+      {...rest}
     />
   </Button>
-);
+  );
+};
 
 export type AudioPlayerTimeDisplayProps = ComponentProps<
   typeof MediaTimeDisplay
 >;
 
-export const AudioPlayerTimeDisplay = ({
-  className,
-  ...props
-}: AudioPlayerTimeDisplayProps) => (
+/**
+ * Renders elapsed playback time.
+ *
+ * @param props - Time display props.
+ * @returns The elapsed time display.
+ */
+export const AudioPlayerTimeDisplay = (props: AudioPlayerTimeDisplayProps) => {
+  const { className, ...rest } = props;
+  return (
   <ButtonGroupText asChild className="bg-transparent">
     <MediaTimeDisplay
       className={cn("tabular-nums", className)}
       data-slot="audio-player-time-display"
-      {...props}
+      {...rest}
     />
   </ButtonGroupText>
-);
+  );
+};
 
 export type AudioPlayerTimeRangeProps = ComponentProps<typeof MediaTimeRange>;
 
-export const AudioPlayerTimeRange = ({
-  className,
-  ...props
-}: AudioPlayerTimeRangeProps) => (
+/**
+ * Renders the seekable timeline range.
+ *
+ * @param props - Time range props.
+ * @returns The timeline range control.
+ */
+export const AudioPlayerTimeRange = (props: AudioPlayerTimeRangeProps) => {
+  const { className, ...rest } = props;
+  return (
   <ButtonGroupText asChild className="bg-transparent">
     <MediaTimeRange
       className={cn(className)}
       data-slot="audio-player-time-range"
-      {...props}
+      {...rest}
     />
   </ButtonGroupText>
-);
+  );
+};
 
 export type AudioPlayerDurationDisplayProps = ComponentProps<
   typeof MediaDurationDisplay
 >;
 
-export const AudioPlayerDurationDisplay = ({
-  className,
-  ...props
-}: AudioPlayerDurationDisplayProps) => (
+/**
+ * Renders total media duration.
+ *
+ * @param props - Duration display props.
+ * @returns The total duration display.
+ */
+export const AudioPlayerDurationDisplay = (
+  props: AudioPlayerDurationDisplayProps,
+) => {
+  const { className, ...rest } = props;
+  return (
   <ButtonGroupText asChild className="bg-transparent">
     <MediaDurationDisplay
       className={cn("tabular-nums", className)}
       data-slot="audio-player-duration-display"
-      {...props}
+      {...rest}
     />
   </ButtonGroupText>
-);
+  );
+};
 
 export type AudioPlayerMuteButtonProps = ComponentProps<typeof MediaMuteButton>;
 
-export const AudioPlayerMuteButton = ({
-  className,
-  ...props
-}: AudioPlayerMuteButtonProps) => (
+/**
+ * Renders the mute toggle button.
+ *
+ * @param props - Mute button props.
+ * @returns The mute toggle button.
+ */
+export const AudioPlayerMuteButton = (props: AudioPlayerMuteButtonProps) => {
+  const { className, ...rest } = props;
+  return (
   <ButtonGroupText asChild className="bg-transparent">
     <MediaMuteButton
       className={cn(className)}
       data-slot="audio-player-mute-button"
-      {...props}
+      {...rest}
     />
   </ButtonGroupText>
-);
+  );
+};
 
 export type AudioPlayerVolumeRangeProps = ComponentProps<
   typeof MediaVolumeRange
 >;
 
-export const AudioPlayerVolumeRange = ({
-  className,
-  ...props
-}: AudioPlayerVolumeRangeProps) => (
+/**
+ * Renders the volume range control.
+ *
+ * @param props - Volume range props.
+ * @returns The volume range control.
+ */
+export const AudioPlayerVolumeRange = (props: AudioPlayerVolumeRangeProps) => {
+  const { className, ...rest } = props;
+  return (
   <ButtonGroupText asChild className="bg-transparent">
     <MediaVolumeRange
       className={cn(className)}
       data-slot="audio-player-volume-range"
-      {...props}
+      {...rest}
     />
   </ButtonGroupText>
-);
+  );
+};

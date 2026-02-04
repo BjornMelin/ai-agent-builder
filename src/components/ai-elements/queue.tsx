@@ -63,22 +63,21 @@ export type QueueItemIndicatorProps = ComponentProps<"span"> & {
  * @param props - Indicator props including queue status.
  * @returns A status indicator element.
  */
-export const QueueItemIndicator = ({
-  status = "pending",
-  className,
-  ...props
-}: QueueItemIndicatorProps) => (
-  <span
-    className={cn(
-      "mt-0.5 inline-block size-2.5 rounded-full border",
-      status === "completed"
-        ? "border-muted-foreground/20 bg-muted-foreground/10"
-        : "border-muted-foreground/50",
-      className,
-    )}
-    {...props}
-  />
-);
+export const QueueItemIndicator = (props: QueueItemIndicatorProps) => {
+  const { status = "pending", className, ...rest } = props;
+  return (
+    <span
+      className={cn(
+        "mt-0.5 inline-block size-2.5 rounded-full border",
+        status === "completed"
+          ? "border-muted-foreground/20 bg-muted-foreground/10"
+          : "border-muted-foreground/50",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type QueueItemContentProps = ComponentProps<"span"> & {
   status?: "pending" | "completed";
@@ -90,22 +89,21 @@ export type QueueItemContentProps = ComponentProps<"span"> & {
  * @param props - Content props including queue status.
  * @returns A styled queue item content element.
  */
-export const QueueItemContent = ({
-  status = "pending",
-  className,
-  ...props
-}: QueueItemContentProps) => (
-  <span
-    className={cn(
-      "line-clamp-1 grow break-words",
-      status === "completed"
-        ? "text-muted-foreground/50 line-through"
-        : "text-muted-foreground",
-      className,
-    )}
-    {...props}
-  />
-);
+export const QueueItemContent = (props: QueueItemContentProps) => {
+  const { status = "pending", className, ...rest } = props;
+  return (
+    <span
+      className={cn(
+        "line-clamp-1 grow break-words",
+        status === "completed"
+          ? "text-muted-foreground/50 line-through"
+          : "text-muted-foreground",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type QueueItemDescriptionProps = ComponentProps<"div"> & {
   status?: "pending" | "completed";
@@ -117,22 +115,21 @@ export type QueueItemDescriptionProps = ComponentProps<"div"> & {
  * @param props - Description props including queue status.
  * @returns A queue item description element.
  */
-export const QueueItemDescription = ({
-  status = "pending",
-  className,
-  ...props
-}: QueueItemDescriptionProps) => (
-  <div
-    className={cn(
-      "ml-6 text-xs",
-      status === "completed"
-        ? "text-muted-foreground/40 line-through"
-        : "text-muted-foreground",
-      className,
-    )}
-    {...props}
-  />
-);
+export const QueueItemDescription = (props: QueueItemDescriptionProps) => {
+  const { status = "pending", className, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "ml-6 text-xs",
+        status === "completed"
+          ? "text-muted-foreground/40 line-through"
+          : "text-muted-foreground",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};
 
 export type QueueItemActionsProps = ComponentProps<"div">;
 
@@ -142,12 +139,10 @@ export type QueueItemActionsProps = ComponentProps<"div">;
  * @param props - Action container props.
  * @returns A queue item actions container.
  */
-export const QueueItemActions = ({
-  className,
-  ...props
-}: QueueItemActionsProps) => (
-  <div className={cn("flex gap-1", className)} {...props} />
-);
+export const QueueItemActions = (props: QueueItemActionsProps) => {
+  const { className, ...rest } = props;
+  return <div className={cn("flex gap-1", className)} {...rest} />;
+};
 
 export type QueueItemActionProps = Omit<
   ComponentProps<typeof Button>,
@@ -160,21 +155,21 @@ export type QueueItemActionProps = Omit<
  * @param props - Button props for the action.
  * @returns A styled queue action button.
  */
-export const QueueItemAction = ({
-  className,
-  ...props
-}: QueueItemActionProps) => (
-  <Button
-    className={cn(
-      "size-auto rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted-foreground/10 hover:text-foreground group-hover:opacity-100",
-      className,
-    )}
-    size="icon"
-    type="button"
-    variant="ghost"
-    {...props}
-  />
-);
+export const QueueItemAction = (props: QueueItemActionProps) => {
+  const { className, ...rest } = props;
+  return (
+    <Button
+      className={cn(
+        "size-auto rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted-foreground/10 hover:text-foreground group-hover:opacity-100",
+        className,
+      )}
+      size="icon"
+      type="button"
+      variant="ghost"
+      {...rest}
+    />
+  );
+};
 
 export type QueueItemAttachmentProps = ComponentProps<"div">;
 
@@ -184,12 +179,10 @@ export type QueueItemAttachmentProps = ComponentProps<"div">;
  * @param props - Attachment container props.
  * @returns A queue attachment wrapper.
  */
-export const QueueItemAttachment = ({
-  className,
-  ...props
-}: QueueItemAttachmentProps) => (
-  <div className={cn("mt-1 flex flex-wrap gap-2", className)} {...props} />
-);
+export const QueueItemAttachment = (props: QueueItemAttachmentProps) => {
+  const { className, ...rest } = props;
+  return <div className={cn("mt-1 flex flex-wrap gap-2", className)} {...rest} />;
+};
 
 export type QueueItemImageProps = ComponentProps<typeof Image>;
 
@@ -199,12 +192,8 @@ export type QueueItemImageProps = ComponentProps<typeof Image>;
  * @param props - Image props for the attachment preview.
  * @returns An image element, or `null` when `src` is missing.
  */
-export const QueueItemImage = ({
-  className,
-  src,
-  alt,
-  ...props
-}: QueueItemImageProps) => {
+export const QueueItemImage = (props: QueueItemImageProps) => {
+  const { className, src, alt, ...rest } = props;
   if (!src) {
     return null;
   }
@@ -222,7 +211,7 @@ export const QueueItemImage = ({
       src={src}
       unoptimized={isBlob}
       width={32}
-      {...props}
+      {...rest}
     />
   );
 };
@@ -235,22 +224,21 @@ export type QueueItemFileProps = ComponentProps<"span">;
  * @param props - File label props.
  * @returns A file attachment element.
  */
-export const QueueItemFile = ({
-  children,
-  className,
-  ...props
-}: QueueItemFileProps) => (
-  <span
-    className={cn(
-      "flex items-center gap-1 rounded border bg-muted px-2 py-1 text-xs",
-      className,
-    )}
-    {...props}
-  >
-    <PaperclipIcon size={12} />
-    <span className="max-w-[100px] truncate">{children}</span>
-  </span>
-);
+export const QueueItemFile = (props: QueueItemFileProps) => {
+  const { children, className, ...rest } = props;
+  return (
+    <span
+      className={cn(
+        "flex items-center gap-1 rounded border bg-muted px-2 py-1 text-xs",
+        className,
+      )}
+      {...rest}
+    >
+      <PaperclipIcon size={12} />
+      <span className="max-w-[100px] truncate">{children}</span>
+    </span>
+  );
+};
 
 export type QueueListProps = ComponentProps<typeof ScrollArea>;
 
@@ -260,17 +248,16 @@ export type QueueListProps = ComponentProps<typeof ScrollArea>;
  * @param props - Scroll area props.
  * @returns A queue list container.
  */
-export const QueueList = ({
-  children,
-  className,
-  ...props
-}: QueueListProps) => (
-  <ScrollArea className={cn("mt-2 -mb-1", className)} {...props}>
-    <div className="max-h-40 pr-4">
-      <ul>{children}</ul>
-    </div>
-  </ScrollArea>
-);
+export const QueueList = (props: QueueListProps) => {
+  const { children, className, ...rest } = props;
+  return (
+    <ScrollArea className={cn("mt-2 -mb-1", className)} {...rest}>
+      <div className="max-h-40 pr-4">
+        <ul>{children}</ul>
+      </div>
+    </ScrollArea>
+  );
+};
 
 // QueueSection - collapsible section container
 export type QueueSectionProps = ComponentProps<typeof Collapsible>;
@@ -281,13 +268,12 @@ export type QueueSectionProps = ComponentProps<typeof Collapsible>;
  * @param props - Collapsible props for the section.
  * @returns A queue section container.
  */
-export const QueueSection = ({
-  className,
-  defaultOpen = true,
-  ...props
-}: QueueSectionProps) => (
-  <Collapsible className={cn(className)} defaultOpen={defaultOpen} {...props} />
-);
+export const QueueSection = (props: QueueSectionProps) => {
+  const { className, defaultOpen = true, ...rest } = props;
+  return (
+    <Collapsible className={cn(className)} defaultOpen={defaultOpen} {...rest} />
+  );
+};
 
 // QueueSectionTrigger - section header/trigger
 export type QueueSectionTriggerProps = ComponentProps<"button">;
@@ -298,24 +284,23 @@ export type QueueSectionTriggerProps = ComponentProps<"button">;
  * @param props - Button props for the section trigger.
  * @returns A queue section trigger button.
  */
-export const QueueSectionTrigger = ({
-  children,
-  className,
-  ...props
-}: QueueSectionTriggerProps) => (
-  <CollapsibleTrigger asChild>
-    <button
-      className={cn(
-        "group flex w-full items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-left font-medium text-muted-foreground text-sm transition-colors hover:bg-muted",
-        className,
-      )}
-      type="button"
-      {...props}
-    >
-      {children}
-    </button>
-  </CollapsibleTrigger>
-);
+export const QueueSectionTrigger = (props: QueueSectionTriggerProps) => {
+  const { children, className, ...rest } = props;
+  return (
+    <CollapsibleTrigger asChild>
+      <button
+        className={cn(
+          "group flex w-full items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-left font-medium text-muted-foreground text-sm transition-colors hover:bg-muted",
+          className,
+        )}
+        type="button"
+        {...rest}
+      >
+        {children}
+      </button>
+    </CollapsibleTrigger>
+  );
+};
 
 // QueueSectionLabel - label content with icon and count
 export type QueueSectionLabelProps = ComponentProps<"span"> & {
@@ -330,21 +315,18 @@ export type QueueSectionLabelProps = ComponentProps<"span"> & {
  * @param props - Label data and span props.
  * @returns A queue section label.
  */
-export const QueueSectionLabel = ({
-  count,
-  label,
-  icon,
-  className,
-  ...props
-}: QueueSectionLabelProps) => (
-  <span className={cn("flex items-center gap-2", className)} {...props}>
-    <ChevronDownIcon className="size-4 transition-transform group-data-[state=closed]:-rotate-90" />
-    {icon}
-    <span>
-      {count} {label}
+export const QueueSectionLabel = (props: QueueSectionLabelProps) => {
+  const { count, label, icon, className, ...rest } = props;
+  return (
+    <span className={cn("flex items-center gap-2", className)} {...rest}>
+      <ChevronDownIcon className="size-4 transition-transform group-data-[state=closed]:-rotate-90" />
+      {icon}
+      <span>
+        {count} {label}
+      </span>
     </span>
-  </span>
-);
+  );
+};
 
 // QueueSectionContent - collapsible content area
 export type QueueSectionContentProps = ComponentProps<
@@ -357,12 +339,10 @@ export type QueueSectionContentProps = ComponentProps<
  * @param props - Content props for the section body.
  * @returns A queue section content container.
  */
-export const QueueSectionContent = ({
-  className,
-  ...props
-}: QueueSectionContentProps) => (
-  <CollapsibleContent className={cn(className)} {...props} />
-);
+export const QueueSectionContent = (props: QueueSectionContentProps) => {
+  const { className, ...rest } = props;
+  return <CollapsibleContent className={cn(className)} {...rest} />;
+};
 
 export type QueueProps = ComponentProps<"div">;
 
@@ -372,12 +352,15 @@ export type QueueProps = ComponentProps<"div">;
  * @param props - Root container props.
  * @returns A queue root element.
  */
-export const Queue = ({ className, ...props }: QueueProps) => (
-  <div
-    className={cn(
-      "flex flex-col gap-2 rounded-xl border border-border bg-background px-3 pt-2 pb-2 shadow-xs",
-      className,
-    )}
-    {...props}
-  />
-);
+export const Queue = (props: QueueProps) => {
+  const { className, ...rest } = props;
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-2 rounded-xl border border-border bg-background px-3 pt-2 pb-2 shadow-xs",
+        className,
+      )}
+      {...rest}
+    />
+  );
+};

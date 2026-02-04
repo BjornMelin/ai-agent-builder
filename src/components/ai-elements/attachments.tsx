@@ -43,6 +43,7 @@ export type AttachmentVariant = "grid" | "inline" | "list";
 // Utility Functions
 // ============================================================================
 
+/** Resolves an attachment into a media category used for rendering. */
 export const getMediaCategory = (
   data: AttachmentData,
 ): AttachmentMediaCategory => {
@@ -68,6 +69,7 @@ export const getMediaCategory = (
   return "unknown";
 };
 
+/** Builds the display label for an attachment item. */
 export const getAttachmentLabel = (data: AttachmentData): string => {
   if (data.type === "source-document") {
     return data.title || data.filename || "Source";
@@ -100,9 +102,11 @@ const AttachmentContext = createContext<AttachmentContextValue | null>(null);
 // Hooks
 // ============================================================================
 
+/** Returns attachments-level rendering options from context. */
 export const useAttachmentsContext = () =>
   useContext(AttachmentsContext) ?? { variant: "grid" as const };
 
+/** Returns the current attachment context and validates provider usage. */
 export const useAttachmentContext = () => {
   const ctx = useContext(AttachmentContext);
   if (!ctx) {
@@ -119,6 +123,7 @@ export type AttachmentsProps = HTMLAttributes<HTMLDivElement> & {
   variant?: AttachmentVariant;
 };
 
+/** Renders the attachments container and provides layout variant context. */
 export const Attachments = ({
   variant = "grid",
   className,
@@ -153,6 +158,7 @@ export type AttachmentProps = HTMLAttributes<HTMLDivElement> & {
   onRemove?: () => void;
 };
 
+/** Renders an individual attachment item and provides item context. */
 export const Attachment = ({
   data,
   onRemove,
@@ -204,6 +210,7 @@ export type AttachmentPreviewProps = HTMLAttributes<HTMLDivElement> & {
   fallbackIcon?: ReactNode;
 };
 
+/** Renders attachment media preview content based on media type and variant. */
 export const AttachmentPreview = ({
   fallbackIcon,
   className,
@@ -286,6 +293,7 @@ export type AttachmentInfoProps = HTMLAttributes<HTMLDivElement> & {
   metaVisibility?: "hidden" | "shown";
 };
 
+/** Renders attachment label and optional media type metadata. */
 export const AttachmentInfo = ({
   metaVisibility = "hidden",
   className,
@@ -319,6 +327,7 @@ export type AttachmentRemoveProps = ComponentProps<typeof Button> & {
   label?: string;
 };
 
+/** Renders an attachment remove button when `onRemove` is available. */
 export const AttachmentRemove = ({
   label = "Remove",
   className,
@@ -370,6 +379,7 @@ export const AttachmentRemove = ({
 
 export type AttachmentHoverCardProps = ComponentProps<typeof HoverCard>;
 
+/** Renders a hover card wrapper for attachment previews. */
 export const AttachmentHoverCard = ({
   openDelay = 0,
   closeDelay = 0,
@@ -382,6 +392,7 @@ export type AttachmentHoverCardTriggerProps = ComponentProps<
   typeof HoverCardTrigger
 >;
 
+/** Renders the hover card trigger for an attachment. */
 export const AttachmentHoverCardTrigger = (
   props: AttachmentHoverCardTriggerProps,
 ) => <HoverCardTrigger {...props} />;
@@ -390,6 +401,7 @@ export type AttachmentHoverCardContentProps = ComponentProps<
   typeof HoverCardContent
 >;
 
+/** Renders hover card content for attachment preview UI. */
 export const AttachmentHoverCardContent = ({
   align = "start",
   className,
@@ -408,6 +420,7 @@ export const AttachmentHoverCardContent = ({
 
 export type AttachmentEmptyProps = HTMLAttributes<HTMLDivElement>;
 
+/** Renders the empty state for the attachments container. */
 export const AttachmentEmpty = ({
   className,
   children,

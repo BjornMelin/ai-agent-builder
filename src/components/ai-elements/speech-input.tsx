@@ -99,13 +99,14 @@ const detectSpeechInputMode = (): SpeechInputMode => {
  * @param props - Speech callbacks and button props.
  * @returns A button that starts and stops speech capture.
  */
-export const SpeechInput = ({
-  className,
-  onTranscriptionChange,
-  onAudioRecorded,
-  lang = "en-US",
-  ...props
-}: SpeechInputProps) => {
+export const SpeechInput = (props: SpeechInputProps) => {
+  const {
+    className,
+    onTranscriptionChange,
+    onAudioRecorded,
+    lang = "en-US",
+    ...rest
+  } = props;
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mode, setMode] = useState<SpeechInputMode>("none");
@@ -318,7 +319,7 @@ export const SpeechInput = ({
         )}
         disabled={isDisabled}
         onClick={toggleListening}
-        {...props}
+        {...rest}
       >
         {isProcessing ? <Spinner /> : null}
         {!isProcessing && isListening ? (

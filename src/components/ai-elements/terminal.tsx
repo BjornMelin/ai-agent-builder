@@ -35,6 +35,7 @@ export type TerminalProps = HTMLAttributes<HTMLDivElement> & {
   onClear?: () => void;
 };
 
+/** @param props - Terminal output and container props. @returns The terminal root element. */
 export const Terminal = ({
   output,
   mode = "static",
@@ -80,6 +81,7 @@ export const Terminal = ({
 
 export type TerminalHeaderProps = HTMLAttributes<HTMLDivElement>;
 
+/** @param props - Header container props. @returns The terminal header. */
 export const TerminalHeader = ({
   className,
   children,
@@ -98,6 +100,7 @@ export const TerminalHeader = ({
 
 export type TerminalTitleProps = HTMLAttributes<HTMLDivElement>;
 
+/** @param props - Title container props. @returns The terminal title row. */
 export const TerminalTitle = ({
   className,
   children,
@@ -114,6 +117,7 @@ export const TerminalTitle = ({
 
 export type TerminalStatusProps = HTMLAttributes<HTMLDivElement>;
 
+/** @param props - Status content props. @returns Streaming status UI or `null`. */
 export const TerminalStatus = ({
   className,
   children,
@@ -141,6 +145,7 @@ export const TerminalStatus = ({
 
 export type TerminalActionsProps = HTMLAttributes<HTMLDivElement>;
 
+/** @param props - Action container props. @returns The terminal actions row. */
 export const TerminalActions = ({
   className,
   children,
@@ -157,6 +162,7 @@ export type TerminalCopyButtonProps = ComponentProps<typeof Button> & {
   timeout?: number;
 };
 
+/** @param props - Copy button and callback props. @returns A terminal copy button. */
 export const TerminalCopyButton = ({
   onCopy,
   onError,
@@ -204,6 +210,7 @@ export const TerminalCopyButton = ({
 
 export type TerminalClearButtonProps = ComponentProps<typeof Button>;
 
+/** @param props - Clear button props. @returns A clear button or `null`. */
 export const TerminalClearButton = ({
   children,
   className,
@@ -233,6 +240,7 @@ export const TerminalClearButton = ({
 
 export type TerminalContentProps = HTMLAttributes<HTMLDivElement>;
 
+/** @param props - Content container props. @returns Terminal output content. */
 export const TerminalContent = ({
   className,
   children,
