@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar as AvatarPrimitive } from "radix-ui";
+import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * @param props - Component props.
  * @returns A JSX element.
  */
-function Avatar(
+export function Avatar(
   props: React.ComponentProps<typeof AvatarPrimitive.Root> & {
     size?: "default" | "sm" | "lg";
   },
@@ -37,7 +37,7 @@ function Avatar(
  * @param props - Component props.
  * @returns A JSX element.
  */
-function AvatarImage(
+export function AvatarImage(
   props: React.ComponentProps<typeof AvatarPrimitive.Image>,
 ) {
   const { className, ...rest } = props;
@@ -57,7 +57,7 @@ function AvatarImage(
  * @param props - Component props.
  * @returns A JSX element.
  */
-function AvatarFallback(
+export function AvatarFallback(
   props: React.ComponentProps<typeof AvatarPrimitive.Fallback>,
 ) {
   const { className, ...rest } = props;
@@ -80,7 +80,7 @@ function AvatarFallback(
  * @param props - Component props.
  * @returns A JSX element.
  */
-function AvatarBadge(props: React.ComponentProps<"span">) {
+export function AvatarBadge(props: React.ComponentProps<"span">) {
   const { className, ...rest } = props;
 
   return (
@@ -104,7 +104,7 @@ function AvatarBadge(props: React.ComponentProps<"span">) {
  * @param props - Component props.
  * @returns A JSX element.
  */
-function AvatarGroup(props: React.ComponentProps<"div">) {
+export function AvatarGroup(props: React.ComponentProps<"div">) {
   const { className, ...rest } = props;
 
   return (
@@ -125,7 +125,7 @@ function AvatarGroup(props: React.ComponentProps<"div">) {
  * @param props - Component props.
  * @returns A JSX element.
  */
-function AvatarGroupCount(props: React.ComponentProps<"div">) {
+export function AvatarGroupCount(props: React.ComponentProps<"div">) {
   const { className, ...rest } = props;
 
   return (
@@ -139,12 +139,3 @@ function AvatarGroupCount(props: React.ComponentProps<"div">) {
     />
   );
 }
-
-export {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-  AvatarBadge,
-  AvatarGroup,
-  AvatarGroupCount,
-};

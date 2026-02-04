@@ -1,54 +1,48 @@
 "use client";
 
-import { Collapsible as CollapsiblePrimitive } from "radix-ui";
+import * as CollapsiblePrimitive from "@radix-ui/react-collapsible";
 import type { ComponentProps } from "react";
 
 /**
- * Renders the Collapsible component.
+ * Provides the root disclosure state container for collapsible content.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Props forwarded to Radix Collapsible.Root.
+ * @returns A collapsible root element with shared open/closed state.
  */
 function Collapsible(props: ComponentProps<typeof CollapsiblePrimitive.Root>) {
-  const { ...rest } = props;
-
-  return <CollapsiblePrimitive.Root data-slot="collapsible" {...rest} />;
+  return <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />;
 }
 
 /**
- * Renders the CollapsibleTrigger component.
+ * Renders the interactive trigger that toggles collapsible state.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Props forwarded to Radix Collapsible.CollapsibleTrigger.
+ * @returns A trigger element connected to the nearest collapsible root.
  */
 function CollapsibleTrigger(
   props: ComponentProps<typeof CollapsiblePrimitive.CollapsibleTrigger>,
 ) {
-  const { ...rest } = props;
-
   return (
     <CollapsiblePrimitive.CollapsibleTrigger
       data-slot="collapsible-trigger"
-      {...rest}
+      {...props}
     />
   );
 }
 
 /**
- * Renders the CollapsibleContent component.
+ * Renders the content region controlled by the collapsible trigger.
  *
- * @param props - Component props.
- * @returns A JSX element.
+ * @param props - Props forwarded to Radix Collapsible.CollapsibleContent.
+ * @returns A content element shown or hidden based on collapsible state.
  */
 function CollapsibleContent(
   props: ComponentProps<typeof CollapsiblePrimitive.CollapsibleContent>,
 ) {
-  const { ...rest } = props;
-
   return (
     <CollapsiblePrimitive.CollapsibleContent
       data-slot="collapsible-content"
-      {...rest}
+      {...props}
     />
   );
 }
