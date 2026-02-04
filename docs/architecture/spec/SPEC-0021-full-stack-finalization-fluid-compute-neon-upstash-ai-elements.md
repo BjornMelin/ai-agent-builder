@@ -143,13 +143,34 @@ We evaluated **Upstash Workflow** (`@upstash/workflow`) as an alternative durabl
 
 For this app, the primary UX requirement is **streaming-first, resumable UI** (AI Elements). Workflow DevKit provides a native pattern for resumable streams (run id + `startIndex` cursor) and a transport helper (`WorkflowChatTransport`) that is aligned with AI SDK `useChat` ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams), [WorkflowChatTransport](https://useworkflow.dev/docs/api-reference/workflow-ai/workflow-chat-transport)).
 
-### UI (Partially Implemented)
+### UI (Implemented - Initial Workspace)
 
-- Workspace pages under `src/app/(app)/…` are still pending (planned in this spec).
-- shadcn/ui + AI Elements component code **is vendored**:
-  - AI Elements: `src/components/ai-elements/**`
-  - shadcn/ui: `src/components/ui/**`
-  - Shared utilities: `src/lib/utils.ts`
+Workspace pages under `src/app/(app)/…` are implemented and are protected by
+`requireAppUser()`:
+
+- `/projects` (list + create)
+- `/projects/[projectId]` (overview)
+- `/projects/[projectId]/uploads` and `/projects/[projectId]/uploads/[fileId]`
+- `/projects/[projectId]/chat` (AI Elements + WorkflowChatTransport resumable streams)
+- `/projects/[projectId]/search`
+- `/projects/[projectId]/runs`
+- `/projects/[projectId]/settings`
+
+`/projects` explicitly sets `export const dynamic = "force-dynamic"` to prevent
+build-time static rendering attempts (which would otherwise trigger `cookies()`
+dynamic-usage errors and accidental DB initialization during build).
+
+shadcn/ui + AI Elements component code is vendored:
+
+- AI Elements: `src/components/ai-elements/**` (chat UI currently uses `conversation`, `message`, `prompt-input`, `reasoning`, `tool`)
+- shadcn/ui: `src/components/ui/**`
+- Shared utilities: `src/lib/utils.ts`
+
+Route handler tests exist for `/api/chat`:
+
+- `src/app/api/chat/__tests__/route.test.ts`
+- `src/app/api/chat/[runId]/__tests__/route.test.ts`
+- `src/app/api/chat/[runId]/stream/__tests__/route.test.ts`
 
 ## Target Architecture (Final System Shape)
 

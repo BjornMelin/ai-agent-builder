@@ -169,6 +169,12 @@ Repo constraint: **no manual memoization** (`useMemo`, `useCallback`). The imple
   - rejects invalid `startIndex`
   - resumes from `startIndex` without duplication (cursor correctness)
 
+Implemented in:
+
+- `src/app/api/chat/__tests__/route.test.ts`
+- `src/app/api/chat/[runId]/__tests__/route.test.ts`
+- `src/app/api/chat/[runId]/stream/__tests__/route.test.ts`
+
 ### Integration tests (Vitest)
 
 - Multi-turn flow:

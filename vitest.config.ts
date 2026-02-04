@@ -1,5 +1,4 @@
 import path from "node:path";
-import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { configDefaults, defineConfig } from "vitest/config";
 
@@ -7,16 +6,9 @@ const testInclude = [
   "src/**/*.{test,spec}.{ts,tsx}",
   "tests/**/*.{test,spec}.{ts,tsx}",
 ];
-const typecheckExclude = [
-  "**/node_modules/**",
-  "**/.dist/**",
-  "opensrc/**",
-  ".next-docs/**",
-];
 
 export default defineConfig({
   plugins: [
-    react(),
     tsconfigPaths({
       projects: ["./tsconfig.json"],
     }),
@@ -37,11 +29,9 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, "opensrc/**", ".next-docs/**"],
     include: testInclude,
     passWithNoTests: true,
-    typecheck: {
-      enabled: true,
-      exclude: typecheckExclude,
-      include: testInclude,
-      tsconfig: "tsconfig.json",
-    },
+    pool: "threads",
+    // Keep tests blazing fast by avoiding duplicate typechecking work.
+    // CI runs `bun run typecheck` separately.
+    restoreMocks: true,
   },
 });

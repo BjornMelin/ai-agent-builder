@@ -3,6 +3,8 @@ import { CreateProjectForm } from "@/app/(app)/projects/create-project-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listProjects } from "@/lib/data/projects.server";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Project list page.
  *
