@@ -40,7 +40,10 @@ export type CommitProps = ComponentProps<typeof Collapsible>;
 export const Commit = (props: CommitProps) => {
   const { className, children, ...rest } = props;
   return (
-    <Collapsible className={cn("rounded-lg border bg-background", className)} {...rest}>
+    <Collapsible
+      className={cn("rounded-lg border bg-background", className)}
+      {...rest}
+    >
       {children}
     </Collapsible>
   );
@@ -153,7 +156,11 @@ export type CommitSeparatorProps = HTMLAttributes<HTMLSpanElement>;
  */
 export const CommitSeparator = (props: CommitSeparatorProps) => {
   const { className, children, ...rest } = props;
-  return <span className={className} {...rest}>{children ?? "•"}</span>;
+  return (
+    <span className={className} {...rest}>
+      {children ?? "•"}
+    </span>
+  );
 };
 
 /**
@@ -302,8 +309,15 @@ export type CommitCopyButtonProps = ComponentProps<typeof Button> & {
  * @returns The rendered copy button.
  */
 export const CommitCopyButton = (props: CommitCopyButtonProps) => {
-  const { hash, onCopy, onError, timeout = 2000, children, className, ...rest } =
-    props;
+  const {
+    hash,
+    onCopy,
+    onError,
+    timeout = 2000,
+    children,
+    className,
+    ...rest
+  } = props;
   const [isCopied, setIsCopied] = useState(false);
   const timeoutRef = useRef<number>(0);
 
@@ -603,10 +617,7 @@ export const CommitFileDeletions = (props: CommitFileDeletionsProps) => {
   }
 
   return (
-    <span
-      className={cn("text-red-600 dark:text-red-400", className)}
-      {...rest}
-    >
+    <span className={cn("text-red-600 dark:text-red-400", className)} {...rest}>
       {children ?? (
         <>
           <MinusIcon className="inline-block size-3" />

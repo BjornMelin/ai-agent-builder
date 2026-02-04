@@ -190,12 +190,7 @@ export type MessageBranchProps = HTMLAttributes<HTMLDivElement> & {
  * @returns The branch context provider.
  */
 export const MessageBranch = (props: MessageBranchProps) => {
-  const {
-    defaultBranch = 0,
-    onBranchChange,
-    className,
-    ...rest
-  } = props;
+  const { defaultBranch = 0, onBranchChange, className, ...rest } = props;
   const [currentBranch, setCurrentBranch] = useState(defaultBranch);
   const [branches, setBranches] = useState<ReactElement[]>([]);
   const totalBranches = branches.length;
