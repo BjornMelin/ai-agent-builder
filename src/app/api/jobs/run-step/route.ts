@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { AppError } from "@/lib/core/errors";
 import { env } from "@/lib/env";
+import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { executeRunStep } from "@/lib/runs/run-engine.server";
 import { verifyQstashSignatureAppRouter } from "@/lib/upstash/qstash.server";
@@ -25,25 +25,14 @@ const bodySchema = z.strictObject({
  */
 export const POST = verifyQstashSignatureAppRouter(async (req: Request) => {
   try {
-    const raw = await req.text();
-    let body: unknown;
-    try {
-      body = JSON.parse(raw);
-    } catch (err) {
-      throw new AppError("bad_request", 400, "Invalid JSON body.", err);
-    }
-
-    const parsed = bodySchema.safeParse(body);
-    if (!parsed.success) {
-      throw new AppError("bad_request", 400, "Invalid request body.");
-    }
+    const parsed = await parseJsonBody(req, bodySchema);
 
     const origin = env.app.baseUrl;
 
     const result = await executeRunStep({
       origin,
-      runId: parsed.data.runId,
-      stepId: parsed.data.stepId,
+      runId: parsed.runId,
+      stepId: parsed.stepId,
     });
 
     return jsonOk(result);

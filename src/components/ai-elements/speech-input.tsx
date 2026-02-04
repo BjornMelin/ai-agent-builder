@@ -1,0 +1,395 @@
+"use client";
+
+import { MicIcon, SquareIcon } from "lucide-react";
+import { type ComponentProps, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onresult:
+    | ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void)
+    | null;
+  onerror:
+    | ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void)
+    | null;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  readonly length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+  }
+}
+
+type SpeechInputMode = "speech-recognition" | "media-recorder" | "none";
+
+/** Props for the `SpeechInput` component. */
+export type SpeechInputProps = ComponentProps<typeof Button> & {
+  onTranscriptionChange?: (text: string) => void;
+  /**
+   * Callback for when audio is recorded using MediaRecorder fallback.
+   * This is called in browsers that don't support the Web Speech API (Firefox, Safari).
+   * The callback receives an audio Blob that should be sent to a transcription service.
+   * Return the transcribed text, which will be passed to onTranscriptionChange.
+   */
+  onAudioRecorded?: (audioBlob: Blob) => Promise<string>;
+  lang?: string;
+};
+
+const reportClientError = (message: string, cause?: unknown) => {
+  const error = new Error(message, cause === undefined ? {} : { cause });
+  if (
+    typeof window !== "undefined" &&
+    typeof window.reportError === "function"
+  ) {
+    window.reportError(error);
+  }
+};
+
+const getSupportedAudioMimeType = () => {
+  if (typeof MediaRecorder === "undefined") {
+    return undefined;
+  }
+
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4;codecs=mp4a.40.2",
+    "audio/mp4",
+  ];
+
+  return candidates.find((type) => MediaRecorder.isTypeSupported(type));
+};
+
+const detectSpeechInputMode = (): SpeechInputMode => {
+  if (typeof window === "undefined") {
+    return "none";
+  }
+
+  if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
+    return "speech-recognition";
+  }
+
+  if ("MediaRecorder" in window && "mediaDevices" in navigator) {
+    return "media-recorder";
+  }
+
+  return "none";
+};
+
+/**
+ * A speech input component that supports both the Web Speech API and a MediaRecorder fallback.
+ *
+ * It automatically detects the best available mode for speech input and provides a button
+ * to start/stop the recording or recognition process.
+ *
+ * @param props - Speech callbacks and button props.
+ * @returns A button that starts and stops speech capture.
+ */
+export const SpeechInput = (props: SpeechInputProps) => {
+  const {
+    className,
+    onTranscriptionChange,
+    onAudioRecorded,
+    lang = "en-US",
+    ...rest
+  } = props;
+  const [isListening, setIsListening] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [mode, setMode] = useState<SpeechInputMode>("none");
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(
+    null,
+  );
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const transcriptionChangeRef = useRef(onTranscriptionChange);
+
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  // Detect mode on mount
+  useEffect(() => {
+    setMode(detectSpeechInputMode());
+
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => {
+      setPrefersReducedMotion(mediaQuery.matches);
+    };
+
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+    return () => {
+      mediaQuery.removeEventListener("change", updatePreference);
+    };
+  }, []);
+
+  useEffect(() => {
+    transcriptionChangeRef.current = onTranscriptionChange;
+  }, [onTranscriptionChange]);
+
+  // Initialize Speech Recognition when mode is speech-recognition
+  useEffect(() => {
+    if (mode !== "speech-recognition") {
+      return;
+    }
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const speechRecognition = new SpeechRecognition();
+
+    speechRecognition.continuous = true;
+    speechRecognition.interimResults = true;
+    speechRecognition.lang = lang;
+
+    speechRecognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    speechRecognition.onend = () => {
+      setIsListening(false);
+    };
+
+    speechRecognition.onresult = (event) => {
+      let finalTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (!result) continue;
+        if (result.isFinal) {
+          finalTranscript += result[0]?.transcript ?? "";
+        }
+      }
+
+      if (finalTranscript) {
+        transcriptionChangeRef.current?.(finalTranscript);
+      }
+    };
+
+    speechRecognition.onerror = (event) => {
+      reportClientError("Speech recognition error", event.error);
+      setIsListening(false);
+    };
+
+    recognitionRef.current = speechRecognition;
+    setRecognition(speechRecognition);
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [mode, lang]);
+
+  // Start MediaRecorder recording
+  const startMediaRecorder = async () => {
+    if (!onAudioRecorded) {
+      reportClientError(
+        "SpeechInput requires onAudioRecorded callback for MediaRecorder fallback",
+      );
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const preferredMimeType = getSupportedAudioMimeType();
+      const mediaRecorder = new MediaRecorder(
+        stream,
+        preferredMimeType === undefined
+          ? undefined
+          : { mimeType: preferredMimeType },
+      );
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        // Stop all tracks to release the microphone
+        for (const track of stream.getTracks()) {
+          track.stop();
+        }
+        mediaStreamRef.current = null;
+
+        const mimeType =
+          mediaRecorder.mimeType || preferredMimeType || "audio/webm";
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mimeType,
+        });
+
+        if (audioBlob.size > 0) {
+          setIsProcessing(true);
+          try {
+            const transcript = await onAudioRecorded(audioBlob);
+            if (transcript) {
+              transcriptionChangeRef.current?.(transcript);
+            }
+          } catch (error) {
+            reportClientError("Transcription error", error);
+          } finally {
+            setIsProcessing(false);
+          }
+        }
+      };
+
+      mediaRecorder.onerror = (event) => {
+        reportClientError("MediaRecorder error", event);
+        setIsListening(false);
+        // Stop all tracks on error
+        for (const track of stream.getTracks()) {
+          track.stop();
+        }
+        mediaStreamRef.current = null;
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsListening(true);
+    } catch (error) {
+      reportClientError("Failed to start MediaRecorder", error);
+      setIsListening(false);
+    }
+  };
+
+  // Stop MediaRecorder recording
+  const stopMediaRecorder = () => {
+    if (mediaRecorderRef.current?.state === "recording") {
+      mediaRecorderRef.current.stop();
+    }
+    setIsListening(false);
+  };
+
+  useEffect(
+    () => () => {
+      if (mediaRecorderRef.current?.state === "recording") {
+        mediaRecorderRef.current.stop();
+      }
+
+      if (mediaStreamRef.current) {
+        for (const track of mediaStreamRef.current.getTracks()) {
+          track.stop();
+        }
+      }
+
+      mediaRecorderRef.current = null;
+      mediaStreamRef.current = null;
+    },
+    [],
+  );
+
+  const toggleListening = () => {
+    if (mode === "speech-recognition" && recognition) {
+      if (isListening) {
+        recognition.stop();
+      } else {
+        recognition.start();
+      }
+    } else if (mode === "media-recorder") {
+      if (isListening) {
+        stopMediaRecorder();
+      } else {
+        // Fire-and-forget is intentional here; UI state handles in-flight recording.
+        void startMediaRecorder().catch((error) => {
+          reportClientError("Critical error starting MediaRecorder", error);
+          setIsListening(false);
+        });
+      }
+    }
+  };
+
+  // Determine if button should be disabled
+  const isDisabled =
+    mode === "none" ||
+    (mode === "speech-recognition" && !recognition) ||
+    (mode === "media-recorder" && !onAudioRecorded) ||
+    isProcessing;
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      {/* Animated pulse rings */}
+      {isListening
+        ? [0, 1, 2].map((index) => (
+            <div
+              className={cn(
+                "absolute inset-0 rounded-full border-2 border-red-400/30",
+                !prefersReducedMotion && "animate-ping",
+              )}
+              key={index}
+              style={{
+                animationDelay: `${index * 0.3}s`,
+                animationDuration: "2s",
+              }}
+            />
+          ))
+        : null}
+
+      {/* Main record button */}
+      <Button
+        aria-label={isListening ? "Stop speech input" : "Start speech input"}
+        className={cn(
+          "relative z-10 rounded-full transition-all duration-300",
+          isListening
+            ? "bg-destructive text-white hover:bg-destructive/80 hover:text-white"
+            : "bg-primary text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground",
+          className,
+        )}
+        disabled={isDisabled}
+        onClick={toggleListening}
+        {...rest}
+      >
+        {isProcessing ? <Spinner /> : null}
+        {!isProcessing && isListening ? (
+          <SquareIcon className="size-4" />
+        ) : null}
+        {!(isProcessing || isListening) ? <MicIcon className="size-4" /> : null}
+      </Button>
+    </div>
+  );
+};

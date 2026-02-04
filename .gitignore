@@ -107,6 +107,7 @@ repomix-output.md
 .gemini/
 .claude/
 opensrc/
+config/mcporter.json
 # next-agents-md
 .next-docs/
 .env*.local

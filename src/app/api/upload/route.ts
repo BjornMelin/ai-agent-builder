@@ -53,9 +53,14 @@ export async function POST(
   req: Request,
 ): Promise<NextResponse<UploadResponse | JsonError>> {
   try {
-    await requireAppUserApi();
+    const authPromise = requireAppUserApi();
+    const formPromise = req.formData().catch(() => null);
+    await authPromise;
 
-    const form = await req.formData();
+    const form = await formPromise;
+    if (!form) {
+      throw new AppError("bad_request", 400, "Invalid form data.");
+    }
     const projectId = String(form.get("projectId") ?? "").trim();
 
     if (!projectId) {

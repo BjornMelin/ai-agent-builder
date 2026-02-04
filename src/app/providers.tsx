@@ -41,7 +41,7 @@ export function Providers(
       navigate={router.push}
       replace={router.replace}
       onSessionChange={() => router.refresh()}
-      redirectTo="/account/settings"
+      redirectTo="/projects"
       signUp={false}
       {...socialProps}
       credentials={{ forgotPassword: true }}

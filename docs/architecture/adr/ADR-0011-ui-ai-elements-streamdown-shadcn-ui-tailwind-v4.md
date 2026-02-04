@@ -28,6 +28,10 @@ See [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-ups
 for the cross-cutting “finalization” plan that specifies the workspace
 information architecture and the API contracts required by the UI.
 
+See [SPEC-0023](../spec/SPEC-0023-ai-elements-workspace-ui-and-interaction-model.md)
+for the UI information architecture, component-vendoring plan, and interaction
+model (chat/runs/search/uploads).
+
 ## Context
 
 Building chat and streaming UI primitives from scratch is slow and error-prone. AI Elements provides ready-made components designed for AI SDK message parts. Streamdown improves streaming markdown rendering. shadcn/ui provides accessible UI components aligned with Tailwind v4.
@@ -141,4 +145,4 @@ flowchart LR
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
-- **0.3 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.
+- **0.3 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec; added SPEC-0023 reference for UI/interaction model.

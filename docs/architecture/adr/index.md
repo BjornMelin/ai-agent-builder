@@ -4,8 +4,8 @@
 - [ADR-0002](./ADR-0002-authentication-single-password-signed-cookie-session.md) — Authentication: single-password + signed cookie session (superseded)
 - [ADR-0003](./ADR-0003-database-neon-postgres-drizzle-orm.md) — Database: Neon Postgres + Drizzle ORM
 - [ADR-0004](./ADR-0004-retrieval-upstash-vector-for-semantic-search.md) — Retrieval: Upstash Vector for semantic search
-- [ADR-0005](./ADR-0005-orchestration-upstash-qstash-for-durable-workflows.md) — Orchestration: Upstash QStash for durable workflows
-- [ADR-0006](./ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md) — Agent runtime: AI SDK v6 ToolLoopAgent + streaming UI responses
+- [ADR-0005](./ADR-0005-orchestration-upstash-qstash-for-durable-workflows.md) — Orchestration: Upstash QStash for background jobs (ingestion + fanout)
+- [ADR-0006](./ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md) — Agent runtime: AI SDK v6 agents + streaming UI responses (Workflow DevKit durable sessions)
 - [ADR-0007](./ADR-0007-model-access-vercel-ai-gateway-exclusively.md) — Model access: Vercel AI Gateway exclusively
 - [ADR-0008](./ADR-0008-web-research-exa-firecrawl-with-citations.md) — Web research: Exa + Firecrawl with citations
 - [ADR-0009](./ADR-0009-file-storage-vercel-blob-for-uploads-originals.md) — File storage: Vercel Blob for uploads/originals
@@ -23,6 +23,7 @@
 - [ADR-0021](./ADR-0021-environment-configuration-contracts-and-secret-handling.md) — Environment configuration contracts and secret handling
 - [ADR-0022](./ADR-0022-authentication-neon-auth-oauth-allowlist.md) — Authentication: Neon Auth (OAuth + UI) + allowlist access control
 - [ADR-0023](./ADR-0023-public-signup-deferred-until-byok.md) — Public sign-up deferred until BYOK (deferred)
+- [ADR-0026](./ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md) — Orchestration: Vercel Workflow DevKit for interactive runs (QStash for background jobs)
 
 ## Implementation & deployment automation
 

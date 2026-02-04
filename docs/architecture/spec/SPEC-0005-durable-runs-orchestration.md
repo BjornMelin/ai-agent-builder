@@ -7,8 +7,8 @@ owners: ["you"]
 status: Proposed
 related_requirements:
   ["FR-010", "FR-011", "FR-023", "FR-029", "FR-031", "PR-004", "PR-005", "PR-007", "IR-004", "NFR-004", "NFR-013", "NFR-014", "NFR-015"]
-related_adrs: ["ADR-0005", "ADR-0024"]
-notes: "Defines durable run execution, step graph, retries, and QStash integration."
+related_adrs: ["ADR-0024", "ADR-0026", "ADR-0005"]
+notes: "Defines durable run execution, step graph, retries, idempotency, and Workflow DevKit integration (QStash retained for background jobs)."
 ---
 
 ## Summary
@@ -28,7 +28,9 @@ Runs are used for:
 ## Context
 
 Long-running pipelines must run reliably even when the user disconnects. We use
-QStash to enqueue and retry step execution via signed HTTP requests.
+Vercel Workflow DevKit to orchestrate interactive runs durably and stream their
+progress to the UI (including resumable streams). Background durable delivery
+for ingestion remains QStash-managed per ADR-0005.
 
 Implementation runs add new constraints:
 
@@ -90,7 +92,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ## Constraints
 
-- Steps must be idempotent and safe to retry (QStash retries are expected).
+- Steps must be idempotent and safe to retry (retries are expected).
 - Side-effectful steps must be approval-gated (**FR-031**).
 - Long-running compute and untrusted inputs/code must run in Sandbox, not the
   app runtime (**NFR-014**).
@@ -101,14 +103,14 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ### Architecture overview
 
 Durable runs are an explicit step graph (DAG) persisted in the database and
-advanced by queued executions (QStash) and/or external polling steps.
+advanced by Workflow DevKit step execution and/or external polling/wait steps.
 
 This spec’s design details are captured in the following sections:
 
 - Run types
 - Step graph model
 - Execution semantics
-- QStash integration
+- Workflow integration
 - Failure handling
 
 ### Data contracts (if applicable)
@@ -120,17 +122,15 @@ This spec’s design details are captured in the following sections:
 
 ### File-level contracts
 
-- `src/app/api/runs/*`: Route Handlers that execute or resume steps (signed).
+- `src/app/api/runs/*`: Route Handlers that start/resume runs and expose progress.
 - `src/lib/runs/*`: run state machine, idempotency, and persistence helpers.
-- `src/lib/upstash/qstash.server.ts`: publish + verify helpers for QStash integration.
+- `src/lib/upstash/qstash.server.ts`: publish + verify helpers for QStash integration (background jobs).
 
 ### Configuration
 
-- See `docs/ops/env.md` (see
-  [QStash env vars](https://upstash.com/docs/qstash/howto/local-development)):
-  - QStash publish: `QSTASH_TOKEN`
-  - QStash verify: `QSTASH_CURRENT_SIGNING_KEY`, `QSTASH_NEXT_SIGNING_KEY`
-  - Optional: budgets/caching via Upstash Redis (`UPSTASH_REDIS_*`)
+- See `docs/ops/env.md`.
+  - Workflow DevKit does not require additional env vars for the core run/start/stream path when deployed to Vercel.
+  - QStash env vars apply to background jobs (especially ingestion) per ADR-0005.
 
 ## Run types
 
@@ -169,7 +169,7 @@ For implementation runs, add:
 ## Execution semantics
 
 - All steps must be **idempotent**:
-  - if a step is repeated (QStash retry), it must detect prior completion and
+  - if a step is repeated (retry), it must detect prior completion and
     return the same output.
 - A step may schedule the next step only after persisting:
   - its output
@@ -178,12 +178,15 @@ For implementation runs, add:
   - approval wait: user action unblocks
   - external wait: poll GitHub/Vercel until condition met.
 
-## QStash integration
+## Workflow integration
 
-- Each step execution is triggered by a QStash message to a Next.js Route
-  Handler.
-- The handler verifies QStash signatures and idempotency keys.
-- The handler executes the step and enqueues the next step.
+- Each run is executed as a Workflow run (Vercel Workflow DevKit), enabling:
+  - streaming progress updates to the UI
+  - resumable streams after disconnects/timeouts
+  - hooks/webhooks for human-in-loop steps
+- Workflow functions orchestrate; **step functions** perform side effects.
+- QStash is still used for background delivery where streaming is not required
+  (especially ingestion), per ADR-0005.
 
 ## Failure handling
 
@@ -196,12 +199,12 @@ For implementation runs, add:
 
 | Criterion | Weight | Score | Weighted |
 | --- | --- | ---: | ---: |
-| Solution leverage | 0.35 | 9.2 | 3.22 |
-| Application value | 0.30 | 9.3 | 2.79 |
-| Maintenance & cognitive load | 0.25 | 9.0 | 2.25 |
-| Architectural adaptability | 0.10 | 9.1 | 0.91 |
+| Solution leverage | 0.35 | 9.3 | 3.26 |
+| Application value | 0.30 | 9.4 | 2.82 |
+| Maintenance & cognitive load | 0.25 | 9.1 | 2.28 |
+| Architectural adaptability | 0.10 | 9.2 | 0.92 |
 
-**Total:** 9.17 / 10.0
+**Total:** 9.28 / 10.0
 
 ### Supporting rationale (workflow-focused)
 
@@ -215,7 +218,8 @@ For implementation runs, add:
 
 ## Acceptance criteria
 
-- Runs execute to completion despite client disconnects (queued steps).
+- Runs execute to completion despite client disconnects (durable workflow run).
+- Streaming progress can resume after disconnects/timeouts (cursor-based resume).
 - Steps are idempotent and safe to retry without duplicating side effects.
 - Side-effectful steps halt and surface an approval request before continuing.
 - Run timelines include sufficient provenance to reconstruct what happened.
@@ -225,7 +229,8 @@ For implementation runs, add:
 - Unit tests: step idempotency helpers and error normalization.
 - Unit tests: run engine enqueue behavior and status transitions
   (`src/lib/runs/run-engine.server.test.ts`).
-- Integration tests: QStash signature verification and step scheduling.
+- Integration tests: workflow run start + stream reconnection contract.
+- Integration tests: QStash signature verification for ingestion/background jobs.
 - E2E (later): execute a small run end-to-end and validate status transitions.
 
 ## Operational notes

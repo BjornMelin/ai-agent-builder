@@ -10,6 +10,7 @@ import {
   updateRunStepStatus,
 } from "@/lib/data/runs.server";
 import { env } from "@/lib/env";
+import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonCreated, jsonError } from "@/lib/next/responses";
 import { enqueueRunStep } from "@/lib/runs/run-engine.server";
 
@@ -31,23 +32,18 @@ const createRunSchema = z.strictObject({
 export async function POST(req: Request) {
   try {
     await requireAppUserApi();
+    const parsed = await parseJsonBody(req, createRunSchema);
 
-    const body = await req.json().catch(() => null);
-    const parsed = createRunSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new AppError("bad_request", 400, "Invalid request body.");
-    }
-
-    const project = await getProjectById(parsed.data.projectId);
+    const project = await getProjectById(parsed.projectId);
     if (!project) {
       throw new AppError("not_found", 404, "Project not found.");
     }
 
     const callbackOrigin = env.app.baseUrl;
     const run = await createRun({
-      kind: parsed.data.kind,
-      projectId: parsed.data.projectId,
-      ...(parsed.data.metadata ? { metadata: parsed.data.metadata } : {}),
+      kind: parsed.kind,
+      projectId: parsed.projectId,
+      ...(parsed.metadata ? { metadata: parsed.metadata } : {}),
     });
 
     await ensureRunStep({

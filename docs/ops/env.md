@@ -100,6 +100,9 @@ App-level access control (cost control):
   - Vercel Preview note: when using the Neon ↔ Vercel integration with Preview
     Branching, this value is injected automatically per Preview branch.
     ([Neon Vercel integration](https://neon.com/docs/guides/vercel))
+- `DATABASE_URL_UNPOOLED` (optional; recommended for migrations/DDL)
+  - Unpooled Postgres connection string (Neon provides this alongside pooled URLs).
+  - Used by: Drizzle tooling (`drizzle-kit migrate`) and build-time migrations.
 
 ### Upstash (Redis + Vector)
 

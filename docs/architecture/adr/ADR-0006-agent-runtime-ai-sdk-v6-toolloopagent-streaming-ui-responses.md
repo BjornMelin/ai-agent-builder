@@ -1,22 +1,25 @@
 ---
 ADR: 0006
-Title: Agent runtime: AI SDK v6 ToolLoopAgent + streaming UI responses
+Title: Agent runtime: AI SDK v6 agents + streaming UI responses (Workflow DevKit durable sessions)
 Status: Accepted
-Version: 0.3
+Version: 0.4
 Date: 2026-02-03
 Supersedes: []
 Superseded-by: []
-Related: [ADR-0007, ADR-0011, ADR-0012]
+Related: [ADR-0007, ADR-0011, ADR-0012, ADR-0026]
 Tags: [agents, architecture]
 References:
   - [AI SDK agents](https://ai-sdk.dev/docs/agents/overview)
   - [ToolLoopAgent](https://ai-sdk.dev/docs/reference/ai-sdk-core/tool-loop-agent)
-  - [createAgentUIStreamResponse](https://ai-sdk.dev/docs/reference/ai-sdk-core/create-agent-ui-stream-response)
+  - [createUIMessageStreamResponse](https://ai-sdk.dev/docs/reference/ai-sdk-ui/create-ui-message-stream-response)
+  - [Workflow DevKit: DurableAgent](https://useworkflow.dev/docs/api-reference/workflow-ai/durable-agent)
+  - [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
 ---
 
 ## Status
 
 Accepted — 2026-01-30.
+Updated — 2026-02-03: aligned with Workflow DevKit durable sessions and resumable streaming (ADR-0026).
 
 ## Description
 
@@ -26,9 +29,17 @@ See [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-ups
 for the cross-cutting “finalization” plan that ties agent streaming into the
 workspace UI, retrieval, caching, and durable orchestration.
 
+See [SPEC-0022](../spec/SPEC-0022-vercel-workflow-durable-runs-and-streaming-contracts.md)
+for the canonical Workflow DevKit integration (durable multi-turn sessions,
+resumable streams, hook endpoints).
+
 ## Context
 
-The system requires multi-step reasoning and tool usage. AI SDK v6 provides ToolLoopAgent for iterative tool calls and createAgentUIStreamResponse for streaming message parts to the UI in Next.js Route Handlers.
+The system requires multi-step reasoning and tool usage. AI SDK v6 provides
+agent loops (ToolLoopAgent semantics) and UI message streaming primitives.
+For production-grade resumable streaming and multi-turn durability, we run the
+agent loop inside Workflow DevKit using `@workflow/ai` `DurableAgent` and stream
+via Workflow run streams (see [ADR-0026](./ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md) for orchestration rationale).
 
 ## Decision Drivers
 
@@ -56,7 +67,10 @@ The system requires multi-step reasoning and tool usage. AI SDK v6 provides Tool
 
 ## Decision
 
-We will implement agents using **ToolLoopAgent** and stream UI output using **createAgentUIStreamResponse** in Route Handlers.
+We will implement agent loops using **AI SDK v6 agents** (ToolLoopAgent-style
+tool loops) and stream UI output using **AI SDK UI message streams**. In
+interactive/durable paths, we will execute these loops inside Workflow DevKit
+via `@workflow/ai` `DurableAgent` and expose resumable streams to clients.
 
 ## Constraints
 
@@ -92,7 +106,7 @@ flowchart LR
 ### Performance Requirements
 
 - **PR-001:** fast streaming start.
-- **PR-004:** durable runs via QStash.
+- **PR-004:** durable runs and resumable streams (Workflow DevKit).
 
 ### Integration Requirements
 
@@ -146,3 +160,4 @@ flowchart LR
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.
+- **0.4 (2026-02-03)**: Updated for Workflow DevKit durable sessions + resumable streaming alignment.

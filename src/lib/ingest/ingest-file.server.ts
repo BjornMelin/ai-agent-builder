@@ -12,6 +12,7 @@ import { extractDocument } from "@/lib/ingest/extract/extract-document.server";
 import {
   getVectorIndex,
   projectChunksNamespace,
+  type VectorMetadata,
 } from "@/lib/upstash/vector.server";
 
 /**
@@ -110,7 +111,7 @@ export async function ingestFile(
           type: "chunk",
           ...(c.pageStart === undefined ? {} : { pageStart: c.pageStart }),
           ...(c.pageEnd === undefined ? {} : { pageEnd: c.pageEnd }),
-        },
+        } satisfies VectorMetadata,
         vector: embeddings[idx] as number[],
       })),
     );

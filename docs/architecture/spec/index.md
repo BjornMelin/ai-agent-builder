@@ -24,3 +24,5 @@
 - [SPEC-0019](./SPEC-0019-sandbox-build-test-and-ci-execution.md) — Sandbox build/test/verification execution
 - [SPEC-0020](./SPEC-0020-project-workspace-and-search.md) — Project workspace and search UX
 - [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md) — Full-stack finalization (Fluid Compute + Neon/Drizzle + Upstash + AI Gateway + AI Elements UI)
+- [SPEC-0022](./SPEC-0022-vercel-workflow-durable-runs-and-streaming-contracts.md) — Durable runs & streaming contracts (Vercel Workflow DevKit)
+- [SPEC-0023](./SPEC-0023-ai-elements-workspace-ui-and-interaction-model.md) — AI Elements workspace UI and interaction model

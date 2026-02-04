@@ -5,6 +5,7 @@ import { cache } from "react";
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
+import { isUndefinedTableError } from "@/lib/db/postgres-errors";
 
 /**
  * JSON-safe project DTO.
@@ -65,10 +66,23 @@ export async function createProject(
   }
 
   const db = getDb();
-  const [row] = await db
-    .insert(schema.projectsTable)
-    .values({ name, slug })
-    .returning();
+  let row: schema.Project | undefined;
+  try {
+    [row] = await db
+      .insert(schema.projectsTable)
+      .values({ name, slug })
+      .returning();
+  } catch (err) {
+    if (isUndefinedTableError(err)) {
+      throw new AppError(
+        "db_not_migrated",
+        500,
+        "Database is not migrated. Run migrations and try again.",
+        err,
+      );
+    }
+    throw err;
+  }
 
   if (!row) {
     throw new AppError("db_insert_failed", 500, "Failed to create project.");
@@ -117,16 +131,40 @@ export const getProjectBySlug = cache(
  * @param options - Pagination options.
  * @returns Project DTOs.
  */
+const listProjectsCached = cache(
+  async (limit: number, offset: number): Promise<ProjectDto[]> => {
+    const db = getDb();
+    try {
+      const rows = await db.query.projectsTable.findMany({
+        limit,
+        offset,
+        orderBy: (t, { desc }) => [desc(t.createdAt)],
+      });
+      return rows.map(toProjectDto);
+    } catch (err) {
+      if (isUndefinedTableError(err)) {
+        throw new AppError(
+          "db_not_migrated",
+          500,
+          "Database is not migrated. Run migrations and refresh the page.",
+          err,
+        );
+      }
+      throw err;
+    }
+  },
+);
+
+/**
+ * List projects with pagination guardrails.
+ *
+ * @param options - Pagination options (limit/offset).
+ * @returns Project DTOs ordered by newest first.
+ */
 export async function listProjects(
   options: Readonly<{ limit?: number; offset?: number }> = {},
 ): Promise<ProjectDto[]> {
   const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
   const offset = Math.max(options.offset ?? 0, 0);
-  const db = getDb();
-  const rows = await db.query.projectsTable.findMany({
-    limit,
-    offset,
-    orderBy: (t, { desc }) => [desc(t.createdAt)],
-  });
-  return rows.map(toProjectDto);
+  return listProjectsCached(limit, offset);
 }
