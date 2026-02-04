@@ -32,6 +32,8 @@ This spec is the UI companion to:
 - **No manual memoization**: do not use `useMemo` or `useCallback` (repo rule).
 - **No barrel files**: import from concrete module paths only.
 - Accessibility baseline: shadcn/ui + semantic HTML, keyboard nav, focus states.
+- Use `next/image` for rendered images and configure external domains via `images.remotePatterns` (use `unoptimized` for blob/data URLs as needed). [Next.js Image component](https://nextjs.org/docs/app/api-reference/components/image).
+- Lazy-load heavy client renderers (Streamdown, syntax highlighting) with `next/dynamic` to reduce initial JS. [Next.js lazy loading](https://nextjs.org/docs/app/building-your-application/optimizing/lazy-loading).
 
 ## Information Architecture (IA)
 
