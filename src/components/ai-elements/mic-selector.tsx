@@ -45,6 +45,7 @@ const MicSelectorContext = createContext<MicSelectorContextType>({
   width: 200,
 });
 
+/** Props for the `MicSelector` component. */
 export type MicSelectorProps = ComponentProps<typeof Popover> & {
   defaultValue?: string;
   value?: string | undefined;
@@ -109,6 +110,7 @@ export const MicSelector = (props: MicSelectorProps) => {
   );
 };
 
+/** Props for the `MicSelectorTrigger` component. */
 export type MicSelectorTriggerProps = ComponentProps<typeof Button>;
 
 /**
@@ -156,6 +158,7 @@ export const MicSelectorTrigger = (props: MicSelectorTriggerProps) => {
   );
 };
 
+/** Props for the `MicSelectorContent` component. */
 export type MicSelectorContentProps = ComponentProps<typeof Command> & {
   popoverOptions?: ComponentProps<typeof PopoverContent>;
 };
@@ -185,6 +188,7 @@ export const MicSelectorContent = (props: MicSelectorContentProps) => {
   );
 };
 
+/** Props for the `MicSelectorInput` component. */
 export type MicSelectorInputProps = ComponentProps<typeof CommandInput> & {
   value?: string;
   defaultValue?: string;
@@ -198,9 +202,10 @@ export type MicSelectorInputProps = ComponentProps<typeof CommandInput> & {
  * @returns The microphone search input.
  */
 export const MicSelectorInput = ({ ...props }: MicSelectorInputProps) => (
-  <CommandInput placeholder="Search microphones..." {...props} />
+  <CommandInput placeholder="Search microphones…" {...props} />
 );
 
+/** Props for the `MicSelectorList` component. */
 export type MicSelectorListProps = Omit<
   ComponentProps<typeof CommandList>,
   "children"
@@ -221,6 +226,7 @@ export const MicSelectorList = (props: MicSelectorListProps) => {
   return <CommandList {...rest}>{children(data)}</CommandList>;
 };
 
+/** Props for the `MicSelectorEmpty` component. */
 export type MicSelectorEmptyProps = ComponentProps<typeof CommandEmpty>;
 
 /**
@@ -234,6 +240,7 @@ export const MicSelectorEmpty = (props: MicSelectorEmptyProps) => {
   return <CommandEmpty {...rest}>{children}</CommandEmpty>;
 };
 
+/** Props for the `MicSelectorItem` component. */
 export type MicSelectorItemProps = ComponentProps<typeof CommandItem>;
 
 /**
@@ -256,6 +263,7 @@ export const MicSelectorItem = (props: MicSelectorItemProps) => {
   );
 };
 
+/** Props for the `MicSelectorLabel` component. */
 export type MicSelectorLabelProps = ComponentProps<"span"> & {
   device: MediaDeviceInfo;
 };
@@ -289,6 +297,7 @@ export const MicSelectorLabel = (props: MicSelectorLabelProps) => {
   );
 };
 
+/** Props for the `MicSelectorValue` component. */
 export type MicSelectorValueProps = ComponentProps<"span">;
 
 /**
@@ -305,7 +314,7 @@ export const MicSelectorValue = (props: MicSelectorValueProps) => {
   if (!currentDevice) {
     return (
       <span className={cn("flex-1 text-left", className)} {...rest}>
-        Select microphone...
+        Select microphone…
       </span>
     );
   }
@@ -322,7 +331,7 @@ export const MicSelectorValue = (props: MicSelectorValueProps) => {
 /**
  * Enumerates available microphone devices and tracks permission state.
  *
- * @returns Device list, loading state, error info, and a loadDevices helper.
+ * @returns Device list, loading/error state, permission status, and a function to request microphone permission.
  */
 export const useAudioDevices = () => {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -359,7 +368,6 @@ export const useAudioDevices = () => {
         err instanceof Error ? err.message : "Failed to get audio devices";
 
       setError(message);
-      console.error("Error getting audio devices:", message);
     } finally {
       loadInFlightRef.current = false;
       setLoading(false);
@@ -395,7 +403,6 @@ export const useAudioDevices = () => {
         err instanceof Error ? err.message : "Failed to get audio devices";
 
       setError(message);
-      console.error("Error getting audio devices:", message);
     } finally {
       loadInFlightRef.current = false;
       setLoading(false);
@@ -412,6 +419,7 @@ export const useAudioDevices = () => {
   loadDevicesWithoutPermissionRef.current = loadDevicesWithoutPermission;
 
   useEffect(() => {
+    // Safe to detach: the hook stores failures in `error` state.
     void loadDevicesWithoutPermissionRef.current().catch(() => undefined);
   }, []);
 
@@ -422,9 +430,11 @@ export const useAudioDevices = () => {
   useEffect(() => {
     const handleDeviceChange = () => {
       if (hasPermissionRef.current) {
+        // Safe to detach: the hook stores failures in `error` state.
         void loadDevicesWithPermissionRef.current().catch(() => undefined);
         return;
       }
+      // Safe to detach: the hook stores failures in `error` state.
       void loadDevicesWithoutPermissionRef.current().catch(() => undefined);
     };
 

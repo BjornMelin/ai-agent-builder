@@ -28,6 +28,7 @@ const TerminalContext = createContext<TerminalContextType>({
   scroll: "auto",
 });
 
+/** Props for the `Terminal` component. */
 export type TerminalProps = HTMLAttributes<HTMLDivElement> & {
   output: string;
   mode?: "streaming" | "static";
@@ -87,6 +88,7 @@ export const Terminal = (props: TerminalProps) => {
   );
 };
 
+/** Props for the `TerminalHeader` component. */
 export type TerminalHeaderProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -110,6 +112,7 @@ export const TerminalHeader = (props: TerminalHeaderProps) => {
   );
 };
 
+/** Props for the `TerminalTitle` component. */
 export type TerminalTitleProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -131,6 +134,7 @@ export const TerminalTitle = (props: TerminalTitleProps) => {
   );
 };
 
+/** Props for the `TerminalStatus` component. */
 export type TerminalStatusProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -161,6 +165,7 @@ export const TerminalStatus = (props: TerminalStatusProps) => {
   );
 };
 
+/** Props for the `TerminalActions` component. */
 export type TerminalActionsProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -178,6 +183,7 @@ export const TerminalActions = (props: TerminalActionsProps) => {
   );
 };
 
+/** Props for the `TerminalCopyButton` component. */
 export type TerminalCopyButtonProps = ComponentProps<typeof Button> & {
   onCopy?: () => void | Promise<void>;
   onError?: (error: Error) => void | Promise<void>;
@@ -250,6 +256,7 @@ export const TerminalCopyButton = (props: TerminalCopyButtonProps) => {
   );
 };
 
+/** Props for the `TerminalClearButton` component. */
 export type TerminalClearButtonProps = ComponentProps<typeof Button>;
 
 /**
@@ -283,6 +290,7 @@ export const TerminalClearButton = (props: TerminalClearButtonProps) => {
   );
 };
 
+/** Props for the `TerminalContent` component. */
 export type TerminalContentProps = HTMLAttributes<HTMLDivElement>;
 
 /**
