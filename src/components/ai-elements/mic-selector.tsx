@@ -202,7 +202,11 @@ export type MicSelectorInputProps = ComponentProps<typeof CommandInput> & {
  * @returns The microphone search input.
  */
 export const MicSelectorInput = ({ ...props }: MicSelectorInputProps) => (
-  <CommandInput placeholder="Search microphones…" {...props} />
+  <CommandInput
+    aria-label={props["aria-label"] ?? "Search microphones"}
+    placeholder="Search microphones…"
+    {...props}
+  />
 );
 
 /** Props for the `MicSelectorList` component. */

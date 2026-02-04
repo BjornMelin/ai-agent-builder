@@ -141,8 +141,11 @@ export const WebPreviewNavigationButton = (
   props: WebPreviewNavigationButtonProps,
 ) => {
   const { onClick, disabled, tooltip, children, ...rest } = props;
+  const accessibleLabel =
+    rest["aria-label"] ?? (typeof tooltip === "string" ? tooltip : undefined);
   const button = (
     <Button
+      aria-label={accessibleLabel}
       className="h-8 w-8 p-0 hover:text-foreground"
       disabled={disabled}
       onClick={onClick}
@@ -208,6 +211,7 @@ export const WebPreviewUrl = (props: WebPreviewUrlProps) => {
 
   return (
     <Input
+      aria-label={rest["aria-label"] ?? "Preview URL"}
       className="h-8 flex-1 text-sm"
       onChange={handleChange}
       onKeyDown={handleKeyDown}

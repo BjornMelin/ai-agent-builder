@@ -7,6 +7,7 @@ import {
   FolderOpenIcon,
 } from "lucide-react";
 import {
+  type ComponentProps,
   createContext,
   type HTMLAttributes,
   type ReactNode,
@@ -110,7 +111,7 @@ const FileTreeFolderContext = createContext<FileTreeFolderContextType>({
 });
 
 /** Props for the FileTreeFolder component. */
-export type FileTreeFolderProps = HTMLAttributes<HTMLDivElement> & {
+export type FileTreeFolderProps = ComponentProps<"button"> & {
   path: string;
   name: string;
 };
@@ -122,7 +123,7 @@ export type FileTreeFolderProps = HTMLAttributes<HTMLDivElement> & {
  * @returns A folder tree item element.
  */
 export const FileTreeFolder = (props: FileTreeFolderProps) => {
-  const { path, name, className, children, ...rest } = props;
+  const { path, name, className, children, onClick, ...rest } = props;
   const { expandedPaths, togglePath, selectedPath, onSelect } =
     useContext(FileTreeContext);
   const isExpanded = expandedPaths.has(path);
@@ -131,50 +132,44 @@ export const FileTreeFolder = (props: FileTreeFolderProps) => {
   return (
     <FileTreeFolderContext.Provider value={{ isExpanded, name, path }}>
       <Collapsible onOpenChange={() => togglePath(path)} open={isExpanded}>
-        <div
-          aria-expanded={isExpanded}
-          aria-selected={isSelected}
-          className={cn("", className)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              togglePath(path);
-              onSelect?.(path);
-            }
-          }}
-          role="treeitem"
-          tabIndex={0}
-          {...rest}
-        >
-          <CollapsibleTrigger asChild>
-            <button
+        <CollapsibleTrigger asChild>
+          <button
+            aria-expanded={isExpanded}
+            aria-selected={isSelected}
+            className={cn(
+              "flex w-full items-center gap-1 rounded px-2 py-1 text-left transition-colors hover:bg-muted/50",
+              isSelected && "bg-muted",
+              className,
+            )}
+            onClick={(event) => {
+              onClick?.(event);
+              if (!event.defaultPrevented) {
+                onSelect?.(path);
+              }
+            }}
+            role="treeitem"
+            type="button"
+            {...rest}
+          >
+            <ChevronRightIcon
               className={cn(
-                "flex w-full items-center gap-1 rounded px-2 py-1 text-left transition-colors hover:bg-muted/50",
-                isSelected && "bg-muted",
+                "size-4 shrink-0 text-muted-foreground transition-transform",
+                isExpanded && "rotate-90",
               )}
-              onClick={() => onSelect?.(path)}
-              type="button"
-            >
-              <ChevronRightIcon
-                className={cn(
-                  "size-4 shrink-0 text-muted-foreground transition-transform",
-                  isExpanded && "rotate-90",
-                )}
-              />
-              <FileTreeIcon>
-                {isExpanded ? (
-                  <FolderOpenIcon className="size-4 text-blue-500" />
-                ) : (
-                  <FolderIcon className="size-4 text-blue-500" />
-                )}
-              </FileTreeIcon>
-              <FileTreeName>{name}</FileTreeName>
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="ml-4 border-l pl-2">{children}</div>
-          </CollapsibleContent>
-        </div>
+            />
+            <FileTreeIcon>
+              {isExpanded ? (
+                <FolderOpenIcon className="size-4 text-blue-500" />
+              ) : (
+                <FolderIcon className="size-4 text-blue-500" />
+              )}
+            </FileTreeIcon>
+            <FileTreeName>{name}</FileTreeName>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="ml-4 border-l pl-2">{children}</div>
+        </CollapsibleContent>
       </Collapsible>
     </FileTreeFolderContext.Provider>
   );
@@ -191,7 +186,7 @@ const FileTreeFileContext = createContext<FileTreeFileContextType>({
 });
 
 /** Props for the FileTreeFile component. */
-export type FileTreeFileProps = HTMLAttributes<HTMLDivElement> & {
+export type FileTreeFileProps = ComponentProps<"button"> & {
   path: string;
   name: string;
   icon?: ReactNode;
@@ -204,28 +199,27 @@ export type FileTreeFileProps = HTMLAttributes<HTMLDivElement> & {
  * @returns A file tree item element.
  */
 export const FileTreeFile = (props: FileTreeFileProps) => {
-  const { path, name, icon, className, children, ...rest } = props;
+  const { path, name, icon, className, children, onClick, ...rest } = props;
   const { selectedPath, onSelect } = useContext(FileTreeContext);
   const isSelected = selectedPath === path;
 
   return (
     <FileTreeFileContext.Provider value={{ name, path }}>
-      <div
+      <button
         aria-selected={isSelected}
         className={cn(
-          "flex cursor-pointer items-center gap-1 rounded px-2 py-1 transition-colors hover:bg-muted/50",
+          "flex w-full cursor-pointer items-center gap-1 rounded px-2 py-1 text-left transition-colors hover:bg-muted/50",
           isSelected && "bg-muted",
           className,
         )}
-        onClick={() => onSelect?.(path)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
+        onClick={(event) => {
+          onClick?.(event);
+          if (!event.defaultPrevented) {
             onSelect?.(path);
           }
         }}
         role="treeitem"
-        tabIndex={0}
+        type="button"
         {...rest}
       >
         {children ?? (
@@ -237,7 +231,7 @@ export const FileTreeFile = (props: FileTreeFileProps) => {
             <FileTreeName>{name}</FileTreeName>
           </>
         )}
-      </div>
+      </button>
     </FileTreeFileContext.Provider>
   );
 };

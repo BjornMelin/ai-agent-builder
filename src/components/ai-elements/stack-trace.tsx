@@ -371,9 +371,13 @@ export const StackTraceCopyButton = memo((props: StackTraceCopyButtonProps) => {
   };
 
   const Icon = isCopied ? CheckIcon : CopyIcon;
+  const accessibleLabel =
+    rest["aria-label"] ??
+    (isCopied ? "Copied stack trace" : "Copy stack trace");
 
   return (
     <Button
+      aria-label={accessibleLabel}
       className={cn("size-7", className)}
       onClick={copyToClipboard}
       size="icon"

@@ -185,7 +185,13 @@ export type VoiceSelectorInputProps = ComponentProps<typeof CommandInput>;
  */
 export const VoiceSelectorInput = (props: VoiceSelectorInputProps) => {
   const { className, ...rest } = props;
-  return <CommandInput className={cn("h-auto py-3.5", className)} {...rest} />;
+  return (
+    <CommandInput
+      aria-label={rest["aria-label"] ?? "Search voices"}
+      className={cn("h-auto py-3.5", className)}
+      {...rest}
+    />
+  );
 };
 
 /**

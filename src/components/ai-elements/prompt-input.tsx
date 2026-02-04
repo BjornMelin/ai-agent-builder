@@ -1423,7 +1423,13 @@ export const PromptInputCommandInput = (
   props: PromptInputCommandInputProps,
 ) => {
   const { className, ...rest } = props;
-  return <CommandInput className={cn(className)} {...rest} />;
+  return (
+    <CommandInput
+      aria-label={rest["aria-label"] ?? "Search prompt actions"}
+      className={cn(className)}
+      {...rest}
+    />
+  );
 };
 
 /** Props for the `PromptInputCommandListProps` type. */

@@ -100,7 +100,13 @@ export type ModelSelectorInputProps = ComponentProps<typeof CommandInput>;
  */
 export const ModelSelectorInput = (props: ModelSelectorInputProps) => {
   const { className, ...rest } = props;
-  return <CommandInput className={cn("h-auto py-3.5", className)} {...rest} />;
+  return (
+    <CommandInput
+      aria-label={rest["aria-label"] ?? "Search models"}
+      className={cn("h-auto py-3.5", className)}
+      {...rest}
+    />
+  );
 };
 
 /** Props for the ModelSelectorList component. */
