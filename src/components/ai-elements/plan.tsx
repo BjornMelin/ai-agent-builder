@@ -21,7 +21,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Shimmer } from "./shimmer";
 
-type PlanState = "idle" | "streaming";
+/** Represents the rendering state for plan content. */
+export type PlanState = "idle" | "streaming";
 
 interface PlanContextValue {
   state: PlanState;

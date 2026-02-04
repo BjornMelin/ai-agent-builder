@@ -105,7 +105,6 @@ export const Source = (props: SourceProps) => {
         <>
           <BookIcon className="h-4 w-4" />
           <span className="block font-medium">{title}</span>
-          <span className="sr-only">Opens in a new tab</span>
         </>
       )}
     </a>
