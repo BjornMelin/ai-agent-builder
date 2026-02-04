@@ -1,12 +1,15 @@
 "use client";
 
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
-import type { Experimental_TranscriptionResult as TranscriptionResult } from "ai";
 import type { ComponentProps, MouseEvent, ReactNode } from "react";
 import { createContext, useContext } from "react";
 import { cn } from "@/lib/utils";
 
-type TranscriptionSegmentData = TranscriptionResult["segments"][number];
+interface TranscriptionSegmentData {
+  text: string;
+  startSecond: number;
+  endSecond: number;
+}
 
 interface TranscriptionContextValue {
   segments: TranscriptionSegmentData[];
@@ -76,8 +79,9 @@ export const Transcription = (props: TranscriptionProps) => {
         {...rest}
       >
         {segments
-          .filter((segment) => segment.text.trim())
-          .map((segment, index) => children(segment, index))}
+          .map((segment, index) => ({ index, segment }))
+          .filter(({ segment }) => segment.text.trim())
+          .map(({ segment, index }) => children(segment, index))}
       </div>
     </TranscriptionContext.Provider>
   );
@@ -103,22 +107,37 @@ export const TranscriptionSegment = (props: TranscriptionSegmentProps) => {
     currentTime >= segment.startSecond && currentTime < segment.endSecond;
   const isPast = currentTime >= segment.endSecond;
 
+  if (!onSeek) {
+    return (
+      <span
+        className={cn(
+          "inline text-left",
+          isActive && "text-primary",
+          isPast && "text-muted-foreground",
+          !(isActive || isPast) && "text-muted-foreground/60",
+          className,
+        )}
+        data-active={isActive}
+        data-index={index}
+        data-slot="transcription-segment"
+      >
+        {segment.text}
+      </span>
+    );
+  }
+
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (onSeek) {
-      onSeek(segment.startSecond);
-    }
+    onSeek(segment.startSecond);
     onClick?.(event);
   };
 
   return (
     <button
       className={cn(
-        "inline text-left",
+        "inline cursor-pointer rounded-sm text-left hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         isActive && "text-primary",
         isPast && "text-muted-foreground",
         !(isActive || isPast) && "text-muted-foreground/60",
-        onSeek && "cursor-pointer hover:text-foreground",
-        !onSeek && "cursor-default",
         className,
       )}
       data-active={isActive}

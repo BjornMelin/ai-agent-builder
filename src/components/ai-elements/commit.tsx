@@ -242,17 +242,26 @@ export type CommitTimestampProps = HTMLAttributes<HTMLTimeElement> & {
  */
 export const CommitTimestamp = (props: CommitTimestampProps) => {
   const { date, className, children, ...rest } = props;
+  const now = moduleNow;
+  const diffSeconds = Math.round((date.getTime() - now) / 1000);
+  const absSeconds = Math.abs(diffSeconds);
+  const [value, unit] =
+    absSeconds < 60
+      ? [diffSeconds, "second"]
+      : absSeconds < 60 * 60
+        ? [Math.round(diffSeconds / 60), "minute"]
+        : absSeconds < 60 * 60 * 24
+          ? [Math.round(diffSeconds / (60 * 60)), "hour"]
+          : [Math.round(diffSeconds / (60 * 60 * 24)), "day"];
   const formatted = new Intl.RelativeTimeFormat("en", {
     numeric: "auto",
-  }).format(
-    Math.round((date.getTime() - moduleNow) / (1000 * 60 * 60 * 24)),
-    "day",
-  );
+  }).format(value, unit as Intl.RelativeTimeFormatUnit);
 
   return (
     <time
       className={cn("text-xs", className)}
       dateTime={date.toISOString()}
+      suppressHydrationWarning
       {...rest}
     >
       {children ?? formatted}
@@ -353,8 +362,11 @@ export const CommitCopyButton = (props: CommitCopyButtonProps) => {
 
   return (
     <Button
+      aria-label={isCopied ? "Copied commit hash" : "Copy commit hash"}
       className={cn("size-7 shrink-0", className)}
-      onClick={copyToClipboard}
+      onClick={() => {
+        void copyToClipboard();
+      }}
       size="icon"
       variant="ghost"
       {...rest}
