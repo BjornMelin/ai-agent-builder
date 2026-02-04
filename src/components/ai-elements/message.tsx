@@ -10,7 +10,6 @@ import {
   type ReactElement,
   useContext,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 import { Button } from "@/components/ui/button";
@@ -216,15 +215,19 @@ export type MessageBranchProps = HTMLAttributes<HTMLDivElement> & {
  */
 export const MessageBranch = (props: MessageBranchProps) => {
   const { defaultBranch = 0, onBranchChange, className, ...rest } = props;
-  const [currentBranch, setCurrentBranch] = useState(defaultBranch);
+  const safeDefaultBranch = Math.max(0, defaultBranch);
+  const [currentBranch, setCurrentBranch] = useState(safeDefaultBranch);
   const [branches, setBranches] = useState<ReactElement[]>([]);
   const totalBranches = branches.length;
   const activeBranch =
-    totalBranches > 0 ? Math.min(currentBranch, totalBranches - 1) : 0;
+    totalBranches > 0
+      ? Math.max(0, Math.min(currentBranch, totalBranches - 1))
+      : 0;
 
   const handleBranchChange = (newBranch: number) => {
-    setCurrentBranch(newBranch);
-    onBranchChange?.(newBranch);
+    const safeBranch = Math.max(0, newBranch);
+    setCurrentBranch(safeBranch);
+    onBranchChange?.(safeBranch);
   };
 
   const goToPrevious = () => {
@@ -276,10 +279,9 @@ export type MessageBranchContentProps = HTMLAttributes<HTMLDivElement>;
 export const MessageBranchContent = (props: MessageBranchContentProps) => {
   const { children, ...rest } = props;
   const { currentBranch, setBranches } = useMessageBranch();
-  const childrenArray = useMemo(
-    () => Children.toArray(children).filter(Boolean) as ReactElement[],
-    [children],
-  );
+  const childrenArray = Children.toArray(children).filter(
+    Boolean,
+  ) as ReactElement[];
 
   useEffect(() => {
     setBranches(childrenArray);

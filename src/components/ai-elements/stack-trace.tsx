@@ -1,12 +1,12 @@
 "use client";
 
-import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import {
   AlertTriangleIcon,
   CheckIcon,
   ChevronDownIcon,
   CopyIcon,
 } from "lucide-react";
+import { useControllableState } from "radix-ui/internal";
 import type { ComponentProps } from "react";
 import { createContext, memo, useContext, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -216,15 +216,14 @@ export type StackTraceHeaderProps = ComponentProps<typeof CollapsibleTrigger>;
 export const StackTraceHeader = memo((props: StackTraceHeaderProps) => {
   const { className, children, ...rest } = props;
   return (
-    <CollapsibleTrigger asChild {...rest}>
-      <div
-        className={cn(
-          "flex w-full cursor-pointer items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50",
-          className,
-        )}
-      >
-        {children}
-      </div>
+    <CollapsibleTrigger
+      className={cn(
+        "flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50",
+        className,
+      )}
+      {...rest}
+    >
+      {children}
     </CollapsibleTrigger>
   );
 });

@@ -35,18 +35,22 @@ const sanitizeUrl = (rawUrl: string) => {
     return "";
   }
 
-  const hasProtocol = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed);
-  const candidate = hasProtocol ? trimmed : `https://${trimmed}`;
-
-  try {
-    const parsed = new URL(candidate);
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      return "";
+  const tryParse = (value: string) => {
+    try {
+      return new URL(value);
+    } catch {
+      return null;
     }
-    return parsed.toString();
-  } catch {
+  };
+
+  const parsed = tryParse(trimmed) ?? tryParse(`https://${trimmed}`);
+  if (!parsed) {
     return "";
   }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return "";
+  }
+  return parsed.toString();
 };
 
 /** Shared state exposed by `WebPreview` to its subcomponents. */

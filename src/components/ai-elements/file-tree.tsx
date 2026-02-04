@@ -40,10 +40,10 @@ const FileTreeContext = createContext<FileTreeContextType>({
 });
 
 const getTreeContentId = (path: string) =>
-  `file-tree-content-${path.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+  `file-tree-content-${encodeURIComponent(path)}`;
 
 /** Props for the FileTree component. */
-export type FileTreeProps = HTMLAttributes<HTMLDivElement> & {
+export type FileTreeProps = Omit<HTMLAttributes<HTMLDivElement>, "onSelect"> & {
   expanded?: Set<string>;
   defaultExpanded?: Set<string>;
   selectedPath?: string;
@@ -173,8 +173,8 @@ export const FileTreeFolder = (props: FileTreeFolderProps) => {
             <ChevronRightIcon
               aria-hidden="true"
               className={cn(
-                "size-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-reduce:transform-none motion-reduce:transition-none",
-                isExpanded && "motion-safe:rotate-90",
+                "size-4 shrink-0 text-muted-foreground motion-safe:transition-transform",
+                isExpanded && "rotate-90",
               )}
             />
             <FileTreeIcon>

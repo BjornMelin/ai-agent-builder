@@ -477,6 +477,13 @@ const fileStatusLabels = {
   renamed: "R",
 };
 
+const fileStatusAccessibleLabels = {
+  added: "Added",
+  deleted: "Deleted",
+  modified: "Modified",
+  renamed: "Renamed",
+};
+
 /**
  * Props for the CommitFileStatus component.
  */
@@ -493,6 +500,14 @@ export type CommitFileStatusProps = HTMLAttributes<HTMLSpanElement> & {
  */
 export const CommitFileStatus = (props: CommitFileStatusProps) => {
   const { status, className, children, ...rest } = props;
+  const accessibleLabel = fileStatusAccessibleLabels[status];
+  const resolvedChildren = children ?? (
+    <>
+      <span aria-hidden="true">{fileStatusLabels[status]}</span>
+      <span className="sr-only">{accessibleLabel}</span>
+    </>
+  );
+
   return (
     <span
       className={cn(
@@ -500,9 +515,10 @@ export const CommitFileStatus = (props: CommitFileStatusProps) => {
         fileStatusStyles[status],
         className,
       )}
+      title={accessibleLabel}
       {...rest}
     >
-      {children ?? fileStatusLabels[status]}
+      {resolvedChildren}
     </span>
   );
 };

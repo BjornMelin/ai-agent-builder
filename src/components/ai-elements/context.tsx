@@ -251,15 +251,16 @@ export type ContextContentFooterProps = ComponentProps<"div">;
 export const ContextContentFooter = (props: ContextContentFooterProps) => {
   const { children, className, ...rest } = props;
   const { modelId, usage } = useContextValue();
-  const costUSD = modelId
-    ? getUsage({
-        modelId,
-        usage: {
-          input: usage?.inputTokens ?? 0,
-          output: usage?.outputTokens ?? 0,
-        },
-      }).costUSD?.totalUSD
-    : undefined;
+  const costUSD =
+    modelId && usage
+      ? getUsage({
+          modelId,
+          usage: {
+            input: usage.inputTokens ?? 0,
+            output: usage.outputTokens ?? 0,
+          },
+        }).costUSD?.totalUSD
+      : undefined;
   const totalCost =
     costUSD === undefined
       ? undefined
