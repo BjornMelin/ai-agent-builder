@@ -7,63 +7,70 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
- * Root component for a dialog.
+ * Renders the Dialog component.
  *
- * @param props - Component properties from Radix UI Dialog.Root.
- * @returns The rendered dialog root.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function Dialog({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+function Dialog(props: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  const { ...rest } = props;
+
+  return <DialogPrimitive.Root data-slot="dialog" {...rest} />;
 }
 
 /**
- * Trigger component to open the dialog.
+ * Renders the DialogTrigger component.
  *
- * @param props - Component properties from Radix UI Dialog.Trigger.
- * @returns The rendered dialog trigger.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function DialogTrigger({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
+function DialogTrigger(
+  props: React.ComponentProps<typeof DialogPrimitive.Trigger>,
+) {
+  const { ...rest } = props;
+
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...rest} />;
 }
 
 /**
- * Portal component to render the dialog content into a separate DOM node.
+ * Renders the DialogPortal component.
  *
- * @param props - Component properties from Radix UI Dialog.Portal.
- * @returns The rendered dialog portal.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function DialogPortal({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
+function DialogPortal(
+  props: React.ComponentProps<typeof DialogPrimitive.Portal>,
+) {
+  const { ...rest } = props;
+
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...rest} />;
 }
 
 /**
- * Close button component to dismiss the dialog.
+ * Renders the DialogClose component.
  *
- * @param props - Component properties from Radix UI Dialog.Close.
- * @returns The rendered dialog close button.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function DialogClose({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Close>) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
+function DialogClose(
+  props: React.ComponentProps<typeof DialogPrimitive.Close>,
+) {
+  const { ...rest } = props;
+
+  return <DialogPrimitive.Close data-slot="dialog-close" {...rest} />;
 }
 
 /**
- * Overlay component that appears behind the dialog content.
+ * Renders the DialogOverlay component.
  *
- * @param props - Component properties including className and Radix UI Dialog.Overlay props.
- * @returns The rendered dialog overlay.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function DialogOverlay({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+function DialogOverlay(
+  props: React.ComponentProps<typeof DialogPrimitive.Overlay>,
+) {
+  const { className, ...rest } = props;
+
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
@@ -71,25 +78,24 @@ function DialogOverlay({
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }
 
 /**
- * Content container for the dialog, including the overlay and close button.
+ * Renders the DialogContent component.
  *
- * @param props - Component properties including className, children, showCloseButton, and Radix UI Dialog.Content props.
- * @returns The rendered dialog content.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function DialogContent({
-  className,
-  children,
-  showCloseButton = true,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & {
-  showCloseButton?: boolean;
-}) {
+function DialogContent(
+  props: React.ComponentProps<typeof DialogPrimitive.Content> & {
+    showCloseButton?: boolean;
+  },
+) {
+  const { className, children, showCloseButton = true, ...rest } = props;
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -99,7 +105,7 @@ function DialogContent({
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 outline-none sm:max-w-lg",
           className,
         )}
-        {...props}
+        {...rest}
       >
         {children}
         {showCloseButton ? (
@@ -117,35 +123,36 @@ function DialogContent({
 }
 
 /**
- * Header section for the dialog.
+ * Renders the DialogHeader component.
  *
- * @param props - Component properties including className and div attributes.
- * @returns The rendered dialog header.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+function DialogHeader(props: React.ComponentProps<"div">) {
+  const { className, ...rest } = props;
+
   return (
     <div
       data-slot="dialog-header"
       className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
-      {...props}
+      {...rest}
     />
   );
 }
 
 /**
- * Footer section for the dialog.
+ * Renders the DialogFooter component.
  *
- * @param props - Component properties including className, showCloseButton, children, and div attributes.
- * @returns The rendered dialog footer.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function DialogFooter({
-  className,
-  showCloseButton = false,
-  children,
-  ...props
-}: React.ComponentProps<"div"> & {
-  showCloseButton?: boolean;
-}) {
+function DialogFooter(
+  props: React.ComponentProps<"div"> & {
+    showCloseButton?: boolean;
+  },
+) {
+  const { className, showCloseButton = false, children, ...rest } = props;
+
   return (
     <div
       data-slot="dialog-footer"
@@ -153,7 +160,7 @@ function DialogFooter({
         "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
         className,
       )}
-      {...props}
+      {...rest}
     >
       {children}
       {showCloseButton ? (
@@ -166,39 +173,41 @@ function DialogFooter({
 }
 
 /**
- * Title component for the dialog.
+ * Renders the DialogTitle component.
  *
- * @param props - Component properties including className and Radix UI Dialog.Title props.
- * @returns The rendered dialog title.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function DialogTitle({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+function DialogTitle(
+  props: React.ComponentProps<typeof DialogPrimitive.Title>,
+) {
+  const { className, ...rest } = props;
+
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn("text-lg leading-none font-semibold", className)}
-      {...props}
+      {...rest}
     />
   );
 }
 
 /**
- * Description component for the dialog.
+ * Renders the DialogDescription component.
  *
- * @param props - Component properties including className and Radix UI Dialog.Description props.
- * @returns The rendered dialog description.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function DialogDescription({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+function DialogDescription(
+  props: React.ComponentProps<typeof DialogPrimitive.Description>,
+) {
+  const { className, ...rest } = props;
+
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn("text-muted-foreground text-sm", className)}
-      {...props}
+      {...rest}
     />
   );
 }

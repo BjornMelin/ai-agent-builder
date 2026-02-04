@@ -19,22 +19,36 @@ const alertVariants = cva(
   },
 );
 
-function Alert({
-  className,
-  variant,
-  ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof alertVariants>) {
+/**
+ * Renders the Alert component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function Alert(
+  props: React.ComponentProps<"div"> & VariantProps<typeof alertVariants>,
+) {
+  const { className, variant, ...rest } = props;
+
   return (
     <div
       data-slot="alert"
       role="alert"
       className={cn(alertVariants({ variant }), className)}
-      {...props}
+      {...rest}
     />
   );
 }
 
-function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Renders the AlertTitle component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function AlertTitle(props: React.ComponentProps<"div">) {
+  const { className, ...rest } = props;
+
   return (
     <div
       data-slot="alert-title"
@@ -42,15 +56,20 @@ function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
         "col-start-2 line-clamp-1 min-h-4 font-medium tracking-tight",
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }
 
-function AlertDescription({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+/**
+ * Renders the AlertDescription component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function AlertDescription(props: React.ComponentProps<"div">) {
+  const { className, ...rest } = props;
+
   return (
     <div
       data-slot="alert-description"
@@ -58,7 +77,7 @@ function AlertDescription({
         "text-muted-foreground col-start-2 grid justify-items-start gap-1 text-sm [&_p]:leading-relaxed",
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }

@@ -31,6 +31,11 @@ type CarouselContextProps = {
 
 const CarouselContext = React.createContext<CarouselContextProps | null>(null);
 
+/**
+ * Returns the carousel context.
+ *
+ * @returns The carousel context used by child components.
+ */
 function useCarousel() {
   const context = React.useContext(CarouselContext);
 
@@ -41,15 +46,23 @@ function useCarousel() {
   return context;
 }
 
-function Carousel({
-  orientation = "horizontal",
-  opts,
-  setApi,
-  plugins,
-  className,
-  children,
-  ...props
-}: React.ComponentProps<"section"> & CarouselProps) {
+/**
+ * Renders the Carousel component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function Carousel(props: React.ComponentProps<"section"> & CarouselProps) {
+  const {
+    orientation = "horizontal",
+    opts,
+    setApi,
+    plugins,
+    className,
+    children,
+    ...rest
+  } = props;
+
   const [carouselRef, api] = useEmblaCarousel(
     {
       ...opts,
@@ -119,7 +132,7 @@ function Carousel({
         onKeyDownCapture={handleKeyDown}
         className={cn("relative", className)}
         data-slot="carousel"
-        {...props}
+        {...rest}
       >
         {children}
       </section>
@@ -127,7 +140,15 @@ function Carousel({
   );
 }
 
-function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Renders the CarouselContent component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function CarouselContent(props: React.ComponentProps<"div">) {
+  const { className, ...rest } = props;
+
   const { carouselRef, orientation } = useCarousel();
 
   return (
@@ -142,16 +163,21 @@ function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
           orientation === "horizontal" ? "-ml-4" : "-mt-4 flex-col",
           className,
         )}
-        {...props}
+        {...rest}
       />
     </div>
   );
 }
 
-function CarouselItem({
-  className,
-  ...props
-}: React.ComponentProps<"fieldset">) {
+/**
+ * Renders the CarouselItem component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function CarouselItem(props: React.ComponentProps<"fieldset">) {
+  const { className, ...rest } = props;
+
   const { orientation } = useCarousel();
 
   return (
@@ -164,17 +190,20 @@ function CarouselItem({
         orientation === "horizontal" ? "pl-4" : "pt-4",
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }
 
-function CarouselPrevious({
-  className,
-  variant = "outline",
-  size = "icon",
-  ...props
-}: React.ComponentProps<typeof Button>) {
+/**
+ * Renders the CarouselPrevious component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function CarouselPrevious(props: React.ComponentProps<typeof Button>) {
+  const { className, variant = "outline", size = "icon", ...rest } = props;
+
   const { orientation, scrollPrev, canScrollPrev } = useCarousel();
 
   return (
@@ -191,7 +220,7 @@ function CarouselPrevious({
       )}
       disabled={!canScrollPrev}
       onClick={scrollPrev}
-      {...props}
+      {...rest}
     >
       <ArrowLeft />
       <span className="sr-only">Previous slide</span>
@@ -199,12 +228,15 @@ function CarouselPrevious({
   );
 }
 
-function CarouselNext({
-  className,
-  variant = "outline",
-  size = "icon",
-  ...props
-}: React.ComponentProps<typeof Button>) {
+/**
+ * Renders the CarouselNext component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function CarouselNext(props: React.ComponentProps<typeof Button>) {
+  const { className, variant = "outline", size = "icon", ...rest } = props;
+
   const { orientation, scrollNext, canScrollNext } = useCarousel();
 
   return (
@@ -221,7 +253,7 @@ function CarouselNext({
       )}
       disabled={!canScrollNext}
       onClick={scrollNext}
-      {...props}
+      {...rest}
     >
       <ArrowRight />
       <span className="sr-only">Next slide</span>

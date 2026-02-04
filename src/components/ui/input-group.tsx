@@ -7,7 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-function InputGroup({ className, ...props }: React.ComponentProps<"fieldset">) {
+/**
+ * Renders the InputGroup component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function InputGroup(props: React.ComponentProps<"fieldset">) {
+  const { className, ...rest } = props;
+
   return (
     <fieldset
       data-slot="input-group"
@@ -30,7 +38,7 @@ function InputGroup({ className, ...props }: React.ComponentProps<"fieldset">) {
 
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }
@@ -56,17 +64,24 @@ const inputGroupAddonVariants = cva(
   },
 );
 
-function InputGroupAddon({
-  className,
-  align = "inline-start",
-  ...props
-}: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
+/**
+ * Renders the InputGroupAddon component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function InputGroupAddon(
+  props: React.ComponentProps<"div"> &
+    VariantProps<typeof inputGroupAddonVariants>,
+) {
+  const { className, align = "inline-start", ...rest } = props;
+
   return (
     <div
       data-slot="input-group-addon"
       data-align={align}
       className={cn(inputGroupAddonVariants({ align }), className)}
-      {...props}
+      {...rest}
     />
   );
 }
@@ -89,41 +104,64 @@ const inputGroupButtonVariants = cva(
   },
 );
 
-function InputGroupButton({
-  className,
-  type = "button",
-  variant = "ghost",
-  size = "xs",
-  ...props
-}: Omit<React.ComponentProps<typeof Button>, "size"> &
-  VariantProps<typeof inputGroupButtonVariants>) {
+/**
+ * Renders the InputGroupButton component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function InputGroupButton(
+  props: Omit<React.ComponentProps<typeof Button>, "size"> &
+    VariantProps<typeof inputGroupButtonVariants>,
+) {
+  const {
+    className,
+    type = "button",
+    variant = "ghost",
+    size = "xs",
+    ...rest
+  } = props;
+
   return (
     <Button
       type={type}
       data-size={size}
       variant={variant}
       className={cn(inputGroupButtonVariants({ size }), className)}
-      {...props}
+      {...rest}
     />
   );
 }
 
-function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
+/**
+ * Renders the InputGroupText component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function InputGroupText(props: React.ComponentProps<"span">) {
+  const { className, ...rest } = props;
+
   return (
     <span
       className={cn(
         "text-muted-foreground flex items-center gap-2 text-sm [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }
 
-function InputGroupInput({
-  className,
-  ...props
-}: React.ComponentProps<"input">) {
+/**
+ * Renders the InputGroupInput component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function InputGroupInput(props: React.ComponentProps<"input">) {
+  const { className, ...rest } = props;
+
   return (
     <Input
       data-slot="input-group-control"
@@ -131,15 +169,20 @@ function InputGroupInput({
         "flex-1 rounded-none border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent",
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }
 
-function InputGroupTextarea({
-  className,
-  ...props
-}: React.ComponentProps<"textarea">) {
+/**
+ * Renders the InputGroupTextarea component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function InputGroupTextarea(props: React.ComponentProps<"textarea">) {
+  const { className, ...rest } = props;
+
   return (
     <Textarea
       data-slot="input-group-control"
@@ -147,7 +190,7 @@ function InputGroupTextarea({
         "flex-1 resize-none rounded-none border-0 bg-transparent py-3 shadow-none focus-visible:ring-0 dark:bg-transparent",
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }

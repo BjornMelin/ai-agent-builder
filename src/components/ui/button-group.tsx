@@ -21,11 +21,17 @@ const buttonGroupVariants = cva(
   },
 );
 
-function ButtonGroup({
-  className,
-  orientation,
-  ...props
-}: ComponentProps<"fieldset"> & VariantProps<typeof buttonGroupVariants>) {
+/**
+ * Renders the ButtonGroup component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function ButtonGroup(
+  props: ComponentProps<"fieldset"> & VariantProps<typeof buttonGroupVariants>,
+) {
+  const { className, orientation, ...rest } = props;
+
   return (
     <fieldset
       data-slot="button-group"
@@ -35,18 +41,24 @@ function ButtonGroup({
         buttonGroupVariants({ orientation }),
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }
 
-function ButtonGroupText({
-  className,
-  asChild = false,
-  ...props
-}: ComponentProps<"div"> & {
-  asChild?: boolean;
-}) {
+/**
+ * Renders the ButtonGroupText component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function ButtonGroupText(
+  props: ComponentProps<"div"> & {
+    asChild?: boolean;
+  },
+) {
+  const { className, asChild = false, ...rest } = props;
+
   const Comp = asChild ? Slot.Root : "div";
 
   return (
@@ -55,16 +67,20 @@ function ButtonGroupText({
         "bg-muted flex items-center gap-2 rounded-md border px-4 text-sm font-medium shadow-xs [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }
 
-function ButtonGroupSeparator({
-  className,
-  orientation = "vertical",
-  ...props
-}: ComponentProps<typeof Separator>) {
+/**
+ * Renders the ButtonGroupSeparator component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function ButtonGroupSeparator(props: ComponentProps<typeof Separator>) {
+  const { className, orientation = "vertical", ...rest } = props;
+
   return (
     <Separator
       data-slot="button-group-separator"
@@ -73,7 +89,7 @@ function ButtonGroupSeparator({
         "bg-input relative !m-0 self-stretch data-[orientation=vertical]:h-auto",
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }

@@ -5,16 +5,22 @@ import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function ScrollArea({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+/**
+ * Renders the ScrollArea component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function ScrollArea(
+  props: React.ComponentProps<typeof ScrollAreaPrimitive.Root>,
+) {
+  const { className, children, ...rest } = props;
+
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
       className={cn("relative", className)}
-      {...props}
+      {...rest}
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
@@ -28,11 +34,17 @@ function ScrollArea({
   );
 }
 
-function ScrollBar({
-  className,
-  orientation = "vertical",
-  ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
+/**
+ * Renders the ScrollBar component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function ScrollBar(
+  props: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
+) {
+  const { className, orientation = "vertical", ...rest } = props;
+
   return (
     <ScrollAreaPrimitive.ScrollAreaScrollbar
       data-slot="scroll-area-scrollbar"
@@ -45,7 +57,7 @@ function ScrollBar({
           "h-2.5 flex-col border-t border-t-transparent",
         className,
       )}
-      {...props}
+      {...rest}
     >
       <ScrollAreaPrimitive.ScrollAreaThumb
         data-slot="scroll-area-thumb"

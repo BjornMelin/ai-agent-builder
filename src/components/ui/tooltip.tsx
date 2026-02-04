@@ -5,41 +5,67 @@ import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function TooltipProvider({
-  delayDuration = 0,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+/**
+ * Renders the TooltipProvider component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function TooltipProvider(
+  props: React.ComponentProps<typeof TooltipPrimitive.Provider>,
+) {
+  const { delayDuration = 0, ...rest } = props;
+
   return (
     <TooltipPrimitive.Provider
       data-slot="tooltip-provider"
       delayDuration={delayDuration}
-      {...props}
+      {...rest}
     />
   );
 }
 
-function Tooltip({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+/**
+ * Renders the Tooltip component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function Tooltip(props: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  const { ...rest } = props;
+
   return (
     <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+      <TooltipPrimitive.Root data-slot="tooltip" {...rest} />
     </TooltipProvider>
   );
 }
 
-function TooltipTrigger({
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+/**
+ * Renders the TooltipTrigger component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function TooltipTrigger(
+  props: React.ComponentProps<typeof TooltipPrimitive.Trigger>,
+) {
+  const { ...rest } = props;
+
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...rest} />;
 }
 
-function TooltipContent({
-  className,
-  sideOffset = 6,
-  children,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+/**
+ * Renders the TooltipContent component.
+ *
+ * @param props - Component props.
+ * @returns A JSX element.
+ */
+function TooltipContent(
+  props: React.ComponentProps<typeof TooltipPrimitive.Content>,
+) {
+  const { className, sideOffset = 6, children, ...rest } = props;
+
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
@@ -49,7 +75,7 @@ function TooltipContent({
           "bg-foreground text-background animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md px-3 py-1.5 text-xs text-balance",
           className,
         )}
-        {...props}
+        {...rest}
       >
         {children}
         <TooltipPrimitive.Arrow className="bg-foreground fill-foreground z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />

@@ -6,20 +6,18 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * A toggle switch component built on top of Radix SwitchPrimitive.Root.
+ * Renders the Switch component.
  *
- * @param props - The switch component properties.
- * @param props.size - The size of the switch. Allowed values: "sm" | "default" (defaulting to "default").
- * Controls the data-size attribute and the rendered dimensions of the switch and thumb.
- * @returns - The rendered switch component.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-function Switch({
-  className,
-  size = "default",
-  ...props
-}: React.ComponentProps<typeof SwitchPrimitive.Root> & {
-  size?: "sm" | "default";
-}) {
+function Switch(
+  props: React.ComponentProps<typeof SwitchPrimitive.Root> & {
+    size?: "sm" | "default";
+  },
+) {
+  const { className, size = "default", ...rest } = props;
+
   return (
     <SwitchPrimitive.Root
       data-slot="switch"
@@ -28,7 +26,7 @@ function Switch({
         "peer data-[state=checked]:bg-primary data-[state=unchecked]:bg-input focus-visible:border-ring focus-visible:ring-ring/50 dark:data-[state=unchecked]:bg-input/80 group/switch inline-flex shrink-0 items-center rounded-full border border-transparent shadow-xs transition-all outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-[1.15rem] data-[size=default]:w-8 data-[size=sm]:h-3.5 data-[size=sm]:w-6",
         className,
       )}
-      {...props}
+      {...rest}
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"

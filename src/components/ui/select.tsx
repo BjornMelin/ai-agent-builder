@@ -7,59 +7,54 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * The root component of the select.
+ * Renders the select root.
  *
- * @param props - The props for the {@link Select} component.
- * @returns A {@link JSX.Element} representing the select root.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-export function Select({
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Root>) {
+export function Select(
+  props: React.ComponentProps<typeof SelectPrimitive.Root>,
+) {
   return <SelectPrimitive.Root data-slot="select" {...props} />;
 }
 
 /**
- * A group of select items.
+ * Renders a select item group.
  *
- * @param props - The props for the {@link SelectGroup} component.
- * @returns A {@link JSX.Element} representing the select group.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-export function SelectGroup({
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Group>) {
+export function SelectGroup(
+  props: React.ComponentProps<typeof SelectPrimitive.Group>,
+) {
   return <SelectPrimitive.Group data-slot="select-group" {...props} />;
 }
 
 /**
- * The value displayed in the select trigger.
+ * Renders the selected value inside the trigger.
  *
- * @param props - The props for the {@link SelectValue} component.
- * @returns A {@link JSX.Element} representing the select value.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-export function SelectValue({
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Value>) {
+export function SelectValue(
+  props: React.ComponentProps<typeof SelectPrimitive.Value>,
+) {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
 
 /**
- * The trigger that opens the select.
+ * Renders the trigger that opens the select menu.
  *
- * @param props - The props for the {@link SelectTrigger} component.
- * @param props.className - Optional CSS class name for the trigger.
- * @param props.size - The size of the trigger ("sm" or "default").
- * @param props.children - The children to render inside the trigger.
- * @param props.rest - Additional props spread to the underlying {@link SelectPrimitive.Trigger}.
- * @returns A {@link JSX.Element} representing the select trigger.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-export function SelectTrigger({
-  className,
-  size = "default",
-  children,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
-  size?: "sm" | "default";
-}) {
+export function SelectTrigger(
+  props: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
+    size?: "sm" | "default";
+  },
+) {
+  const { className, size = "default", children, ...rest } = props;
+
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
@@ -68,7 +63,7 @@ export function SelectTrigger({
         "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
-      {...props}
+      {...rest}
     >
       {children}
       <SelectPrimitive.Icon asChild>
@@ -79,23 +74,22 @@ export function SelectTrigger({
 }
 
 /**
- * The content area of the select.
+ * Renders the popup content for select options.
  *
- * @param props - The props for the {@link SelectContent} component.
- * @param props.className - Optional CSS class name for the content.
- * @param props.children - The children to render inside the content.
- * @param props.position - The positioning mode of the content.
- * @param props.align - The alignment of the content.
- * @param props.rest - Additional props spread to the underlying {@link SelectPrimitive.Content}.
- * @returns A {@link JSX.Element} representing the select content.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-export function SelectContent({
-  className,
-  children,
-  position = "item-aligned",
-  align = "center",
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+export function SelectContent(
+  props: React.ComponentProps<typeof SelectPrimitive.Content>,
+) {
+  const {
+    className,
+    children,
+    position = "item-aligned",
+    align = "center",
+    ...rest
+  } = props;
+
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
@@ -108,7 +102,7 @@ export function SelectContent({
         )}
         position={position}
         align={align}
-        {...props}
+        {...rest}
       >
         <SelectScrollUpButton />
         <SelectPrimitive.Viewport
@@ -127,40 +121,36 @@ export function SelectContent({
 }
 
 /**
- * A label for a select group.
+ * Renders a label for a select group.
  *
- * @param props - The props for the {@link SelectLabel} component.
- * @param props.className - Optional CSS class name for the label.
- * @param props.rest - Additional props spread to the underlying {@link SelectPrimitive.Label}.
- * @returns A {@link JSX.Element} representing the select label.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-export function SelectLabel({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Label>) {
+export function SelectLabel(
+  props: React.ComponentProps<typeof SelectPrimitive.Label>,
+) {
+  const { className, ...rest } = props;
+
   return (
     <SelectPrimitive.Label
       data-slot="select-label"
       className={cn("text-muted-foreground px-2 py-1.5 text-xs", className)}
-      {...props}
+      {...rest}
     />
   );
 }
 
 /**
- * An item in the select content.
+ * Renders an item in the select menu.
  *
- * @param props - The props for the {@link SelectItem} component.
- * @param props.className - Optional CSS class name for the item.
- * @param props.children - The children to render inside the item.
- * @param props.rest - Additional props spread to the underlying {@link SelectPrimitive.Item}.
- * @returns A {@link JSX.Element} representing the select item.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-export function SelectItem({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+export function SelectItem(
+  props: React.ComponentProps<typeof SelectPrimitive.Item>,
+) {
+  const { className, children, ...rest } = props;
+
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
@@ -168,7 +158,7 @@ export function SelectItem({
         "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
       )}
-      {...props}
+      {...rest}
     >
       <span
         data-slot="select-item-indicator"
@@ -184,38 +174,36 @@ export function SelectItem({
 }
 
 /**
- * A separator between select items or groups.
+ * Renders a separator between select groups.
  *
- * @param props - The props for the {@link SelectSeparator} component.
- * @param props.className - Optional CSS class name for the separator.
- * @param props.rest - Additional props spread to the underlying {@link SelectPrimitive.Separator}.
- * @returns A {@link JSX.Element} representing the select separator.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-export function SelectSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
+export function SelectSeparator(
+  props: React.ComponentProps<typeof SelectPrimitive.Separator>,
+) {
+  const { className, ...rest } = props;
+
   return (
     <SelectPrimitive.Separator
       data-slot="select-separator"
       className={cn("bg-border pointer-events-none -mx-1 my-1 h-px", className)}
-      {...props}
+      {...rest}
     />
   );
 }
 
 /**
- * A button to scroll the select content up.
+ * Renders the button that scrolls options upward.
  *
- * @param props - The props for the {@link SelectScrollUpButton} component.
- * @param props.className - Optional CSS class name for the button.
- * @param props.rest - Additional props spread to the underlying {@link SelectPrimitive.ScrollUpButton}.
- * @returns A {@link JSX.Element} representing the scroll up button.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-export function SelectScrollUpButton({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>) {
+export function SelectScrollUpButton(
+  props: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>,
+) {
+  const { className, ...rest } = props;
+
   return (
     <SelectPrimitive.ScrollUpButton
       data-slot="select-scroll-up-button"
@@ -223,7 +211,7 @@ export function SelectScrollUpButton({
         "flex cursor-default items-center justify-center py-1",
         className,
       )}
-      {...props}
+      {...rest}
     >
       <ChevronUpIcon className="size-4" />
     </SelectPrimitive.ScrollUpButton>
@@ -231,17 +219,16 @@ export function SelectScrollUpButton({
 }
 
 /**
- * A button to scroll the select content down.
+ * Renders the button that scrolls options downward.
  *
- * @param props - The props for the {@link SelectScrollDownButton} component.
- * @param props.className - Optional CSS class name for the button.
- * @param props.rest - Additional props spread to the underlying {@link SelectPrimitive.ScrollDownButton}.
- * @returns A {@link JSX.Element} representing the scroll down button.
+ * @param props - Component props.
+ * @returns A JSX element.
  */
-export function SelectScrollDownButton({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>) {
+export function SelectScrollDownButton(
+  props: React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>,
+) {
+  const { className, ...rest } = props;
+
   return (
     <SelectPrimitive.ScrollDownButton
       data-slot="select-scroll-down-button"
@@ -249,10 +236,9 @@ export function SelectScrollDownButton({
         "flex cursor-default items-center justify-center py-1",
         className,
       )}
-      {...props}
+      {...rest}
     >
       <ChevronDownIcon className="size-4" />
     </SelectPrimitive.ScrollDownButton>
   );
 }
-
