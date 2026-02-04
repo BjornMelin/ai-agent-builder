@@ -18,9 +18,14 @@ export function CreateProjectForm() {
     createProjectAction,
     createProjectInitialState,
   );
+  const errorId = "create-project-form-error";
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form
+      action={formAction}
+      aria-describedby={state.status === "error" ? errorId : undefined}
+      className="flex flex-col gap-3"
+    >
       <div className="grid gap-2 md:grid-cols-2">
         <div className="grid gap-1">
           <label className="font-medium text-sm" htmlFor="create-project-name">
@@ -31,6 +36,7 @@ export function CreateProjectForm() {
             id="create-project-name"
             name="name"
             placeholder="My project…"
+            required
           />
         </div>
         <div className="grid gap-1">
@@ -47,7 +53,9 @@ export function CreateProjectForm() {
       </div>
 
       {state.status === "error" ? (
-        <p className="text-destructive text-sm">{state.message}</p>
+        <p className="text-destructive text-sm" id={errorId} role="alert">
+          {state.message}
+        </p>
       ) : null}
 
       <div className="flex items-center gap-3">

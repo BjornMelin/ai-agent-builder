@@ -28,7 +28,7 @@ export function ProjectNavClient(props: Readonly<{ projectId: string }>) {
   ];
 
   return (
-    <nav className="flex flex-wrap gap-2">
+    <nav aria-label="Project sections" className="flex flex-wrap gap-2">
       {items.map((item) => {
         const isActive =
           item.label === "Overview"

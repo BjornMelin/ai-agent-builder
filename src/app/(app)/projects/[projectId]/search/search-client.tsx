@@ -39,6 +39,9 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<readonly SearchResult[]>([]);
+  const searchInputId = `project-search-${props.projectId}`;
+  const searchStatusId = `project-search-status-${props.projectId}`;
+  const searchErrorId = `project-search-error-${props.projectId}`;
 
   const syncQueryInUrl = (query: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -88,21 +91,44 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+      <form
+        className="flex flex-col gap-3 md:flex-row md:items-center"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void runSearch();
+        }}
+      >
+        <label className="sr-only" htmlFor={searchInputId}>
+          Search this project
+        </label>
         <Input
+          aria-describedby={
+            error ? `${searchStatusId} ${searchErrorId}` : searchStatusId
+          }
+          aria-invalid={status === "error"}
+          id={searchInputId}
           onChange={(e) => setQ(e.currentTarget.value)}
           placeholder="Search this project…"
           value={q}
         />
-        <Button
-          disabled={status === "loading"}
-          onClick={() => void runSearch()}
-        >
+        <Button disabled={status === "loading"} type="submit">
           {status === "loading" ? "Searching…" : "Search"}
         </Button>
-      </div>
+      </form>
 
-      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+      <output aria-live="polite" className="sr-only" id={searchStatusId}>
+        {status === "loading"
+          ? "Searching project content."
+          : q.trim().length > 0
+            ? `${results.length} result${results.length === 1 ? "" : "s"} loaded.`
+            : ""}
+      </output>
+
+      {error ? (
+        <p className="text-destructive text-sm" id={searchErrorId} role="alert">
+          {error}
+        </p>
+      ) : null}
 
       {results.length === 0 ? (
         <p className="text-muted-foreground text-sm">

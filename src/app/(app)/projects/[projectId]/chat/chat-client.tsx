@@ -230,6 +230,7 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
   } = useChat({ resume: !!runId, transport });
 
   const [composerError, setComposerError] = useState<string | null>(null);
+  const composerErrorId = `project-chat-composer-error-${props.projectId}`;
 
   const messages = reconstructMessages(rawMessages);
 
@@ -455,7 +456,13 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
 
       <div className="flex flex-col gap-2">
         {composerError ? (
-          <p className="text-destructive text-sm">{composerError}</p>
+          <p
+            className="text-destructive text-sm"
+            id={composerErrorId}
+            role="alert"
+          >
+            {composerError}
+          </p>
         ) : null}
 
         <PromptInput
@@ -466,6 +473,9 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
         >
           <PromptInputBody>
             <PromptInputTextarea
+              aria-describedby={composerError ? composerErrorId : undefined}
+              aria-invalid={composerError ? "true" : undefined}
+              aria-label="Message"
               placeholder="Ask about your project…"
               className="min-h-[120px]"
             />

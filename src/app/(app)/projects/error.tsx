@@ -72,7 +72,10 @@ export default function ProjectsError(
           {isDev ? (
             <div className="grid gap-2">
               <p className="text-muted-foreground text-xs">Dev details</p>
-              <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs">
+              <pre
+                className="overflow-x-auto rounded-md bg-muted p-3 text-xs"
+                role="alert"
+              >
                 {message}
               </pre>
             </div>

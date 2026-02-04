@@ -531,9 +531,12 @@ export const CodeBlockCopyButton = (props: CodeBlockCopyButtonProps) => {
   );
 
   const Icon = isCopied ? CheckIcon : CopyIcon;
+  const accessibleLabel =
+    rest["aria-label"] ?? (isCopied ? "Copied code" : "Copy code");
 
   return (
     <Button
+      aria-label={accessibleLabel}
       className={cn("shrink-0", className)}
       onClick={copyToClipboard}
       size="icon"

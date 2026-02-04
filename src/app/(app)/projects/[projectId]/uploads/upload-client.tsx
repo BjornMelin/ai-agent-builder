@@ -33,6 +33,9 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
   const [error, setError] = useState<string | null>(null);
 
   const ingestToggleId = "uploads-async-ingest";
+  const fileInputId = "uploads-file-input";
+  const statusMessageId = "uploads-status-message";
+  const errorMessageId = "uploads-error-message";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -80,7 +83,15 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
   return (
     <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <label className="sr-only" htmlFor={fileInputId}>
+          Select files to upload
+        </label>
         <Input
+          aria-describedby={
+            error ? `${statusMessageId} ${errorMessageId}` : statusMessageId
+          }
+          aria-invalid={status === "error"}
+          id={fileInputId}
           multiple
           onChange={(e) => setFiles(e.currentTarget.files)}
           type="file"
@@ -102,7 +113,29 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
         </label>
       </div>
 
-      {error ? <p className="text-destructive text-sm">{error}</p> : null}
+      <output aria-live="polite" className="sr-only" id={statusMessageId}>
+        {status === "uploading"
+          ? "Uploading selected files."
+          : status === "success"
+            ? "Upload complete."
+            : ""}
+      </output>
+
+      {status === "success" ? (
+        <output aria-live="polite" className="text-sm text-foreground">
+          Upload complete.
+        </output>
+      ) : null}
+
+      {error ? (
+        <p
+          className="text-destructive text-sm"
+          id={errorMessageId}
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
     </form>
   );
 }
