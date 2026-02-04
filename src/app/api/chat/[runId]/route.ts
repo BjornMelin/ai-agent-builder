@@ -15,6 +15,7 @@ const bodySchema = z.strictObject({
  * @param req - HTTP request.
  * @param context - Route params.
  * @returns JSON ok or JSON error.
+ * @throws AppError - When the request body is invalid.
  */
 export async function POST(
   req: Request,

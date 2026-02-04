@@ -17,6 +17,7 @@ const startIndexSchema = z.coerce.number().int().min(0).optional();
  * @param req - HTTP request.
  * @param context - Route params.
  * @returns UI message stream response or JSON error.
+ * @throws AppError - When `startIndex` is invalid.
  */
 export async function GET(
   req: Request,

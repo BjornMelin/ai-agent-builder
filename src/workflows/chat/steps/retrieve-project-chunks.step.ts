@@ -20,7 +20,7 @@ const contextSchema = z.strictObject({
  * @param input - Retrieval input.
  * @param options - Tool execution options.
  * @returns Retrieval hits.
- * @throws AppError - When `projectId` is missing from the context.
+ * @throws AppError - When `projectId` is missing from context or retrieval validation fails.
  */
 export async function retrieveProjectChunksStep(
   input: Readonly<{ query: string; topK?: number | undefined }>,

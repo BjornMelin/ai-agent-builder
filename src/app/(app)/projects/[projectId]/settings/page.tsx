@@ -18,7 +18,7 @@ function safeFeature(getter: () => unknown): FeatureStatus {
 }
 
 /**
- * Settings tab (P0: budgets + integration status).
+ * Settings tab displaying budgets and integration status.
  *
  * @returns The settings page.
  */

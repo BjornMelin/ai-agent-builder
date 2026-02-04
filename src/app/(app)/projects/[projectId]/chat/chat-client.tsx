@@ -296,7 +296,13 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       return;
     }
 
-    await baseSendMessage({ text });
+    try {
+      await baseSendMessage({ text });
+    } catch (error) {
+      setComposerError(
+        error instanceof Error ? error.message : "Failed to send message.",
+      );
+    }
   }
 
   async function endSession() {

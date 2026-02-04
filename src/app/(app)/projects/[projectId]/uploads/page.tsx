@@ -14,6 +14,10 @@ export default async function UploadsPage(
 ) {
   const { projectId } = await props.params;
   const files = await listProjectFiles(projectId, { limit: 50 });
+  const fileSizeFormatter = new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -52,8 +56,9 @@ export default async function UploadsPage(
                     <div className="min-w-0">
                       <p className="truncate font-medium">{file.name}</p>
                       <p className="truncate text-muted-foreground text-sm">
-                        {file.mimeType} · {(file.sizeBytes / 1024).toFixed(1)}{" "}
-                        KB
+                        {file.mimeType} ·{" "}
+                        {fileSizeFormatter.format(file.sizeBytes / 1024)}
+                        {"\u00A0"}KB
                       </p>
                     </div>
                     <span className="text-muted-foreground text-sm">Open</span>

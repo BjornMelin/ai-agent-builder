@@ -33,7 +33,7 @@ export function ProjectNavClient(props: Readonly<{ projectId: string }>) {
         const isActive =
           item.label === "Overview"
             ? pathname === item.href
-            : pathname.startsWith(item.href);
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
           <Button
             asChild

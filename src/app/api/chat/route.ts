@@ -33,6 +33,7 @@ const bodySchema = z.strictObject({
  *
  * @param req - HTTP request.
  * @returns UI message stream response or JSON error.
+ * @throws AppError - When request auth, body, or message validation fails.
  */
 export async function POST(req: Request): Promise<Response> {
   try {

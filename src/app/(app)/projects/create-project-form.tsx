@@ -59,8 +59,16 @@ export function CreateProjectForm() {
       ) : null}
 
       <div className="flex items-center gap-3">
-        <Button disabled={isPending} type="submit">
-          {isPending ? "Creating…" : "Create project"}
+        <Button aria-busy={isPending} disabled={isPending} type="submit">
+          <span className="inline-flex items-center gap-2">
+            {isPending ? (
+              <span
+                aria-hidden="true"
+                className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+              />
+            ) : null}
+            <span>Create project</span>
+          </span>
         </Button>
         <Button
           disabled={isPending}

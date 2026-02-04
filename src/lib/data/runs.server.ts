@@ -115,7 +115,8 @@ export async function createRun(
  * List runs for a project ordered by newest first.
  *
  * @param projectId - Project ID.
- * @param options - Pagination options.
+ * @param limit - Maximum number of runs to return.
+ * @param offset - Number of runs to skip before returning results.
  * @returns Run DTOs.
  */
 const listRunsByProjectCached = cache(

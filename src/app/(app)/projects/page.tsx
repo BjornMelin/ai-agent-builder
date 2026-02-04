@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 /**
  * Project list page.
  *
- * @returns The projects list page.
+ * @returns A projects dashboard with create and recent-project sections.
  */
 export default async function ProjectsPage() {
   const projects = await listProjects({ limit: 50 });
@@ -45,10 +45,7 @@ export default async function ProjectsPage() {
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button asChild size="sm">
-                  <a href="#create-project-name">Create your first project</a>
-                </Button>
-                <Button asChild size="sm" variant="outline">
-                  <a href="#create-project-name">Create a demo project</a>
+                  <a href="#create-project-name">Create a project</a>
                 </Button>
               </div>
             </div>

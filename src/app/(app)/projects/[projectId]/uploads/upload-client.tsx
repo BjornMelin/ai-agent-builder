@@ -20,7 +20,7 @@ type UploadResponse = Readonly<{
 /**
  * Upload form that posts to the `/api/upload` route handler.
  *
- * @param props - Component props.
+ * @param props - Upload props containing the destination `projectId`.
  * @returns The upload form.
  */
 export function UploadClient(props: Readonly<{ projectId: string }>) {
@@ -58,10 +58,17 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
       form.append("file", file);
     }
 
-    const res = await fetch("/api/upload", {
-      body: form,
-      method: "POST",
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/upload", {
+        body: form,
+        method: "POST",
+      });
+    } catch {
+      setError("Network error while uploading. Please try again.");
+      setStatus("error");
+      return;
+    }
 
     if (!res.ok) {
       const payload = await res.json().catch(() => null);
