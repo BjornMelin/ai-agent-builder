@@ -10,6 +10,7 @@ import {
   type ReactElement,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { Button } from "@/components/ui/button";
@@ -124,10 +125,32 @@ export const MessageAction = (props: MessageActionProps) => {
     size = "icon-sm",
     ...rest
   } = props;
+  const fallbackLabel =
+    typeof children === "string" || typeof children === "number"
+      ? String(children)
+      : "Message action";
+  const accessibleLabel = label ?? tooltip ?? fallbackLabel;
+
+  if (
+    process.env.NODE_ENV !== "production" &&
+    label === undefined &&
+    tooltip === undefined
+  ) {
+    console.warn(
+      "[MessageAction] Missing both label and tooltip; using fallback accessible label.",
+    );
+  }
+
   const button = (
-    <Button size={size} type="button" variant={variant} {...rest}>
+    <Button
+      aria-label={accessibleLabel}
+      size={size}
+      type="button"
+      variant={variant}
+      {...rest}
+    >
       {children}
-      <span className="sr-only">{label || tooltip}</span>
+      <span className="sr-only">{accessibleLabel}</span>
     </Button>
   );
 
@@ -253,9 +276,10 @@ export type MessageBranchContentProps = HTMLAttributes<HTMLDivElement>;
 export const MessageBranchContent = (props: MessageBranchContentProps) => {
   const { children, ...rest } = props;
   const { currentBranch, setBranches } = useMessageBranch();
-  const childrenArray = Children.toArray(children).filter(
-    Boolean,
-  ) as ReactElement[];
+  const childrenArray = useMemo(
+    () => Children.toArray(children).filter(Boolean) as ReactElement[],
+    [children],
+  );
 
   useEffect(() => {
     setBranches(childrenArray);

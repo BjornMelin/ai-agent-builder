@@ -478,10 +478,11 @@ export const CodeBlockContent = (props: CodeBlockContentProps) => {
   }>({ key: "", tokenized: null });
 
   useEffect(() => {
+    const cacheKey = getTokensCacheKey(code, language);
     highlightCode(code, language, (result) => {
-      setTokenizedState({ key: tokensCacheKey, tokenized: result });
+      setTokenizedState({ key: cacheKey, tokenized: result });
     });
-  }, [code, language, tokensCacheKey]);
+  }, [code, language]);
 
   const tokenized =
     (tokenizedState.key === tokensCacheKey ? tokenizedState.tokenized : null) ??

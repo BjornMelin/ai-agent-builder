@@ -130,7 +130,7 @@ export type ContextTriggerProps = ComponentProps<typeof Button>;
  * @returns A hover card trigger element.
  */
 export const ContextTrigger = (props: ContextTriggerProps) => {
-  const { children, ...rest } = props;
+  const { children, "aria-label": ariaLabel, ...rest } = props;
   const { usedTokens, maxTokens } = useContextValue();
   const usedPercent = clampUsagePercent(usedTokens, maxTokens);
   const renderedPercent = new Intl.NumberFormat("en-US", {
@@ -138,7 +138,7 @@ export const ContextTrigger = (props: ContextTriggerProps) => {
     style: "percent",
   }).format(usedPercent);
   const accessibleLabel =
-    rest["aria-label"] ?? `Model context usage: ${renderedPercent}`;
+    ariaLabel ?? `Model context usage: ${renderedPercent}`;
 
   return (
     <HoverCardTrigger asChild>

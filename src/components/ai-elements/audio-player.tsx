@@ -97,6 +97,7 @@ export const AudioPlayerElement = (props: AudioPlayerElementProps) => (
   />
 );
 
+/** Props for the AudioPlayerControlBar component. */
 export type AudioPlayerControlBarProps = ComponentProps<typeof MediaControlBar>;
 
 /**
@@ -114,6 +115,7 @@ export const AudioPlayerControlBar = (props: AudioPlayerControlBarProps) => {
   );
 };
 
+/** Props for the AudioPlayerPlayButton component. */
 export type AudioPlayerPlayButtonProps = ComponentProps<typeof MediaPlayButton>;
 
 /**
@@ -136,6 +138,7 @@ export const AudioPlayerPlayButton = (props: AudioPlayerPlayButtonProps) => {
   );
 };
 
+/** Props for the AudioPlayerSeekBackwardButton component. */
 export type AudioPlayerSeekBackwardButtonProps = ComponentProps<
   typeof MediaSeekBackwardButton
 >;
@@ -162,6 +165,7 @@ export const AudioPlayerSeekBackwardButton = (
   );
 };
 
+/** Props for the AudioPlayerSeekForwardButton component. */
 export type AudioPlayerSeekForwardButtonProps = ComponentProps<
   typeof MediaSeekForwardButton
 >;
@@ -188,6 +192,7 @@ export const AudioPlayerSeekForwardButton = (
   );
 };
 
+/** Props for the AudioPlayerTimeDisplay component. */
 export type AudioPlayerTimeDisplayProps = ComponentProps<
   typeof MediaTimeDisplay
 >;
@@ -211,6 +216,7 @@ export const AudioPlayerTimeDisplay = (props: AudioPlayerTimeDisplayProps) => {
   );
 };
 
+/** Props for the AudioPlayerTimeRange component. */
 export type AudioPlayerTimeRangeProps = ComponentProps<typeof MediaTimeRange>;
 
 /**
@@ -232,6 +238,7 @@ export const AudioPlayerTimeRange = (props: AudioPlayerTimeRangeProps) => {
   );
 };
 
+/** Props for the AudioPlayerDurationDisplay component. */
 export type AudioPlayerDurationDisplayProps = ComponentProps<
   typeof MediaDurationDisplay
 >;
@@ -257,6 +264,7 @@ export const AudioPlayerDurationDisplay = (
   );
 };
 
+/** Props for the AudioPlayerMuteButton component. */
 export type AudioPlayerMuteButtonProps = ComponentProps<typeof MediaMuteButton>;
 
 /**
@@ -278,6 +286,7 @@ export const AudioPlayerMuteButton = (props: AudioPlayerMuteButtonProps) => {
   );
 };
 
+/** Props for the AudioPlayerVolumeRange component. */
 export type AudioPlayerVolumeRangeProps = ComponentProps<
   typeof MediaVolumeRange
 >;

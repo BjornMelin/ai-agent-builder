@@ -524,6 +524,7 @@ export const CommitFileIcon = (props: CommitFileIconProps) => {
     <FileIcon
       className={cn("size-3.5 shrink-0 text-muted-foreground", className)}
       {...rest}
+      aria-hidden={true}
     />
   );
 };
@@ -601,7 +602,7 @@ export const CommitFileAdditions = (props: CommitFileAdditionsProps) => {
     >
       {children ?? (
         <>
-          <PlusIcon className="inline-block size-3" />
+          <PlusIcon aria-hidden="true" className="inline-block size-3" />
           {count}
         </>
       )}
@@ -633,7 +634,7 @@ export const CommitFileDeletions = (props: CommitFileDeletionsProps) => {
     <span className={cn("text-red-600 dark:text-red-400", className)} {...rest}>
       {children ?? (
         <>
-          <MinusIcon className="inline-block size-3" />
+          <MinusIcon aria-hidden="true" className="inline-block size-3" />
           {count}
         </>
       )}

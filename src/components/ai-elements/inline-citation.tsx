@@ -90,6 +90,7 @@ export type InlineCitationCardTriggerProps = ComponentProps<typeof Badge> & {
  * Renders the citation trigger badge.
  *
  * @param props - Trigger badge props and source list.
+ * @param props.sources - Array of source objects used to render the citation badge and populate the source list.
  * @returns The citation trigger.
  */
 export const InlineCitationCardTrigger = (
@@ -141,6 +142,27 @@ const useCarouselApi = () => {
   const context = useContext(CarouselApiContext);
   return context;
 };
+
+const useCarouselSubscription = <T,>(
+  api: CarouselApi | undefined,
+  getSnapshot: () => T,
+  getServerSnapshot: () => T,
+) =>
+  useSyncExternalStore(
+    (onStoreChange) => {
+      if (!api) {
+        return () => {};
+      }
+      api.on("select", onStoreChange);
+      api.on("reInit", onStoreChange);
+      return () => {
+        api.off("select", onStoreChange);
+        api.off("reInit", onStoreChange);
+      };
+    },
+    getSnapshot,
+    getServerSnapshot,
+  );
 
 /** Props for the `InlineCitationCarousel` component. */
 export type InlineCitationCarouselProps = ComponentProps<typeof Carousel>;
@@ -240,18 +262,8 @@ export const InlineCitationCarouselIndex = (
 ) => {
   const { children, className, ...rest } = props;
   const api = useCarouselApi();
-  const snapshot = useSyncExternalStore(
-    (onStoreChange) => {
-      if (!api) {
-        return () => {};
-      }
-      api.on("select", onStoreChange);
-      api.on("reInit", onStoreChange);
-      return () => {
-        api.off("select", onStoreChange);
-        api.off("reInit", onStoreChange);
-      };
-    },
+  const snapshot = useCarouselSubscription(
+    api,
     () =>
       `${(api?.selectedScrollSnap() ?? -1) + 1}:${api?.scrollSnapList().length ?? 0}`,
     () => "0:0",
@@ -285,18 +297,8 @@ export const InlineCitationCarouselPrev = (
 ) => {
   const { className, ...rest } = props;
   const api = useCarouselApi();
-  const canScrollPrev = useSyncExternalStore(
-    (onStoreChange) => {
-      if (!api) {
-        return () => {};
-      }
-      api.on("select", onStoreChange);
-      api.on("reInit", onStoreChange);
-      return () => {
-        api.off("select", onStoreChange);
-        api.off("reInit", onStoreChange);
-      };
-    },
+  const canScrollPrev = useCarouselSubscription(
+    api,
     () => api?.canScrollPrev() ?? false,
     () => false,
   );
@@ -341,18 +343,8 @@ export const InlineCitationCarouselNext = (
 ) => {
   const { className, ...rest } = props;
   const api = useCarouselApi();
-  const canScrollNext = useSyncExternalStore(
-    (onStoreChange) => {
-      if (!api) {
-        return () => {};
-      }
-      api.on("select", onStoreChange);
-      api.on("reInit", onStoreChange);
-      return () => {
-        api.off("select", onStoreChange);
-        api.off("reInit", onStoreChange);
-      };
-    },
+  const canScrollNext = useCarouselSubscription(
+    api,
     () => api?.canScrollNext() ?? false,
     () => false,
   );
@@ -394,6 +386,9 @@ export type InlineCitationSourceProps = ComponentProps<"div"> & {
  * Renders citation source metadata content.
  *
  * @param props - Source metadata and container props.
+ * @param props.title - Optional source title shown as the citation heading.
+ * @param props.url - Optional source URL shown beneath the title.
+ * @param props.description - Optional source description shown as supporting text.
  * @returns The citation source block.
  */
 export const InlineCitationSource = (props: InlineCitationSourceProps) => {

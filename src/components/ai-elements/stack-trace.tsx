@@ -379,7 +379,7 @@ export const StackTraceCopyButton = memo((props: StackTraceCopyButtonProps) => {
     <Button
       aria-label={accessibleLabel}
       className={cn("size-7", className)}
-      onClick={copyToClipboard}
+      onClick={() => void copyToClipboard()}
       size="icon"
       variant="ghost"
       {...rest}
@@ -498,7 +498,7 @@ export const StackTraceFrames = memo((props: StackTraceFramesProps) => {
                 disabled={!onFilePathClick}
                 onClick={() => {
                   if (frame.filePath) {
-                    onFilePathClick?.(
+                    void onFilePathClick?.(
                       frame.filePath,
                       frame.lineNumber ?? undefined,
                       frame.columnNumber ?? undefined,
