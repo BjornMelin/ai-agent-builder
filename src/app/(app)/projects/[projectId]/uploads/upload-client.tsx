@@ -117,7 +117,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
         <Switch
           checked={asyncIngest}
           id={ingestToggleId}
-          onCheckedChange={(checked) => setAsyncIngest(checked)}
+          onCheckedChange={setAsyncIngest}
         />
         <label className="text-muted-foreground" htmlFor={ingestToggleId}>
           Async ingest (QStash) {asyncIngest ? "enabled" : "disabled"}

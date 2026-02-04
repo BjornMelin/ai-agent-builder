@@ -37,7 +37,7 @@ Use **Upstash QStash** only for **background jobs** (primarily the ingestion pip
 See:
 
 - [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md) (integrator spec)
-- SPEC-0022 (durable runs + streaming contracts; created as part of this plan)
+- [SPEC-0022](../spec/SPEC-0022-durable-runs-streaming-contracts.md) (durable runs + streaming contracts; created as part of this plan)
 
 ## Context
 
@@ -151,7 +151,7 @@ We will:
 flowchart LR
   UI[AI Elements UI] --> ChatAPI[/api/chat/]
   UI --> ChatFollowup[/api/chat/:runId/]
-  UI --> ChatStream[/api/chat/:runId/stream/]
+  UI --> ChatStream[/api/chat/:runId/stream]
 
   ChatAPI --> WF[Workflow Run]
   ChatFollowup --> WF

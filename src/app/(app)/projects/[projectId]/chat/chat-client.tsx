@@ -317,7 +317,9 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
         } catch {
           // Fallback to default message
         }
-        throw new Error(errorMessage);
+        setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
+        setComposerError(errorMessage);
+        return false;
       }
 
       setComposerError(null);
@@ -326,7 +328,6 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       if (process.env.NODE_ENV !== "production") {
         console.error("Follow-up error:", error);
       }
-      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
       setComposerError(
         error instanceof Error ? error.message : "Something went wrong.",
       );
@@ -375,7 +376,8 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to end session.");
+        setComposerError("Failed to end session.");
+        return;
       }
       setComposerError(null);
     } catch (error) {

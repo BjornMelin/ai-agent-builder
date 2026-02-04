@@ -36,11 +36,13 @@ export const Sandbox = (props: SandboxRootProps) => {
 };
 
 /** Props for the SandboxHeader component. */
-export interface SandboxHeaderProps {
+export type SandboxHeaderProps = Omit<
+  ComponentProps<typeof CollapsibleTrigger>,
+  "children"
+> & {
   title?: string;
   state: ToolUIPart["state"];
-  className?: string;
-}
+};
 
 /**
  * Renders the sandbox header with title and tool execution state.

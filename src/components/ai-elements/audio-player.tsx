@@ -244,7 +244,7 @@ export const AudioPlayerTimeRange = (props: AudioPlayerTimeRangeProps) => {
   return (
     <ButtonGroupText asChild className="bg-transparent">
       <MediaTimeRange
-        className={cn(className)}
+        className={className}
         data-slot="audio-player-time-range"
         {...rest}
       />
@@ -292,7 +292,7 @@ export const AudioPlayerMuteButton = (props: AudioPlayerMuteButtonProps) => {
   return (
     <ButtonGroupText asChild className="bg-transparent">
       <MediaMuteButton
-        className={cn(className)}
+        className={className}
         data-slot="audio-player-mute-button"
         {...rest}
       />
@@ -316,7 +316,7 @@ export const AudioPlayerVolumeRange = (props: AudioPlayerVolumeRangeProps) => {
   return (
     <ButtonGroupText asChild className="bg-transparent">
       <MediaVolumeRange
-        className={cn(className)}
+        className={className}
         data-slot="audio-player-volume-range"
         {...rest}
       />
