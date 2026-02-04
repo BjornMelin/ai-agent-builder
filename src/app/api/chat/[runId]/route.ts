@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
-import { AppError } from "@/lib/core/errors";
+import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
 
@@ -24,22 +24,12 @@ export async function POST(
   try {
     const authPromise = requireAppUserApi();
     const paramsPromise = context.params;
-    const bodyPromise = req.json().catch(() => null);
-    const [params, raw] = await Promise.all([
-      paramsPromise,
-      bodyPromise,
-      authPromise,
-    ]).then(([resolvedParams, resolvedBody]) => [
-      resolvedParams as { runId: string },
-      resolvedBody,
-    ]);
-    const { runId } = params;
-    const parsed = bodySchema.safeParse(raw);
-    if (!parsed.success) {
-      throw new AppError("bad_request", 400, "Invalid request body.");
-    }
+    const bodyPromise = parseJsonBody(req, bodySchema);
 
-    await chatMessageHook.resume(runId, { message: parsed.data.message });
+    const [params, parsed] = await Promise.all([paramsPromise, bodyPromise]);
+    await authPromise;
+
+    await chatMessageHook.resume(params.runId, { message: parsed.message });
 
     return jsonOk({ ok: true });
   } catch (err) {

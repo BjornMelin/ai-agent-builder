@@ -2,6 +2,7 @@ import { z } from "zod";
 import { AppError } from "@/lib/core/errors";
 import { getProjectFileById } from "@/lib/data/files.server";
 import { ingestFile } from "@/lib/ingest/ingest-file.server";
+import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { verifyQstashSignatureAppRouter } from "@/lib/upstash/qstash.server";
 
@@ -26,20 +27,7 @@ const bodySchema = z.strictObject({
  */
 export const POST = verifyQstashSignatureAppRouter(async (req: Request) => {
   try {
-    const raw = await req.text();
-    let body: unknown;
-    try {
-      body = JSON.parse(raw);
-    } catch (err) {
-      throw new AppError("bad_request", 400, "Invalid JSON body.", err);
-    }
-
-    const parsed = bodySchema.safeParse(body);
-    if (!parsed.success) {
-      throw new AppError("bad_request", 400, "Invalid request body.");
-    }
-
-    const { fileId, projectId } = parsed.data;
+    const { fileId, projectId } = await parseJsonBody(req, bodySchema);
     const file = await getProjectFileById(fileId);
     if (!file || file.projectId !== projectId) {
       throw new AppError("not_found", 404, "File not found.");

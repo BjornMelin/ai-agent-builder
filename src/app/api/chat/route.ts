@@ -9,6 +9,7 @@ import { z } from "zod";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
+import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError } from "@/lib/next/responses";
 import { projectChat } from "@/workflows/chat/project-chat.workflow";
 import { chatTools } from "@/workflows/chat/tools";
@@ -38,17 +39,13 @@ const bodySchema = z.strictObject({
 export async function POST(req: Request): Promise<Response> {
   try {
     const authPromise = requireAppUserApi();
-    const bodyPromise = req.json().catch(() => null);
+    const bodyPromise = parseJsonBody(req, bodySchema);
     await authPromise;
 
-    const raw = await bodyPromise;
-    const parsed = bodySchema.safeParse(raw);
-    if (!parsed.success) {
-      throw new AppError("bad_request", 400, "Invalid request body.");
-    }
+    const parsed = await bodyPromise;
 
     const validated = await safeValidateUIMessages<ProjectChatUIMessage>({
-      messages: parsed.data.messages,
+      messages: parsed.messages,
       tools: chatTools,
     });
     if (!validated.success) {
@@ -69,10 +66,7 @@ export async function POST(req: Request): Promise<Response> {
       );
     }
 
-    const run = await start(projectChat, [
-      parsed.data.projectId,
-      validated.data,
-    ]);
+    const run = await start(projectChat, [parsed.projectId, validated.data]);
 
     return createUIMessageStreamResponse({
       headers: { "x-workflow-run-id": run.runId },
