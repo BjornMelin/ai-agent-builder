@@ -59,7 +59,7 @@ notes: "Cross-cutting: records current implementation snapshot and defines the r
 
 This spec is the “stitching document” that finalizes the end-to-end system:
 
-- **Persistence**: Neon Postgres via Drizzle ORM, on Vercel **Fluid Compute** using `pg` pooling + `attachDatabasePool` ([Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package)) on Vercel Fluid Compute ([Vercel Fluid Compute](https://vercel.com/docs/fluid-compute)).
+- **Persistence**: Neon Postgres via Drizzle ORM on Vercel **Fluid Compute**, using `pg` pooling + `attachDatabasePool` ([Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package)) ([Vercel Fluid Compute](https://vercel.com/docs/fluid-compute)).
 - **Ingestion**: Blob → extract → chunk → embed → Upstash Vector, with idempotency and bounded costs.
 - **Retrieval**: project-scoped search and retrieval tool(s), with Redis caching.
 - **Durable orchestration**:

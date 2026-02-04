@@ -179,5 +179,10 @@ Implemented in:
 
 - Multi-turn flow:
   1. start session, capture run id
+     - assert the initial stream emits > 0 chunks and includes expected content tokens/phrases
+     - record the last chunk id/sequence number for continuity checks
   2. send follow-up message to hook endpoint
-  3. assert streamed output continues for the same run id
+     - assert the follow-up stream emits additional chunks for the same run id
+     - validate run state via the run API (e.g., `status` is `running` or `completed`, as expected)
+  3. assert stream continuity
+     - verify chunk sequence numbers are monotonic and resume after the last recorded chunk id

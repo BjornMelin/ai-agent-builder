@@ -19,6 +19,7 @@ References:
 ## Status
 
 Accepted — 2026-01-30.
+Updated — 2026-02-03: aligned with Workflow DevKit durable sessions and resumable streaming (ADR-0026).
 
 ## Description
 
@@ -38,7 +39,7 @@ The system requires multi-step reasoning and tool usage. AI SDK v6 provides
 agent loops (ToolLoopAgent semantics) and UI message streaming primitives.
 For production-grade resumable streaming and multi-turn durability, we run the
 agent loop inside Workflow DevKit using `@workflow/ai` `DurableAgent` and stream
-via Workflow run streams. [ADR-0026](./ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md)
+via Workflow run streams (see [ADR-0026](./ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md) for orchestration rationale).
 
 ## Decision Drivers
 
@@ -159,3 +160,4 @@ flowchart LR
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.
+- **0.4 (2026-02-03)**: Updated for Workflow DevKit durable sessions + resumable streaming alignment.

@@ -1,6 +1,6 @@
 ---
 ADR: 0026
-Title: Orchestration - Vercel Workflow DevKit for interactive runs (QStash for background jobs)
+Title: Orchestration: Vercel Workflow DevKit for interactive runs (QStash for background jobs)
 Status: Accepted
 Version: 0.1
 Date: 2026-02-03
@@ -73,7 +73,7 @@ Pros:
 
 - Native streaming primitives + resumable streams for UI responses. [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
 - Multi-turn session pattern supported via hooks and run IDs. [Workflow DevKit: Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling)
-- Minimal external infra on the interactive path (no Redis/Reatime dependency for streaming).
+- Minimal external infra on the interactive path (no Redis/Realtime dependency for streaming).
 
 Cons:
 

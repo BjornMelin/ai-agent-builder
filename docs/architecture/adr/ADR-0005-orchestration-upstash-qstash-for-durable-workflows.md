@@ -16,6 +16,7 @@ References:
 ## Status
 
 Accepted — 2026-01-30.
+Updated — 2026-02-03: re-scoped to background jobs (ingestion + fanout); interactive runs moved to ADR-0026.
 
 ## Description
 
@@ -101,7 +102,7 @@ flowchart LR
 ### Performance Requirements
 
 - **PR-005:** Idempotent steps.
-- **PR-003:** Ingest 10MB PDF within target (excluding queue delay).
+- **PR-003:** Ingest 10 MB PDF within target (excluding queue delay).
 
 ### Integration Requirements
 
