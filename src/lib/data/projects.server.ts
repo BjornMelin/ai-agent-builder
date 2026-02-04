@@ -117,16 +117,28 @@ export const getProjectBySlug = cache(
  * @param options - Pagination options.
  * @returns Project DTOs.
  */
+const listProjectsCached = cache(
+  async (limit: number, offset: number): Promise<ProjectDto[]> => {
+    const db = getDb();
+    const rows = await db.query.projectsTable.findMany({
+      limit,
+      offset,
+      orderBy: (t, { desc }) => [desc(t.createdAt)],
+    });
+    return rows.map(toProjectDto);
+  },
+);
+
+/**
+ * List projects with pagination guardrails.
+ *
+ * @param options - Pagination options (limit/offset).
+ * @returns Project DTOs ordered by newest first.
+ */
 export async function listProjects(
   options: Readonly<{ limit?: number; offset?: number }> = {},
 ): Promise<ProjectDto[]> {
   const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
   const offset = Math.max(options.offset ?? 0, 0);
-  const db = getDb();
-  const rows = await db.query.projectsTable.findMany({
-    limit,
-    offset,
-    orderBy: (t, { desc }) => [desc(t.createdAt)],
-  });
-  return rows.map(toProjectDto);
+  return listProjectsCached(limit, offset);
 }

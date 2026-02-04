@@ -112,6 +112,46 @@ export async function createRun(
 }
 
 /**
+ * List runs for a project ordered by newest first.
+ *
+ * @param projectId - Project ID.
+ * @param options - Pagination options.
+ * @returns Run DTOs.
+ */
+const listRunsByProjectCached = cache(
+  async (
+    projectId: string,
+    limit: number,
+    offset: number,
+  ): Promise<RunDto[]> => {
+    const db = getDb();
+    const rows = await db.query.runsTable.findMany({
+      limit,
+      offset,
+      orderBy: (t, { desc }) => [desc(t.createdAt)],
+      where: eq(schema.runsTable.projectId, projectId),
+    });
+    return rows.map(toRunDto);
+  },
+);
+
+/**
+ * List runs for a project with pagination guardrails.
+ *
+ * @param projectId - Project ID.
+ * @param options - Pagination options (limit/offset).
+ * @returns Run DTOs ordered by newest first.
+ */
+export async function listRunsByProject(
+  projectId: string,
+  options: Readonly<{ limit?: number; offset?: number }> = {},
+): Promise<RunDto[]> {
+  const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
+  const offset = Math.max(options.offset ?? 0, 0);
+  return listRunsByProjectCached(projectId, limit, offset);
+}
+
+/**
  * Get a run by ID (cached per request).
  *
  * @param id - Run ID.
@@ -180,14 +220,26 @@ export async function ensureRunStep(
  * @param runId - Run ID.
  * @returns Run step DTOs.
  */
-export async function listRunSteps(runId: string): Promise<RunStepDto[]> {
-  const db = getDb();
-  const rows = await db.query.runStepsTable.findMany({
-    orderBy: (t, { asc }) => [asc(t.createdAt)],
-    where: eq(schema.runStepsTable.runId, runId),
-  });
+const listRunStepsCached = cache(
+  async (runId: string): Promise<RunStepDto[]> => {
+    const db = getDb();
+    const rows = await db.query.runStepsTable.findMany({
+      orderBy: (t, { asc }) => [asc(t.createdAt)],
+      where: eq(schema.runStepsTable.runId, runId),
+    });
 
-  return rows.map(toRunStepDto);
+    return rows.map(toRunStepDto);
+  },
+);
+
+/**
+ * List steps for a run (ordered by creation time).
+ *
+ * @param runId - Run ID.
+ * @returns Run step DTOs.
+ */
+export async function listRunSteps(runId: string): Promise<RunStepDto[]> {
+  return listRunStepsCached(runId);
 }
 
 /**

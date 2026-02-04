@@ -121,3 +121,43 @@ export const getProjectFileBySha256 = cache(
     return row ? toProjectFileDto(row) : null;
   },
 );
+
+/**
+ * List files for a project ordered by newest first.
+ *
+ * @param projectId - Project ID.
+ * @param options - Pagination options.
+ * @returns File DTOs.
+ */
+const listProjectFilesCached = cache(
+  async (
+    projectId: string,
+    limit: number,
+    offset: number,
+  ): Promise<ProjectFileDto[]> => {
+    const db = getDb();
+    const rows = await db.query.projectFilesTable.findMany({
+      limit,
+      offset,
+      orderBy: (t, { desc }) => [desc(t.createdAt)],
+      where: eq(schema.projectFilesTable.projectId, projectId),
+    });
+    return rows.map(toProjectFileDto);
+  },
+);
+
+/**
+ * List project files with pagination guardrails.
+ *
+ * @param projectId - Project ID.
+ * @param options - Pagination options (limit/offset).
+ * @returns File DTOs ordered by newest first.
+ */
+export async function listProjectFiles(
+  projectId: string,
+  options: Readonly<{ limit?: number; offset?: number }> = {},
+): Promise<ProjectFileDto[]> {
+  const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
+  const offset = Math.max(options.offset ?? 0, 0);
+  return listProjectFilesCached(projectId, limit, offset);
+}
