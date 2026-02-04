@@ -1,5 +1,51 @@
 # Changelog
 
+## [0.1.5](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.4...ai-agent-builder-v0.1.5) (2026-02-04)
+
+
+### Features
+
+* add components configuration and update ESLint rules for registry components ([5cff0bd](https://github.com/BjornMelin/ai-agent-builder/commit/5cff0bde5b1cbdf027532b721776a85c196516f7))
+* **app:** add workspace routes and layout ([b0b3283](https://github.com/BjornMelin/ai-agent-builder/commit/b0b32834accfb5d4d21ccab9097f8034dc39d2ab))
+* **chat:** implement chat API endpoints and tests ([658d4d0](https://github.com/BjornMelin/ai-agent-builder/commit/658d4d0a7b31a75b35233a0450a2a13d94fb6248))
+* enhance UI/UX with accessibility improvements, input resets, and animation controls across various components. ([3a09ab1](https://github.com/BjornMelin/ai-agent-builder/commit/3a09ab178f710e619bf395516d5ebc5c3b46c191))
+* Improve accessibility for AI elements components by adding `aria-label` attributes and refactoring interactive elements, and establish test suite documentation. ([4744149](https://github.com/BjornMelin/ai-agent-builder/commit/4744149f07fd81888eb911785218cc63aec27b3e))
+* integrate Vercel Workflow into Next.js configuration ([196ec10](https://github.com/BjornMelin/ai-agent-builder/commit/196ec10e7594ce211a97abc77813dc51b550119f))
+* introduce `parseJsonBody` utility to standardize JSON body parsing and Zod validation across API routes, accompanied by new tests. ([309b2e0](https://github.com/BjornMelin/ai-agent-builder/commit/309b2e0e96092562a6f880f8287ec8b1c9f33a00))
+* **projects:** enhance project creation and error handling ([b575ac5](https://github.com/BjornMelin/ai-agent-builder/commit/b575ac5e37b11018c2d9c44fd38f010138b323ac))
+* **ui:** vendor ai-elements and shadcn primitives ([b934a03](https://github.com/BjornMelin/ai-agent-builder/commit/b934a03542f3c42e20ae869d60797572040bf97d))
+* **workflow:** integrate Vercel Workflow + AI Elements ([6458674](https://github.com/BjornMelin/ai-agent-builder/commit/645867405086a7d36b5b55f26a51c5ef5a9a3a76))
+* **workflows:** add chat workflow endpoints ([e41d64e](https://github.com/BjornMelin/ai-agent-builder/commit/e41d64e54cdd651ddf4ff724bdb75c59d472f9ca))
+
+
+### Bug Fixes
+
+* **ai-elements:** address PR [#13](https://github.com/BjornMelin/ai-agent-builder/issues/13) review feedback ([f688e29](https://github.com/BjornMelin/ai-agent-builder/commit/f688e294514a6e7c6b18c39eecb9fd44f7e9950c))
+* **ai-elements:** complete accessibility hardening and regression coverage ([41dbe3f](https://github.com/BjornMelin/ai-agent-builder/commit/41dbe3fa747863b2e3f7cd1bdbeef2dabc325890))
+* **ai-elements:** harden prompt input and mic selector behavior ([2744ec7](https://github.com/BjornMelin/ai-agent-builder/commit/2744ec7fbf20bc316a3b00da5617f6aee1f5ad62))
+* **ai-elements:** harden schema and citation components ([2a310a3](https://github.com/BjornMelin/ai-agent-builder/commit/2a310a355eea3fb427e3d3d4eec57b456806f122))
+* **ai-elements:** improve a11y and docs for results and package UI ([d024cde](https://github.com/BjornMelin/ai-agent-builder/commit/d024cde184d972191fc81c25c592ddacd4565058))
+* **ai-elements:** improve commit and transcription accessibility ([9c7f990](https://github.com/BjornMelin/ai-agent-builder/commit/9c7f9908452275d5bbcfb1458728c2c6ae0b0034))
+* **ai-elements:** improve docs and error handling in metadata UIs ([cd8733e](https://github.com/BjornMelin/ai-agent-builder/commit/cd8733eb975b0f4f3dcd70d5533234d496cdfb8f))
+* **ai-elements:** improve message, prompt, and mic reliability ([d31ed07](https://github.com/BjornMelin/ai-agent-builder/commit/d31ed077c743d690ba35d4e4bb2813b77051a046))
+* **ai-elements:** improve motion a11y and source semantics ([36b423c](https://github.com/BjornMelin/ai-agent-builder/commit/36b423cf4f132aa351311f443e7984f21d4826ef))
+* **ai-elements:** tighten accessibility and event handling ([acfcf21](https://github.com/BjornMelin/ai-agent-builder/commit/acfcf219053fd7c76e039dd0ff4bb1aa575cff21))
+* **api,ai-elements:** harden auth flow and accessibility ([2dee733](https://github.com/BjornMelin/ai-agent-builder/commit/2dee73383da5cb776b2b2a6f2709194988adfe28))
+* **api:** parallelize auth and params in chat stream route ([4122b03](https://github.com/BjornMelin/ai-agent-builder/commit/4122b0384ae24b430da29c5a648bb4d453c231f7))
+* **chat:** harden stream auth checks and update resumable contract docs ([41efe36](https://github.com/BjornMelin/ai-agent-builder/commit/41efe364204619c410e79d906f7beb8549ea7651))
+* **chat:** tighten stream contract tests and state update semantics ([0338bab](https://github.com/BjornMelin/ai-agent-builder/commit/0338bab378cc9d8b0b0976303fcaf3c986e453cb))
+* improve accessibility of forms, inputs, buttons, and status messages with ARIA attributes and semantic HTML. ([f073667](https://github.com/BjornMelin/ai-agent-builder/commit/f073667b54d454b3a898b1babdfda45c0e3b479b))
+* **pr-13:** address review thread issues in chat, ui, and workflow ([56a64c7](https://github.com/BjornMelin/ai-agent-builder/commit/56a64c70d18d09d995fcac6cfce100f1a44492ba))
+* **pr-13:** harden search, file-tree, and docs comments ([1f66847](https://github.com/BjornMelin/ai-agent-builder/commit/1f66847f7dfd9c18448df16880a8d9c9ab1ae835))
+* **pr-13:** tighten app UX copy, docs, and error handling ([3eae0fe](https://github.com/BjornMelin/ai-agent-builder/commit/3eae0fe26363b83ed4dea8007f216f8355a1afcf))
+* **pr-13:** tighten chat and speech ai-elements behavior ([dcd8923](https://github.com/BjornMelin/ai-agent-builder/commit/dcd89238da40ce083c2c08a2be268a7a9faaa122))
+* **pr13:** address unresolved review feedback ([57e2511](https://github.com/BjornMelin/ai-agent-builder/commit/57e251134b63120f68d2bcdfd4651955faad56ab))
+* **pr:** address review comments and polish components ([ace503f](https://github.com/BjornMelin/ai-agent-builder/commit/ace503f7b8a7897aa895aa12ca7f91da0235d66c))
+* **review:** resolve latest PR [#13](https://github.com/BjornMelin/ai-agent-builder/issues/13) comments ([84b3996](https://github.com/BjornMelin/ai-agent-builder/commit/84b399660adce970b4da82490e8c8340f9eede1d))
+* **ui:** address accessibility and import review notes ([d102269](https://github.com/BjornMelin/ai-agent-builder/commit/d1022691b7f01e54f0f094e9a2c43e315391c398))
+* **ui:** resolve motion, semantics, and docs review threads ([b0c68e0](https://github.com/BjornMelin/ai-agent-builder/commit/b0c68e0e816ad7f4a7f3de144e7507c960a8a883))
+* **ui:** tighten selector, config docs, and button group imports ([18df9e3](https://github.com/BjornMelin/ai-agent-builder/commit/18df9e3fdfc0e5255d49d0f239369a58a2bb4985))
+
 ## [0.1.4](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.3...ai-agent-builder-v0.1.4) (2026-02-03)
 
 
