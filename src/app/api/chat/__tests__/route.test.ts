@@ -54,6 +54,22 @@ beforeEach(() => {
 });
 
 describe("POST /api/chat", () => {
+  it("requires authentication before returning a workflow run id", async () => {
+    const POST = await loadRoute();
+    state.requireAppUserApi.mockRejectedValueOnce(new Error("Unauthorized."));
+
+    const res = await POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({ messages: [], projectId: "proj_1" }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.headers.get("x-workflow-run-id")).toBeNull();
+    expect(state.start).not.toHaveBeenCalled();
+  });
+
   it("rejects invalid JSON bodies", async () => {
     const POST = await loadRoute();
 

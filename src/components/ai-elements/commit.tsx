@@ -282,15 +282,21 @@ export type CommitActionsProps = HTMLAttributes<HTMLFieldSetElement>;
  * @returns The rendered commit actions container.
  */
 export const CommitActions = (props: CommitActionsProps) => {
-  const { className, children, ...rest } = props;
+  const { className, children, onClick, onKeyDown, ...rest } = props;
   return (
     <fieldset
       className={cn(
         "m-0 flex min-w-0 items-center gap-1 border-0 p-0",
         className,
       )}
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick?.(event);
+      }}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        onKeyDown?.(event);
+      }}
       {...rest}
     >
       {children}

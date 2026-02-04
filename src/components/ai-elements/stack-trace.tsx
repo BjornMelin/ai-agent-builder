@@ -6,7 +6,6 @@ import {
   ChevronDownIcon,
   CopyIcon,
 } from "lucide-react";
-import { useControllableState } from "radix-ui/internal";
 import type { ComponentProps } from "react";
 import { createContext, memo, useContext, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { useControllableState } from "./use-controllable-state";
 
 // Regex patterns for parsing stack traces
 const STACK_FRAME_WITH_PARENS_REGEX = /^at\s+(.+?)\s+\((.+):(\d+):(\d+)\)$/;

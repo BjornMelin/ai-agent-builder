@@ -31,11 +31,8 @@ const createRunSchema = z.strictObject({
  */
 export async function POST(req: Request) {
   try {
-    const authPromise = requireAppUserApi();
-    const bodyPromise = parseJsonBody(req, createRunSchema);
-    await authPromise;
-
-    const parsed = await bodyPromise;
+    await requireAppUserApi();
+    const parsed = await parseJsonBody(req, createRunSchema);
 
     const project = await getProjectById(parsed.projectId);
     if (!project) {

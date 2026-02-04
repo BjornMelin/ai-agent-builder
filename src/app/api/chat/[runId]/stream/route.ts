@@ -1,12 +1,27 @@
 import { createUIMessageStreamResponse } from "ai";
 import { getRun } from "workflow/api";
-import { z } from "zod";
-
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { jsonError } from "@/lib/next/responses";
 
-const startIndexSchema = z.coerce.number().int().min(0).optional();
+const START_INDEX_PATTERN = /^\d+$/;
+
+const parseStartIndex = (startIndexRaw: string | null) => {
+  if (startIndexRaw === null) {
+    return undefined;
+  }
+
+  if (!START_INDEX_PATTERN.test(startIndexRaw)) {
+    throw new AppError("bad_request", 400, "Invalid startIndex.");
+  }
+
+  const parsed = Number.parseInt(startIndexRaw, 10);
+  if (!Number.isSafeInteger(parsed)) {
+    throw new AppError("bad_request", 400, "Invalid startIndex.");
+  }
+
+  return parsed;
+};
 
 /**
  * Reconnect to an existing chat stream.
@@ -24,22 +39,15 @@ export async function GET(
   context: Readonly<{ params: Promise<{ runId: string }> }>,
 ): Promise<Response> {
   try {
-    const authPromise = requireAppUserApi();
-    const paramsPromise = context.params;
+    await requireAppUserApi();
+    const params = await context.params;
     const { searchParams } = new URL(req.url);
-
-    const startIndexRaw = searchParams.get("startIndex") ?? undefined;
-    const parsed = startIndexSchema.safeParse(startIndexRaw);
-    if (!parsed.success) {
-      throw new AppError("bad_request", 400, "Invalid startIndex.");
-    }
-
-    const [params] = await Promise.all([paramsPromise, authPromise]);
+    const startIndex = parseStartIndex(searchParams.get("startIndex"));
     const { runId } = params;
 
     const run = getRun(runId);
     const stream = run.getReadable({
-      ...(parsed.data === undefined ? {} : { startIndex: parsed.data }),
+      ...(startIndex === undefined ? {} : { startIndex }),
     });
 
     return createUIMessageStreamResponse({ stream });

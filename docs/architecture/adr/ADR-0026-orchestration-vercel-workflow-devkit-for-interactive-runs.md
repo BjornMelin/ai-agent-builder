@@ -142,6 +142,7 @@ We will:
 - Workflow DevKit requires:
   - wrapping `next.config.ts` with `withWorkflow(…)` to enable directives. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
   - excluding `.well-known/workflow/` from the Next.js `proxy.ts` matcher to avoid blocking internal workflow routes. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
+  - setting `workflows.dirs` in `next.config.ts` (inside `withWorkflow(…)`) to narrowly scope scanned workflow directories (for example `workflows/` or `src/workflows/`) and avoid out-of-memory build failures from broad filesystem scans. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
 - QStash endpoints must verify signatures (and be idempotent) for ingestion workers. [Upstash QStash: Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
 - Client-side code must not use `useMemo`/`useCallback` (repo non-negotiable); resumable transport must be implemented via `useEffect` + state + refs.
 
@@ -171,10 +172,10 @@ flowchart LR
 ## Testing
 
 - Contract:
-  - `/api/chat` returns `x-workflow-run-id` header (required for resumption). [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
-  - `/api/chat/:runId/stream?startIndex=` resumes without duplicating chunks. [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
+  - `/api/chat` authenticates/authorizes before starting workflow execution and before returning `x-workflow-run-id`. [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
+  - `/api/chat/:runId/stream` authenticates/authorizes before allowing stream reads; `startIndex` must parse as a non-negative integer (reject malformed values) and resumes without duplicating chunks. [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
 - Integration:
-  - QStash signature verification rejects unsigned requests. [Upstash QStash: Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
+  - QStash signature verification rejects unsigned requests, and tests assert signature middleware wrapping for async ingestion routes. [Upstash QStash: Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
   - ingestion pipeline uses QStash for async path and remains idempotent.
 
 ## Consequences

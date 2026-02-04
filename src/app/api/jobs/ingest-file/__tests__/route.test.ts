@@ -6,12 +6,13 @@ import type { IngestFileResult } from "@/lib/ingest/ingest-file.server";
 const state = vi.hoisted(() => ({
   getProjectFileById: vi.fn(),
   ingestFile: vi.fn(),
+  verifyQstashSignatureAppRouter: vi.fn(
+    (handler: (req: Request) => Promise<Response> | Response) => handler,
+  ),
 }));
 
 vi.mock("@/lib/upstash/qstash.server", () => ({
-  verifyQstashSignatureAppRouter: (
-    handler: (req: Request) => Promise<Response> | Response,
-  ) => handler,
+  verifyQstashSignatureAppRouter: state.verifyQstashSignatureAppRouter,
 }));
 
 vi.mock("@/lib/data/files.server", () => ({
@@ -47,6 +48,9 @@ async function loadRoute() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  state.verifyQstashSignatureAppRouter.mockImplementation(
+    (handler: (req: Request) => Promise<Response> | Response) => handler,
+  );
   state.getProjectFileById.mockResolvedValue(baseFile);
   state.ingestFile.mockResolvedValue({
     chunksIndexed: 2,
@@ -60,6 +64,15 @@ afterEach(() => {
 });
 
 describe("POST /api/jobs/ingest-file", () => {
+  it("wraps the route with QStash signature verification", async () => {
+    await loadRoute();
+
+    expect(state.verifyQstashSignatureAppRouter).toHaveBeenCalledTimes(1);
+    expect(state.verifyQstashSignatureAppRouter).toHaveBeenCalledWith(
+      expect.any(Function),
+    );
+  });
+
   it("rejects invalid JSON bodies", async () => {
     const POST = await loadRoute();
 

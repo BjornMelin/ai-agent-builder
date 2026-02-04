@@ -44,6 +44,22 @@ beforeEach(() => {
 });
 
 describe("GET /api/chat/:runId/stream", () => {
+  it("requires authentication before allowing stream reads", async () => {
+    const GET = await loadRoute();
+    state.requireAppUserApi.mockRejectedValueOnce(new Error("Unauthorized."));
+
+    const res = await GET(
+      new Request("http://localhost/api/chat/run_1/stream"),
+      {
+        params: Promise.resolve({ runId: "run_1" }),
+      },
+    );
+
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(state.getRun).not.toHaveBeenCalled();
+    expect(state.createUIMessageStreamResponse).not.toHaveBeenCalled();
+  });
+
   it("rejects invalid startIndex", async () => {
     const GET = await loadRoute();
 
@@ -56,6 +72,23 @@ describe("GET /api/chat/:runId/stream", () => {
     await expect(res.json()).resolves.toMatchObject({
       error: { code: "bad_request" },
     });
+  });
+
+  it("rejects malformed startIndex values", async () => {
+    const GET = await loadRoute();
+
+    const alphabetic = await GET(
+      new Request("http://localhost/api/chat/run_1/stream?startIndex=abc"),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+    const decimal = await GET(
+      new Request("http://localhost/api/chat/run_1/stream?startIndex=2.5"),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(alphabetic.status).toBe(400);
+    expect(decimal.status).toBe(400);
+    expect(state.getRun).not.toHaveBeenCalled();
   });
 
   it("returns a stream response for a valid startIndex", async () => {
