@@ -409,7 +409,7 @@ export const StackTraceExpandButton = memo(
       >
         <ChevronDownIcon
           className={cn(
-            "size-4 text-muted-foreground transition-transform",
+            "size-4 text-muted-foreground transition-transform motion-reduce:transition-none",
             isOpen ? "rotate-180" : "rotate-0",
           )}
         />

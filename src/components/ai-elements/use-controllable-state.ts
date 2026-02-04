@@ -35,7 +35,11 @@ export function useControllableState<T>(
 
     if (!Object.is(nextValue, value)) {
       if (!isControlled) {
-        setUncontrolledValue(nextValue);
+        setUncontrolledValue((previous) =>
+          typeof nextValueOrUpdater === "function"
+            ? (nextValueOrUpdater as (value: T) => T)(previous)
+            : nextValueOrUpdater,
+        );
       }
       onChange?.(nextValue);
     }

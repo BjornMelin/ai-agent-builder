@@ -117,14 +117,18 @@ Cons:
 Scoring includes maintainability and UX constraints from this repo (strict TS,
 no `useMemo`/`useCallback`, no barrel imports, Next App Router).
 
-| Criterion | Weight | Option A | Weighted |
-| --- | ---: | ---: | ---: |
-| Solution leverage | 0.35 | 9.3 | 3.26 |
-| Application value | 0.30 | 9.4 | 2.82 |
-| Maintenance & cognitive load | 0.25 | 9.1 | 2.28 |
-| Architectural adaptability | 0.10 | 9.2 | 0.92 |
+| Criterion | Weight | A Raw | A Weighted | B Raw | B Weighted | C Raw | C Weighted | D Raw | D Weighted |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Solution leverage | 0.35 | 9.3 | 3.26 | 6.8 | 2.38 | 8.2 | 2.87 | 5.8 | 2.03 |
+| Application value | 0.30 | 9.4 | 2.82 | 7.1 | 2.13 | 8.5 | 2.55 | 6.2 | 1.86 |
+| Maintenance & cognitive load | 0.25 | 9.1 | 2.28 | 6.4 | 1.60 | 7.6 | 1.90 | 5.4 | 1.35 |
+| Architectural adaptability | 0.10 | 9.2 | 0.92 | 7.0 | 0.70 | 8.1 | 0.81 | 6.9 | 0.69 |
 
-**Total:** 9.28 / 10.0
+**Weighted totals ( / 10.0 ):**
+- Option A: **9.28**
+- Option B: **6.81**
+- Option C: **8.13**
+- Option D: **5.93**
 
 ## Decision
 
@@ -150,9 +154,9 @@ We will:
 
 ```mermaid
 flowchart LR
-  UI[AI Elements UI] --> ChatAPI[/api/chat/]
-  UI --> ChatFollowup[/api/chat/:runId/]
-  UI --> ChatStream[/api/chat/:runId/stream]
+  UI[AI Elements UI] --> ChatAPI[POST /api/chat<br/>starts workflows]
+  UI --> ChatFollowup[POST /api/chat/:runId<br/>followup actions]
+  UI --> ChatStream[GET /api/chat/:runId/stream<br/>resumes streams]
 
   ChatAPI --> WF[Workflow Run]
   ChatFollowup --> WF
@@ -163,8 +167,8 @@ flowchart LR
   WF --> VECTOR[(Upstash Vector)]
   WF --> REDIS[(Upstash Redis)]
 
-  Upload[/api/upload/] --> Q[QStash]
-  Q --> Ingest[/api/jobs/ingest-file/]
+  Upload[POST /api/upload<br/>enqueue to QStash] --> Q[QStash<br/>POST /api/jobs/ingest-file]
+  Q --> Ingest[POST /api/jobs/ingest-file]
   Ingest --> DB
   Ingest --> VECTOR
 ```
@@ -172,8 +176,9 @@ flowchart LR
 ## Testing
 
 - Contract:
-  - `/api/chat` authenticates/authorizes before starting workflow execution and before returning `x-workflow-run-id`. [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
-  - `/api/chat/:runId/stream` authenticates/authorizes before allowing stream reads; `startIndex` must parse as a non-negative integer (reject malformed values) and resumes without duplicating chunks. [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
+  - `POST /api/chat` authenticates/authorizes before starting workflow execution and before returning `x-workflow-run-id` in the response header. [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
+  - `GET /api/chat/{runId}/stream` (or `/api/chat/:runId/stream`) authenticates/authorizes before allowing stream reads; `startIndex` must parse as a non-negative integer (reject malformed values), and the resumed GET stream must not duplicate chunks per Workflow DevKit resumable streams behavior. [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
+  - Optional implementation note: when returning the `POST /api/chat` stream response, set `x-workflow-run-id` via `createUIMessageStreamResponse({ stream, headers })`. The `headers` parameter accepts `Headers | Record<string, string>`, so handlers can pass `{ "x-workflow-run-id": runId }`. The stream resume endpoint still must validate `startIndex` as a non-negative integer and resume without duplicate chunks.
 - Integration:
   - QStash signature verification rejects unsigned requests, and tests assert signature middleware wrapping for async ingestion routes. [Upstash QStash: Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
   - ingestion pipeline uses QStash for async path and remains idempotent.

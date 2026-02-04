@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   createUIMessageStreamResponse: vi.fn(),
+  getProjectById: vi.fn(),
   getReadable: vi.fn(),
   getRun: vi.fn(),
+  getRunById: vi.fn(),
   requireAppUserApi: vi.fn(),
 }));
 
@@ -13,6 +15,14 @@ vi.mock("ai", () => ({
 
 vi.mock("workflow/api", () => ({
   getRun: state.getRun,
+}));
+
+vi.mock("@/lib/data/runs.server", () => ({
+  getRunById: state.getRunById,
+}));
+
+vi.mock("@/lib/data/projects.server", () => ({
+  getProjectById: state.getProjectById,
 }));
 
 vi.mock("@/lib/auth/require-app-user-api.server", () => ({
@@ -29,6 +39,12 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
+  state.getProjectById.mockResolvedValue({
+    id: "proj_1",
+  });
+  state.getRunById.mockResolvedValue({
+    projectId: "proj_1",
+  });
 
   state.getReadable.mockReturnValue(
     new ReadableStream({
@@ -88,6 +104,46 @@ describe("GET /api/chat/:runId/stream", () => {
 
     expect(alphabetic.status).toBe(400);
     expect(decimal.status).toBe(400);
+    expect(state.getRun).not.toHaveBeenCalled();
+  });
+
+  it("returns not found when the run does not exist in persistence", async () => {
+    const GET = await loadRoute();
+    state.getRunById.mockResolvedValueOnce(null);
+
+    const res = await GET(
+      new Request("http://localhost/api/chat/run_1/stream?startIndex=2"),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(404);
+    expect(state.getRun).not.toHaveBeenCalled();
+    expect(state.createUIMessageStreamResponse).not.toHaveBeenCalled();
+  });
+
+  it("returns not found when workflow run handle is missing", async () => {
+    const GET = await loadRoute();
+    state.getRun.mockReturnValueOnce(undefined);
+
+    const res = await GET(
+      new Request("http://localhost/api/chat/run_1/stream?startIndex=2"),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(404);
+    expect(state.createUIMessageStreamResponse).not.toHaveBeenCalled();
+  });
+
+  it("returns forbidden when the run's project is not accessible", async () => {
+    const GET = await loadRoute();
+    state.getProjectById.mockResolvedValueOnce(null);
+
+    const res = await GET(
+      new Request("http://localhost/api/chat/run_1/stream?startIndex=2"),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(403);
     expect(state.getRun).not.toHaveBeenCalled();
   });
 
