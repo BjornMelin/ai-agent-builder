@@ -167,7 +167,7 @@ export const TestResultsDuration = (props: TestResultsDurationProps) => {
   const { className, children, ...rest } = props;
   const { summary } = useContext(TestResultsContext);
 
-  if (!summary?.duration) {
+  if (summary?.duration == null) {
     return null;
   }
 

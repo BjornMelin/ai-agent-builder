@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,10 +28,9 @@ type SearchResponse = Readonly<{ results: readonly SearchResult[] }>;
 /**
  * Search client (project-scoped).
  *
- * @param props - Component props.
- * @param props.projectId - Required project identifier used to scope
- *   search requests/results; must be a non-empty route-segment string (for
- *   example a UUID or slug).
+ * @param props - Component props where `projectId` is a required, non-empty
+ *   route-segment identifier (for example a UUID or slug) used to scope search
+ *   requests and results.
  * @returns The search UI for the project.
  */
 export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
@@ -39,13 +38,6 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [q, setQ] = useState(() => searchParams.get("q") ?? "");
-
-  useEffect(() => {
-    const urlQ = searchParams.get("q") ?? "";
-    if (urlQ !== q) {
-      setQ(urlQ);
-    }
-  }, [searchParams]);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<readonly SearchResult[]>([]);
@@ -123,8 +115,18 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
           placeholder="Search this project…"
           value={q}
         />
-        <Button disabled={status === "loading"} type="submit">
-          {status === "loading" ? "Searching…" : "Search"}
+        <Button
+          aria-busy={status === "loading"}
+          disabled={status === "loading"}
+          type="submit"
+        >
+          {status === "loading" ? (
+            <span
+              aria-hidden="true"
+              className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+            />
+          ) : null}
+          <span>Search</span>
         </Button>
       </form>
 

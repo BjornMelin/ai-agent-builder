@@ -63,8 +63,19 @@ export const FileTree = (props: FileTreeProps) => {
   const expandedPaths = controlledExpanded ?? internalExpanded;
 
   const togglePath = (path: string) => {
+    if (controlledExpanded !== undefined) {
+      const nextExpanded = new Set(controlledExpanded);
+      if (nextExpanded.has(path)) {
+        nextExpanded.delete(path);
+      } else {
+        nextExpanded.add(path);
+      }
+      onExpandedChange?.(nextExpanded);
+      return;
+    }
+
     setInternalExpanded((previousExpanded) => {
-      const nextExpanded = new Set(controlledExpanded ?? previousExpanded);
+      const nextExpanded = new Set(previousExpanded);
       if (nextExpanded.has(path)) {
         nextExpanded.delete(path);
       } else {
@@ -153,8 +164,8 @@ export const FileTreeFolder = (props: FileTreeFolderProps) => {
           >
             <ChevronRightIcon
               className={cn(
-                "size-4 shrink-0 text-muted-foreground transition-transform",
-                isExpanded && "rotate-90",
+                "size-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-reduce:transform-none motion-reduce:transition-none",
+                isExpanded && "motion-safe:rotate-90",
               )}
             />
             <FileTreeIcon>
@@ -278,7 +289,7 @@ export type FileTreeActionsProps = HTMLAttributes<HTMLDivElement>;
 /**
  * Renders an actions container for a file tree item.
  *
- * @param props - Fieldset props and optional children.
+ * @param props - Container props and optional children.
  * @returns An actions container element.
  */
 export const FileTreeActions = (props: FileTreeActionsProps) => {
@@ -288,6 +299,7 @@ export const FileTreeActions = (props: FileTreeActionsProps) => {
       className={cn("ml-auto flex items-center gap-1", className)}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
+      role="none"
       {...rest}
     >
       {children}

@@ -35,6 +35,12 @@ bun run fetch:models           # Update AI model catalog (requires AI_GATEWAY_AP
   - TSDoc syntax enforcement (`tsdoc/syntax`)
   - JSDoc policy on exported APIs (warn-level for iteration speed)
 
+## Import policy
+
+- Do **not** switch to package barrel imports by default.
+- Barrel imports are allowed only for packages listed in `next.config.ts` `experimental.optimizePackageImports` (currently `radix-ui` and `lucide-react`).
+- For all other packages, use explicit/non-barrel imports.
+
 ## Drizzle + database
 
 - `drizzle.config.ts` loads Next.js `.env*` files and requires `DATABASE_URL` for

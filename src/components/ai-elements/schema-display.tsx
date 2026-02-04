@@ -41,10 +41,10 @@ export interface SchemaProperty {
 export interface SchemaDisplayContextType {
   method: HttpMethod;
   path: string;
-  description?: string;
-  parameters?: SchemaParameter[];
-  requestBody?: SchemaProperty[];
-  responseBody?: SchemaProperty[];
+  description?: string | undefined;
+  parameters?: SchemaParameter[] | undefined;
+  requestBody?: SchemaProperty[] | undefined;
+  responseBody?: SchemaProperty[] | undefined;
 }
 
 const SchemaDisplayContext = createContext<SchemaDisplayContextType>({
@@ -83,12 +83,12 @@ export const SchemaDisplay = (props: SchemaDisplayProps) => {
   return (
     <SchemaDisplayContext.Provider
       value={{
+        description,
         method,
+        parameters,
         path,
-        ...(description === undefined ? {} : { description }),
-        ...(parameters === undefined ? {} : { parameters }),
-        ...(requestBody === undefined ? {} : { requestBody }),
-        ...(responseBody === undefined ? {} : { responseBody }),
+        requestBody,
+        responseBody,
       }}
     >
       <div
@@ -545,6 +545,7 @@ export const SchemaDisplayProperty = (props: SchemaDisplayPropertyProps) => {
             ))}
             {items ? (
               <SchemaDisplayProperty
+                key={`${nodePath}.${name}.items`}
                 {...items}
                 depth={depth + 1}
                 name={`${name}[]`}

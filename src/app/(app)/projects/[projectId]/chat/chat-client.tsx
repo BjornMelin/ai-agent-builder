@@ -49,6 +49,42 @@ type UserMessageMarker = Readonly<{
 type AppUIMessage = UIMessage<unknown, UIDataTypes, UITools>;
 type AppUIMessagePart = AppUIMessage["parts"][number];
 
+const STORAGE_LOG_THROTTLE_MS = 10_000;
+const storageLogTimestamps = new Map<string, number>();
+
+type ChatStorageErrorFields = Readonly<{
+  error: unknown;
+  storageKey: string;
+  workflowRunId: string | null;
+}>;
+
+function reportChatStorageError(
+  message: string,
+  fields: ChatStorageErrorFields,
+) {
+  const dedupeKey = `${message}:${fields.storageKey}`;
+  const now = Date.now();
+  const previousTimestamp = storageLogTimestamps.get(dedupeKey);
+  if (
+    previousTimestamp !== undefined &&
+    now - previousTimestamp < STORAGE_LOG_THROTTLE_MS
+  ) {
+    return;
+  }
+  storageLogTimestamps.set(dedupeKey, now);
+
+  const telemetryError = new Error(message, { cause: fields });
+  if (
+    typeof window !== "undefined" &&
+    typeof window.reportError === "function"
+  ) {
+    window.reportError(telemetryError);
+    return;
+  }
+
+  console.error(message, fields);
+}
+
 function isUserMessageMarker(data: unknown): data is UserMessageMarker {
   if (!data || typeof data !== "object") return false;
   const value = data as Partial<UserMessageMarker>;
@@ -150,7 +186,11 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       }
       return null;
     } catch (error) {
-      console.warn("[ChatClient] Failed to read runId from storage:", error);
+      reportChatStorageError("[ChatClient] Failed to read runId from storage", {
+        error,
+        storageKey,
+        workflowRunId: null,
+      });
       return null;
     }
   });
@@ -163,9 +203,13 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
         try {
           window.localStorage.removeItem(storageKey);
         } catch (error) {
-          console.warn(
-            "[ChatClient] Failed to clear runId from storage:",
-            error,
+          reportChatStorageError(
+            "[ChatClient] Failed to clear runId from storage",
+            {
+              error,
+              storageKey,
+              workflowRunId: null,
+            },
           );
         }
       },
@@ -176,9 +220,13 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
         try {
           window.localStorage.setItem(storageKey, workflowRunId);
         } catch (error) {
-          console.warn(
-            "[ChatClient] Failed to persist runId to storage:",
-            error,
+          reportChatStorageError(
+            "[ChatClient] Failed to persist runId to storage",
+            {
+              error,
+              storageKey,
+              workflowRunId,
+            },
           );
         }
       },
@@ -187,9 +235,13 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
         try {
           stored = window.localStorage.getItem(storageKey);
         } catch (error) {
-          console.warn(
-            "[ChatClient] Failed to read runId for stream reconnect:",
-            error,
+          reportChatStorageError(
+            "[ChatClient] Failed to read runId for stream reconnect",
+            {
+              error,
+              storageKey,
+              workflowRunId: null,
+            },
           );
         }
         if (!stored) {
@@ -348,8 +400,8 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
             Stop
           </Button>
           <Button
-            onClick={() => {
-              void endSession();
+            onClick={async () => {
+              await endSession();
             }}
             type="button"
             variant="outline"

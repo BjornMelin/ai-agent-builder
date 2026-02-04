@@ -75,7 +75,7 @@ export const PackageInfo = (props: PackageInfoProps) => {
   );
 };
 
-/** Props for the `PackageInfoHeaderProps` type. */
+/** Container attributes for the package info header row. */
 export type PackageInfoHeaderProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -96,7 +96,7 @@ export const PackageInfoHeader = (props: PackageInfoHeaderProps) => {
   );
 };
 
-/** Props for the `PackageInfoNameProps` type. */
+/** Container attributes for rendering the package name and icon. */
 export type PackageInfoNameProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -137,7 +137,7 @@ const changeTypeIcons: Record<ChangeType, ReactNode> = {
   removed: <MinusIcon aria-hidden="true" className="size-3" />,
 };
 
-/** Props for the `PackageInfoChangeTypeProps` type. */
+/** Container attributes for the package change-type badge. */
 export type PackageInfoChangeTypeProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -170,7 +170,7 @@ export const PackageInfoChangeType = (props: PackageInfoChangeTypeProps) => {
   );
 };
 
-/** Props for the `PackageInfoVersionProps` type. */
+/** Container attributes for the version comparison row. */
 export type PackageInfoVersionProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -210,7 +210,7 @@ export const PackageInfoVersion = (props: PackageInfoVersionProps) => {
   );
 };
 
-/** Props for the `PackageInfoDescriptionProps` type. */
+/** Text attributes for the package description paragraph. */
 export type PackageInfoDescriptionProps = HTMLAttributes<HTMLParagraphElement>;
 
 /**
@@ -231,7 +231,7 @@ export const PackageInfoDescription = (props: PackageInfoDescriptionProps) => {
   );
 };
 
-/** Props for the `PackageInfoContentProps` type. */
+/** Container attributes for the package details content section. */
 export type PackageInfoContentProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -249,7 +249,7 @@ export const PackageInfoContent = (props: PackageInfoContentProps) => {
   );
 };
 
-/** Props for the `PackageInfoDependenciesProps` type. */
+/** Container attributes for the dependencies list section. */
 export type PackageInfoDependenciesProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -272,7 +272,7 @@ export const PackageInfoDependencies = (
   );
 };
 
-/** Props for the `PackageInfoDependencyProps` type. */
+/** Row attributes and fields for a single dependency entry. */
 export type PackageInfoDependencyProps = HTMLAttributes<HTMLDivElement> & {
   name: string;
   version?: string;

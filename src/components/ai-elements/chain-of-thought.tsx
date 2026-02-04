@@ -71,9 +71,11 @@ export const ChainOfThought = memo((props: ChainOfThoughtProps) => {
 
   return (
     <ChainOfThoughtContext.Provider value={chainOfThoughtContext}>
-      <div className={cn("not-prose w-full space-y-4", className)} {...rest}>
-        {children}
-      </div>
+      <Collapsible onOpenChange={setIsOpen} open={isOpen}>
+        <div className={cn("not-prose w-full space-y-4", className)} {...rest}>
+          {children}
+        </div>
+      </Collapsible>
     </ChainOfThoughtContext.Provider>
   );
 });
@@ -91,29 +93,25 @@ export type ChainOfThoughtHeaderProps = ComponentProps<
  */
 export const ChainOfThoughtHeader = memo((props: ChainOfThoughtHeaderProps) => {
   const { className, children, ...rest } = props;
-  const { isOpen, setIsOpen } = useChainOfThought();
+  const { isOpen } = useChainOfThought();
 
   return (
-    <Collapsible onOpenChange={setIsOpen} open={isOpen}>
-      <CollapsibleTrigger
+    <CollapsibleTrigger
+      className={cn(
+        "flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground",
+        className,
+      )}
+      {...rest}
+    >
+      <BrainIcon className="size-4" />
+      <span className="flex-1 text-left">{children ?? "Chain of Thought"}</span>
+      <ChevronDownIcon
         className={cn(
-          "flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground",
-          className,
+          "size-4 transition-transform",
+          isOpen ? "rotate-180" : "rotate-0",
         )}
-        {...rest}
-      >
-        <BrainIcon className="size-4" />
-        <span className="flex-1 text-left">
-          {children ?? "Chain of Thought"}
-        </span>
-        <ChevronDownIcon
-          className={cn(
-            "size-4 transition-transform",
-            isOpen ? "rotate-180" : "rotate-0",
-          )}
-        />
-      </CollapsibleTrigger>
-    </Collapsible>
+      />
+    </CollapsibleTrigger>
   );
 });
 
@@ -234,18 +232,17 @@ export const ChainOfThoughtContent = memo(
     const { isOpen } = useChainOfThought();
 
     return (
-      <Collapsible open={isOpen}>
-        <CollapsibleContent
-          className={cn(
-            "mt-2 space-y-3",
-            "text-popover-foreground outline-none motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-top-2 motion-safe:data-[state=open]:slide-in-from-top-2 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=open]:animate-in motion-reduce:animate-none motion-reduce:transition-none",
-            className,
-          )}
-          {...rest}
-        >
-          {children}
-        </CollapsibleContent>
-      </Collapsible>
+      <CollapsibleContent
+        className={cn(
+          "mt-2 space-y-3",
+          "text-popover-foreground outline-none motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-top-2 motion-safe:data-[state=open]:slide-in-from-top-2 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=open]:animate-in motion-reduce:animate-none motion-reduce:transition-none",
+          className,
+        )}
+        data-open={isOpen ? "true" : "false"}
+        {...rest}
+      >
+        {children}
+      </CollapsibleContent>
     );
   },
 );

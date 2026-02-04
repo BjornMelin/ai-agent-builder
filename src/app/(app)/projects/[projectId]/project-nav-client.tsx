@@ -11,10 +11,9 @@ type NavItem = Readonly<{ href: string; label: string }>;
 /**
  * Project sub-navigation (client-only for active state).
  *
- * @param props - Component props.
- * @param props.projectId - Required string identifier for the project; used to
- *   build the project route base (e.g., used to construct links/paths for the
- *   project navigation).
+ * @param props - `ProjectNavClient` props where `projectId` is a required,
+ *   non-empty, URL-safe project identifier (for example a UUID or slug) used
+ *   as the route segment for every generated nav link.
  * @returns The project navigation bar.
  */
 export function ProjectNavClient(props: Readonly<{ projectId: string }>) {

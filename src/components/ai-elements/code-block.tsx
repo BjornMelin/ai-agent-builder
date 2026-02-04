@@ -477,6 +477,7 @@ export const CodeBlock = (props: CodeBlockProps) => {
   );
 };
 
+/** Props for the code block copy-to-clipboard button. */
 export type CodeBlockCopyButtonProps = ComponentProps<typeof Button> & {
   onCopy?: () => void;
   onError?: (error: Error) => void;
@@ -547,6 +548,7 @@ export const CodeBlockCopyButton = (props: CodeBlockCopyButtonProps) => {
   );
 };
 
+/** Props for the code block language selector root. */
 export type CodeBlockLanguageSelectorProps = ComponentProps<typeof Select>;
 
 /**
@@ -559,6 +561,7 @@ export const CodeBlockLanguageSelector = (
   props: CodeBlockLanguageSelectorProps,
 ) => <Select {...props} />;
 
+/** Props for the code block language selector trigger button. */
 export type CodeBlockLanguageSelectorTriggerProps = ComponentProps<
   typeof SelectTrigger
 >;
@@ -585,6 +588,7 @@ export const CodeBlockLanguageSelectorTrigger = (
   );
 };
 
+/** Props for the code block language selector selected value. */
 export type CodeBlockLanguageSelectorValueProps = ComponentProps<
   typeof SelectValue
 >;
@@ -599,6 +603,7 @@ export const CodeBlockLanguageSelectorValue = (
   props: CodeBlockLanguageSelectorValueProps,
 ) => <SelectValue {...props} />;
 
+/** Props for the code block language selector dropdown content. */
 export type CodeBlockLanguageSelectorContentProps = ComponentProps<
   typeof SelectContent
 >;
@@ -616,6 +621,7 @@ export const CodeBlockLanguageSelectorContent = (
   return <SelectContent align={align} {...rest} />;
 };
 
+/** Props for an individual code block language selector option. */
 export type CodeBlockLanguageSelectorItemProps = ComponentProps<
   typeof SelectItem
 >;

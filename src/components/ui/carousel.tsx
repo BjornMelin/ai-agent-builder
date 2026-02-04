@@ -36,6 +36,7 @@ const CarouselContext = React.createContext<CarouselContextProps | null>(null);
  * Returns the carousel context.
  *
  * @returns The carousel context used by child components.
+ * @throws {Error} If used outside a `<Carousel />` provider.
  */
 function useCarousel() {
   const context = React.useContext(CarouselContext);

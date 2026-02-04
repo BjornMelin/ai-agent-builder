@@ -65,9 +65,9 @@ export function Providers(
             <UserButton size="icon" />
           </ClientOnly>
         </header>
-        <main id="main" tabIndex={-1} className="flex-1">
+        <div id="main" tabIndex={-1} className="flex-1">
           {children}
-        </main>
+        </div>
       </div>
     </NeonAuthUIProvider>
   );

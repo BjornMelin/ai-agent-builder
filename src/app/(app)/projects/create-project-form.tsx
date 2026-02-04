@@ -52,10 +52,13 @@ export function CreateProjectForm() {
             Slug (optional)
           </label>
           <Input
+            autoCapitalize="off"
             autoComplete="off"
+            autoCorrect="off"
             id="create-project-slug"
             name="slug"
             placeholder="my-project…"
+            spellCheck={false}
           />
         </div>
       </div>
