@@ -135,7 +135,7 @@ This section is the authoritative snapshot of the current repository state as of
   - `src/lib/data/runs.server.ts`
 - QStash helpers: `src/lib/upstash/qstash.server.ts`
 
-**Note:** The above QStash-based run-step engine is the current implementation baseline. The final architecture (ADR-0026 / SPEC-0022) migrates **interactive runs and chat streaming** to **Vercel Workflow DevKit** ([Vercel Workflow](https://vercel.com/docs/workflow)). QStash remains the durable delivery mechanism for **background jobs** (especially ingestion).
+**Note:** The above QStash-based run-step engine remains the baseline for non-interactive durable execution. **Interactive chat streaming** is now implemented via **Vercel Workflow DevKit** (ADR-0026 / SPEC-0022) using the `/api/chat/*` route handlers and `src/workflows/chat/**`. QStash remains the durable delivery mechanism for **background jobs** (especially ingestion).
 
 #### Research Notes: Upstash Workflow vs Vercel Workflow (Streaming Path)
 
@@ -143,10 +143,13 @@ We evaluated **Upstash Workflow** (`@upstash/workflow`) as an alternative durabl
 
 For this app, the primary UX requirement is **streaming-first, resumable UI** (AI Elements). Workflow DevKit provides a native pattern for resumable streams (run id + `startIndex` cursor) and a transport helper (`WorkflowChatTransport`) that is aligned with AI SDK `useChat` ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams), [WorkflowChatTransport](https://useworkflow.dev/docs/api-reference/workflow-ai/workflow-chat-transport)).
 
-### UI (Not Yet Implemented)
+### UI (Partially Implemented)
 
-- No workspace pages under `src/app/(app)/…` exist yet (planned in this spec).
-- shadcn/ui + AI Elements component code is not yet vendored into the app.
+- Workspace pages under `src/app/(app)/…` are still pending (planned in this spec).
+- shadcn/ui + AI Elements component code **is vendored**:
+  - AI Elements: `src/components/ai-elements/**`
+  - shadcn/ui: `src/components/ui/**`
+  - Shared utilities: `src/lib/utils.ts`
 
 ## Target Architecture (Final System Shape)
 
@@ -402,9 +405,9 @@ Code: `src/app/api/runs/route.ts`
 - `POST /api/jobs/run-step`
   - QStash-signed run step executor (legacy durable runs baseline; to be migrated to Workflow DevKit per SPEC-0022)
 
-### Chat: multi-turn session (required; not yet implemented)
+### Chat: multi-turn session (implemented)
 
-Must be implemented to support the AI Elements chat UI:
+Implemented to support the AI Elements chat UI:
 
 - **Session start**: `POST /api/chat`
   - Starts a **workflow run** and returns a resumable UI message stream.
@@ -414,12 +417,19 @@ Must be implemented to support the AI Elements chat UI:
 - **Stream reconnection**: `GET /api/chat/[runId]/stream?startIndex=N`
   - Uses `getRun(runId)` and `run.getReadable({ startIndex })` to resume exactly from the last received chunk index ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)).
 
-Agent runtime:
+Implementation locations:
 
-- Use `@workflow/ai` `DurableAgent` inside a `"use workflow"` function ([DurableAgent](https://useworkflow.dev/docs/api-reference/workflow-ai/durable-agent)).
-- Put all side-effectful work in `"use step"` functions (DB, network, embeddings, vector/redis, etc.) ([Workflow DevKit Next.js getting started](https://useworkflow.dev/docs/getting-started/next)).
-- Retrieval tool integration via `src/lib/ai/tools/retrieval.server.ts`
-- Model selection via env:
+- Route handlers:
+  - `src/app/api/chat/route.ts`
+  - `src/app/api/chat/[runId]/route.ts`
+  - `src/app/api/chat/[runId]/stream/route.ts`
+- Workflow:
+  - `src/workflows/chat/project-chat.workflow.ts` (`DurableAgent`, hooks, resumable stream markers)
+  - `src/workflows/chat/hooks/chat-message.ts`
+  - `src/workflows/chat/steps/writer.step.ts`
+  - `src/workflows/chat/steps/retrieve-project-chunks.step.ts`
+  - `src/workflows/chat/tools.ts`
+- Model selection via env (see env contract in `src/lib/env.ts`):
   - `AI_GATEWAY_CHAT_MODEL` (default: `xai/grok-4.1-fast-reasoning`)
 
 ADR sources:
@@ -518,8 +528,8 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 
 ### Phase 1 — UI + AI Elements foundation
 
-1. Install and initialize shadcn/ui with Tailwind v4, using Bun.
-2. Vendor AI Elements components into `src/components/ai-elements/**` using `ai-elements` CLI.
+1. Install and initialize shadcn/ui with Tailwind v4, using Bun. (**done**)
+2. Vendor AI Elements components into `src/components/ai-elements/**` using `ai-elements` CLI. (**done**)
 3. Implement workspace pages under `src/app/(app)/projects/**`:
    - `src/app/(app)/projects/page.tsx` (project list)
    - `src/app/(app)/projects/[projectId]/layout.tsx` (tabs)
@@ -531,14 +541,14 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 
 ### Phase 2 — Chat Route Handler + ToolLoopAgent wiring
 
-1. Integrate Vercel Workflow DevKit:
+1. Integrate Vercel Workflow DevKit (**done**):
    - Wrap `next.config.ts` with `withWorkflow(...)` ([Workflow DevKit Next.js getting started](https://useworkflow.dev/docs/getting-started/next)).
    - Ensure `src/proxy.ts` matcher excludes `.well-known/workflow/` routes ([Workflow DevKit Next.js getting started](https://useworkflow.dev/docs/getting-started/next)).
-2. Add multi-turn chat session endpoints:
+2. Add multi-turn chat session endpoints (**done**):
    - `POST /api/chat` (start workflow + stream + `x-workflow-run-id`) ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling))
    - `POST /api/chat/[runId]` (resume hook for follow-ups) ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling))
    - `GET /api/chat/[runId]/stream?startIndex=` (resume stream) ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams))
-3. Implement workflow:
+3. Implement workflow (**done**):
    - `src/workflows/chat/*` (multi-turn loop; user-message stream markers; hook definition) ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling)).
 4. Replace client chat transport with `WorkflowChatTransport` (no `useMemo`/`useCallback`; use `useEffect` + inline functions) ([WorkflowChatTransport](https://useworkflow.dev/docs/api-reference/workflow-ai/workflow-chat-transport)).
 5. Add message persistence to DB (thread + messages tables) or explicitly document the deferred plan if schema is not yet present.
@@ -578,3 +588,4 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 ## Changelog
 
 - **0.1.0 (2026-02-03)**: Initial full-stack finalization spec (documents current repo snapshot + decision-complete remaining work).
+- **0.1.1 (2026-02-03)**: Updated repo snapshot to reflect vendored AI Elements/shadcn/ui and implemented Workflow DevKit chat endpoints/workflows.
