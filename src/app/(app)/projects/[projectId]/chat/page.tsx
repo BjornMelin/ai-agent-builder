@@ -4,7 +4,7 @@ import { ProjectChatClient } from "@/app/(app)/projects/[projectId]/chat/chat-cl
  * Chat tab.
  *
  * @param props - The component properties.
- * @param props.params - A promise resolving to an object containing a required `projectId` (a URL-safe, non-empty string identifier used to load conversation and context data).
+ * @remarks `props.params` resolves to an object containing the required `projectId`.
  * @returns The chat page.
  */
 export default async function ChatPage(

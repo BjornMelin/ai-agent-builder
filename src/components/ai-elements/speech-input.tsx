@@ -75,6 +75,31 @@ export type SpeechInputProps = ComponentProps<typeof Button> & {
   lang?: string;
 };
 
+const reportClientError = (message: string, cause?: unknown) => {
+  const error = new Error(message, cause === undefined ? {} : { cause });
+  if (
+    typeof window !== "undefined" &&
+    typeof window.reportError === "function"
+  ) {
+    window.reportError(error);
+  }
+};
+
+const getSupportedAudioMimeType = () => {
+  if (typeof MediaRecorder === "undefined") {
+    return undefined;
+  }
+
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/mp4;codecs=mp4a.40.2",
+    "audio/mp4",
+  ];
+
+  return candidates.find((type) => MediaRecorder.isTypeSupported(type));
+};
+
 const detectSpeechInputMode = (): SpeechInputMode => {
   if (typeof window === "undefined") {
     return "none";
@@ -116,6 +141,7 @@ export const SpeechInput = (props: SpeechInputProps) => {
   );
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const transcriptionChangeRef = useRef(onTranscriptionChange);
 
@@ -184,7 +210,7 @@ export const SpeechInput = (props: SpeechInputProps) => {
     };
 
     speechRecognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
+      reportClientError("Speech recognition error", event.error);
       setIsListening(false);
     };
 
@@ -201,15 +227,22 @@ export const SpeechInput = (props: SpeechInputProps) => {
   // Start MediaRecorder recording
   const startMediaRecorder = async () => {
     if (!onAudioRecorded) {
-      console.warn(
-        "SpeechInput: onAudioRecorded callback is required for MediaRecorder fallback",
+      reportClientError(
+        "SpeechInput requires onAudioRecorded callback for MediaRecorder fallback",
       );
       return;
     }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      mediaStreamRef.current = stream;
+      const preferredMimeType = getSupportedAudioMimeType();
+      const mediaRecorder = new MediaRecorder(
+        stream,
+        preferredMimeType === undefined
+          ? undefined
+          : { mimeType: preferredMimeType },
+      );
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
@@ -223,9 +256,12 @@ export const SpeechInput = (props: SpeechInputProps) => {
         for (const track of stream.getTracks()) {
           track.stop();
         }
+        mediaStreamRef.current = null;
 
+        const mimeType =
+          mediaRecorder.mimeType || preferredMimeType || "audio/webm";
         const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
+          type: mimeType,
         });
 
         if (audioBlob.size > 0) {
@@ -236,7 +272,7 @@ export const SpeechInput = (props: SpeechInputProps) => {
               transcriptionChangeRef.current?.(transcript);
             }
           } catch (error) {
-            console.error("Transcription error:", error);
+            reportClientError("Transcription error", error);
           } finally {
             setIsProcessing(false);
           }
@@ -244,19 +280,20 @@ export const SpeechInput = (props: SpeechInputProps) => {
       };
 
       mediaRecorder.onerror = (event) => {
-        console.error("MediaRecorder error:", event);
+        reportClientError("MediaRecorder error", event);
         setIsListening(false);
         // Stop all tracks on error
         for (const track of stream.getTracks()) {
           track.stop();
         }
+        mediaStreamRef.current = null;
       };
 
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
       setIsListening(true);
     } catch (error) {
-      console.error("Failed to start MediaRecorder:", error);
+      reportClientError("Failed to start MediaRecorder", error);
       setIsListening(false);
     }
   };
@@ -268,6 +305,24 @@ export const SpeechInput = (props: SpeechInputProps) => {
     }
     setIsListening(false);
   };
+
+  useEffect(
+    () => () => {
+      if (mediaRecorderRef.current?.state === "recording") {
+        mediaRecorderRef.current.stop();
+      }
+
+      if (mediaStreamRef.current) {
+        for (const track of mediaStreamRef.current.getTracks()) {
+          track.stop();
+        }
+      }
+
+      mediaRecorderRef.current = null;
+      mediaStreamRef.current = null;
+    },
+    [],
+  );
 
   const toggleListening = () => {
     if (mode === "speech-recognition" && recognition) {
@@ -282,7 +337,7 @@ export const SpeechInput = (props: SpeechInputProps) => {
       } else {
         // Fire-and-forget is intentional here; UI state handles in-flight recording.
         void startMediaRecorder().catch((error) => {
-          console.error("Critical error starting MediaRecorder:", error);
+          reportClientError("Critical error starting MediaRecorder", error);
           setIsListening(false);
         });
       }

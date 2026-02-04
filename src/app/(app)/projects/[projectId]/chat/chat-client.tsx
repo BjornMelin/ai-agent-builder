@@ -459,7 +459,9 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
         ) : null}
 
         <PromptInput
-          onSubmit={(message) => sendMessage(message)}
+          onSubmit={(message) =>
+            Promise.resolve().then(() => sendMessage(message))
+          }
           className="rounded-md border bg-card"
         >
           <PromptInputBody>

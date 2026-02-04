@@ -97,19 +97,26 @@ const ContextIcon = () => {
         stroke="currentColor"
         strokeWidth={ICON_STROKE_WIDTH}
       />
-      <circle
-        cx={ICON_CENTER}
-        cy={ICON_CENTER}
-        fill="none"
-        opacity="0.7"
-        r={ICON_RADIUS}
-        stroke="currentColor"
-        strokeDasharray={`${circumference} ${circumference}`}
-        strokeDashoffset={dashOffset}
-        strokeLinecap="round"
-        strokeWidth={ICON_STROKE_WIDTH}
-        style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
-      />
+      <g
+        style={{
+          transform: "rotate(-90deg)",
+          transformBox: "fill-box",
+          transformOrigin: "center",
+        }}
+      >
+        <circle
+          cx={ICON_CENTER}
+          cy={ICON_CENTER}
+          fill="none"
+          opacity="0.7"
+          r={ICON_RADIUS}
+          stroke="currentColor"
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={dashOffset}
+          strokeLinecap="round"
+          strokeWidth={ICON_STROKE_WIDTH}
+        />
+      </g>
     </svg>
   );
 };

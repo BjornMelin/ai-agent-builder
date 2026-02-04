@@ -1,7 +1,7 @@
 "use client";
 
 import { BookmarkIcon, type LucideProps } from "lucide-react";
-import React, { type ComponentProps, type HTMLAttributes } from "react";
+import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -44,7 +44,7 @@ export const Checkpoint = (props: CheckpointProps) => {
  * Props for the CheckpointIcon component.
  */
 export type CheckpointIconProps = LucideProps & {
-  children?: React.ReactNode;
+  children?: ReactNode;
 };
 
 /**
