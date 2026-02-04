@@ -305,8 +305,11 @@ export const SchemaDisplayParameters = (
       <CollapsibleContent>
         <div className="divide-y border-t">
           {children ??
-            parameters?.map((param) => (
-              <SchemaDisplayParameter key={param.name} {...param} />
+            parameters?.map((param, index) => (
+              <SchemaDisplayParameter
+                key={`${param.name}-${index}`}
+                {...param}
+              />
             ))}
         </div>
       </CollapsibleContent>

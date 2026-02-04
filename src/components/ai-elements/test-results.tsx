@@ -38,7 +38,14 @@ interface TestResultsContextType {
 
 const TestResultsContext = createContext<TestResultsContextType>({});
 
-/** Props for the `TestResultsProps` type. */
+const formatDuration = (milliseconds: number) => {
+  if (milliseconds < 1000) {
+    return `${milliseconds}ms`;
+  }
+  return `${(milliseconds / 1000).toFixed(2)}s`;
+};
+
+/** Props for the TestResults component. */
 export type TestResultsProps = HTMLAttributes<HTMLDivElement> & {
   summary?: TestResultsSummaryData;
 };
@@ -71,7 +78,7 @@ export const TestResults = (props: TestResultsProps) => {
   );
 };
 
-/** Props for the `TestResultsHeaderProps` type. */
+/** Props for the TestResultsHeader component. */
 export type TestResultsHeaderProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -95,7 +102,7 @@ export const TestResultsHeader = (props: TestResultsHeaderProps) => {
   );
 };
 
-/** Props for the `TestResultsSummaryProps` type. */
+/** Props for the TestResultsSummary component. */
 export type TestResultsSummaryProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -147,7 +154,7 @@ export const TestResultsSummary = (props: TestResultsSummaryProps) => {
   );
 };
 
-/** Props for the `TestResultsDurationProps` type. */
+/** Props for the TestResultsDuration component. */
 export type TestResultsDurationProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
@@ -164,13 +171,6 @@ export const TestResultsDuration = (props: TestResultsDurationProps) => {
     return null;
   }
 
-  const formatDuration = (ms: number) => {
-    if (ms < 1000) {
-      return `${ms}ms`;
-    }
-    return `${(ms / 1000).toFixed(2)}s`;
-  };
-
   return (
     <span className={cn("text-muted-foreground text-sm", className)} {...rest}>
       {children ?? formatDuration(summary.duration)}
@@ -178,7 +178,7 @@ export const TestResultsDuration = (props: TestResultsDurationProps) => {
   );
 };
 
-/** Props for the `TestResultsProgressProps` type. */
+/** Props for the TestResultsProgress component. */
 export type TestResultsProgressProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -234,7 +234,7 @@ export const TestResultsProgress = (props: TestResultsProgressProps) => {
   );
 };
 
-/** Props for the `TestResultsContentProps` type. */
+/** Props for the TestResultsContent component. */
 export type TestResultsContentProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -262,7 +262,7 @@ const TestSuiteContext = createContext<TestSuiteContextType>({
   status: "passed",
 });
 
-/** Props for the `TestSuiteProps` type. */
+/** Props for the TestSuite component. */
 export type TestSuiteProps = ComponentProps<typeof Collapsible> & {
   name: string;
   status: TestStatusKey;
@@ -285,7 +285,7 @@ export const TestSuite = (props: TestSuiteProps) => {
   );
 };
 
-/** Props for the `TestSuiteNameProps` type. */
+/** Props for the TestSuiteName component. */
 export type TestSuiteNameProps = ComponentProps<typeof CollapsibleTrigger>;
 
 /**
@@ -313,7 +313,7 @@ export const TestSuiteName = (props: TestSuiteNameProps) => {
   );
 };
 
-/** Props for the `TestSuiteStatsProps` type. */
+/** Props for the TestSuiteStats component. */
 export type TestSuiteStatsProps = HTMLAttributes<HTMLDivElement> & {
   passed?: number;
   failed?: number;
@@ -363,7 +363,7 @@ export const TestSuiteStats = (props: TestSuiteStatsProps) => {
   );
 };
 
-/** Props for the `TestSuiteContentProps` type. */
+/** Props for the TestSuiteContent component. */
 export type TestSuiteContentProps = ComponentProps<typeof CollapsibleContent>;
 
 /**
@@ -392,7 +392,7 @@ const TestContext = createContext<TestContextType>({
   status: "passed",
 });
 
-/** Props for the `TestProps` type. */
+/** Props for the Test component. */
 export type TestProps = HTMLAttributes<HTMLDivElement> & {
   name: string;
   status: TestStatusKey;
@@ -449,7 +449,7 @@ const TestStatusIcon = ({ status }: { status: TestStatusKey }) => (
   </span>
 );
 
-/** Props for the `TestStatusProps` type. */
+/** Props for the TestStatus component. */
 export type TestStatusProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
@@ -469,7 +469,7 @@ export const TestStatus = (props: TestStatusProps) => {
   );
 };
 
-/** Props for the `TestNameProps` type. */
+/** Props for the TestName component. */
 export type TestNameProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
@@ -489,7 +489,7 @@ export const TestName = (props: TestNameProps) => {
   );
 };
 
-/** Props for the `TestDurationProps` type. */
+/** Props for the TestDuration component. */
 export type TestDurationProps = HTMLAttributes<HTMLSpanElement>;
 
 /**
@@ -516,7 +516,7 @@ export const TestDuration = (props: TestDurationProps) => {
   );
 };
 
-/** Props for the `TestErrorProps` type. */
+/** Props for the TestError component. */
 export type TestErrorProps = HTMLAttributes<HTMLDivElement>;
 
 /**
@@ -540,7 +540,7 @@ export const TestError = (props: TestErrorProps) => {
   );
 };
 
-/** Props for the `TestErrorMessageProps` type. */
+/** Props for the TestErrorMessage component. */
 export type TestErrorMessageProps = HTMLAttributes<HTMLParagraphElement>;
 
 /**
@@ -564,7 +564,7 @@ export const TestErrorMessage = (props: TestErrorMessageProps) => {
   );
 };
 
-/** Props for the `TestErrorStackProps` type. */
+/** Props for the TestErrorStack component. */
 export type TestErrorStackProps = HTMLAttributes<HTMLPreElement>;
 
 /**

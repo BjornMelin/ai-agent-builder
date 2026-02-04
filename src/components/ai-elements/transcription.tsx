@@ -32,7 +32,7 @@ const useTranscription = () => {
   return context;
 };
 
-/** Props for the Transcription component. */
+/** Props for rendering and controlling an interactive transcription timeline. */
 export type TranscriptionProps = Omit<ComponentProps<"div">, "children"> & {
   segments: TranscriptionSegmentData[];
   currentTime?: number;
@@ -87,7 +87,7 @@ export const Transcription = (props: TranscriptionProps) => {
   );
 };
 
-/** Props for the TranscriptionSegment component. */
+/** Props for a single timed transcription segment token. */
 export type TranscriptionSegmentProps = ComponentProps<"button"> & {
   segment: TranscriptionSegmentData;
   index: number;

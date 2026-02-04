@@ -25,12 +25,12 @@ import { cn } from "@/lib/utils";
 // Types
 // ============================================================================
 
-/** Type definition for `AttachmentData`. */
+/** Canonical attachment payload used by attachment components. */
 export type AttachmentData =
   | (FileUIPart & { id: string })
   | (SourceDocumentUIPart & { id: string });
 
-/** Type definition for `AttachmentMediaCategory`. */
+/** Media rendering categories derived from attachment metadata. */
 export type AttachmentMediaCategory =
   | "image"
   | "video"
@@ -39,7 +39,7 @@ export type AttachmentMediaCategory =
   | "source"
   | "unknown";
 
-/** Type definition for `AttachmentVariant`. */
+/** Layout variants for rendering attachment collections. */
 export type AttachmentVariant = "grid" | "inline" | "list";
 
 // ============================================================================
@@ -140,7 +140,7 @@ export const useAttachmentContext = () => {
 // Attachments - Container
 // ============================================================================
 
-/** Props for the `AttachmentsProps` type. */
+/** Props for the attachments container component. */
 export type AttachmentsProps = HTMLAttributes<HTMLDivElement> & {
   variant?: AttachmentVariant;
 };
@@ -176,7 +176,7 @@ export const Attachments = (props: AttachmentsProps) => {
 // Attachment - Item
 // ============================================================================
 
-/** Props for the `AttachmentProps` type. */
+/** Props for a single attachment item container. */
 export type AttachmentProps = HTMLAttributes<HTMLDivElement> & {
   data: AttachmentData;
   onRemove?: () => void;
@@ -230,7 +230,7 @@ export const Attachment = (props: AttachmentProps) => {
 // AttachmentPreview - Media preview
 // ============================================================================
 
-/** Props for the `AttachmentPreviewProps` type. */
+/** Props for attachment preview rendering. */
 export type AttachmentPreviewProps = HTMLAttributes<HTMLDivElement> & {
   fallbackIcon?: ReactNode;
 };

@@ -387,7 +387,7 @@ export type PromptInputProps = Omit<
   maxFiles?: number;
   maxFileSize?: number; // bytes
   onError?: (err: {
-    code: "max_files" | "max_file_size" | "accept";
+    code: "max_files" | "max_file_size" | "accept" | "submit";
     message: string;
   }) => void;
   onSubmit: (
@@ -774,7 +774,14 @@ export const PromptInput = (props: PromptInputProps) => {
       if (usingProvider) {
         controller.textInput.clear();
       }
-    } catch {
+    } catch (error) {
+      onError?.({
+        code: "submit",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to submit prompt. Please try again.",
+      });
       // Don't clear on error - user may want to retry
     }
   };

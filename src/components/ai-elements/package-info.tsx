@@ -23,7 +23,7 @@ const PackageInfoContext = createContext<PackageInfoContextType>({
   name: "",
 });
 
-/** Props for the `PackageInfoProps` type. */
+/** Props for package metadata, version changes, and optional status tags. */
 export type PackageInfoProps = HTMLAttributes<HTMLDivElement> & {
   name: string;
   currentVersion?: string;
