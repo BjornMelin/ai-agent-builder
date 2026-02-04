@@ -6,30 +6,60 @@ import type * as React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/**
+ * Root component for a dialog.
+ *
+ * @param props - Component properties from Radix UI Dialog.Root.
+ * @returns The rendered dialog root.
+ */
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
+/**
+ * Trigger component to open the dialog.
+ *
+ * @param props - Component properties from Radix UI Dialog.Trigger.
+ * @returns The rendered dialog trigger.
+ */
 function DialogTrigger({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
+/**
+ * Portal component to render the dialog content into a separate DOM node.
+ *
+ * @param props - Component properties from Radix UI Dialog.Portal.
+ * @returns The rendered dialog portal.
+ */
 function DialogPortal({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
+/**
+ * Close button component to dismiss the dialog.
+ *
+ * @param props - Component properties from Radix UI Dialog.Close.
+ * @returns The rendered dialog close button.
+ */
 function DialogClose({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Close>) {
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
+/**
+ * Overlay component that appears behind the dialog content.
+ *
+ * @param props - Component properties including className and Radix UI Dialog.Overlay props.
+ * @returns The rendered dialog overlay.
+ */
 function DialogOverlay({
   className,
   ...props
@@ -46,6 +76,12 @@ function DialogOverlay({
   );
 }
 
+/**
+ * Content container for the dialog, including the overlay and close button.
+ *
+ * @param props - Component properties including className, children, showCloseButton, and Radix UI Dialog.Content props.
+ * @returns The rendered dialog content.
+ */
 function DialogContent({
   className,
   children,
@@ -80,6 +116,12 @@ function DialogContent({
   );
 }
 
+/**
+ * Header section for the dialog.
+ *
+ * @param props - Component properties including className and div attributes.
+ * @returns The rendered dialog header.
+ */
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -90,6 +132,12 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Footer section for the dialog.
+ *
+ * @param props - Component properties including className, showCloseButton, children, and div attributes.
+ * @returns The rendered dialog footer.
+ */
 function DialogFooter({
   className,
   showCloseButton = false,
@@ -117,6 +165,12 @@ function DialogFooter({
   );
 }
 
+/**
+ * Title component for the dialog.
+ *
+ * @param props - Component properties including className and Radix UI Dialog.Title props.
+ * @returns The rendered dialog title.
+ */
 function DialogTitle({
   className,
   ...props
@@ -130,6 +184,12 @@ function DialogTitle({
   );
 }
 
+/**
+ * Description component for the dialog.
+ *
+ * @param props - Component properties including className and Radix UI Dialog.Description props.
+ * @returns The rendered dialog description.
+ */
 function DialogDescription({
   className,
   ...props

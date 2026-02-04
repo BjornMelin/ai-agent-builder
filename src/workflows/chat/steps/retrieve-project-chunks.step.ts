@@ -14,13 +14,13 @@ const contextSchema = z.strictObject({
 /**
  * Retrieve relevant project chunks for retrieval-augmented generation.
  *
+ * @remarks
+ * `projectId` is provided via `experimental_context` to avoid requiring the model
+ * to send it (it is user/session-scoped, not model-scoped).
  * @param input - Retrieval input.
  * @param options - Tool execution options.
  * @returns Retrieval hits.
  * @throws AppError - When `projectId` is missing from the context.
- * @remarks
- * `projectId` is provided via `experimental_context` to avoid requiring the model
- * to send it (it is user/session-scoped, not model-scoped).
  */
 export async function retrieveProjectChunksStep(
   input: Readonly<{ query: string; topK?: number | undefined }>,

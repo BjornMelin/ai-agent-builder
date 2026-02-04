@@ -90,6 +90,20 @@ const detectSpeechInputMode = (): SpeechInputMode => {
   return "none";
 };
 
+/**
+ * A speech input component that supports both the Web Speech API and a MediaRecorder fallback.
+ *
+ * It automatically detects the best available mode for speech input and provides a button
+ * to start/stop the recording or recognition process.
+ *
+ * @param props - The props for the {@link SpeechInput} component.
+ * @param props.className - Optional CSS class name for the recording button.
+ * @param props.onTranscriptionChange - Callback called when new transcript text is available.
+ * @param props.onAudioRecorded - Callback called when an audio recording is complete (MediaRecorder fallback).
+ * @param props.lang - The language code for speech recognition (defaults to "en-US").
+ * @param props.rest - Additional props spread to the underlying {@link Button}.
+ * @returns A {@link JSX.Element} containing the speech input button and animated indicators.
+ */
 export const SpeechInput = ({
   className,
   onTranscriptionChange,
@@ -107,9 +121,26 @@ export const SpeechInput = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
   // Detect mode on mount
   useEffect(() => {
     setMode(detectSpeechInputMode());
+
+    if (typeof window === "undefined" || !window.matchMedia) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => {
+      setPrefersReducedMotion(mediaQuery.matches);
+    };
+
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+    return () => {
+      mediaQuery.removeEventListener("change", updatePreference);
+    };
   }, []);
 
   // Initialize Speech Recognition when mode is speech-recognition
@@ -247,7 +278,10 @@ export const SpeechInput = ({
       if (isListening) {
         stopMediaRecorder();
       } else {
-        startMediaRecorder();
+        void startMediaRecorder().catch((error) => {
+          console.error("Critical error starting MediaRecorder:", error);
+          setIsListening(false);
+        });
       }
     }
   };
@@ -265,7 +299,10 @@ export const SpeechInput = ({
       {isListening
         ? [0, 1, 2].map((index) => (
             <div
-              className="absolute inset-0 animate-ping rounded-full border-2 border-red-400/30"
+              className={cn(
+                "absolute inset-0 rounded-full border-2 border-red-400/30",
+                !prefersReducedMotion && "animate-ping",
+              )}
               key={index}
               style={{
                 animationDelay: `${index * 0.3}s`,

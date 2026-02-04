@@ -2,8 +2,14 @@
 
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import React, {
+  createContext,
+  memo,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
-import { createContext, memo, useContext, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
 import {
@@ -15,10 +21,19 @@ import {
 import { cn } from "@/lib/utils";
 import { StreamdownRenderer } from "./streamdown-renderer";
 
+/**
+ * Props for the Message component.
+ */
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
+  /** The role of the message sender (user or assistant). */
   from: UIMessage["role"];
 };
 
+/**
+ * Root container for a chat message.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element} The rendered message container.
+ */
 export const Message = ({ className, from, ...props }: MessageProps) => (
   <div
     className={cn(
@@ -30,8 +45,16 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
   />
 );
 
+/**
+ * Props for the MessageContent component.
+ */
 export type MessageContentProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Main content area of a message, with distinct styling for user and assistant.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element} The rendered message content.
+ */
 export const MessageContent = ({
   children,
   className,
@@ -50,8 +73,16 @@ export const MessageContent = ({
   </div>
 );
 
+/**
+ * Props for the MessageActions component.
+ */
 export type MessageActionsProps = ComponentProps<"div">;
 
+/**
+ * Container for action buttons associated with a message.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element} The rendered actions container.
+ */
 export const MessageActions = ({
   className,
   children,
@@ -62,11 +93,21 @@ export const MessageActions = ({
   </div>
 );
 
+/**
+ * Props for an individual MessageAction.
+ */
 export type MessageActionProps = ComponentProps<typeof Button> & {
+  /** Optional tooltip text to display on hover. */
   tooltip?: string;
+  /** Accessible label for the action. */
   label?: string;
 };
 
+/**
+ * An action button for a message, optionally with a tooltip.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element} The rendered action button.
+ */
 export const MessageAction = ({
   tooltip,
   children,
@@ -98,7 +139,10 @@ export const MessageAction = ({
   return button;
 };
 
-interface MessageBranchContextType {
+/**
+ * Context type for managing message branches (e.g., version history).
+ */
+export interface MessageBranchContextType {
   currentBranch: number;
   totalBranches: number;
   goToPrevious: () => void;
@@ -123,11 +167,21 @@ const useMessageBranch = () => {
   return context;
 };
 
+/**
+ * Props for the MessageBranch component.
+ */
 export type MessageBranchProps = HTMLAttributes<HTMLDivElement> & {
+  /** Initial branch index to display. Defaults to 0. */
   defaultBranch?: number;
+  /** Callback fired when the active branch changes. */
   onBranchChange?: (branchIndex: number) => void;
 };
 
+/**
+ * Provides context for multi-branch messages (e.g., edited responses).
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element} The rendered branch provider.
+ */
 export const MessageBranch = ({
   defaultBranch = 0,
   onBranchChange,
@@ -137,10 +191,25 @@ export const MessageBranch = ({
   const [currentBranch, setCurrentBranch] = useState(defaultBranch);
   const [branches, setBranches] = useState<ReactElement[]>([]);
 
-  const handleBranchChange = (newBranch: number) => {
-    setCurrentBranch(newBranch);
-    onBranchChange?.(newBranch);
-  };
+  const handleBranchChange = React.useCallback(
+    (newBranch: number) => {
+      setCurrentBranch(newBranch);
+      onBranchChange?.(newBranch);
+    },
+    [onBranchChange],
+  );
+
+  useEffect(() => {
+    if (branches.length > 0) {
+      const clampedBranch = Math.max(
+        0,
+        Math.min(currentBranch, branches.length - 1),
+      );
+      if (clampedBranch !== currentBranch) {
+        handleBranchChange(clampedBranch);
+      }
+    }
+  }, [branches.length, currentBranch, handleBranchChange]);
 
   const goToPrevious = () => {
     const newBranch =
@@ -173,22 +242,28 @@ export const MessageBranch = ({
   );
 };
 
+/**
+ * Props for the MessageBranchContent component.
+ */
 export type MessageBranchContentProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Render the content of the currently active branch.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element[]} The rendered branch content list.
+ */
 export const MessageBranchContent = ({
   children,
   ...props
 }: MessageBranchContentProps) => {
-  const { currentBranch, setBranches, branches } = useMessageBranch();
-  const childrenArray = Array.isArray(children) ? children : [children];
+  const { currentBranch, setBranches } = useMessageBranch();
+  const childrenArray = React.Children.toArray(children).filter(
+    Boolean,
+  ) as ReactElement[];
 
-  // Use useEffect to update branches when they change
   useEffect(() => {
-    const nextBranches = Array.isArray(children) ? children : [children];
-    if (branches.length !== nextBranches.length) {
-      setBranches(nextBranches as ReactElement[]);
-    }
-  }, [branches.length, children, setBranches]);
+    setBranches(childrenArray);
+  }, [childrenArray, setBranches]);
 
   return childrenArray.map((branch, index) => (
     <div
@@ -196,7 +271,7 @@ export const MessageBranchContent = ({
         "grid gap-2 overflow-hidden [&>div]:pb-0",
         index === currentBranch ? "block" : "hidden",
       )}
-      key={branch.key}
+      key={branch.key ?? index}
       {...props}
     >
       {branch}
@@ -204,10 +279,19 @@ export const MessageBranchContent = ({
   ));
 };
 
+/**
+ * Props for the MessageBranchSelector component.
+ */
 export type MessageBranchSelectorProps = ComponentProps<typeof ButtonGroup> & {
+  /** The role of the message sender. */
   from: UIMessage["role"];
 };
 
+/**
+ * A selector for navigating between different message branches.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element | null} The rendered branch selector or null if only one branch exists.
+ */
 export const MessageBranchSelector = ({
   className,
   from: _from,
@@ -232,8 +316,16 @@ export const MessageBranchSelector = ({
   );
 };
 
+/**
+ * Props for the MessageBranchPrevious component.
+ */
 export type MessageBranchPreviousProps = ComponentProps<typeof Button>;
 
+/**
+ * A button to navigate to the previous message branch.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element} The rendered previous button.
+ */
 export const MessageBranchPrevious = ({
   children,
   ...props
@@ -255,8 +347,16 @@ export const MessageBranchPrevious = ({
   );
 };
 
+/**
+ * Props for the MessageBranchNext component.
+ */
 export type MessageBranchNextProps = ComponentProps<typeof Button>;
 
+/**
+ * A button to navigate to the next message branch.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element} The rendered next button.
+ */
 export const MessageBranchNext = ({
   children,
   ...props
@@ -278,8 +378,16 @@ export const MessageBranchNext = ({
   );
 };
 
+/**
+ * Props for the MessageBranchPage component.
+ */
 export type MessageBranchPageProps = HTMLAttributes<HTMLSpanElement>;
 
+/**
+ * Displays the current branch index and total number of branches.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element} The rendered page indicator.
+ */
 export const MessageBranchPage = ({
   className,
   ...props
@@ -299,8 +407,16 @@ export const MessageBranchPage = ({
   );
 };
 
+/**
+ * Props for the MessageResponse component.
+ */
 export type MessageResponseProps = ComponentProps<typeof StreamdownRenderer>;
 
+/**
+ * Renders the body of an assistant message using Streamdown.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element} The rendered message response.
+ */
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
     <StreamdownRenderer
@@ -316,8 +432,16 @@ export const MessageResponse = memo(
 
 MessageResponse.displayName = "MessageResponse";
 
+/**
+ * Props for the MessageToolbar component.
+ */
 export type MessageToolbarProps = ComponentProps<"div">;
 
+/**
+ * A toolbar for message actions, typically displayed at the bottom.
+ * @param {object} props - Component properties.
+ * @returns {JSX.Element} The rendered message toolbar.
+ */
 export const MessageToolbar = ({
   className,
   children,

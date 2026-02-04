@@ -11,8 +11,16 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+/**
+ * Props for the Artifact component.
+ */
 export type ArtifactProps = HTMLAttributes<HTMLDivElement>;
-
+/**
+ * Root container for an artifact.
+ *
+ * @param props - Component properties.
+ * @returns The rendered artifact container.
+ */
 export const Artifact = ({ className, ...props }: ArtifactProps) => (
   <div
     className={cn(
@@ -23,8 +31,16 @@ export const Artifact = ({ className, ...props }: ArtifactProps) => (
   />
 );
 
+/**
+ * Props for the ArtifactHeader component.
+ */
 export type ArtifactHeaderProps = HTMLAttributes<HTMLDivElement>;
-
+/**
+ * Header section of an artifact.
+ *
+ * @param props - Component properties.
+ * @returns The rendered artifact header.
+ */
 export const ArtifactHeader = ({
   className,
   ...props
@@ -38,8 +54,16 @@ export const ArtifactHeader = ({
   />
 );
 
+/**
+ * Props for the ArtifactClose component.
+ */
 export type ArtifactCloseProps = ComponentProps<typeof Button>;
-
+/**
+ * A button to close the artifact.
+ *
+ * @param props - Component properties.
+ * @returns The rendered close button.
+ */
 export const ArtifactClose = ({
   className,
   children,
@@ -62,8 +86,16 @@ export const ArtifactClose = ({
   </Button>
 );
 
+/**
+ * Props for the ArtifactTitle component.
+ */
 export type ArtifactTitleProps = HTMLAttributes<HTMLParagraphElement>;
-
+/**
+ * Title element for an artifact.
+ *
+ * @param props - Component properties.
+ * @returns The rendered artifact title.
+ */
 export const ArtifactTitle = ({ className, ...props }: ArtifactTitleProps) => (
   <p
     className={cn("font-medium text-foreground text-sm", className)}
@@ -71,8 +103,16 @@ export const ArtifactTitle = ({ className, ...props }: ArtifactTitleProps) => (
   />
 );
 
+/**
+ * Props for the ArtifactDescription component.
+ */
 export type ArtifactDescriptionProps = HTMLAttributes<HTMLParagraphElement>;
-
+/**
+ * Description text for an artifact.
+ *
+ * @param props - Component properties.
+ * @returns The rendered artifact description.
+ */
 export const ArtifactDescription = ({
   className,
   ...props
@@ -80,8 +120,16 @@ export const ArtifactDescription = ({
   <p className={cn("text-muted-foreground text-sm", className)} {...props} />
 );
 
+/**
+ * Props for the ArtifactActions component.
+ */
 export type ArtifactActionsProps = HTMLAttributes<HTMLDivElement>;
-
+/**
+ * Container for artifact-related actions.
+ *
+ * @param props - Component properties.
+ * @returns The rendered actions container.
+ */
 export const ArtifactActions = ({
   className,
   ...props
@@ -89,12 +137,20 @@ export const ArtifactActions = ({
   <div className={cn("flex items-center gap-1", className)} {...props} />
 );
 
+/**
+ * Props for an individual ArtifactAction.
+ */
 export type ArtifactActionProps = ComponentProps<typeof Button> & {
   tooltip?: string;
   label?: string;
   icon?: LucideIcon;
 };
-
+/**
+ * An individual action button for an artifact, optionally with a tooltip.
+ *
+ * @param props - Component properties, including tooltip, label, and icon.
+ * @returns The rendered action button, wrapped in a tooltip if provided.
+ */
 export const ArtifactAction = ({
   tooltip,
   label,
@@ -105,6 +161,8 @@ export const ArtifactAction = ({
   variant = "ghost",
   ...props
 }: ArtifactActionProps) => {
+  const accessibleName = tooltip || label || props["aria-label"];
+
   const button = (
     <Button
       className={cn(
@@ -117,7 +175,7 @@ export const ArtifactAction = ({
       {...props}
     >
       {Icon ? <Icon className="size-4" /> : children}
-      <span className="sr-only">{label || tooltip}</span>
+      {accessibleName && <span className="sr-only">{accessibleName}</span>}
     </Button>
   );
 
@@ -137,8 +195,16 @@ export const ArtifactAction = ({
   return button;
 };
 
+/**
+ * Props for the ArtifactContent component.
+ */
 export type ArtifactContentProps = HTMLAttributes<HTMLDivElement>;
-
+/**
+ * Main content area of an artifact.
+ *
+ * @param props - Component properties.
+ * @returns The rendered artifact content area.
+ */
 export const ArtifactContent = ({
   className,
   ...props

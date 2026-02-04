@@ -55,7 +55,7 @@ Workspace is project-centered and deep-linkable:
 - Each page must have:
   - clear empty state
   - skeleton/placeholder for async sections
-  - errors routed to `error.tsx` boundaries where appropriate
+  - errors routed to `error.tsx` boundaries where appropriate.
 
 ## AI Elements Component Strategy
 

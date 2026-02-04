@@ -31,6 +31,13 @@ function DropdownMenuTrigger({
   );
 }
 
+/**
+ * Content container for the dropdown menu.
+ * Always wraps children in a DropdownMenuPrimitive.Portal (mounting to a separate DOM node).
+ *
+ * @param props - Component properties including className, sideOffset (default: 4), and Radix UI DropdownMenu.Content props.
+ * @returns The rendered dropdown menu content.
+ */
 function DropdownMenuContent({
   className,
   sideOffset = 4,

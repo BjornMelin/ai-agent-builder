@@ -26,8 +26,16 @@ import { cn } from "@/lib/utils";
 
 const moduleNow = Date.now();
 
+/**
+ * Props for the Commit component.
+ */
 export type CommitProps = ComponentProps<typeof Collapsible>;
 
+/**
+ * Root container for a git commit representation.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit container.
+ */
 export const Commit = ({ className, children, ...props }: CommitProps) => (
   <Collapsible
     className={cn("rounded-lg border bg-background", className)}
@@ -37,8 +45,16 @@ export const Commit = ({ className, children, ...props }: CommitProps) => (
   </Collapsible>
 );
 
+/**
+ * Props for the CommitHeader component.
+ */
 export type CommitHeaderProps = ComponentProps<typeof CollapsibleTrigger>;
 
+/**
+ * Header section of a commit, typically containing the hash and message.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit header.
+ */
 export const CommitHeader = ({
   className,
   children,
@@ -56,8 +72,16 @@ export const CommitHeader = ({
   </CollapsibleTrigger>
 );
 
+/**
+ * Props for the CommitHash component.
+ */
 export type CommitHashProps = HTMLAttributes<HTMLSpanElement>;
 
+/**
+ * Displays the short hash of a commit.
+ * @param props - Component properties including children (the hash) and className.
+ * @returns The rendered commit hash.
+ */
 export const CommitHash = ({
   className,
   children,
@@ -69,8 +93,16 @@ export const CommitHash = ({
   </span>
 );
 
+/**
+ * Props for the CommitMessage component.
+ */
 export type CommitMessageProps = HTMLAttributes<HTMLSpanElement>;
 
+/**
+ * Displays the commit message.
+ * @param props - Component properties including children (the message) and className.
+ * @returns The rendered commit message.
+ */
 export const CommitMessage = ({
   className,
   children,
@@ -81,8 +113,16 @@ export const CommitMessage = ({
   </span>
 );
 
+/**
+ * Props for the CommitMetadata component.
+ */
 export type CommitMetadataProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Container for commit metadata like author and timestamp.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit metadata container.
+ */
 export const CommitMetadata = ({
   className,
   children,
@@ -99,8 +139,16 @@ export const CommitMetadata = ({
   </div>
 );
 
+/**
+ * Props for the CommitSeparator component.
+ */
 export type CommitSeparatorProps = HTMLAttributes<HTMLSpanElement>;
 
+/**
+ * A separator for commit metadata items.
+ * @param props - Component properties including children and className. Defaults to a bullet point.
+ * @returns The rendered commit separator.
+ */
 export const CommitSeparator = ({
   className,
   children,
@@ -111,8 +159,16 @@ export const CommitSeparator = ({
   </span>
 );
 
+/**
+ * Props for the CommitInfo component.
+ */
 export type CommitInfoProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Detailed information section for a commit.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit info container.
+ */
 export const CommitInfo = ({
   className,
   children,
@@ -123,8 +179,16 @@ export const CommitInfo = ({
   </div>
 );
 
+/**
+ * Props for the CommitAuthor component.
+ */
 export type CommitAuthorProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Displays the author of a commit.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit author.
+ */
 export const CommitAuthor = ({
   className,
   children,
@@ -135,10 +199,19 @@ export const CommitAuthor = ({
   </div>
 );
 
+/**
+ * Props for the CommitAuthorAvatar component.
+ */
 export type CommitAuthorAvatarProps = ComponentProps<typeof Avatar> & {
+  /** The initials of the author to display as a fallback. */
   initials: string;
 };
 
+/**
+ * Displays the author's avatar or initials.
+ * @param props - Component properties including initials, className, and Avatar props.
+ * @returns The rendered author avatar.
+ */
 export const CommitAuthorAvatar = ({
   initials,
   className,
@@ -149,10 +222,19 @@ export const CommitAuthorAvatar = ({
   </Avatar>
 );
 
+/**
+ * Props for the CommitTimestamp component.
+ */
 export type CommitTimestampProps = HTMLAttributes<HTMLTimeElement> & {
+  /** The date of the commit. */
   date: Date;
 };
 
+/**
+ * Displays the timestamp of a commit, formatted relatively.
+ * @param props - Component properties including date, children, and className.
+ * @returns The rendered commit timestamp.
+ */
 export const CommitTimestamp = ({
   date,
   className,
@@ -177,8 +259,16 @@ export const CommitTimestamp = ({
   );
 };
 
+/**
+ * Props for the CommitActions component.
+ */
 export type CommitActionsProps = HTMLAttributes<HTMLFieldSetElement>;
 
+/**
+ * Container for action buttons related to a commit.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit actions container.
+ */
 export const CommitActions = ({
   className,
   children,
@@ -197,13 +287,25 @@ export const CommitActions = ({
   </fieldset>
 );
 
+/**
+ * Props for the CommitCopyButton component.
+ */
 export type CommitCopyButtonProps = ComponentProps<typeof Button> & {
+  /** The commit hash to copy to the clipboard. */
   hash: string;
+  /** Callback fired when the hash is successfully copied. */
   onCopy?: () => void;
+  /** Callback fired when an error occurs during copying. */
   onError?: (error: Error) => void;
+  /** Timeout in milliseconds before resetting the copy state. Defaults to 2000. */
   timeout?: number;
 };
 
+/**
+ * A button to copy the commit hash to the clipboard.
+ * @param props - Component properties including hash, onCopy, onError, timeout, children, and className.
+ * @returns The rendered copy button.
+ */
 export const CommitCopyButton = ({
   hash,
   onCopy,
@@ -259,8 +361,16 @@ export const CommitCopyButton = ({
   );
 };
 
+/**
+ * Props for the CommitContent component.
+ */
 export type CommitContentProps = ComponentProps<typeof CollapsibleContent>;
 
+/**
+ * Expandable content area for a commit, typically containing file changes.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit content.
+ */
 export const CommitContent = ({
   className,
   children,
@@ -271,8 +381,16 @@ export const CommitContent = ({
   </CollapsibleContent>
 );
 
+/**
+ * Props for the CommitFiles component.
+ */
 export type CommitFilesProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * List of files changed in a commit.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit files list.
+ */
 export const CommitFiles = ({
   className,
   children,
@@ -283,8 +401,16 @@ export const CommitFiles = ({
   </div>
 );
 
+/**
+ * Props for the CommitFile component.
+ */
 export type CommitFileProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Represents a single file changed in a commit.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit file item.
+ */
 export const CommitFile = ({
   className,
   children,
@@ -301,8 +427,16 @@ export const CommitFile = ({
   </div>
 );
 
+/**
+ * Props for the CommitFileInfo component.
+ */
 export type CommitFileInfoProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Displays information about a changed file like status and icon.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit file info.
+ */
 export const CommitFileInfo = ({
   className,
   children,
@@ -327,10 +461,19 @@ const fileStatusLabels = {
   renamed: "R",
 };
 
+/**
+ * Props for the CommitFileStatus component.
+ */
 export type CommitFileStatusProps = HTMLAttributes<HTMLSpanElement> & {
+  /** The type of change: added, modified, deleted, or renamed. */
   status: "added" | "modified" | "deleted" | "renamed";
 };
 
+/**
+ * Displays the status (e.g., A, M, D, R) of a file change.
+ * @param props - Component properties including status, children, and className.
+ * @returns The rendered commit file status.
+ */
 export const CommitFileStatus = ({
   status,
   className,
@@ -349,8 +492,16 @@ export const CommitFileStatus = ({
   </span>
 );
 
+/**
+ * Props for the CommitFileIcon component.
+ */
 export type CommitFileIconProps = ComponentProps<typeof FileIcon>;
 
+/**
+ * Displays the icon for a changed file.
+ * @param props - Component properties including className and FileIcon props.
+ * @returns The rendered commit file icon.
+ */
 export const CommitFileIcon = ({
   className,
   ...props
@@ -361,8 +512,16 @@ export const CommitFileIcon = ({
   />
 );
 
+/**
+ * Props for the CommitFilePath component.
+ */
 export type CommitFilePathProps = HTMLAttributes<HTMLSpanElement>;
 
+/**
+ * Displays the path of a changed file.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit file path.
+ */
 export const CommitFilePath = ({
   className,
   children,
@@ -373,8 +532,16 @@ export const CommitFilePath = ({
   </span>
 );
 
+/**
+ * Props for the CommitFileChanges component.
+ */
 export type CommitFileChangesProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Container for addition and deletion counts of a file change.
+ * @param props - Component properties including children and className.
+ * @returns The rendered commit file changes container.
+ */
 export const CommitFileChanges = ({
   className,
   children,
@@ -391,10 +558,19 @@ export const CommitFileChanges = ({
   </div>
 );
 
+/**
+ * Props for the CommitFileAdditions component.
+ */
 export type CommitFileAdditionsProps = HTMLAttributes<HTMLSpanElement> & {
+  /** The number of lines added. */
   count: number;
 };
 
+/**
+ * Displays the number of lines added in a file change.
+ * @param props - Component properties including count, children, and className.
+ * @returns The rendered commit file additions count.
+ */
 export const CommitFileAdditions = ({
   count,
   className,
@@ -420,10 +596,19 @@ export const CommitFileAdditions = ({
   );
 };
 
+/**
+ * Props for the CommitFileDeletions component.
+ */
 export type CommitFileDeletionsProps = HTMLAttributes<HTMLSpanElement> & {
+  /** The number of lines deleted. */
   count: number;
 };
 
+/**
+ * Displays the number of lines deleted in a file change.
+ * @param props - Component properties including count, children, and className.
+ * @returns The rendered commit file deletions count.
+ */
 export const CommitFileDeletions = ({
   count,
   className,

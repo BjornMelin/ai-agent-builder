@@ -144,7 +144,12 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
   const storageKey = `workflow:chat:${props.projectId}:runId`;
   const [runId, setRunId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
-    return window.localStorage.getItem(storageKey);
+    try {
+      return window.localStorage.getItem(storageKey);
+    } catch (error) {
+      console.warn("[ChatClient] Failed to read runId from storage:", error);
+      return null;
+    }
   });
 
   const [transport] = useState(() => {
@@ -203,24 +208,48 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
 
   const messages = reconstructMessages(rawMessages);
 
-  async function sendFollowUp(text: string) {
-    if (!runId) return;
+  async function sendFollowUp(text: string): Promise<boolean> {
+    if (!runId) return false;
 
+    const optimisticId = `user-${Date.now()}`;
     setMessages((prev) =>
       prev.concat([
         {
-          id: `user-${Date.now()}`,
+          id: optimisticId,
           parts: [{ text, type: "text" }],
           role: "user",
         },
       ]),
     );
 
-    await fetch(`/api/chat/${runId}`, {
-      body: JSON.stringify({ message: text }),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    });
+    try {
+      const response = await fetch(`/api/chat/${runId}`, {
+        body: JSON.stringify({ message: text }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to send message.";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // Fallback to default message
+        }
+        throw new Error(errorMessage);
+      }
+
+      setComposerError(null);
+      return true;
+    } catch (error) {
+      console.error("Follow-up error:", error);
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
+      setComposerError(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
+      return false;
+    }
   }
 
   async function sendMessage(message: PromptInputMessage) {
