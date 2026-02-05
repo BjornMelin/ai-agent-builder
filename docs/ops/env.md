@@ -27,7 +27,7 @@ This project centralizes environment access in `src/lib/env.ts`.
 
 - `APP_BASE_URL` (required for `env.app`)
   - Canonical app URL used for server-to-server callbacks (QStash worker URLs).
-  - Used by: `src/lib/runs/run-engine.server.ts`.
+  - Used by: upload→ingest QStash publish (`src/app/api/upload/route.ts`).
   - Must match the deployed host and be HTTPS in production.
 
 ### Auth (Neon Auth + app access control)

@@ -89,7 +89,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 ### File-level contracts
 
 - `src/lib/config/budgets.server.ts`: budget defaults and hard limits.
-- `src/lib/runs/*`: run-step execution uses budgets to gate expensive operations.
+- `src/lib/runs/*` + `src/workflows/**`: durable run execution uses budgets to
+  gate expensive operations (LLM calls, sandbox jobs, external API usage).
 - `src/lib/core/log.ts`: log redaction and structured logging.
 - `docs/architecture/runbook.md`: operational guidance for budgets.
 

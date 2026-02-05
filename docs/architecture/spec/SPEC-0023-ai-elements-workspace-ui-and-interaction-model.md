@@ -130,10 +130,12 @@ All AI Elements component names and usage are sourced from the AI Elements docs 
 
 Initial Runs tab must show:
 
-- current run status (running/waiting/blocked/succeeded/failed)
+- current run status (running/waiting/blocked/succeeded/failed/canceled)
 - step list with timestamps and outputs
 - approvals required (FR-031)
 - “resume” action when blocked
+- a resilient stream view that never remains stuck in `streaming` after the SSE
+  connection ends unexpectedly (show interruption banner + reconnect)
 
 ### P1: Graph view (AI Elements workflow example baseline)
 
@@ -177,5 +179,8 @@ Settings tab must expose:
 - Runs:
   - run shows steps updating in real time (poll or stream depending on implementation)
   - approval gate blocks UI until approved, then resumes
+  - cancel run surfaces `canceled` terminal state (not failed)
+  - stream ending without a finish sentinel transitions out of `streaming` and
+    can reconnect/resume from `startIndex`
 - Uploads:
   - async ingestion path triggers background job and status updates

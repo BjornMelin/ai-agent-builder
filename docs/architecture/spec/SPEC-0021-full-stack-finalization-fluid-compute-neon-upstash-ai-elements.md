@@ -3,7 +3,7 @@ spec: SPEC-0021
 title: Full-stack finalization (Fluid Compute + Neon/Drizzle + Upstash + AI Gateway + AI Elements UI)
 version: 0.1.0
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements:
   [
@@ -127,15 +127,16 @@ This section is the authoritative snapshot of the current repository state as of
 ### Durable runs / orchestration
 
 - Runs Route Handler: `src/app/api/runs/route.ts`
-- Step worker (QStash-signed): `src/app/api/jobs/run-step/route.ts`
-- Step engine (placeholder graph; must be expanded): `src/lib/runs/run-engine.server.ts`
+- Run stream Route Handler: `src/app/api/runs/[runId]/stream/route.ts`
+- Run cancel Route Handler: `src/app/api/runs/[runId]/cancel/route.ts`
+- Workflow DevKit run orchestrator: `src/workflows/runs/project-run.workflow.ts`
 - DAL:
   - `src/lib/data/projects.server.ts`
   - `src/lib/data/files.server.ts`
   - `src/lib/data/runs.server.ts`
-- QStash helpers: `src/lib/upstash/qstash.server.ts`
+- QStash helpers (background jobs): `src/lib/upstash/qstash.server.ts`
 
-**Note:** The above QStash-based run-step engine remains the baseline for non-interactive durable execution. **Interactive chat streaming** is now implemented via **Vercel Workflow DevKit** (ADR-0026 / SPEC-0022) using the `/api/chat/*` route handlers and `src/workflows/chat/**`. QStash remains the durable delivery mechanism for **background jobs** (especially ingestion).
+**Note:** Durable runs and interactive streaming are implemented via **Vercel Workflow DevKit** using `/api/runs/*` and `src/workflows/runs/**`. QStash remains the durable delivery mechanism for **background jobs** (especially ingestion).
 
 #### Research Notes: Upstash Workflow vs Vercel Workflow (Streaming Path)
 
@@ -423,8 +424,13 @@ Code: `src/app/api/runs/route.ts`
 
 - `POST /api/jobs/ingest-file`
   - QStash-signed ingestion worker (async ingestion)
-- `POST /api/jobs/run-step`
-  - QStash-signed run step executor (legacy durable runs baseline; to be migrated to Workflow DevKit per SPEC-0022)
+
+### Runs: stream + cancel (implemented)
+
+- `GET /api/runs/[runId]/stream?startIndex=N`
+  - Resumable run stream backed by Workflow DevKit.
+- `POST /api/runs/[runId]/cancel`
+  - Cancels an in-flight run and updates persisted status.
 
 ### Chat: multi-turn session (implemented)
 
@@ -578,9 +584,9 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 
 ### Phase 3 — Runs engine (real graph) + workflow UI
 
-1. Expand `src/lib/runs/run-engine.server.ts` from placeholder to a real step DAG aligned with SPEC-0005.
-2. Ensure each step is idempotent and persisted in DB.
-3. Add UI to display run timelines and step details; reuse AI Elements workflow primitives.
+1. Implement durable runs on Workflow DevKit (`src/workflows/runs/**`) aligned with SPEC-0005.
+2. Ensure each step is idempotent and persisted in DB (`runs` + `run_steps`).
+3. Add UI to display run timelines and stream events with resumable `startIndex`.
 
 ### Phase 4 — Cache Components enablement
 
