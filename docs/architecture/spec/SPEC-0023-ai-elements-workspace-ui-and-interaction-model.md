@@ -142,10 +142,13 @@ Initial Runs tab must show:
   - reconnect mode is automatic first: retry SSE with `startIndex` resume; surface
     a visible `Reconnect` button after attempt 1 fails so users can force an
     immediate retry while automatic retries continue
-  - retry policy is capped exponential backoff: attempts at 1s, 2s, 4s, 8s, 16s
-    delays (max 5 attempts total); if all attempts fail, transition the run
+  - retry policy is capped backoff: attempts at 250ms, 750ms, and 1,500ms
+    delays (max 3 attempts total); if all attempts fail, transition the run
     stream UI to a permanent error state with `Reconnect` and `Retry from latest`
     actions, and do not leave the view in `streaming`
+  - implementation note: this reconnect policy is canonicalized in
+    `SPEC-0024-run-cancellation-and-stream-resilience.md` and implemented in
+    `src/app/(app)/projects/[projectId]/runs/[runId]/run-stream-client.tsx`.
   - `startIndex` storage/usage: keep the latest rendered event index in client run
     stream state and include it on every reconnect request (`?startIndex=<n>`) so
     the server resumes from the next event without duplicating already-rendered
