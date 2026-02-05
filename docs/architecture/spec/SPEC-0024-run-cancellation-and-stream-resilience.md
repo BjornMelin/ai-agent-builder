@@ -4,7 +4,7 @@ title: Run cancellation + stream resilience hardening
 version: 0.1.0
 date: 2026-02-05
 owners: ["you"]
-status: Proposed
+status: Implemented
 related_requirements:
   ["FR-010", "FR-011", "FR-023", "PR-004", "PR-005", "NFR-004", "NFR-015"]
 related_adrs: ["ADR-0026", "ADR-0011", "ADR-0014"]
@@ -207,4 +207,3 @@ Constraints:
 - `bun run typecheck`
 - `bun run test`
 - `bun run build`
-
