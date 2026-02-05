@@ -25,6 +25,7 @@ export function ProjectNavClient(props: Readonly<{ projectId: string }>) {
     { href: `${base}/uploads`, label: "Uploads" },
     { href: `${base}/chat`, label: "Chat" },
     { href: `${base}/runs`, label: "Runs" },
+    { href: `${base}/artifacts`, label: "Artifacts" },
     { href: `${base}/search`, label: "Search" },
     { href: `${base}/settings`, label: "Settings" },
   ];
