@@ -1,4 +1,5 @@
 import { ProjectChatClient } from "@/app/(app)/projects/[projectId]/chat/chat-client";
+import { getLatestChatThreadByProjectId } from "@/lib/data/chat.server";
 
 /**
  * Chat tab.
@@ -11,5 +12,18 @@ export default async function ChatPage(
   props: Readonly<{ params: Promise<{ projectId: string }> }>,
 ) {
   const { projectId } = await props.params;
-  return <ProjectChatClient projectId={projectId} />;
+  const latestThread = await getLatestChatThreadByProjectId(projectId);
+  return (
+    <ProjectChatClient
+      initialThread={
+        latestThread?.workflowRunId
+          ? {
+              status: latestThread.status,
+              workflowRunId: latestThread.workflowRunId,
+            }
+          : null
+      }
+      projectId={projectId}
+    />
+  );
 }

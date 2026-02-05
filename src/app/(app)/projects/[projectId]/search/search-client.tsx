@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,7 +104,9 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
       }
 
       const payload = (await res.json()) as SearchResponse;
-      setResults(payload.results);
+      startTransition(() => {
+        setResults(payload.results);
+      });
       setStatus("idle");
     } catch {
       setError("Network error. Please try again.");

@@ -10,11 +10,13 @@ import { getWorkflowMetadata, getWritable } from "workflow";
 import { getWorkflowDefaultChatModel } from "@/workflows/ai/gateway-models.step";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
 import { PROJECT_CHAT_SYSTEM_PROMPT } from "@/workflows/chat/prompt";
+import { touchChatThreadState } from "@/workflows/chat/steps/chat-thread-state.step";
 import {
   writeStreamClose,
   writeUserMessageMarker,
 } from "@/workflows/chat/steps/writer.step";
 import { chatTools } from "@/workflows/chat/tools";
+import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
 
 /**
  * Durable multi-turn chat workflow for a single project.
@@ -31,40 +33,47 @@ export async function projectChat(
 
   const { workflowRunId: runId } = getWorkflowMetadata();
   const writable = getWritable<UIMessageChunk>();
-  const messages: ModelMessage[] = await convertToModelMessages(
-    initialMessages,
-    {
-      tools: chatTools,
-    },
-  );
-
-  // Write markers for initial user messages so replay can reconstruct order.
-  for (const msg of initialMessages) {
-    if (msg.role !== "user") continue;
-    const text = msg.parts
-      .filter((p) => p.type === "text")
-      .map((p) => p.text)
-      .join("");
-    if (!text) continue;
-
-    await writeUserMessageMarker(writable, {
-      content: text,
-      messageId: msg.id,
-    });
-  }
-
-  const agent = new DurableAgent({
-    model: getWorkflowDefaultChatModel,
-    system: PROJECT_CHAT_SYSTEM_PROMPT,
-    tools: chatTools,
-  });
-
-  const hook = chatMessageHook.create({ token: runId });
-  let turnNumber = 0;
+  let finishedStatus: "succeeded" | "failed" | "canceled" | null = null;
+  let thrownError: unknown = null;
+  const messages: ModelMessage[] = [];
 
   try {
+    messages.push(
+      ...(await convertToModelMessages(initialMessages, {
+        tools: chatTools,
+      })),
+    );
+
+    await touchChatThreadState({ status: "running", workflowRunId: runId });
+
+    // Write markers for initial user messages so replay can reconstruct order.
+    for (const msg of initialMessages) {
+      if (msg.role !== "user") continue;
+      const text = msg.parts
+        .filter((p) => p.type === "text")
+        .map((p) => p.text)
+        .join("");
+      if (!text) continue;
+
+      await writeUserMessageMarker(writable, {
+        content: text,
+        messageId: msg.id,
+      });
+    }
+
+    const agent = new DurableAgent({
+      model: getWorkflowDefaultChatModel,
+      system: PROJECT_CHAT_SYSTEM_PROMPT,
+      tools: chatTools,
+    });
+
+    const hook = chatMessageHook.create({ token: runId });
+    let turnNumber = 0;
+
     while (true) {
       turnNumber += 1;
+
+      await touchChatThreadState({ status: "running", workflowRunId: runId });
 
       const result = await agent.stream({
         experimental_context: { projectId },
@@ -77,6 +86,8 @@ export async function projectChat(
       });
       messages.push(...result.messages.slice(messages.length));
 
+      await touchChatThreadState({ status: "waiting", workflowRunId: runId });
+
       const { message: followUp } = await hook;
       if (followUp === "/done") break;
 
@@ -88,8 +99,34 @@ export async function projectChat(
       });
       messages.push({ content: followUp, role: "user" });
     }
+
+    finishedStatus = "succeeded";
+  } catch (error) {
+    finishedStatus = isWorkflowRunCancelledError(error) ? "canceled" : "failed";
+    thrownError = error;
   } finally {
-    await writeStreamClose(writable);
+    const finalizationTasks: Promise<unknown>[] = [writeStreamClose(writable)];
+    if (finishedStatus) {
+      finalizationTasks.push(
+        touchChatThreadState({
+          endedAt: new Date(),
+          status: finishedStatus,
+          workflowRunId: runId,
+        }),
+      );
+    }
+
+    const finalizationResults = await Promise.allSettled(finalizationTasks);
+    const finalizationError = finalizationResults.find(
+      (result) => result.status === "rejected",
+    );
+    if (!thrownError && finalizationError?.status === "rejected") {
+      thrownError = finalizationError.reason;
+    }
+  }
+
+  if (thrownError) {
+    throw thrownError;
   }
 
   return { messages };

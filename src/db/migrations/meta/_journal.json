@@ -14,6 +14,13 @@
       "tag": "0001_daily_ken_ellis",
       "version": "7",
       "when": 1770247702357
+    },
+    {
+      "breakpoints": true,
+      "idx": 2,
+      "tag": "0002_huge_johnny_blaze",
+      "version": "7",
+      "when": 1770318354759
     }
   ],
   "version": "7"

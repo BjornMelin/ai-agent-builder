@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   createUIMessageStreamResponse: vi.fn(),
+  getChatThreadByWorkflowRunId: vi.fn(),
   getProjectById: vi.fn(),
   getReadable: vi.fn(),
   getRun: vi.fn(),
-  getRunById: vi.fn(),
   requireAppUserApi: vi.fn(),
 }));
 
@@ -17,8 +17,8 @@ vi.mock("workflow/api", () => ({
   getRun: state.getRun,
 }));
 
-vi.mock("@/lib/data/runs.server", () => ({
-  getRunById: state.getRunById,
+vi.mock("@/lib/data/chat.server", () => ({
+  getChatThreadByWorkflowRunId: state.getChatThreadByWorkflowRunId,
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
@@ -42,7 +42,7 @@ beforeEach(() => {
   state.getProjectById.mockResolvedValue({
     id: "proj_1",
   });
-  state.getRunById.mockResolvedValue({
+  state.getChatThreadByWorkflowRunId.mockResolvedValue({
     projectId: "proj_1",
   });
 
@@ -117,7 +117,7 @@ describe("GET /api/chat/:runId/stream", () => {
 
   it("returns not found when the run does not exist in persistence", async () => {
     const GET = await loadRoute();
-    state.getRunById.mockResolvedValueOnce(null);
+    state.getChatThreadByWorkflowRunId.mockResolvedValueOnce(null);
 
     const res = await GET(
       new Request("http://localhost/api/chat/run_1/stream?startIndex=2"),

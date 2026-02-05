@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { WorkflowChatTransport } from "@workflow/ai";
 import type { ChatTransport, UIDataTypes, UIMessage, UITools } from "ai";
 import { getToolName, isToolUIPart } from "ai";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   Conversation,
@@ -48,6 +48,15 @@ type UserMessageMarker = Readonly<{
 
 type AppUIMessage = UIMessage<unknown, UIDataTypes, UITools>;
 type AppUIMessagePart = AppUIMessage["parts"][number];
+
+type ChatThreadStatus =
+  | "pending"
+  | "running"
+  | "waiting"
+  | "blocked"
+  | "succeeded"
+  | "failed"
+  | "canceled";
 
 const STORAGE_LOG_THROTTLE_MS = 10_000;
 const storageLogTimestamps = new Map<string, number>();
@@ -170,40 +179,40 @@ function reconstructMessages(
  * @param props - Props object for the chat client in `chat-client.tsx`; requires `projectId` (string), a non-empty project identifier used for chat-session storage keys and chat API routing.
  * @returns The chat UI for the project.
  */
-export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
+export function ProjectChatClient(
+  props: Readonly<{
+    projectId: string;
+    initialThread: Readonly<{
+      workflowRunId: string;
+      status: ChatThreadStatus;
+    }> | null;
+  }>,
+) {
   const legacyStorageKey = `workflow:chat:${props.projectId}:runId`;
   const storageKey = `workflow:chat:v1:${props.projectId}:runId`;
-  const [runId, setRunId] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const v1RunId = window.localStorage.getItem(storageKey);
-      if (v1RunId) {
-        return v1RunId;
-      }
-      const legacyRunId = window.localStorage.getItem(legacyStorageKey);
-      if (legacyRunId) {
-        window.localStorage.setItem(storageKey, legacyRunId);
-        window.localStorage.removeItem(legacyStorageKey);
-        return legacyRunId;
-      }
-      return null;
-    } catch (error) {
-      reportChatStorageError("[ChatClient] Failed to read runId from storage", {
-        error,
-        storageKey,
-        workflowRunId: null,
-      });
-      return null;
-    }
-  });
+  const [runId, setRunId] = useState<string | null>(
+    props.initialThread?.workflowRunId ?? null,
+  );
+  const [runStatus, setRunStatus] = useState<ChatThreadStatus | null>(
+    props.initialThread?.status ?? null,
+  );
+  const [chatId] = useState(
+    () =>
+      props.initialThread?.workflowRunId ?? `project-chat:${props.projectId}`,
+  );
+  const [shouldResume] = useState(
+    () => props.initialThread?.workflowRunId !== undefined,
+  );
 
   const [transport] = useState(() => {
     const workflowTransport = new WorkflowChatTransport<AppUIMessage>({
       api: "/api/chat",
       onChatEnd: () => {
+        setRunStatus("succeeded");
         setRunId(null);
         try {
           window.localStorage.removeItem(storageKey);
+          window.localStorage.removeItem(legacyStorageKey);
         } catch (error) {
           reportChatStorageError(
             "[ChatClient] Failed to clear runId from storage",
@@ -218,6 +227,7 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       onChatSendMessage: (response) => {
         const workflowRunId = response.headers.get("x-workflow-run-id");
         if (!workflowRunId) return;
+        setRunStatus("running");
         setRunId(workflowRunId);
         try {
           window.localStorage.setItem(storageKey, workflowRunId);
@@ -232,29 +242,13 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
           );
         }
       },
-      prepareReconnectToStreamRequest: async () => {
-        let stored: string | null = null;
-        try {
-          stored = window.localStorage.getItem(storageKey);
-        } catch (error) {
-          reportChatStorageError(
-            "[ChatClient] Failed to read runId for stream reconnect",
-            {
-              error,
-              storageKey,
-              workflowRunId: null,
-            },
-          );
-        }
-        if (!stored) {
-          return {};
-        }
-        return { api: `/api/chat/${stored}/stream` };
-      },
       prepareSendMessagesRequest: async (config) => {
         // The server expects a strict body: { projectId, messages }.
         return {
-          body: { messages: config.messages, projectId: props.projectId },
+          body: {
+            messages: reconstructMessages(config.messages),
+            projectId: props.projectId,
+          },
         };
       },
     });
@@ -280,14 +274,25 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
     sendMessage: baseSendMessage,
     setMessages,
     status,
-    stop,
-  } = useChat({ resume: !!runId, transport });
+  } = useChat({
+    id: chatId,
+    resume: shouldResume,
+    transport,
+  });
 
   const [composerError, setComposerError] = useState<string | null>(null);
   const composerErrorId = `project-chat-composer-error-${props.projectId}`;
   const composerInputId = `project-chat-composer-${props.projectId}`;
   const composerLabelId = `${composerInputId}-label`;
-  const messages = reconstructMessages(rawMessages);
+  const isTerminalStatus =
+    runStatus === "succeeded" ||
+    runStatus === "failed" ||
+    runStatus === "canceled";
+  const hasActiveSession = Boolean(runId) && !isTerminalStatus;
+  const messages = useMemo(
+    () => reconstructMessages(rawMessages),
+    [rawMessages],
+  );
 
   async function sendFollowUp(text: string): Promise<boolean> {
     if (!runId) return false;
@@ -320,9 +325,19 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
         }
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
         setComposerError(errorMessage);
+        if (response.status === 404 || response.status === 409) {
+          setRunStatus("succeeded");
+          setRunId(null);
+          try {
+            window.localStorage.removeItem(storageKey);
+          } catch {
+            // Ignore.
+          }
+        }
         return false;
       }
 
+      setRunStatus("waiting");
       setComposerError(null);
       return true;
     } catch (error) {
@@ -349,8 +364,25 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       return;
     }
 
-    if (runId) {
-      await sendFollowUp(text);
+    if (
+      runId &&
+      runStatus !== "succeeded" &&
+      runStatus !== "failed" &&
+      runStatus !== "canceled"
+    ) {
+      const ok = await sendFollowUp(text);
+      if (ok) {
+        return;
+      }
+
+      // Session may have ended; start a new session using the current transcript as context.
+      try {
+        await baseSendMessage({ text });
+      } catch (error) {
+        setComposerError(
+          error instanceof Error ? error.message : "Failed to send message.",
+        );
+      }
       return;
     }
 
@@ -369,6 +401,17 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       return;
     }
 
+    if (!hasActiveSession) {
+      setRunId(null);
+      setRunStatus(null);
+      try {
+        window.localStorage.removeItem(storageKey);
+      } catch {
+        // Ignore.
+      }
+      return;
+    }
+
     try {
       const response = await fetch(`/api/chat/${runId}`, {
         body: JSON.stringify({ message: "/done" }),
@@ -381,9 +424,37 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
         return;
       }
       setComposerError(null);
+      setRunStatus("succeeded");
     } catch (error) {
       setComposerError(
         error instanceof Error ? error.message : "Failed to end session.",
+      );
+    }
+  }
+
+  async function cancelSession() {
+    if (!runId || !hasActiveSession) return;
+
+    try {
+      const response = await fetch(`/api/chat/${runId}/cancel`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        setComposerError("Failed to cancel session.");
+        return;
+      }
+      setComposerError(null);
+      setRunStatus("canceled");
+      setRunId(null);
+      try {
+        window.localStorage.removeItem(storageKey);
+        window.localStorage.removeItem(legacyStorageKey);
+      } catch {
+        // Ignore.
+      }
+    } catch (error) {
+      setComposerError(
+        error instanceof Error ? error.message : "Failed to cancel session.",
       );
     }
   }
@@ -394,19 +465,14 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
         <div>
           <p className="text-muted-foreground text-sm">Project chat</p>
           <p className="text-muted-foreground text-xs" suppressHydrationWarning>
-            {runId ? `Session: ${runId}` : "Start a new session"}
+            {runId
+              ? `Session: ${runId}${runStatus ? ` · ${runStatus}` : ""}`
+              : "Start a new session"}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
-            disabled={status !== "streaming"}
-            onClick={() => stop()}
-            type="button"
-            variant="outline"
-          >
-            Stop
-          </Button>
-          <Button
+            disabled={!hasActiveSession}
             onClick={async () => {
               await endSession();
             }}
@@ -554,7 +620,7 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
             />
           </PromptInputBody>
           <div className="flex items-center justify-end gap-2 px-3 pb-3">
-            <PromptInputSubmit status={status} />
+            <PromptInputSubmit onStop={cancelSession} status={status} />
           </div>
         </PromptInput>
       </div>

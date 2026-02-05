@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { getRun } from "workflow/api";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
@@ -7,48 +7,29 @@ import {
   updateChatThreadByWorkflowRunId,
 } from "@/lib/data/chat.server";
 import { getProjectById } from "@/lib/data/projects.server";
-import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
-import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
-
-const bodySchema = z.strictObject({
-  message: z.string().min(1),
-});
 
 /**
- * Resume an in-flight multi-turn chat run by injecting a follow-up message.
+ * Cancel an in-flight chat session workflow run.
  *
- * @param req - HTTP request.
+ * @param _req - HTTP request.
  * @param context - Route params.
  * @returns JSON ok or JSON error.
- * @throws AppError - When the request body is invalid.
+ * @throws AppError - With code "not_found" when the session cannot be found.
+ * @throws AppError - With code "forbidden" when the session's project is not accessible.
  */
 export async function POST(
-  req: Request,
+  _req: Request,
   context: Readonly<{ params: Promise<{ runId: string }> }>,
-) {
+): Promise<Response> {
   try {
     const authPromise = requireAppUserApi();
     const paramsPromise = context.params;
-    const bodyPromise = parseJsonBody(req, bodySchema);
-
-    const [params, parsed] = await Promise.all([
-      paramsPromise,
-      bodyPromise,
-      authPromise,
-    ]);
+    const [, params] = await Promise.all([authPromise, paramsPromise]);
 
     const thread = await getChatThreadByWorkflowRunId(params.runId);
     if (!thread) {
       throw new AppError("not_found", 404, "Chat session not found.");
-    }
-
-    if (
-      thread.status === "succeeded" ||
-      thread.status === "failed" ||
-      thread.status === "canceled"
-    ) {
-      throw new AppError("conflict", 409, "Chat session is not active.");
     }
 
     const project = await getProjectById(thread.projectId);
@@ -56,14 +37,18 @@ export async function POST(
       throw new AppError("forbidden", 403, "Forbidden.");
     }
 
-    await chatMessageHook.resume(params.runId, { message: parsed.message });
+    const run = getRun(params.runId);
+    if (!run) {
+      throw new AppError("not_found", 404, "Run not found.");
+    }
+
+    await run.cancel();
 
     const now = new Date();
     await updateChatThreadByWorkflowRunId(params.runId, {
+      endedAt: now,
       lastActivityAt: now,
-      ...(parsed.message === "/done"
-        ? { endedAt: now, status: "succeeded" }
-        : { status: "running" }),
+      status: "canceled",
     });
 
     return jsonOk({ ok: true });
