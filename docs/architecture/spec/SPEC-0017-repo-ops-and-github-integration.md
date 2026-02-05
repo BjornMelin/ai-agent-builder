@@ -44,7 +44,7 @@ and repo indexing.
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -101,13 +101,13 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### File-level contracts
 
-- `docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md`: canonical RepoOps behavior.
-- `docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`: sandbox job building blocks.
-- `docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md`: PR-based GitOps policy.
+- [docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md](/docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md): canonical RepoOps behavior.
+- [docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md](/docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md): sandbox job building blocks.
+- [docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md](/docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md): PR-based GitOps policy.
 
 ### Configuration
 
-- GitHub credentials are feature-gated (see `docs/ops/env.md`):
+- GitHub credentials are feature-gated (see [docs/ops/env.md](/docs/ops/env.md)):
   - `GITHUB_TOKEN` (optional `GITHUB_WEBHOOK_SECRET`)
 
 ## Authentication and permissions
@@ -257,9 +257,9 @@ All operations persist:
 
 ## Key files
 
-- `docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md`
-- `docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md`
-- `docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`
+- [docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md](/docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md)
+- [docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md](/docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md)
+- [docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md](/docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
 
 ## References
 

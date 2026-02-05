@@ -71,7 +71,7 @@ auditability across external systems (GitHub, Vercel, optional provisioning)
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -140,14 +140,14 @@ flowchart LR
 
 ### File-level contracts
 
-- `docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md`: canonical state machine definition.
-- `docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md`: branch/PR/checks details.
-- `docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md`: provisioning + secrets mapping.
-- `docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`: standardized sandbox job definitions.
+- [docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md](/docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md): canonical state machine definition.
+- [docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md](/docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md): branch/PR/checks details.
+- [docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md](/docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md): provisioning + secrets mapping.
+- [docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md](/docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md): standardized sandbox job definitions.
 
 ### Configuration
 
-- Feature-gated credentials (see [SPEC-0015](./SPEC-0015-environment-configuration-contracts.md) and `docs/ops/env.md`):
+- Feature-gated credentials (see [SPEC-0015](./SPEC-0015-environment-configuration-contracts.md) and [docs/ops/env.md](/docs/ops/env.md)):
   - GitHub: `GITHUB_TOKEN` (optional `GITHUB_WEBHOOK_SECRET`)
   - Vercel API: `VERCEL_TOKEN` (optional `VERCEL_TEAM_ID`)
   - Sandbox: `VERCEL_OIDC_TOKEN` (preferred) or `VERCEL_TOKEN` + `VERCEL_PROJECT_ID`
@@ -310,10 +310,10 @@ Add run step payload conventions:
 
 ## Key files
 
-- `docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md`
-- `docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md`
-- `docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md`
-- `docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`
+- [docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md](/docs/architecture/spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md)
+- [docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md](/docs/architecture/spec/SPEC-0017-repo-ops-and-github-integration.md)
+- [docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md](/docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)
+- [docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md](/docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
 
 ## References
 

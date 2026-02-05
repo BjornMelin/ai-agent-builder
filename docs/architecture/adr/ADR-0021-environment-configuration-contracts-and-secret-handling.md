@@ -210,7 +210,7 @@ flowchart LR
 
 - The canonical list of env var groups lives in this ADR under
   [Environment variable groups](#environment-variable-groups) and is mirrored in
-  `docs/ops/env.md`.
+  [docs/ops/env.md](/docs/ops/env.md).
 - `.env.example` must stay aligned with the feature gates so local development
   fails clearly and safely.
 
@@ -236,7 +236,7 @@ flowchart LR
   - `src/lib/core/time.test.ts`
   - `src/lib/upstash/redis.server.test.ts`
   - `src/lib/upstash/qstash.server.test.ts`
-  - `docs/ops/env.md`
+  - [docs/ops/env.md](/docs/ops/env.md)
 - Updated:
   - `.env.example`
   - `vitest.config.ts`
@@ -256,7 +256,7 @@ flowchart LR
 
 ### Ongoing Maintenance & Considerations
 
-- Keep `docs/ops/env.md` and `.env.example` aligned with new feature gates.
+- Keep [docs/ops/env.md](/docs/ops/env.md) and `.env.example` aligned with new feature gates.
 - Prefer adding small, isolated schemas per integration rather than one global
   “mega schema”.
 

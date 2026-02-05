@@ -30,7 +30,7 @@ This spec exists to keep the project “north star” stable while implementatio
 iterates. The repo contains only a subset of the final system; specs and ADRs
 define the definitive target behavior and constraints.
 
-The requirements catalog in `docs/specs/requirements.md` is the canonical set
+The requirements catalog in [docs/specs/requirements.md](/docs/specs/requirements.md) is the canonical set
 of IDs that other specs/ADRs must reference.
 
 ## System scope
@@ -75,7 +75,7 @@ target boundaries and the canonical requirements catalog.
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -84,7 +84,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - **FR-023:** Start a durable Implementation Run (plan → code → verify → deploy).
 - **FR-034:** Generate a deterministic implementation audit bundle.
 
-Full catalog: see `docs/specs/requirements.md` (this spec maps scope and
+Full catalog: see [docs/specs/requirements.md](/docs/specs/requirements.md) (this spec maps scope and
 terminology; it does not restate every requirement verbatim).
 
 ### Non-functional requirements
@@ -170,12 +170,12 @@ The two capability domains map to two major pipelines:
 
 ### Data contracts (if applicable)
 
-- Requirement IDs: `FR-*`, `NFR-*`, `PR-*`, `IR-*` in `docs/specs/requirements.md`.
+- Requirement IDs: `FR-*`, `NFR-*`, `PR-*`, `IR-*` in [docs/specs/requirements.md](/docs/specs/requirements.md).
 - Artifact IDs/versions: see [SPEC-0008](./SPEC-0008-artifact-generation-versioning-and-export-zip.md).
 
 ### File-level contracts
 
-- `docs/specs/requirements.md`: canonical requirement IDs and descriptions.
+- [docs/specs/requirements.md](/docs/specs/requirements.md): canonical requirement IDs and descriptions.
 - `docs/architecture/spec/SPEC-*.md`: implementable designs (must reference requirement IDs).
 - `docs/architecture/adr/ADR-*.md`: durable decisions (must reference requirement IDs).
 
@@ -183,11 +183,11 @@ The two capability domains map to two major pipelines:
 
 - Documentation alignment rules are enforced by `AGENTS.md` (including the env
   var contract rule that keeps ADR/spec/docs aligned with `.env.example` and
-  `docs/ops/env.md`).
+  [docs/ops/env.md](/docs/ops/env.md)).
 
 ## Acceptance criteria
 
-- Specs/ADRs consistently reference requirement IDs from `docs/specs/requirements.md`.
+- Specs/ADRs consistently reference requirement IDs from [docs/specs/requirements.md](/docs/specs/requirements.md).
 - The system scope and vocabulary is stable enough to guide implementation work
   without frequent renames/restructures.
 
@@ -198,21 +198,21 @@ The two capability domains map to two major pipelines:
 ## Operational notes
 
 - When adding a new feature, add/extend:
-  - `docs/specs/requirements.md` (new IDs if needed)
+  - [docs/specs/requirements.md](/docs/specs/requirements.md) (new IDs if needed)
   - a SPEC for implementable design
   - an ADR for durable decisions
 
 ## Failure modes and mitigation
 
 - Spec/ADR drift from the requirements catalog → enforce requirement ID usage
-  and keep the index files updated (`docs/architecture/spec/index.md`,
-  `docs/architecture/adr/index.md`).
+  and keep the index files updated ([docs/architecture/spec/index.md](/docs/architecture/spec/index.md),
+  [docs/architecture/adr/index.md](/docs/architecture/adr/index.md)).
 
 ## Key files
 
-- `docs/specs/requirements.md`
-- `docs/architecture/overview.md`
-- `docs/architecture/repository-baseline.md`
+- [docs/specs/requirements.md](/docs/specs/requirements.md)
+- [docs/architecture/overview.md](/docs/architecture/overview.md)
+- [docs/architecture/repository-baseline.md](/docs/architecture/repository-baseline.md)
 
 ## References
 

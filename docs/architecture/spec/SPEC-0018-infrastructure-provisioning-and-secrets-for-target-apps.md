@@ -45,7 +45,7 @@ the system must support partial automation with deterministic manual fallback.
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -110,13 +110,13 @@ flowchart LR
 
 ### File-level contracts
 
-- `docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md`: canonical mapping rules.
-- `docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md`: provisioning automation decision.
-- `docs/architecture/adr/ADR-0021-environment-configuration-contracts-and-secret-handling.md`: env/secret handling policy.
+- [docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md](/docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md): canonical mapping rules.
+- [docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md](/docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md): provisioning automation decision.
+- [docs/architecture/adr/ADR-0021-environment-configuration-contracts-and-secret-handling.md](/docs/architecture/adr/ADR-0021-environment-configuration-contracts-and-secret-handling.md): env/secret handling policy.
 
 ### Configuration
 
-- Feature-gated credentials (see `docs/ops/env.md`):
+- Feature-gated credentials (see [docs/ops/env.md](/docs/ops/env.md)):
   - Vercel API: `VERCEL_TOKEN` (optional `VERCEL_TEAM_ID`)
   - Optional Neon provisioning: `NEON_API_KEY`
   - Optional Upstash provisioning: `UPSTASH_EMAIL` + `UPSTASH_API_KEY`
@@ -236,9 +236,9 @@ Default policies:
 
 ## Key files
 
-- `docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md`
-- `docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md`
-- `docs/ops/env.md`
+- [docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md](/docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)
+- [docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md](/docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md)
+- [docs/ops/env.md](/docs/ops/env.md)
 
 ## References
 

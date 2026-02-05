@@ -53,7 +53,7 @@ To stay usable at scale, the UI needs:
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -198,7 +198,7 @@ Accessibility and UX:
 
 ### Configuration
 
-- See `docs/ops/env.md`:
+- See [docs/ops/env.md](/docs/ops/env.md):
   - DB: `DATABASE_URL`
   - Upstash Vector: `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`
   - Optional caching: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
@@ -239,11 +239,11 @@ Accessibility and UX:
 
 ## Key files
 
-- `docs/architecture/spec/SPEC-0020-project-workspace-and-search.md`
-- `docs/specs/requirements.md`
-- `docs/architecture/spec/SPEC-0003-upload-ingestion-pipeline.md`
-- `docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md`
-- `docs/architecture/spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md`
+- [docs/architecture/spec/SPEC-0020-project-workspace-and-search.md](/docs/architecture/spec/SPEC-0020-project-workspace-and-search.md)
+- [docs/specs/requirements.md](/docs/specs/requirements.md)
+- [docs/architecture/spec/SPEC-0003-upload-ingestion-pipeline.md](/docs/architecture/spec/SPEC-0003-upload-ingestion-pipeline.md)
+- [docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md](/docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md)
+- [docs/architecture/spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md](/docs/architecture/spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md)
 
 ## References
 

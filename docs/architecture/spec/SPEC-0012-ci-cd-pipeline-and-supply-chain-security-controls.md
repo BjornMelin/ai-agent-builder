@@ -32,7 +32,7 @@ The repo is already configured with CI and security workflows. This spec sets ex
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 

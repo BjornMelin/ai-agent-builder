@@ -38,7 +38,7 @@ Users upload pitch decks, PDFs, docs, and spreadsheets. The system must preserve
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -115,7 +115,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Configuration
 
-- See `docs/ops/env.md` for the ingestion pipeline env vars:
+- See [docs/ops/env.md](/docs/ops/env.md) for the ingestion pipeline env vars:
   - Blob: `BLOB_READ_WRITE_TOKEN`
   - AI Gateway: `AI_GATEWAY_API_KEY` (optional `AI_GATEWAY_BASE_URL`)
   - Upstash Vector: `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`

@@ -32,7 +32,7 @@ The bootstrapped repo enables React Compiler and uses `next typegen` in scripts.
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 

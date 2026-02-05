@@ -43,7 +43,7 @@ long-running jobs with logs and resource controls (see
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -104,12 +104,12 @@ Sandbox jobs provide a single interface for:
 
 ### File-level contracts
 
-- `docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`: canonical job taxonomy and contracts.
-- `docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md`: sandbox decision and tool selection.
+- [docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md](/docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md): canonical job taxonomy and contracts.
+- [docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md](/docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md): sandbox decision and tool selection.
 
 ### Configuration
 
-- Sandbox auth modes (see `docs/ops/env.md`):
+- Sandbox auth modes (see [docs/ops/env.md](/docs/ops/env.md)):
   - OIDC token (preferred): `VERCEL_OIDC_TOKEN` (see
     [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication))
   - Access token fallback: `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (optional `VERCEL_TEAM_ID`) (see
@@ -253,9 +253,9 @@ Persist:
 
 ## Key files
 
-- `docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`
-- `docs/architecture/spec/SPEC-0009-sandbox-code-mode.md`
-- `docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md`
+- [docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md](/docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
+- [docs/architecture/spec/SPEC-0009-sandbox-code-mode.md](/docs/architecture/spec/SPEC-0009-sandbox-code-mode.md)
+- [docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md](/docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md)
 
 ## References
 

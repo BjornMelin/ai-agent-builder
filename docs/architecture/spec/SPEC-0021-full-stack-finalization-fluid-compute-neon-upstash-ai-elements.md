@@ -237,7 +237,7 @@ development, Vercel Preview deployments, and Production.
 ### Environment tiers
 
 We use Vercel’s standard env tiers and keep the contracts aligned with
-`docs/ops/env.md` and `src/lib/env.ts` (ADR-0021 / SPEC-0015):
+[docs/ops/env.md](/docs/ops/env.md) and `src/lib/env.ts` (ADR-0021 / SPEC-0015):
 
 - **Development**: local dev + `vercel dev` + Vercel “Development” env vars.
 - **Preview**: per-branch deployments (and, when enabled, per-branch Neon DB branch).
@@ -271,7 +271,7 @@ prefer production-scoped resources and tokens.
 ### Env var matrix (minimum required)
 
 These are “minimum required for full functionality” env vars. Each group is
-feature-gated in `src/lib/env.ts` and documented in `docs/ops/env.md`.
+feature-gated in `src/lib/env.ts` and documented in [docs/ops/env.md](/docs/ops/env.md).
 
 - **DB**:
   - `DATABASE_URL`
@@ -600,7 +600,7 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 3. Ensure the “env var contract” is updated when defaults change:
    - `src/lib/env.ts`
    - `.env.example`
-   - `docs/ops/env.md`
+   - [docs/ops/env.md](/docs/ops/env.md)
    - `src/lib/env.test.ts`
 
 ## References
