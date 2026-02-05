@@ -17,6 +17,11 @@ export const SITE_DESCRIPTION =
   "Build AI-powered products, applications, and workflows.";
 
 /**
+ * Canonical product tagline used in social image branding.
+ */
+export const SITE_TAGLINE = "Build AI-powered products and workflows.";
+
+/**
  * Robots defaults for private, authenticated routes.
  */
 export const PRIVATE_ROBOTS: Metadata["robots"] = {

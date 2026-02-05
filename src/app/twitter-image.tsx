@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { SITE_NAME } from "@/lib/metadata/site";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/metadata/site";
 
 /**
  * Alt text for the generated Twitter card image.
@@ -64,7 +64,7 @@ export default function TwitterImage() {
             lineHeight: 1.3,
           }}
         >
-          Build AI-powered products, applications, and workflows.
+          {SITE_DESCRIPTION}
         </div>
       </div>
     </div>,

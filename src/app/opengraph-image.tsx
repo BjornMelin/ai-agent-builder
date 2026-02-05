@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/metadata/site";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from "@/lib/metadata/site";
 
 /**
  * Alt text for the generated Open Graph image.
@@ -58,7 +58,7 @@ export default function OpenGraphImage() {
           maxWidth: 1000,
         }}
       >
-        Build AI-powered products and workflows.
+        {SITE_TAGLINE}
       </div>
       <div
         style={{
