@@ -406,7 +406,7 @@ export const CommitContent = (props: CommitContentProps) => {
 /**
  * Props for the CommitFiles component.
  */
-export type CommitFilesProps = HTMLAttributes<HTMLDivElement>;
+export type CommitFilesProps = ComponentProps<"ul">;
 
 /**
  * List of files changed in a commit.
@@ -417,16 +417,20 @@ export type CommitFilesProps = HTMLAttributes<HTMLDivElement>;
 export const CommitFiles = (props: CommitFilesProps) => {
   const { className, children, ...rest } = props;
   return (
-    <div className={cn("space-y-1", className)} {...rest}>
+    <ul
+      className={cn("m-0 list-none space-y-1 p-0", className)}
+      data-slot="commit-files"
+      {...rest}
+    >
       {children}
-    </div>
+    </ul>
   );
 };
 
 /**
  * Props for the CommitFile component.
  */
-export type CommitFileProps = HTMLAttributes<HTMLDivElement>;
+export type CommitFileProps = ComponentProps<"li">;
 
 /**
  * Represents a single file changed in a commit.
@@ -437,15 +441,16 @@ export type CommitFileProps = HTMLAttributes<HTMLDivElement>;
 export const CommitFile = (props: CommitFileProps) => {
   const { className, children, ...rest } = props;
   return (
-    <div
+    <li
       className={cn(
         "flex items-center justify-between gap-2 rounded px-2 py-1 text-sm hover:bg-muted/50",
         className,
       )}
+      data-slot="commit-file"
       {...rest}
     >
       {children}
-    </div>
+    </li>
   );
 };
 

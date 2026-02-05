@@ -16,10 +16,11 @@ export type ConversationProps = ComponentProps<typeof StickToBottom>;
  * @returns A stick-to-bottom conversation container.
  */
 export const Conversation = (props: ConversationProps) => {
-  const { className, ...rest } = props;
+  const { className, "aria-label": ariaLabel, ...rest } = props;
 
   return (
     <StickToBottom
+      aria-label={ariaLabel ?? "Conversation messages"}
       className={cn("relative flex-1 overflow-y-hidden", className)}
       initial="smooth"
       resize="smooth"

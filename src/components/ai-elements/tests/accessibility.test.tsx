@@ -11,13 +11,20 @@ import {
   AudioPlayerSeekForwardButton,
 } from "@/components/ai-elements/audio-player";
 import { CheckpointTrigger } from "@/components/ai-elements/checkpoint";
+import { CommitFile, CommitFiles } from "@/components/ai-elements/commit";
 import { Context, ContextTrigger } from "@/components/ai-elements/context";
+import { Conversation } from "@/components/ai-elements/conversation";
 import {
   FileTree,
   FileTreeFile,
   FileTreeFolder,
 } from "@/components/ai-elements/file-tree";
+import {
+  InlineCitationCarouselNext,
+  InlineCitationCarouselPrev,
+} from "@/components/ai-elements/inline-citation";
 import { ModelSelectorInput } from "@/components/ai-elements/model-selector";
+import { OpenIn, OpenInTrigger } from "@/components/ai-elements/open-in-chat";
 import { PromptInputCommandInput } from "@/components/ai-elements/prompt-input";
 import {
   StackTrace,
@@ -151,5 +158,54 @@ describe("ai-elements accessibility defaults", () => {
     expect(html).toContain('aria-label="Search models"');
     expect(html).toContain('aria-label="Search voices"');
     expect(html).toContain('aria-label="Search prompt actions"');
+  });
+
+  it("renders the open-in trigger icon as decorative", () => {
+    const html = renderToStaticMarkup(
+      <OpenIn query="Write a changelog entry">
+        <OpenInTrigger />
+      </OpenIn>,
+    );
+
+    expect(html).toContain("Open in chat");
+    expect(html).toContain('aria-hidden="true"');
+  });
+
+  it("renders commit files as semantic list markup", () => {
+    const html = renderToStaticMarkup(
+      <CommitFiles>
+        <CommitFile>src/app.tsx</CommitFile>
+      </CommitFiles>,
+    );
+
+    expect(html).toContain("<ul");
+    expect(html).toContain("<li");
+  });
+
+  it("provides a default label for the conversation log and supports overrides", () => {
+    const defaultHtml = renderToStaticMarkup(
+      <Conversation>
+        <div />
+      </Conversation>,
+    );
+    expect(defaultHtml).toContain('role="log"');
+    expect(defaultHtml).toContain('aria-label="Conversation messages"');
+
+    const customHtml = renderToStaticMarkup(
+      <Conversation aria-label="Run transcript">
+        <div />
+      </Conversation>,
+    );
+    expect(customHtml).toContain('aria-label="Run transcript"');
+  });
+
+  it("uses native disabled semantics for citation carousel buttons", () => {
+    const prevHtml = renderToStaticMarkup(<InlineCitationCarouselPrev />);
+    const nextHtml = renderToStaticMarkup(<InlineCitationCarouselNext />);
+
+    expect(prevHtml).toContain("disabled");
+    expect(nextHtml).toContain("disabled");
+    expect(prevHtml).not.toContain("aria-disabled");
+    expect(nextHtml).not.toContain("aria-disabled");
   });
 });
