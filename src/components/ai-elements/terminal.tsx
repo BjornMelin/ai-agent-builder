@@ -6,6 +6,7 @@ import {
   type ComponentProps,
   createContext,
   type HTMLAttributes,
+  memo,
   useContext,
   useEffect,
   useRef,
@@ -21,6 +22,11 @@ interface TerminalContextType {
   scroll: "auto" | "manual";
   onClear?: () => void;
 }
+
+const TerminalOutput = memo(({ output }: { output: string }) => (
+  <Ansi>{output}</Ansi>
+));
+TerminalOutput.displayName = "TerminalOutput";
 
 const TerminalContext = createContext<TerminalContextType>({
   mode: "static",
@@ -345,7 +351,7 @@ export const TerminalContent = (props: TerminalContentProps) => {
       ) : null}
       {children ?? (
         <pre className="whitespace-pre-wrap break-words">
-          <Ansi>{output}</Ansi>
+          <TerminalOutput output={output} />
           {mode === "streaming" ? (
             <span
               aria-hidden="true"

@@ -1,24 +1,17 @@
-import { Panel as PanelPrimitive } from "@xyflow/react";
-import type { ComponentProps } from "react";
-import { cn } from "@/lib/utils";
+"use client";
 
-type PanelProps = ComponentProps<typeof PanelPrimitive>;
+import dynamic from "next/dynamic";
+
+/** Props for the lazily loaded `Panel` component. */
+export type PanelProps = import("./panel-inner").PanelProps;
 
 /**
- * Renders a positioned panel inside a React Flow canvas.
- *
- * @param props - Panel props including positioning and children.
- * @returns A panel element.
+ * Lazily load the XYFlow panel to keep `xyflow/react` out of the main bundle.
  */
-export const Panel = (props: PanelProps) => {
-  const { className, ...rest } = props;
-  return (
-    <PanelPrimitive
-      className={cn(
-        "m-4 overflow-hidden rounded-md border bg-card p-1",
-        className,
-      )}
-      {...rest}
-    />
-  );
-};
+export const Panel = dynamic<PanelProps>(
+  () => import("./panel-inner").then((mod) => mod.PanelInner),
+  {
+    loading: () => <div aria-hidden="true" className="h-full w-full" />,
+    ssr: false,
+  },
+);

@@ -13,6 +13,12 @@ export interface TextShimmerProps {
   spread?: number;
 }
 
+/**
+ * Renders text with an animated shimmer gradient.
+ *
+ * @param props - Shimmer content and animation options.
+ * @returns A shimmer text wrapper.
+ */
 const ShimmerComponent = ({
   children,
   as: Component = "p",

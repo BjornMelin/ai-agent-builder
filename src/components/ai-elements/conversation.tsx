@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownIcon } from "lucide-react";
+import { ArrowDownIcon, DownloadIcon } from "lucide-react";
 import { type ComponentProps, createElement, type ReactNode } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { Button } from "@/components/ui/button";
@@ -136,4 +136,91 @@ export const ConversationScrollButton = (
       <ArrowDownIcon aria-hidden="true" className="size-4" />
     </Button>
   ) : null;
+};
+
+/**
+ * Conversation message shape for download exports.
+ */
+export interface ConversationMessage {
+  role: "user" | "assistant" | "system" | "data" | "tool";
+  content: string;
+}
+
+/** Props for the ConversationDownload component. */
+export type ConversationDownloadProps = Omit<
+  ComponentProps<typeof Button>,
+  "onClick"
+> & {
+  messages: ConversationMessage[];
+  filename?: string;
+  formatMessage?: (message: ConversationMessage, index: number) => string;
+};
+
+const defaultFormatMessage = (message: ConversationMessage): string => {
+  const roleLabel =
+    message.role.charAt(0).toUpperCase() + message.role.slice(1);
+  return `**${roleLabel}:** ${message.content}`;
+};
+
+/**
+ * Convert conversation messages into Markdown.
+ *
+ * @param messages - Messages to format.
+ * @param formatMessage - Optional formatting callback.
+ * @returns A Markdown string representation of the conversation.
+ */
+export const messagesToMarkdown = (
+  messages: ConversationMessage[],
+  formatMessage: (
+    message: ConversationMessage,
+    index: number,
+  ) => string = defaultFormatMessage,
+): string => messages.map((msg, i) => formatMessage(msg, i)).join("\n\n");
+
+/**
+ * Download button that exports the conversation as Markdown.
+ *
+ * @param props - Download props including messages and filename.
+ * @returns A download button that triggers a Markdown export.
+ */
+export const ConversationDownload = (props: ConversationDownloadProps) => {
+  const {
+    messages,
+    filename = "conversation.md",
+    formatMessage = defaultFormatMessage,
+    className,
+    children,
+    ...rest
+  } = props;
+  const handleDownload = () => {
+    const markdown = messagesToMarkdown(messages, formatMessage);
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const ariaLabel = rest["aria-label"] ?? "Download conversation as Markdown";
+
+  return (
+    <Button
+      aria-label={ariaLabel}
+      className={cn(
+        "absolute top-4 right-4 rounded-full dark:bg-background dark:hover:bg-muted",
+        className,
+      )}
+      onClick={handleDownload}
+      size="icon"
+      type="button"
+      variant="outline"
+      {...rest}
+    >
+      {children ?? <DownloadIcon aria-hidden="true" className="size-4" />}
+    </Button>
+  );
 };

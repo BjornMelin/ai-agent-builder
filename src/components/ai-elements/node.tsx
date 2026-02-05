@@ -1,7 +1,8 @@
-import { Handle, Position } from "@xyflow/react";
+"use client";
+
+import dynamic from "next/dynamic";
 import type { ComponentProps } from "react";
 import {
-  Card,
   CardAction,
   CardContent,
   CardDescription,
@@ -12,39 +13,18 @@ import {
 import { cn } from "@/lib/utils";
 
 /** Props for the Node component. */
-export type NodeProps = ComponentProps<typeof Card> & {
-  handles: {
-    target: boolean;
-    source: boolean;
-  };
-};
+export type NodeProps = import("./node-inner").NodeProps;
 
 /**
- * Renders an XYFlow node with optional source and target handles.
- *
- * @param props - Card props including handle configuration.
- * @returns A node card element with connection handles.
+ * Lazy XYFlow node to keep `xyflow/react` out of the main bundle.
  */
-export const Node = (props: NodeProps) => {
-  const { handles, className, children, ...rest } = props;
-  return (
-    <Card
-      className={cn(
-        "node-container relative size-full h-auto w-sm gap-0 rounded-md p-0",
-        className,
-      )}
-      {...rest}
-    >
-      {handles.target ? (
-        <Handle position={Position.Left} type="target" />
-      ) : null}
-      {handles.source ? (
-        <Handle position={Position.Right} type="source" />
-      ) : null}
-      {children}
-    </Card>
-  );
-};
+export const Node = dynamic<NodeProps>(
+  () => import("./node-inner").then((mod) => mod.NodeInner),
+  {
+    loading: () => <div aria-hidden="true" className="h-full w-full" />,
+    ssr: false,
+  },
+);
 
 /** Props for the NodeHeader component. */
 export type NodeHeaderProps = ComponentProps<typeof CardHeader>;

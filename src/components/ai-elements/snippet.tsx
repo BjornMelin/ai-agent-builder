@@ -53,6 +53,7 @@ export const Snippet = (props: SnippetProps) => {
   );
 };
 
+/** Props for the `SnippetAddon` component. */
 export type SnippetAddonProps = ComponentProps<typeof InputGroupAddon>;
 
 /**
@@ -65,6 +66,7 @@ export const SnippetAddon = (props: SnippetAddonProps) => (
   <InputGroupAddon {...props} />
 );
 
+/** Props for the `SnippetText` component. */
 export type SnippetTextProps = ComponentProps<typeof InputGroupText>;
 
 /**
@@ -83,6 +85,7 @@ export const SnippetText = (props: SnippetTextProps) => {
   );
 };
 
+/** Props for the `SnippetInput` component. */
 export type SnippetInputProps = Omit<
   ComponentProps<typeof InputGroupInput>,
   "readOnly" | "value"
