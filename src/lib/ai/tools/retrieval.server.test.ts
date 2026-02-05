@@ -146,4 +146,86 @@ describe("retrieveProjectArtifacts", () => {
       version: 1,
     });
   });
+
+  it("deduplicates multiple chunk hits from the same latest artifact version", async () => {
+    const { retrieveProjectArtifacts } = await loadModule();
+
+    const projectId = "11111111-1111-4111-8111-111111111111";
+    const results: readonly VectorQueryResult[] = [
+      {
+        id: "prd-v2-chunk-1",
+        metadata: {
+          artifactId: "art_v2",
+          artifactKey: "PRD",
+          artifactKind: "PRD",
+          artifactVersion: 2,
+          projectId,
+          snippet: "prd chunk 1",
+          title: "PRD v2",
+          type: "artifact",
+        },
+        score: 0.95,
+      },
+      {
+        id: "prd-v2-chunk-2",
+        metadata: {
+          artifactId: "art_v2",
+          artifactKey: "PRD",
+          artifactKind: "PRD",
+          artifactVersion: 2,
+          projectId,
+          snippet: "prd chunk 2",
+          title: "PRD v2",
+          type: "artifact",
+        },
+        score: 0.93,
+      },
+      {
+        id: "prd-v2-chunk-3",
+        metadata: {
+          artifactId: "art_v2",
+          artifactKey: "PRD",
+          artifactKind: "PRD",
+          artifactVersion: 2,
+          projectId,
+          snippet: "prd chunk 3",
+          title: "PRD v2",
+          type: "artifact",
+        },
+        score: 0.91,
+      },
+      {
+        id: "arch-v1-chunk-1",
+        metadata: {
+          artifactId: "arch_v1",
+          artifactKey: "ARCH",
+          artifactKind: "ARCH",
+          artifactVersion: 1,
+          projectId,
+          snippet: "arch chunk 1",
+          title: "ARCH v1",
+          type: "artifact",
+        },
+        score: 0.7,
+      },
+    ];
+
+    state.vectorQuery.mockResolvedValueOnce(results);
+
+    const hits = await retrieveProjectArtifacts({
+      projectId,
+      q: "architecture plan",
+      topK: 2,
+    });
+
+    expect(hits).toHaveLength(2);
+    expect(
+      hits.filter(
+        (hit) =>
+          hit.provenance.kind === "PRD" && hit.provenance.logicalKey === "PRD",
+      ),
+    ).toHaveLength(1);
+    expect(hits[0]?.id).toBe("prd-v2-chunk-1");
+    expect(hits[1]?.id).toBe("arch-v1-chunk-1");
+  });
 });

@@ -260,13 +260,20 @@ export async function retrieveProjectArtifacts(
     }
   }
 
-  const hits: ArtifactRetrievalHit[] = [];
+  const bestHitByKey = new Map<string, ArtifactRetrievalHit>();
   for (const candidate of candidates) {
     const latest = latestVersionByKey.get(candidate.logicalArtifactKey);
     if (latest !== candidate.version) continue;
-    hits.push(candidate.hit);
-    if (hits.length >= topK) break;
+
+    const existing = bestHitByKey.get(candidate.logicalArtifactKey);
+    if (!existing || candidate.hit.score > existing.score) {
+      bestHitByKey.set(candidate.logicalArtifactKey, candidate.hit);
+    }
   }
+
+  const hits = [...bestHitByKey.values()]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
 
   if (redis) {
     await redis.setex(key, budgets.toolCacheTtlSeconds, hits).catch(() => {
