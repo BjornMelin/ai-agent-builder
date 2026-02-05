@@ -2,6 +2,7 @@ import type { UIMessageChunk } from "ai";
 import { getWorkflowMetadata, getWritable } from "workflow";
 
 import type { RunStreamEvent } from "@/lib/runs/run-stream";
+import { createRunSummaryArtifact } from "@/workflows/runs/steps/artifacts.step";
 import {
   beginRunStep,
   cancelRunAndSteps,
@@ -110,6 +111,43 @@ export async function projectRun(
       runId,
       status: "succeeded",
       stepId: "run.complete",
+      timestamp: nowTimestamp(),
+      type: "step-finished",
+    });
+
+    await ensureRunStepRow({
+      runId,
+      stepId: "artifact.run_summary",
+      stepKind: "tool",
+      stepName: "Persist run summary artifact",
+    });
+    await beginRunStep({ runId, stepId: "artifact.run_summary" });
+    await writeRunEvent(writable, {
+      runId,
+      stepId: "artifact.run_summary",
+      stepKind: "tool",
+      stepName: "Persist run summary artifact",
+      timestamp: nowTimestamp(),
+      type: "step-started",
+    });
+    const summary = await createRunSummaryArtifact({
+      kind: runInfo.kind,
+      projectId: runInfo.projectId,
+      runId,
+      status: "succeeded",
+      workflowRunId,
+    });
+    await finishRunStep({
+      outputs: summary,
+      runId,
+      status: "succeeded",
+      stepId: "artifact.run_summary",
+    });
+    await writeRunEvent(writable, {
+      outputs: summary,
+      runId,
+      status: "succeeded",
+      stepId: "artifact.run_summary",
       timestamp: nowTimestamp(),
       type: "step-finished",
     });
