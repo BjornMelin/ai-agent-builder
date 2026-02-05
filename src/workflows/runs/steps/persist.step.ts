@@ -129,7 +129,11 @@ export async function beginRunStep(
     throw new AppError("not_found", 404, "Run step not found.");
   }
 
-  if (row.status === "running" || row.status === "succeeded") {
+  if (
+    row.status === "running" ||
+    row.status === "succeeded" ||
+    row.status === "canceled"
+  ) {
     return;
   }
 
@@ -145,7 +149,11 @@ export async function beginRunStep(
       and(
         eq(schema.runStepsTable.runId, input.runId),
         eq(schema.runStepsTable.stepId, input.stepId),
-        notInArray(schema.runStepsTable.status, ["running", "succeeded"]),
+        notInArray(schema.runStepsTable.status, [
+          "running",
+          "succeeded",
+          "canceled",
+        ]),
       ),
     );
 }
@@ -169,6 +177,22 @@ export async function finishRunStep(
   const db = getDb();
   const now = new Date();
 
+  const existing = await db.query.runStepsTable.findFirst({
+    columns: { status: true },
+    where: and(
+      eq(schema.runStepsTable.runId, input.runId),
+      eq(schema.runStepsTable.stepId, input.stepId),
+    ),
+  });
+
+  if (!existing) {
+    throw new AppError("not_found", 404, "Run step not found.");
+  }
+
+  if (existing.status === "canceled" || existing.status === "succeeded") {
+    return;
+  }
+
   await db
     .update(schema.runStepsTable)
     .set({
@@ -185,6 +209,7 @@ export async function finishRunStep(
       and(
         eq(schema.runStepsTable.runId, input.runId),
         eq(schema.runStepsTable.stepId, input.stepId),
+        notInArray(schema.runStepsTable.status, ["canceled", "succeeded"]),
       ),
     );
 }

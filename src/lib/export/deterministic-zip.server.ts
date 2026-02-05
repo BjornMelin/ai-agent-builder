@@ -1,7 +1,7 @@
 import "server-only";
 
 import { Readable } from "node:stream";
-
+import { AppError } from "@/lib/core/errors";
 import { sha256Hex } from "@/lib/core/sha256";
 
 type ZipCompression = "DEFLATE";
@@ -9,6 +9,7 @@ type ZipCompression = "DEFLATE";
 const FIXED_DATE = new Date(0);
 const COMPRESSION: ZipCompression = "DEFLATE";
 const COMPRESSION_LEVEL = 6;
+const RESERVED_EXPORT_PATHS = new Set(["manifest.json"]);
 
 /**
  * A single file entry in an export bundle.
@@ -36,7 +37,58 @@ type ExportFileInput = Readonly<{
 function sanitizeSegment(value: string): string {
   const trimmed = value.trim();
   if (trimmed.length === 0) return "artifact";
-  return trimmed.replaceAll(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 128);
+
+  const sanitized = trimmed.replaceAll(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 128);
+  if (sanitized.length === 0) return "artifact";
+  if (sanitized === ".") return "_dot";
+  if (sanitized === "..") return "_dotdot";
+  return sanitized;
+}
+
+function sanitizeZipPath(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return "artifact";
+
+  const unix = trimmed.replaceAll(/\\/g, "/").replace(/^[a-zA-Z]:/, "");
+  const withoutLeadingSlash = unix.replace(/^\/+/, "");
+
+  const segments = withoutLeadingSlash
+    .split("/")
+    .filter((segment) => segment.length > 0)
+    .map((segment) => sanitizeSegment(segment));
+
+  return segments.length > 0 ? segments.join("/") : "artifact";
+}
+
+function sanitizeFileInputs(
+  files: readonly ExportFileInput[],
+): ExportFileInput[] {
+  const seen = new Set<string>();
+  const sanitized: ExportFileInput[] = [];
+
+  for (const file of files) {
+    const safePath = sanitizeZipPath(file.path);
+    if (RESERVED_EXPORT_PATHS.has(safePath)) {
+      throw new AppError(
+        "export_path_conflict",
+        500,
+        "Export path conflicts with a reserved ZIP entry name.",
+        { path: safePath },
+      );
+    }
+    if (seen.has(safePath)) {
+      throw new AppError(
+        "export_path_conflict",
+        500,
+        "Export contains duplicate ZIP entry paths after sanitization.",
+        { path: safePath },
+      );
+    }
+    seen.add(safePath);
+    sanitized.push({ contentBytes: file.contentBytes, path: safePath });
+  }
+
+  return sanitized;
 }
 
 function toUtf8Bytes(value: string): Uint8Array {
@@ -70,11 +122,33 @@ async function createZip(files: readonly ExportFileInput[]) {
   for (const file of sorted) {
     zip.file(file.path, file.contentBytes, {
       compression: COMPRESSION,
+      createFolders: false,
       date: FIXED_DATE,
     });
   }
 
   return zip;
+}
+
+function prepareZipInputs(
+  input: Readonly<{
+    project: ExportManifest["project"];
+    files: readonly ExportFileInput[];
+  }>,
+): Readonly<{
+  manifest: ExportManifest;
+  zipFiles: readonly ExportFileInput[];
+}> {
+  const sanitizedFiles = sanitizeFileInputs(input.files);
+  const manifest = buildManifest(input.project, sanitizedFiles);
+  const manifestBytes = toUtf8Bytes(`${JSON.stringify(manifest, null, 2)}\n`);
+
+  const zipFiles: ExportFileInput[] = [
+    ...sanitizedFiles,
+    { contentBytes: manifestBytes, path: "manifest.json" },
+  ];
+
+  return { manifest, zipFiles };
 }
 
 /**
@@ -89,25 +163,13 @@ export async function buildDeterministicZipBytes(
     files: readonly ExportFileInput[];
   }>,
 ): Promise<Readonly<{ bytes: Uint8Array; manifest: ExportManifest }>> {
-  const manifest = buildManifest(input.project, input.files);
-  const manifestBytes = toUtf8Bytes(`${JSON.stringify(manifest, null, 2)}\n`);
-
-  const files: ExportFileInput[] = [
-    ...input.files,
-    { contentBytes: manifestBytes, path: "manifest.json" },
-  ].map((f) => ({
-    contentBytes: f.contentBytes,
-    path: f.path
-      .split("/")
-      .map((s) => sanitizeSegment(s))
-      .join("/"),
-  }));
-
-  const zip = await createZip(files);
+  const { manifest, zipFiles } = prepareZipInputs(input);
+  const zip = await createZip(zipFiles);
 
   const bytes = await zip.generateAsync({
     compression: COMPRESSION,
     compressionOptions: { level: COMPRESSION_LEVEL },
+    streamFiles: true,
     type: "uint8array",
   });
 
@@ -128,21 +190,8 @@ export async function buildDeterministicZipStream(
 ): Promise<
   Readonly<{ stream: ReadableStream<Uint8Array>; manifest: ExportManifest }>
 > {
-  const manifest = buildManifest(input.project, input.files);
-  const manifestBytes = toUtf8Bytes(`${JSON.stringify(manifest, null, 2)}\n`);
-
-  const files: ExportFileInput[] = [
-    ...input.files,
-    { contentBytes: manifestBytes, path: "manifest.json" },
-  ].map((f) => ({
-    contentBytes: f.contentBytes,
-    path: f.path
-      .split("/")
-      .map((s) => sanitizeSegment(s))
-      .join("/"),
-  }));
-
-  const zip = await createZip(files);
+  const { manifest, zipFiles } = prepareZipInputs(input);
+  const zip = await createZip(zipFiles);
 
   const nodeStream = zip.generateNodeStream({
     compression: COMPRESSION,
