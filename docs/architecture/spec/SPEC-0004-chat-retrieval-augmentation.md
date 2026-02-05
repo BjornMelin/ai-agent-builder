@@ -106,7 +106,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - `src/app/(app)/projects/[projectId]/chat/page.tsx`: UI for streaming chat and message history.
 - `src/app/api/chat/route.ts`: server streaming endpoint; must persist messages/tool calls.
-- `src/lib/ai/tools/retrieval.server.ts`: retrieval tool; must enforce project scoping and top-k bounds.
+- `src/lib/ai/tools/retrieval.server.ts`: retrieval tools (uploads + artifacts);
+  must enforce project scoping and top-k bounds.
 - `src/lib/upstash/vector.server.ts`: vector query interface with metadata filters.
 
 ### Configuration

@@ -4,7 +4,7 @@ title: Artifact generation, versioning, and export zip
 version: 0.3.0
 date: 2026-02-01
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements: ["FR-014", "FR-015", "FR-017", "FR-034", "NFR-005", "NFR-015"]
 related_adrs: ["ADR-0006", "ADR-0013", "ADR-0024"]
 notes: "Defines artifact kinds, versioning, and deterministic export (including implementation audit bundles)."
@@ -87,9 +87,14 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Architecture overview
 
-- Artifacts stored in Neon with `kind`, `version`, `content_md`, `citations_json`.
-- Vector index stores embeddings for artifact retrieval.
-- Export route collects latest versions and zips deterministically.
+- Artifacts are stored in Neon with `kind`, `logical_key`, `version`, and JSON
+  `content` (`format: "markdown"` for Markdown artifacts).
+- Citations are stored in Neon in the `citations` table and associated to an
+  `artifact_id` for auditability.
+- Upstash Vector stores embeddings for **latest** artifact versions to support
+  project-scoped retrieval and search.
+- Export route collects latest versions + citations and produces a deterministic
+  ZIP (stable ordering + fixed timestamps).
 
 ### Artifact kinds (minimum)
 
@@ -120,9 +125,17 @@ Implementation artifacts:
 
 ### File-level contracts
 
-- `src/app/api/export/[projectId]/route.ts`: loads latest artifact versions, builds deterministic manifest, streams zip.
-- `src/lib/artifacts/*`: canonical artifact versioning and storage helpers.
-- `src/lib/export/zip.ts`: deterministic zip builder (stable order + timestamps).
+- `src/app/api/export/[projectId]/route.ts`: loads latest artifact versions +
+  citations, builds deterministic manifest, streams ZIP.
+- `src/lib/data/artifacts.server.ts`: artifact versioning + persistence
+  helpers (monotonic versions).
+- `src/lib/data/citations.server.ts`: citation persistence helpers.
+- `src/lib/export/deterministic-zip.server.ts`: deterministic ZIP builder
+  (stable order + fixed timestamps + fixed compression level).
+- `src/app/api/jobs/index-artifact/route.ts`: QStash job to index artifacts into
+  Upstash Vector for retrieval/search.
+- `src/lib/artifacts/index-artifact.server.ts`: canonical artifact indexing
+  implementation.
 
 ### Configuration
 
