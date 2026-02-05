@@ -163,8 +163,19 @@ export const runsTable = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /**
+     * Workflow DevKit run ID backing this durable run (used for streaming/cancel).
+     *
+     * @remarks
+     * Nullable for historical rows (pre-migration) and for runs created but not
+     * yet started successfully.
+     */
+    workflowRunId: varchar("workflow_run_id", { length: 128 }),
   },
-  (t) => [index("runs_project_id_idx").on(t.projectId)],
+  (t) => [
+    index("runs_project_id_idx").on(t.projectId),
+    uniqueIndex("runs_workflow_run_id_unique").on(t.workflowRunId),
+  ],
 );
 
 /**

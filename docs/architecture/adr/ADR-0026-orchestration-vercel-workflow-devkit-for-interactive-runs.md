@@ -1,7 +1,7 @@
 ---
 ADR: 0026
 Title: Orchestration: Vercel Workflow DevKit for interactive runs (QStash for background jobs)
-Status: Accepted
+Status: Implemented
 Version: 0.1
 Date: 2026-02-03
 Supersedes: []
@@ -21,7 +21,7 @@ References:
 
 ## Status
 
-Accepted — 2026-02-03.
+Implemented — 2026-02-05.
 
 ## Description
 
@@ -37,7 +37,7 @@ Use **Upstash QStash** only for **background jobs** (primarily the ingestion pip
 See:
 
 - [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md) (integrator spec)
-- [SPEC-0022](../spec/SPEC-0022-durable-runs-streaming-contracts.md) (durable runs + streaming contracts; created as part of this plan)
+- [SPEC-0022](../spec/SPEC-0022-vercel-workflow-durable-runs-and-streaming-contracts.md) (durable runs + streaming contracts)
 
 ## Context
 
@@ -125,6 +125,7 @@ no `useMemo`/`useCallback`, no barrel imports, Next App Router).
 | Architectural adaptability | 0.10 | 9.2 | 0.92 | 7.0 | 0.70 | 8.1 | 0.81 | 6.9 | 0.69 |
 
 **Weighted totals ( / 10.0 ):**
+
 - Option A: **9.28**
 - Option B: **6.81**
 - Option C: **8.13**
@@ -182,6 +183,16 @@ flowchart LR
 - Integration:
   - QStash signature verification rejects unsigned requests, and tests assert signature middleware wrapping for async ingestion routes. [Upstash QStash: Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
   - ingestion pipeline uses QStash for async path and remains idempotent.
+
+## Related Requirements
+
+- **FR-008:** project-scoped multi-turn chat with resumable streaming.
+- **FR-010:** durable multi-step runs.
+- **FR-011:** persisted run-step status, tool calls, and artifacts.
+- **NFR-004:** observability of run/stream failures.
+- **PR-004:** stream and run resumption after disconnects/timeouts.
+- **PR-005:** idempotent/retry-safe workflow steps.
+- **IR-004:** interactive runs via Workflow DevKit and background jobs via QStash.
 
 ## Consequences
 

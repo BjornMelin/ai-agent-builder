@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0008
 title: Artifact generation, versioning, and export zip
-version: 0.3.0
-date: 2026-02-01
-owners: ["you"]
-status: Proposed
+version: 0.3.1
+date: 2026-02-05
+owners: ["Bjorn Melin"]
+status: Implemented
 related_requirements: ["FR-014", "FR-015", "FR-017", "FR-034", "NFR-005", "NFR-015"]
 related_adrs: ["ADR-0006", "ADR-0013", "ADR-0024"]
 notes: "Defines artifact kinds, versioning, and deterministic export (including implementation audit bundles)."
@@ -71,6 +71,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - Export includes citations and metadata
 - Zip ordering stable across runs
+- Zip entry names must be safe to extract (no traversal segments, no absolute paths).
 
 ## Decision Framework Score (must be ≥ 9.0)
 
@@ -87,9 +88,16 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Architecture overview
 
-- Artifacts stored in Neon with `kind`, `version`, `content_md`, `citations_json`.
-- Vector index stores embeddings for artifact retrieval.
-- Export route collects latest versions and zips deterministically.
+- Artifacts are stored in Neon with `kind`, `logical_key`, `version`, and JSON
+  `content` (`format: "markdown"` for Markdown artifacts).
+- Citations are stored in Neon in the `citations` table and associated to an
+  `artifact_id` for auditability.
+- Upstash Vector stores embeddings for **latest** artifact versions to support
+  project-scoped retrieval and search.
+- Export route collects latest versions + citations and produces a deterministic
+  ZIP (stable ordering + fixed timestamps).
+- Export ZIP entry names are sanitized to prevent zip-slip path traversal and
+  are treated as canonical for the included manifest.
 
 ### Artifact kinds (minimum)
 
@@ -117,12 +125,21 @@ Implementation artifacts:
   - `projectId`, `kind`, `version`, `contentMd`, `citationsJson`, `createdAt`
 - Export manifest (conceptual):
   - stable ordered list of exported files with `sha256` and provenance metadata
+  - `entries[].path` must match the actual ZIP entry name written (after sanitization)
 
 ### File-level contracts
 
-- `src/app/api/export/[projectId]/route.ts`: loads latest artifact versions, builds deterministic manifest, streams zip.
-- `src/lib/artifacts/*`: canonical artifact versioning and storage helpers.
-- `src/lib/export/zip.ts`: deterministic zip builder (stable order + timestamps).
+- `src/app/api/export/[projectId]/route.ts`: loads latest artifact versions +
+  citations, builds deterministic manifest, streams ZIP.
+- `src/lib/data/artifacts.server.ts`: artifact versioning + persistence
+  helpers (monotonic versions).
+- `src/lib/data/citations.server.ts`: citation persistence helpers.
+- `src/lib/export/zip.server.ts`: deterministic ZIP builder
+  (stable order + fixed timestamps + fixed compression level).
+- `src/app/api/jobs/index-artifact/route.ts`: QStash job to index artifacts into
+  Upstash Vector for retrieval/search.
+- `src/lib/artifacts/index-artifact.server.ts`: canonical artifact indexing
+  implementation.
 
 ### Configuration
 
@@ -135,25 +152,33 @@ Implementation artifacts:
 
 - Export zip contains latest artifacts with stable ordering
 - Re-export without changes produces identical zip hash
+- `manifest.json` paths match the ZIP entry names exactly
+- ZIP entry names cannot escape the extraction root (no `..` segments, no absolute paths)
 
 ## Testing
 
 - Unit: deterministic zip ordering
+- Unit: zip-slip sanitization and reserved/duplicate path detection
+- Unit: manifest parity (`manifest.json` equals returned manifest and paths exist in ZIP)
+- Unit: stream vs bytes output parity
 - Integration: export for a small project matches expected manifest
 
 ## Operational notes
 
-- Store export manifest in DB for audit
+- The export manifest is embedded in the ZIP as `manifest.json`.
+- Persisting export manifests in the database is a future enhancement (not required for deterministic export correctness).
 
 ## Failure modes and mitigation
 
 - Missing artifact → fail export with an explicit error and remediation steps.
   Deterministic export must never silently fabricate content.
+- Path collisions after sanitization → fail export with a conflict error to avoid silently overwriting ZIP entries.
 
 ## Key files
 
 - `src/app/api/export/[projectId]/route.ts`
-- `src/lib/export/zip.ts`
+- `src/lib/export/zip.server.ts`
+- `src/lib/export/zip.test.ts`
 
 ## References
 
@@ -163,3 +188,4 @@ Implementation artifacts:
 
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3.1 (2026-02-05)**: Hardened deterministic export ZIP (zip-slip prevention, manifest parity, collision detection).

@@ -5,6 +5,7 @@ import { cache } from "react";
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
+import { cancelRunAndStepsTx } from "@/lib/data/run-cancel-tx";
 
 /**
  * Data transfer object representing a workflow run.
@@ -21,6 +22,13 @@ export type RunDto = Readonly<{
     | "succeeded"
     | "failed"
     | "canceled";
+  /**
+   * Workflow DevKit run ID for streaming/cancel operations.
+   *
+   * @remarks
+   * Nullable for legacy rows and for runs that failed to start.
+   */
+  workflowRunId: string | null;
   createdAt: string;
   updatedAt: string;
   metadata: Record<string, unknown>;
@@ -58,6 +66,7 @@ function toRunDto(row: RunRow): RunDto {
     projectId: row.projectId,
     status: row.status,
     updatedAt: row.updatedAt.toISOString(),
+    workflowRunId: row.workflowRunId ?? null,
   };
 }
 
@@ -106,6 +115,46 @@ export async function createRun(
 
   if (!row) {
     throw new AppError("db_insert_failed", 500, "Failed to create run.");
+  }
+
+  return toRunDto(row);
+}
+
+/**
+ * Persist the Workflow DevKit run ID for a durable run.
+ *
+ * @remarks
+ * This is used to reconnect to the workflow stream (and to cancel a run).
+ *
+ * @param runId - Durable run ID.
+ * @param workflowRunId - Workflow DevKit run ID.
+ * @returns Updated run DTO.
+ * @throws AppError - With code "not_found" (404) when the run does not exist.
+ * @throws AppError - With code "db_update_failed" (500) when the update fails.
+ */
+export async function setRunWorkflowRunId(
+  runId: string,
+  workflowRunId: string,
+): Promise<RunDto> {
+  const db = getDb();
+  let row: RunRow | undefined;
+  try {
+    [row] = await db
+      .update(schema.runsTable)
+      .set({ updatedAt: new Date(), workflowRunId })
+      .where(eq(schema.runsTable.id, runId))
+      .returning();
+  } catch (error) {
+    throw new AppError(
+      "db_update_failed",
+      500,
+      "Failed to persist workflow run ID.",
+      error,
+    );
+  }
+
+  if (!row) {
+    throw new AppError("not_found", 404, "Run not found.");
   }
 
   return toRunDto(row);
@@ -282,4 +331,37 @@ export async function updateRunStepStatus(
         eq(schema.runStepsTable.stepId, stepId),
       ),
     );
+}
+
+const IMMUTABLE_TERMINAL_RUN_STATUSES: ReadonlySet<RunDto["status"]> = new Set([
+  "failed",
+  "succeeded",
+]);
+
+/**
+ * Cancel a run and mark any non-terminal steps as canceled.
+ *
+ * @param runId - Run ID.
+ * @throws AppError - With code "not_found" (404) when the run cannot be found.
+ */
+export async function cancelRun(runId: string): Promise<void> {
+  const db = getDb();
+  const now = new Date();
+
+  await db.transaction(async (tx) => {
+    const existing = await tx.query.runsTable.findFirst({
+      columns: { status: true },
+      where: eq(schema.runsTable.id, runId),
+    });
+
+    if (!existing) {
+      throw new AppError("not_found", 404, "Run not found.");
+    }
+
+    if (IMMUTABLE_TERMINAL_RUN_STATUSES.has(existing.status)) {
+      return;
+    }
+
+    await cancelRunAndStepsTx(tx, { now, runId });
+  });
 }

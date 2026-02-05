@@ -1,7 +1,7 @@
 ---
 ADR: 0005
 Title: Orchestration: Upstash QStash for background jobs (ingestion + fanout)
-Status: Accepted
+Status: Implemented
 Version: 0.4
 Date: 2026-02-03
 Supersedes: []
@@ -17,6 +17,7 @@ References:
 
 Accepted — 2026-01-30.
 Updated — 2026-02-03: re-scoped to background jobs (ingestion + fanout); interactive runs moved to ADR-0026.
+Implemented — 2026-02-05.
 
 ## Description
 

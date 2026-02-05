@@ -83,12 +83,23 @@ Use Next.js caching primitives and Redis:
 
 ## Background execution
 
-Run long pipelines via QStash.
+Run background pipelines via QStash (primarily ingestion and other non-interactive fanout).
 ([QStash Next.js](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs))
 
 - Use deduplication ids for idempotent jobs and labels for log filtering.
   - [QStash deduplication ids](https://upstash.com/docs/qstash/howto/deduplication)
   - [QStash labels](https://upstash.com/docs/qstash/howto/labels).
+
+## Workflow DevKit (interactive runs)
+
+Interactive durable runs and resumable streams are backed by Workflow DevKit.
+
+Debugging helpers:
+
+- `npx workflow health`
+- `npx workflow web`
+- `npx workflow inspect runs`
+- `npx workflow inspect run <run_id>`
 
 ## Monitoring
 

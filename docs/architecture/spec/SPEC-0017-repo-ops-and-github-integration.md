@@ -3,7 +3,7 @@ spec: SPEC-0017
 title: RepoOps and GitHub integration
 version: 0.1.0
 date: 2026-02-01
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements:
   ["FR-022", "FR-025", "FR-029", "FR-031", "FR-032", "IR-011", "NFR-013", "NFR-015"]

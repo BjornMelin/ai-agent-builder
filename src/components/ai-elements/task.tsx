@@ -91,11 +91,17 @@ export const TaskTrigger = (props: TaskTriggerProps) => {
   return (
     <CollapsibleTrigger asChild className={cn("group", className)} {...rest}>
       {children ?? (
-        <div className="flex w-full cursor-pointer items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground">
-          <SearchIcon className="size-4" />
-          <p className="text-sm">{title}</p>
-          <ChevronDownIcon className="size-4 transition-transform group-data-[state=open]:rotate-180" />
-        </div>
+        <button
+          className="flex w-full items-center gap-2 text-left text-muted-foreground text-sm transition-colors hover:text-foreground"
+          type="button"
+        >
+          <SearchIcon aria-hidden="true" className="size-4" />
+          <span className="text-sm">{title}</span>
+          <ChevronDownIcon
+            aria-hidden="true"
+            className="size-4 motion-safe:transition-transform motion-reduce:transition-none group-data-[state=open]:rotate-180"
+          />
+        </button>
       )}
     </CollapsibleTrigger>
   );
@@ -116,7 +122,7 @@ export const TaskContent = (props: TaskContentProps) => {
   return (
     <CollapsibleContent
       className={cn(
-        "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
+        "text-popover-foreground outline-none motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-top-2 motion-safe:data-[state=open]:slide-in-from-top-2 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=open]:animate-in motion-reduce:animate-none motion-reduce:transition-none",
         className,
       )}
       {...rest}

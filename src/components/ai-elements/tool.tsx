@@ -88,7 +88,9 @@ export const getStatusBadge = (status: ToolPart["state"]) => {
   const icons: Record<ToolPart["state"], ReactNode> = {
     "approval-requested": <ClockIcon className="size-4 text-yellow-600" />,
     "approval-responded": <CheckCircleIcon className="size-4 text-blue-600" />,
-    "input-available": <ClockIcon className="size-4 animate-pulse" />,
+    "input-available": (
+      <ClockIcon className="size-4 motion-safe:animate-pulse motion-reduce:animate-none" />
+    ),
     "input-streaming": <CircleIcon className="size-4" />,
     "output-available": <CheckCircleIcon className="size-4 text-green-600" />,
     "output-denied": <XCircleIcon className="size-4 text-orange-600" />,
@@ -127,7 +129,7 @@ export const ToolHeader = (props: ToolHeaderProps) => {
         <span className="font-medium text-sm">{title ?? derivedName}</span>
         {getStatusBadge(state)}
       </div>
-      <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+      <ChevronDownIcon className="size-4 text-muted-foreground motion-safe:transition-transform motion-reduce:transition-none group-data-[state=open]:rotate-180" />
     </CollapsibleTrigger>
   );
 };
@@ -146,7 +148,7 @@ export const ToolContent = (props: ToolContentProps) => {
   return (
     <CollapsibleContent
       className={cn(
-        "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 space-y-4 p-4 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
+        "space-y-4 p-4 text-popover-foreground outline-none motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-top-2 motion-safe:data-[state=open]:slide-in-from-top-2 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=open]:animate-in motion-reduce:animate-none motion-reduce:transition-none",
         className,
       )}
       {...rest}

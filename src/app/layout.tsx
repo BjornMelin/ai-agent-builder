@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { env } from "@/lib/env";
+import { getBaseMetadata } from "@/lib/metadata/site";
 import { Providers } from "./providers";
 
 const geistSans = Geist({
@@ -19,10 +20,7 @@ const geistMono = Geist_Mono({
 /**
  * Metadata for the application.
  */
-export const metadata: Metadata = {
-  description: "Build AI-powered products, applications, and workflows",
-  title: "AI Agent Builder",
-};
+export const metadata: Metadata = getBaseMetadata();
 
 /**
  * Viewport for the application.

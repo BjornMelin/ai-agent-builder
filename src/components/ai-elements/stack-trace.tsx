@@ -49,6 +49,13 @@ interface StackTraceContextValue {
 
 const StackTraceContext = createContext<StackTraceContextValue | null>(null);
 
+const parseOptionalStackNumber = (value: string | undefined): number | null => {
+  if (!value) return null;
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed)) return null;
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
+};
+
 const useStackTrace = () => {
   const context = useContext(StackTraceContext);
   if (!context) {
@@ -70,11 +77,11 @@ const parseStackFrame = (line: string): StackFrame => {
       filePathValue.startsWith("node:") ||
       filePathValue.includes("internal/");
     return {
-      columnNumber: colNum ? Number.parseInt(colNum, 10) : null,
+      columnNumber: parseOptionalStackNumber(colNum),
       filePath: filePath ?? null,
       functionName: functionName ?? null,
       isInternal,
-      lineNumber: lineNum ? Number.parseInt(lineNum, 10) : null,
+      lineNumber: parseOptionalStackNumber(lineNum),
       raw: trimmed,
     };
   }
@@ -88,11 +95,11 @@ const parseStackFrame = (line: string): StackFrame => {
       (filePath?.startsWith("node:") ?? false) ||
       (filePath?.includes("internal/") ?? false);
     return {
-      columnNumber: colNum ? Number.parseInt(colNum, 10) : null,
+      columnNumber: parseOptionalStackNumber(colNum),
       filePath: filePath ?? null,
       functionName: null,
       isInternal,
-      lineNumber: lineNum ? Number.parseInt(lineNum, 10) : null,
+      lineNumber: parseOptionalStackNumber(lineNum),
       raw: trimmed,
     };
   }

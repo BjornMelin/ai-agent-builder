@@ -3,7 +3,7 @@ spec: SPEC-0009
 title: Sandbox “Code Mode”
 version: 0.2.0
 date: 2026-02-01
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["FR-018", "FR-031", "NFR-014", "IR-009"]
 related_adrs: ["ADR-0010"]

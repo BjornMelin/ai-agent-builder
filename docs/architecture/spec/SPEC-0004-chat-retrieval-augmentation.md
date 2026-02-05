@@ -3,7 +3,7 @@ spec: SPEC-0004
 title: Chat + retrieval augmentation
 version: 0.3.0
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["FR-008", "FR-009", "FR-019", "PR-001", "PR-002"]
 related_adrs: ["ADR-0006", "ADR-0004", "ADR-0011"]
@@ -106,7 +106,8 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 - `src/app/(app)/projects/[projectId]/chat/page.tsx`: UI for streaming chat and message history.
 - `src/app/api/chat/route.ts`: server streaming endpoint; must persist messages/tool calls.
-- `src/lib/ai/tools/retrieval.server.ts`: retrieval tool; must enforce project scoping and top-k bounds.
+- `src/lib/ai/tools/retrieval.server.ts`: retrieval tools (uploads + artifacts);
+  must enforce project scoping and top-k bounds.
 - `src/lib/upstash/vector.server.ts`: vector query interface with metadata filters.
 
 ### Configuration

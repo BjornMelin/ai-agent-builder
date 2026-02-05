@@ -3,7 +3,7 @@ spec: SPEC-0023
 title: AI Elements workspace UI and interaction model
 version: 0.1.0
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements:
   ["FR-002", "FR-003", "FR-008", "FR-010", "FR-020", "FR-023", "FR-031", "PR-001", "NFR-008", "NFR-010"]
@@ -130,10 +130,29 @@ All AI Elements component names and usage are sourced from the AI Elements docs 
 
 Initial Runs tab must show:
 
-- current run status (running/waiting/blocked/succeeded/failed)
+- current run status (running/waiting/blocked/succeeded/failed/canceled)
 - step list with timestamps and outputs
 - approvals required (FR-031)
 - “resume” action when blocked
+- a resilient stream view that never remains stuck in `streaming` after the SSE
+  connection ends unexpectedly, with explicit reconnect semantics:
+  - interruption banner appears immediately when the SSE disconnect is detected
+    while status is `streaming` (no grace delay), with status text
+    "Connection interrupted. Reconnecting…"
+  - reconnect mode is automatic first: retry SSE with `startIndex` resume; surface
+    a visible `Reconnect` button after attempt 1 fails so users can force an
+    immediate retry while automatic retries continue
+  - retry policy is capped backoff: attempts at 250ms, 750ms, and 1,500ms
+    delays (max 3 attempts total); if all attempts fail, transition the run
+    stream UI to a permanent error state with `Reconnect` and `Retry from latest`
+    actions, and do not leave the view in `streaming`
+  - implementation note: this reconnect policy is canonicalized in
+    `SPEC-0024-run-cancellation-and-stream-resilience.md` and implemented in
+    `src/app/(app)/projects/[projectId]/runs/[runId]/run-stream-client.tsx`.
+  - `startIndex` storage/usage: keep the latest rendered event index in client run
+    stream state and include it on every reconnect request (`?startIndex=<n>`) so
+    the server resumes from the next event without duplicating already-rendered
+    items.
 
 ### P1: Graph view (AI Elements workflow example baseline)
 
@@ -177,5 +196,8 @@ Settings tab must expose:
 - Runs:
   - run shows steps updating in real time (poll or stream depending on implementation)
   - approval gate blocks UI until approved, then resumes
+  - canceling a run shows the `canceled` terminal state (not failed)
+  - stream ending without an explicit end marker transitions out of `streaming` and
+    can reconnect/resume from `startIndex`
 - Uploads:
   - async ingestion path triggers background job and status updates

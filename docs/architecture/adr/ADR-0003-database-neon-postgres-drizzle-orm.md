@@ -1,7 +1,7 @@
 ---
 ADR: 0003
 Title: Database - Neon Postgres + Drizzle ORM
-Status: Accepted
+Status: Implemented
 Version: 0.4
 Date: 2026-02-03
 Supersedes: []
@@ -21,6 +21,7 @@ References:
 ## Status
 
 Accepted — 2026-01-30.
+Implemented — 2026-02-05.
 
 ## Description
 

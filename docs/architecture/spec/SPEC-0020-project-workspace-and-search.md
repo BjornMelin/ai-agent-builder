@@ -3,7 +3,7 @@ spec: SPEC-0020
 title: Project workspace and search UX
 version: 0.1.1
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["FR-002", "FR-019", "FR-020", "NFR-008", "IR-002", "IR-005"]
 related_adrs: ["ADR-0011", "ADR-0004"]
@@ -185,11 +185,16 @@ Accessibility and UX:
   navigation and ensures consistent deep-linkable URLs.
 - `src/app/(app)/projects/[projectId]/*/page.tsx`: tab pages (uploads/chat/runs/
   artifacts/implementation).
-- `src/app/(app)/search/page.tsx`: global search results.
+- `src/app/(app)/projects/[projectId]/artifacts/page.tsx`: list latest artifacts.
+- `src/app/(app)/projects/[projectId]/artifacts/[artifactId]/page.tsx`: artifact
+  detail page (render markdown + citations + version links).
+- *(Planned)* `src/app/(app)/search/page.tsx`: global search results (not yet implemented).
 - `src/app/api/search/route.ts`: optional JSON search endpoint for typeahead; must
   enforce access control and scoping.
-- `src/lib/search/search.ts`: orchestrates Postgres + vector queries and merges
-  ranked results.
+- `src/app/api/export/[projectId]/route.ts`: deterministic export ZIP for the
+  latest artifact versions (plus citations).
+- `src/lib/ai/tools/retrieval.server.ts`: orchestrates Upstash Vector retrieval
+  (uploads + artifacts) with optional Redis caching.
 
 ### Configuration
 

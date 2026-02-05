@@ -3,7 +3,7 @@ spec: SPEC-0016
 title: Implementation runs — end-to-end plan → code → verify → deploy
 version: 0.1.0
 date: 2026-02-01
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements:
   [

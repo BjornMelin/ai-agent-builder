@@ -1,7 +1,7 @@
 ---
 ADR: 0006
 Title: Agent runtime: AI SDK v6 agents + streaming UI responses (Workflow DevKit durable sessions)
-Status: Accepted
+Status: Implemented
 Version: 0.4
 Date: 2026-02-03
 Supersedes: []
@@ -20,6 +20,7 @@ References:
 
 Accepted — 2026-01-30.
 Updated — 2026-02-03: aligned with Workflow DevKit durable sessions and resumable streaming (ADR-0026).
+Implemented — 2026-02-05.
 
 ## Description
 

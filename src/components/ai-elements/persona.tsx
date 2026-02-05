@@ -8,7 +8,7 @@ import {
   useViewModelInstance,
   useViewModelInstanceColor,
 } from "@rive-app/react-webgl2";
-import type { FC, ReactNode } from "react";
+import type { FC, ReactNode, RefObject } from "react";
 import { memo, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +30,7 @@ interface PersonaProps {
   onStop?: RiveParameters["onStop"];
   className?: string;
   variant?: keyof typeof sources;
+  isActive?: boolean;
 }
 
 // The state machine name is always 'default' for Elements AI visuals
@@ -156,6 +157,38 @@ const usePrefersReducedMotion = () => {
   return prefersReducedMotion;
 };
 
+const useElementVisibility = (
+  ref: RefObject<HTMLElement | null>,
+  enabled: boolean,
+) => {
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    const element = ref.current;
+    if (!element || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(Boolean(entry?.isIntersecting));
+      },
+      { threshold: 0.05 },
+    );
+
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+    };
+  }, [enabled, ref]);
+
+  return enabled ? isVisible : false;
+};
+
 interface PersonaWithModelProps {
   rive: ReturnType<typeof useRive>["rive"];
   source: (typeof sources)[keyof typeof sources];
@@ -212,13 +245,14 @@ const setBooleanInput = (
 /**
  * Renders an animated persona avatar using Rive.
  *
- * @param props - Persona props including state and event callbacks.
+ * @param props - Persona props including state, activation control, and event callbacks.
  * @returns A persona animation component.
  * @throws Error if the provided variant is not supported.
  */
 export const Persona: FC<PersonaProps> = memo((props) => {
   const {
     variant = "obsidian",
+    isActive = true,
     state = "idle",
     onLoad,
     onLoadError,
@@ -279,9 +313,15 @@ export const Persona: FC<PersonaProps> = memo((props) => {
   }));
 
   const prefersReducedMotion = usePrefersReducedMotion();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isInViewport = useElementVisibility(
+    containerRef,
+    isActive && !prefersReducedMotion,
+  );
+  const shouldAnimate = isActive && isInViewport && !prefersReducedMotion;
 
   const { rive, RiveComponent } = useRive({
-    autoplay: !prefersReducedMotion,
+    autoplay: false,
     onLoad: stableCallbacks.onLoad,
     onLoadError: stableCallbacks.onLoadError,
     onPause: stableCallbacks.onPause,
@@ -297,13 +337,13 @@ export const Persona: FC<PersonaProps> = memo((props) => {
       return;
     }
 
-    if (prefersReducedMotion) {
+    if (!shouldAnimate) {
       rive.pause();
       return;
     }
 
     rive.play();
-  }, [rive, prefersReducedMotion]);
+  }, [rive, shouldAnimate]);
 
   const listeningInput = useStateMachineInput(rive, stateMachine, "listening");
   const thinkingInput = useStateMachineInput(rive, stateMachine, "thinking");
@@ -321,7 +361,9 @@ export const Persona: FC<PersonaProps> = memo((props) => {
 
   return (
     <Component rive={rive} source={source}>
-      <RiveComponent className={cn("size-16 shrink-0", className)} />
+      <div className={cn("size-16 shrink-0", className)} ref={containerRef}>
+        <RiveComponent className="size-full" />
+      </div>
     </Component>
   );
 });

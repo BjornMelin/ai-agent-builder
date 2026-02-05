@@ -1,7 +1,7 @@
 ---
 ADR: 0022
 Title: Authentication: Neon Auth (OAuth + UI) + allowlist access control
-Status: Accepted
+Status: Implemented
 Version: 1.0
 Date: 2026-01-31
 Supersedes: [ADR-0002]
@@ -19,6 +19,7 @@ References:
 
 Accepted — 2026-01-31.  
 Updated — 2026-02-02 (allowlist sign-out; preview-friendly OAuth toggles).
+Implemented — 2026-02-05.
 
 ## Description
 

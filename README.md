@@ -16,8 +16,8 @@ trail).
 ## What it does
 
 - Ingests source material: PDFs, slides, docs, markdown, spreadsheets.
-- Runs deep research and validation (with citations).
-- Produces formal, versioned artifacts (PRD, ADRs, specs, security, roadmap).
+- Supports deep research and validation (spec’d; web research integrations are not yet implemented).
+- Maintains a formal architecture pack (PRD, ADRs, specs, security) in-repo (export is spec’d).
 - Supports an implementation/deployment phase (spec’d) to:
   - connect a target GitHub repo
   - plan changes traceable to artifacts
@@ -46,11 +46,12 @@ flowchart LR
 - Auth: Neon Auth (managed auth + UI components)
 - AI: Vercel AI SDK v6 + AI Gateway
 - DB: Neon Postgres + Drizzle ORM
+- Orchestration: Vercel Workflow DevKit (interactive chat + runs), Upstash QStash (background ingestion)
 - DB connectivity (Vercel): Postgres TCP + connection pooling (`pg`) with
   `attachDatabasePool` (`@vercel/functions`) for Fluid compute
   ([Vercel Functions package](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package),
   [Vercel KB: Connection Pooling with Vercel Functions](https://vercel.com/kb/guide/connection-pooling-with-functions))
-- Infra helpers: Upstash (Redis, QStash, Vector)
+- Infra helpers: Upstash (Redis, Vector)
 - Quality: Biome (format/lint) + ESLint (TSDoc/JSDoc enforcement) + Vitest
 - Typing/Schema: Zod v4
 - Releases: Release Please (semver via Conventional Commits)

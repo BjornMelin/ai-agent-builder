@@ -10,8 +10,7 @@ Key paths present now:
 - `src/app/*` — Next.js App Router entrypoints
 - `src/lib/*` — foundational runtime modules (env, auth, provider adapters)
 - `src/proxy.ts` — Next.js `proxy.ts` based route protection
-- `src/db/*` — configured target location for Drizzle schema + migrations (not
-  committed yet)
+- `src/db/*` — Drizzle schema + migrations (committed)
 - `.github/workflows/*` — CI, CodeQL, dependency review, release-please, scorecard
 - `.github/actions/ci-setup` — composite action (Bun setup + install)
 - `scripts/fetch-models.sh` — pulls AI Gateway model catalog into `docs/`
@@ -60,10 +59,6 @@ system described in [docs/architecture/spec/index.md](./spec/index.md) and
 
 Major gaps that remain:
 
-- Core Route Handlers for uploads/ingestion/chat/runs under `src/app/api/*`.
-- Drizzle schema + migrations under `src/db/*` (currently configured but not
-  committed).
-- Research pipeline modules for extraction/chunking/embedding/indexing.
 - Web research integrations (Exa + Firecrawl) and citations persistence.
 - Implementation Run subsystems:
   - RepoOps (GitHub) and PR automation
@@ -75,8 +70,8 @@ Major gaps that remain:
   - audit bundle export
     ([SPEC-0016](./spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md) +
     [SPEC-0008](./spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md))
-- UI libraries referenced by ADRs (AI Elements, Streamdown, shadcn/ui components)
-  where not yet present.
+- Artifact generation/regeneration and export endpoints (spec’d; see SPEC-0008).
+- Webhooks for external status updates (GitHub/Vercel) where polling is insufficient.
 
 These are intentional: the repository is bootstrapped to keep initial complexity
 low, while the docs define the full production target.

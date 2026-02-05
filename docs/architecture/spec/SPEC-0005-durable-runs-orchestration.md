@@ -3,7 +3,7 @@ spec: SPEC-0005
 title: Durable runs & orchestration
 version: 0.3.1
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements:
   ["FR-010", "FR-011", "FR-023", "FR-029", "FR-031", "PR-004", "PR-005", "PR-007", "IR-004", "NFR-004", "NFR-013", "NFR-014", "NFR-015"]
@@ -194,6 +194,13 @@ For implementation runs, add:
 - Mark steps failed on non-retryable errors.
 - Persist the error payload and suggested remediation in run logs.
 - Allow “resume from step” after user intervention when safe.
+- Cancellation semantics are first-class:
+  - User-initiated cancellations MUST persist and emit as `canceled`, not
+    `failed`.
+  - The operation MUST be idempotent and cancel any non-terminal steps.
+  - Terminal outcomes (`succeeded|failed`) MUST NOT be overwritten by
+    cancellation.
+  - Implementation details: [SPEC-0024](./SPEC-0024-run-cancellation-and-stream-resilience.md).
 
 ## Decision Framework Score (must be ≥ 9.0)
 
@@ -227,8 +234,6 @@ For implementation runs, add:
 ## Testing
 
 - Unit tests: step idempotency helpers and error normalization.
-- Unit tests: run engine enqueue behavior and status transitions
-  (`src/lib/runs/run-engine.server.test.ts`).
 - Integration tests: workflow run start + stream reconnection contract.
 - Integration tests: QStash signature verification for ingestion/background jobs.
 - E2E (later): execute a small run end-to-end and validate status transitions.
@@ -254,7 +259,10 @@ For implementation runs, add:
 - `docs/architecture/spec/SPEC-0005-durable-runs-orchestration.md`
 - `docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`
 - `src/lib/upstash/qstash.server.ts`
-- `src/lib/runs/run-engine.server.ts`
+- `src/app/api/runs/route.ts`
+- `src/app/api/runs/[runId]/stream/route.ts`
+- `src/app/api/runs/[runId]/cancel/route.ts`
+- `src/workflows/runs/project-run.workflow.ts`
 
 ## References
 

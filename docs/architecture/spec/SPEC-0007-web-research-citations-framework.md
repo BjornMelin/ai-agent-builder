@@ -3,7 +3,7 @@ spec: SPEC-0007
 title: Web research + citations framework
 version: 0.2.0
 date: 2026-01-30
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["FR-012", "NFR-004", "NFR-006", "PR-001", "IR-007"]
 related_adrs: ["ADR-0008", "ADR-0013"]

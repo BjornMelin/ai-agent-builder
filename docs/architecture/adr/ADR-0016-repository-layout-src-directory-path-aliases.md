@@ -1,7 +1,7 @@
 ---
 ADR: 0016
 Title: Repository layout: src/ directory + @/* path aliases
-Status: Accepted
+Status: Implemented
 Version: 0.2
 Date: 2026-01-30
 Supersedes: []
@@ -15,7 +15,7 @@ References:
 
 ## Status
 
-Accepted — 2026-01-30.
+Implemented — 2026-02-05.
 
 ## Description
 

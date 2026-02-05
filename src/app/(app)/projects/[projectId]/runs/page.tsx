@@ -1,5 +1,14 @@
+import Link from "next/link";
+
+import { RunControlsClient } from "@/app/(app)/projects/[projectId]/runs/run-controls-client";
+import { RunDateClient } from "@/app/(app)/projects/[projectId]/runs/run-date-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listRunsByProject } from "@/lib/data/runs.server";
+
+/**
+ * Ensure this route always renders dynamically (new runs are created frequently).
+ */
+export const dynamic = "force-dynamic";
 
 /**
  * Runs tab (P0 list view).
@@ -19,9 +28,13 @@ export default async function RunsPage(
         <CardTitle>Runs</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="mb-6">
+          <RunControlsClient projectId={projectId} />
+        </div>
+
         {runs.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            No runs yet. (P0: create/run UI comes next.)
+            No runs yet. Start one to see its progress and artifacts.
           </p>
         ) : (
           <ul
@@ -32,17 +45,21 @@ export default async function RunsPage(
             }}
           >
             {runs.map((run) => (
-              <li
-                className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2"
-                key={run.id}
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{run.kind}</p>
-                  <p className="truncate text-muted-foreground text-sm">
-                    {run.status} · {new Date(run.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <span className="text-muted-foreground text-sm">Run</span>
+              <li key={run.id}>
+                <Link
+                  className="group flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2 transition-colors hover:bg-muted/50"
+                  href={`/projects/${projectId}/runs/${run.id}`}
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{run.kind}</p>
+                    <p className="truncate text-muted-foreground text-sm">
+                      {run.status} · <RunDateClient createdAt={run.createdAt} />
+                    </p>
+                  </div>
+                  <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">
+                    Open
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>

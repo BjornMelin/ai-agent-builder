@@ -73,10 +73,13 @@ export const ArtifactClose = (props: ArtifactCloseProps) => {
     children,
     size = "sm",
     variant = "ghost",
+    "aria-label": ariaLabel,
     ...rest
   } = props;
+  const accessibleLabel = ariaLabel ?? "Close";
   return (
     <Button
+      aria-label={accessibleLabel}
       className={cn(
         "size-8 p-0 text-muted-foreground hover:text-foreground",
         className,
@@ -86,8 +89,7 @@ export const ArtifactClose = (props: ArtifactCloseProps) => {
       variant={variant}
       {...rest}
     >
-      {children ?? <XIcon className="size-4" />}
-      <span className="sr-only">Close</span>
+      {children ?? <XIcon aria-hidden="true" className="size-4" />}
     </Button>
   );
 };

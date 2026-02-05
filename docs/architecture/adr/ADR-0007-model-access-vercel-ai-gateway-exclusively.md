@@ -1,7 +1,7 @@
 ---
 ADR: 0007
 Title: Model access: Vercel AI Gateway exclusively
-Status: Accepted
+Status: Implemented
 Version: 0.3
 Date: 2026-02-03
 Supersedes: []
@@ -18,6 +18,7 @@ References:
 ## Status
 
 Accepted — 2026-01-30.
+Implemented — 2026-02-05.
 
 ## Description
 

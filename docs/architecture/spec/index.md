@@ -1,4 +1,8 @@
-# SPEC Index
+---
+title: SPEC Index
+date: 2026-02-05
+status: Active
+---
 
 - [SPEC-0001](./SPEC-0001-system-scope-terminology-and-requirements-mapping.md) — System scope, terminology, and requirements mapping
 - [SPEC-0002](./SPEC-0002-authentication-access-control.md) — Authentication & access control
@@ -26,3 +30,4 @@
 - [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md) — Full-stack finalization (Fluid Compute + Neon/Drizzle + Upstash + AI Gateway + AI Elements UI)
 - [SPEC-0022](./SPEC-0022-vercel-workflow-durable-runs-and-streaming-contracts.md) — Durable runs & streaming contracts (Vercel Workflow DevKit)
 - [SPEC-0023](./SPEC-0023-ai-elements-workspace-ui-and-interaction-model.md) — AI Elements workspace UI and interaction model
+- [SPEC-0024](./SPEC-0024-run-cancellation-and-stream-resilience.md) — Run cancellation + stream resilience hardening
