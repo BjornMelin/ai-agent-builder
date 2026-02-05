@@ -3,7 +3,7 @@ spec: SPEC-0014
 title: Next.js build, type generation, and React Compiler constraints
 version: 0.2.0
 date: 2026-01-30
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["NFR-011", "NFR-010", "PR-006"]
 related_adrs: ["ADR-0020"]

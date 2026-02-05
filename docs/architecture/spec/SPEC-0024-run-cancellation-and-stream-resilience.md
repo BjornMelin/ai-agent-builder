@@ -3,7 +3,7 @@ spec: SPEC-0024
 title: Run cancellation + stream resilience hardening
 version: 0.1.0
 date: 2026-02-05
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements:
   ["FR-010", "FR-011", "FR-023", "PR-004", "PR-005", "NFR-004", "NFR-015"]

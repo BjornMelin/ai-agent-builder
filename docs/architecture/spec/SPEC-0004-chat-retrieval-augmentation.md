@@ -3,7 +3,7 @@ spec: SPEC-0004
 title: Chat + retrieval augmentation
 version: 0.3.0
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["FR-008", "FR-009", "FR-019", "PR-001", "PR-002"]
 related_adrs: ["ADR-0006", "ADR-0004", "ADR-0011"]

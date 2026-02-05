@@ -3,7 +3,7 @@ spec: SPEC-0018
 title: Target app infrastructure provisioning and secrets mapping
 version: 0.1.1
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements:
   ["FR-027", "FR-028", "FR-031", "FR-034", "IR-012", "IR-013", "IR-014", "NFR-013", "NFR-015"]

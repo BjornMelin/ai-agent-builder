@@ -3,7 +3,7 @@ spec: SPEC-0002
 title: Authentication & access control
 version: 1.1.0
 date: 2026-02-02
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements: ["FR-001", "NFR-001", "NFR-002", "NFR-012"]
 related_adrs: ["ADR-0022", "ADR-0023", "ADR-0021"]

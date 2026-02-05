@@ -3,7 +3,7 @@ spec: SPEC-0013
 title: Release management and versioning
 version: 0.2.0
 date: 2026-01-30
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["NFR-010"]
 related_adrs: ["ADR-0019"]

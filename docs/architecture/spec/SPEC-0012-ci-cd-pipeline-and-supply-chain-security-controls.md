@@ -3,7 +3,7 @@ spec: SPEC-0012
 title: CI/CD pipeline and supply chain security controls
 version: 0.2.0
 date: 2026-01-30
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["NFR-009", "NFR-010", "PR-006", "IR-010"]
 related_adrs: ["ADR-0018", "ADR-0017"]

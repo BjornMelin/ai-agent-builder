@@ -3,7 +3,7 @@ spec: SPEC-0011
 title: Bun toolchain, scripts, and CI/CD
 version: 0.3.0
 date: 2026-01-30
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements: ["NFR-010", "IR-010", "PR-006"]
 related_adrs: ["ADR-0015"]

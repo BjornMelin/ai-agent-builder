@@ -3,7 +3,7 @@ spec: SPEC-0015
 title: Environment configuration contracts
 version: 0.3.1
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements:
   [

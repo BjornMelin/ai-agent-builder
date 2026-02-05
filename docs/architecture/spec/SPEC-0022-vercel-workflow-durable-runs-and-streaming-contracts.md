@@ -3,7 +3,7 @@ spec: SPEC-0022
 title: Durable runs & streaming contracts (Vercel Workflow DevKit)
 version: 0.1.0
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements:
   ["FR-008", "FR-010", "FR-011", "FR-023", "FR-031", "IR-001", "IR-004", "NFR-004", "NFR-013", "PR-001", "PR-004", "PR-005"]

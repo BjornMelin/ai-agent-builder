@@ -3,7 +3,7 @@ spec: SPEC-0010
 title: Observability, budgets, and cost controls
 version: 0.3.1
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["FR-011", "NFR-004", "NFR-006", "NFR-015", "PR-007"]
 related_adrs: ["ADR-0013", "ADR-0024", "ADR-0025"]

@@ -3,7 +3,7 @@ spec: SPEC-0008
 title: Artifact generation, versioning, and export zip
 version: 0.3.0
 date: 2026-02-01
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["FR-014", "FR-015", "FR-017", "FR-034", "NFR-005", "NFR-015"]
 related_adrs: ["ADR-0006", "ADR-0013", "ADR-0024"]

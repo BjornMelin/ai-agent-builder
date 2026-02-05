@@ -3,7 +3,7 @@ spec: SPEC-0006
 title: Agent registry & orchestration patterns
 version: 0.3.0
 date: 2026-02-01
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["FR-009", "FR-033", "NFR-011", "NFR-013", "NFR-015"]
 related_adrs: ["ADR-0006", "ADR-0012", "ADR-0024"]

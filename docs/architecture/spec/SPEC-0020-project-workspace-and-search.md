@@ -3,7 +3,7 @@ spec: SPEC-0020
 title: Project workspace and search UX
 version: 0.1.1
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["FR-002", "FR-019", "FR-020", "NFR-008", "IR-002", "IR-005"]
 related_adrs: ["ADR-0011", "ADR-0004"]

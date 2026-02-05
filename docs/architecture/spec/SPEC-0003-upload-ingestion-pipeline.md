@@ -3,7 +3,7 @@ spec: SPEC-0003
 title: Upload + ingestion pipeline
 version: 0.4.0
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements: ["FR-003", "FR-004", "FR-005", "FR-006", "FR-007", "PR-003", "IR-006", "IR-005", "IR-001"]
 related_adrs: ["ADR-0009", "ADR-0004", "ADR-0007"]

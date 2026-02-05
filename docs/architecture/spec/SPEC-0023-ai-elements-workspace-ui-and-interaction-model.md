@@ -3,7 +3,7 @@ spec: SPEC-0023
 title: AI Elements workspace UI and interaction model
 version: 0.1.0
 date: 2026-02-03
-owners: ["you"]
+owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements:
   ["FR-002", "FR-003", "FR-008", "FR-010", "FR-020", "FR-023", "FR-031", "PR-001", "NFR-008", "NFR-010"]
