@@ -149,7 +149,7 @@ We will:
   - excluding `.well-known/workflow/` from the Next.js `proxy.ts` matcher to avoid blocking internal workflow routes. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
   - setting `workflows.dirs` in `next.config.ts` (inside `withWorkflow(…)`) to narrowly scope scanned workflow directories (for example `workflows/` or `src/workflows/`) and avoid out-of-memory build failures from broad filesystem scans. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
 - QStash endpoints must verify signatures (and be idempotent) for ingestion workers. [Upstash QStash: Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
-- Client-side code must not use `useMemo`/`useCallback` (repo non-negotiable); resumable transport must be implemented via `useEffect` + state + refs.
+- Memoization follows `$vercel-react-best-practices`: prefer refs/effects for transient mutable values; use `useMemo`/`useCallback` only for genuinely expensive work or to prevent costly re-renders (`rerender-memo`), and avoid memo for cheap primitives (`rerender-simple-expression-in-memo`).
 
 ## High-Level Architecture
 

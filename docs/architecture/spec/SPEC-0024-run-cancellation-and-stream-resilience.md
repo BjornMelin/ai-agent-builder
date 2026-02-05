@@ -40,7 +40,7 @@ This spec is an implementation-level addendum aligned with:
 - Ensure reconnect/resume works using `startIndex` without duplicated events.
 - Enforce repo constraints:
   - Next.js App Router patterns only.
-  - No manual memoization (`useMemo`, `useCallback`).
+  - Memoization follows `$vercel-react-best-practices`: use `useMemo`/`useCallback` only for genuinely expensive work or to prevent costly re-renders (`rerender-memo`), and avoid memo for cheap primitives (`rerender-simple-expression-in-memo`).
   - Strict TypeScript (no `any`).
   - TSDoc for exported APIs.
 

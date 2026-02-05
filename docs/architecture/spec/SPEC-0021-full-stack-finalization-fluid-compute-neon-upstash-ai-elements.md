@@ -480,7 +480,7 @@ This app’s UI must make all major capabilities discoverable and fast:
 
 - Default to Server Components for data reads; use Client Components only for interactive surfaces.
 - Avoid waterfalls: start independent server work early, `Promise.all` where safe.
-- No manual memoization (`useMemo`, `useCallback`).
+- Memoization follows `$vercel-react-best-practices`: use `useMemo`/`useCallback` only for genuinely expensive work or to prevent costly re-renders (`rerender-memo`), and avoid memo for cheap primitives (`rerender-simple-expression-in-memo`).
 - No barrel files / no new barrel imports.
 - Use `next/image` for rendered images (configure external domains via `images.remotePatterns`; use `unoptimized` for blob/data URLs when needed). [Next.js Image component](https://nextjs.org/docs/app/api-reference/components/image).
 - Lazy-load heavy client renderers with `next/dynamic` to reduce initial bundle size. [Next.js lazy loading](https://nextjs.org/docs/app/building-your-application/optimizing/lazy-loading).
