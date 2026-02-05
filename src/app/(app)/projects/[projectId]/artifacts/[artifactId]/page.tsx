@@ -10,7 +10,7 @@ import {
   ArtifactTitle,
 } from "@/components/ai-elements/artifact";
 import { MessageResponse } from "@/components/ai-elements/message";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { getMarkdownContent } from "@/lib/artifacts/content.server";
 import {
@@ -110,31 +110,25 @@ export default async function ArtifactDetailPage(
           <div className="flex flex-wrap gap-2">
             {versions.map((v) => {
               const isActive = v.id === artifact.id;
-              if (isActive) {
-                return (
-                  <span
-                    aria-current="page"
-                    className={buttonVariants({
-                      className: "pointer-events-none opacity-50",
-                      size: "sm",
-                      variant: "secondary",
-                    })}
-                    key={v.id}
-                  >
-                    v{v.version}
-                  </span>
-                );
-              }
-
               return (
-                <Button asChild key={v.id} size="sm" variant="outline">
-                  <Link
-                    href={`/projects/${encodeURIComponent(
-                      projectId,
-                    )}/artifacts/${encodeURIComponent(v.id)}`}
-                  >
-                    v{v.version}
-                  </Link>
+                <Button
+                  asChild
+                  disabled={isActive}
+                  key={v.id}
+                  size="sm"
+                  variant={isActive ? "secondary" : "outline"}
+                >
+                  {isActive ? (
+                    <span aria-current="page">v{v.version}</span>
+                  ) : (
+                    <Link
+                      href={`/projects/${encodeURIComponent(
+                        projectId,
+                      )}/artifacts/${encodeURIComponent(v.id)}`}
+                    >
+                      v{v.version}
+                    </Link>
+                  )}
                 </Button>
               );
             })}

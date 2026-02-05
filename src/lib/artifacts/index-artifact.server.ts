@@ -160,6 +160,14 @@ export async function indexArtifactVersion(
     { maxParallelCalls: 2 },
   );
 
+  if (embeddings.length !== chunks.length) {
+    throw new AppError(
+      "db_update_failed",
+      500,
+      `Failed to index artifact vectors (embedding count mismatch) for artifact ${artifact.id} in project ${artifact.projectId}: chunks=${chunks.length}, embeddings=${embeddings.length}.`,
+    );
+  }
+
   await vector.upsert(
     chunks.map((c, idx) => {
       const meta: VectorMetadata = {
@@ -179,7 +187,7 @@ export async function indexArtifactVersion(
         data: c.text,
         id: c.id,
         metadata: meta,
-        vector: embeddings[idx] ?? [],
+        vector: embeddings[idx],
       };
     }),
   );

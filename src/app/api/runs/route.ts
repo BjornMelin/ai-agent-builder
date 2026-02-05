@@ -19,6 +19,7 @@ const createRunSchema = z.strictObject({
  * @returns Run response or JSON error.
  * @throws AppError - When request body is invalid (400).
  * @throws AppError - When project is not found (404).
+ * @throws AppError - When database update fails (500, code: db_update_failed).
  */
 export async function POST(req: Request) {
   try {

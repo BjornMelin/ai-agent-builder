@@ -131,6 +131,18 @@ describe("GET /api/runs/:runId/stream", () => {
     expect(state.getRun).not.toHaveBeenCalled();
   });
 
+  it("returns not found when the workflow run is missing", async () => {
+    const GET = await loadRoute();
+    state.getRun.mockReturnValueOnce(null);
+
+    const res = await GET(
+      new Request("http://localhost/api/runs/run_1/stream"),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(404);
+  });
+
   it("returns a stream response for a valid startIndex", async () => {
     const GET = await loadRoute();
 

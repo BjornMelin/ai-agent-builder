@@ -20,6 +20,7 @@ type EnqueueIndexInput = Readonly<{
  * - Locally, we fall back to inline indexing to avoid requiring tunneling.
  *
  * @param input - Artifact indexing job input.
+ * @throws Error - Re-throws QStash publish errors on Vercel runtime.
  */
 export async function enqueueArtifactIndexing(
   input: EnqueueIndexInput,

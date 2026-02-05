@@ -206,7 +206,10 @@ export async function buildExportZipStream(
 /**
  * Convenience helper to build the export paths for an artifact.
  *
- * @param input - Artifact identity.
+ * @param input - Artifact identity:
+ *   - `kind`: Artifact kind segment (sanitized).
+ *   - `logicalKey`: Artifact logical key segment (sanitized).
+ *   - `version`: Artifact version suffix used in the deterministic path.
  * @returns Deterministic artifact file path prefix.
  */
 export function artifactExportBasePath(

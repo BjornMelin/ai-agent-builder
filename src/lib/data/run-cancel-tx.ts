@@ -6,11 +6,7 @@ import type { DbClient } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
 
-const NON_CANCELABLE_STATUSES: ("canceled" | "failed" | "succeeded")[] = [
-  "canceled",
-  "failed",
-  "succeeded",
-];
+const NON_CANCELABLE_STATUSES = ["canceled", "failed", "succeeded"] as const;
 
 /**
  * Cancel a run and mark any non-terminal steps as canceled (transaction helper).
@@ -37,7 +33,11 @@ export async function cancelRunAndStepsTx(
     throw new AppError("not_found", 404, "Run not found.");
   }
 
-  if (existing.status === "succeeded" || existing.status === "failed") {
+  if (
+    existing.status === "succeeded" ||
+    existing.status === "failed" ||
+    existing.status === "canceled"
+  ) {
     return;
   }
 
@@ -47,7 +47,7 @@ export async function cancelRunAndStepsTx(
     .where(
       and(
         eq(schema.runsTable.id, input.runId),
-        notInArray(schema.runsTable.status, NON_CANCELABLE_STATUSES),
+        notInArray(schema.runsTable.status, [...NON_CANCELABLE_STATUSES]),
       ),
     );
 
@@ -61,7 +61,7 @@ export async function cancelRunAndStepsTx(
     .where(
       and(
         eq(schema.runStepsTable.runId, input.runId),
-        notInArray(schema.runStepsTable.status, NON_CANCELABLE_STATUSES),
+        notInArray(schema.runStepsTable.status, [...NON_CANCELABLE_STATUSES]),
       ),
     );
 }

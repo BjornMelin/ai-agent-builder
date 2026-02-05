@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { DbClient } from "@/db/client";
-import { AppError } from "@/lib/core/errors";
 import { cancelRunAndStepsTx } from "@/lib/data/run-cancel-tx";
 
 function createFakeTx(status: string | null) {
@@ -32,7 +31,7 @@ describe("cancelRunAndStepsTx", () => {
         now: new Date(0),
         runId: "run_1",
       }),
-    ).rejects.toBeInstanceOf(AppError);
+    ).rejects.toMatchObject({ code: "not_found" });
   });
 
   it("does nothing when run is succeeded", async () => {
@@ -68,5 +67,31 @@ describe("cancelRunAndStepsTx", () => {
     expect(update).toHaveBeenCalledTimes(2);
     expect(set).toHaveBeenCalledTimes(2);
     expect(where).toHaveBeenCalledTimes(2);
+  });
+
+  it("updates run + steps when run is pending", async () => {
+    const { tx, update, set, where } = createFakeTx("pending");
+
+    await cancelRunAndStepsTx(tx as unknown as DbClient, {
+      now: new Date(0),
+      runId: "run_1",
+    });
+
+    expect(update).toHaveBeenCalledTimes(2);
+    expect(set).toHaveBeenCalledTimes(2);
+    expect(where).toHaveBeenCalledTimes(2);
+  });
+
+  it("does nothing when run is canceled", async () => {
+    const { tx, update, set, where } = createFakeTx("canceled");
+
+    await cancelRunAndStepsTx(tx as unknown as DbClient, {
+      now: new Date(0),
+      runId: "run_1",
+    });
+
+    expect(update).not.toHaveBeenCalled();
+    expect(set).not.toHaveBeenCalled();
+    expect(where).not.toHaveBeenCalled();
   });
 });

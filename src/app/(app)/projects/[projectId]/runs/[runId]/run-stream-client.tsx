@@ -352,7 +352,7 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
               events.map((ev, index) => (
                 <Message
                   from="assistant"
-                  key={`${ev.type}-${ev.runId}-${index}`}
+                  key={`${ev.type}-${ev.runId}-${ev.timestamp ?? index}`}
                 >
                   <MessageContent>
                     <MessageResponse>{toMarkdown(ev)}</MessageResponse>

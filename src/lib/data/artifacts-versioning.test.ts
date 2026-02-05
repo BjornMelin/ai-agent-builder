@@ -53,7 +53,10 @@ describe("createArtifactVersionTx", () => {
   });
 
   it("retries on unique constraint violation", async () => {
-    const { tx, returning, values } = createFakeTx({ maxVersion: 1 });
+    const { tx, returning, values, whereSelect } = createFakeTx();
+    whereSelect
+      .mockResolvedValueOnce([{ maxVersion: 1 }])
+      .mockResolvedValueOnce([{ maxVersion: 2 }]);
 
     returning.mockRejectedValueOnce({ code: "23505" }).mockResolvedValueOnce([
       {
@@ -64,7 +67,7 @@ describe("createArtifactVersionTx", () => {
         logicalKey: "PRD",
         projectId: "proj_1",
         runId: null,
-        version: 2,
+        version: 3,
       },
     ]);
 
@@ -76,8 +79,8 @@ describe("createArtifactVersionTx", () => {
     });
 
     expect(values).toHaveBeenCalledWith(
-      expect.objectContaining({ version: 2 }),
+      expect.objectContaining({ version: 3 }),
     );
-    expect(res.version).toBe(2);
+    expect(res.version).toBe(3);
   });
 });

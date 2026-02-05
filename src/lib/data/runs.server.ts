@@ -332,6 +332,7 @@ const IMMUTABLE_TERMINAL_RUN_STATUSES: ReadonlySet<RunDto["status"]> = new Set([
  * Cancel a run and mark any non-terminal steps as canceled.
  *
  * @param runId - Run ID.
+ * @throws AppError - With code "not_found" (404) when the run cannot be found.
  */
 export async function cancelRun(runId: string): Promise<void> {
   const db = getDb();

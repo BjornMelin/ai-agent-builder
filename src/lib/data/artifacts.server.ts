@@ -142,6 +142,7 @@ export async function createArtifactVersionTx(
  *
  * @param input - Artifact creation input.
  * @returns Created artifact DTO.
+ * @throws AppError - With code "db_insert_failed" (500) when insertion fails.
  */
 export async function createArtifactVersion(
   input: Parameters<typeof createArtifactVersionTx>[1],

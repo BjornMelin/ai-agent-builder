@@ -23,16 +23,16 @@ export default async function RunDetailPage(
 ) {
   const { projectId, runId } = await props.params;
 
-  const [project, run] = await Promise.all([
+  const [project, run, steps] = await Promise.all([
     getProjectById(projectId),
     getRunById(runId),
+    listRunSteps(runId),
   ]);
 
   if (!project || !run || run.projectId !== project.id) {
     notFound();
   }
 
-  const steps = await listRunSteps(run.id);
   const canCancel =
     run.status !== "canceled" &&
     run.status !== "failed" &&

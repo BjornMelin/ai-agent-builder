@@ -85,6 +85,11 @@ describe("GET /api/export/[projectId]", () => {
     });
 
     expect(res.status).toBe(500);
+    expect(state.requireAppUserApi).toHaveBeenCalledTimes(1);
+    expect(state.getProjectById).not.toHaveBeenCalled();
+    expect(state.listLatestArtifacts).not.toHaveBeenCalled();
+    expect(state.listCitationsByArtifactIds).not.toHaveBeenCalled();
+    expect(state.buildExportZipStream).not.toHaveBeenCalled();
   });
 
   it("returns 404 when project is missing", async () => {
@@ -99,6 +104,11 @@ describe("GET /api/export/[projectId]", () => {
     await expect(res.json()).resolves.toMatchObject({
       error: { code: "not_found" },
     });
+    expect(state.requireAppUserApi).toHaveBeenCalledTimes(1);
+    expect(state.getProjectById).toHaveBeenCalledWith(projectId);
+    expect(state.listLatestArtifacts).not.toHaveBeenCalled();
+    expect(state.listCitationsByArtifactIds).not.toHaveBeenCalled();
+    expect(state.buildExportZipStream).not.toHaveBeenCalled();
   });
 
   it("returns a zip response with download headers", async () => {
@@ -111,5 +121,12 @@ describe("GET /api/export/[projectId]", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("application/zip");
     expect(res.headers.get("content-disposition")).toContain(".zip");
+    expect(state.requireAppUserApi).toHaveBeenCalledTimes(1);
+    expect(state.getProjectById).toHaveBeenCalledWith(projectId);
+    expect(state.listLatestArtifacts).toHaveBeenCalledWith(projectId, {
+      limit: 500,
+    });
+    expect(state.listCitationsByArtifactIds).toHaveBeenCalledWith([]);
+    expect(state.buildExportZipStream).toHaveBeenCalledTimes(1);
   });
 });

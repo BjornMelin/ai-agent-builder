@@ -64,9 +64,7 @@ export async function startRunAction(
 }
 
 /**
- * Initial state used by startRunAction.
- *
- * @returns The initial idle state before form submission starts.
+ * `startRunInitialState` is the initial idle state used by `startRunAction`.
  */
 export const startRunInitialState = initialStartRunState;
 
@@ -118,8 +116,7 @@ export async function cancelRunAction(
 }
 
 /**
- * Initial state used by cancelRunAction.
- *
- * @returns The initial idle state before form submission starts.
+ * `cancelRunInitialState` exposes `initialCancelRunState` as the initial idle
+ * state used by `cancelRunAction`.
  */
 export const cancelRunInitialState = initialCancelRunState;

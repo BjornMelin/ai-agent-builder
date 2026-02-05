@@ -54,10 +54,10 @@ describe("GET /api/search (project scoped)", () => {
           pageEnd: undefined,
           pageStart: undefined,
           projectId: "p1",
-          type: "chunk",
         },
         score: 0.3,
         snippet: "chunk",
+        type: "chunk",
       },
     ]);
 

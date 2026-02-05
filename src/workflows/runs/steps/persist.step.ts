@@ -108,6 +108,7 @@ export async function ensureRunStepRow(
  * Mark a run step as running (idempotent).
  *
  * @param input - Step identity.
+ * @throws AppError - With code "not_found" (404) when the run step cannot be found.
  */
 export async function beginRunStep(
   input: Readonly<{ runId: string; stepId: string }>,
@@ -165,6 +166,7 @@ export async function beginRunStep(
  * Finish a run step with outputs and optional error payload.
  *
  * @param input - Step finish payload.
+ * @throws AppError - With code "not_found" (404) when the run step cannot be found.
  */
 export async function finishRunStep(
   input: Readonly<{

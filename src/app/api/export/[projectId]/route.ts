@@ -27,9 +27,10 @@ export async function GET(
   context: Readonly<{ params: Promise<{ projectId: string }> }>,
 ): Promise<Response> {
   try {
-    const authPromise = requireAppUserApi();
     const paramsPromise = context.params;
-    const [, { projectId }] = await Promise.all([authPromise, paramsPromise]);
+    const authPromise = requireAppUserApi();
+    await Promise.all([authPromise, paramsPromise]);
+    const { projectId } = await paramsPromise;
 
     const project = await getProjectById(projectId);
     if (!project) {

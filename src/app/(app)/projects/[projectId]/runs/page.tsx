@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { RunControlsClient } from "@/app/(app)/projects/[projectId]/runs/run-controls-client";
+import { RunDateClient } from "@/app/(app)/projects/[projectId]/runs/run-date-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listRunsByProject } from "@/lib/data/runs.server";
 
@@ -52,10 +53,7 @@ export default async function RunsPage(
                   <div className="min-w-0">
                     <p className="truncate font-medium">{run.kind}</p>
                     <p className="truncate text-muted-foreground text-sm">
-                      {run.status} ·{" "}
-                      <time dateTime={run.createdAt} suppressHydrationWarning>
-                        {new Date(run.createdAt).toLocaleString()}
-                      </time>
+                      {run.status} · <RunDateClient createdAt={run.createdAt} />
                     </p>
                   </div>
                   <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">
