@@ -34,7 +34,7 @@ function isRedirectError(err: unknown): boolean {
  * @param _prevState - Previous action state (unused).
  * @param formData - Form payload.
  * @returns Next action state.
- * @throws Error Re-throws Next.js redirect control-flow errors.
+ * @throws Error - Re-throws Next.js redirect control-flow errors.
  */
 export async function startRunAction(
   _prevState: StartRunActionState,

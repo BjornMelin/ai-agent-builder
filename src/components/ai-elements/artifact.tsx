@@ -90,7 +90,6 @@ export const ArtifactClose = (props: ArtifactCloseProps) => {
       {...rest}
     >
       {children ?? <XIcon aria-hidden="true" className="size-4" />}
-      <span className="sr-only">{accessibleLabel}</span>
     </Button>
   );
 };

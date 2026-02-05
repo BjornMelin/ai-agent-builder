@@ -107,11 +107,11 @@ function buildChunkIds(
 }
 
 /**
- * Index an artifact version into Upstash Vector (latest-only overwrite strategy).
+ * Index an artifact version into Upstash Vector (latest-only replacement strategy).
  *
  * @remarks
- * This function overwrites previous vectors for the same `(projectId, kind, logicalKey)`
- * by using stable vector IDs derived from those fields.
+ * This function replaces all vectors for the same `(projectId, kind, logicalKey)`
+ * by deleting the deterministic chunk-id prefix before upserting the latest chunks.
  *
  * @param input - Artifact index input.
  * @throws AppError - When the artifact cannot be found or does not match the input.
@@ -133,6 +133,16 @@ export async function indexArtifactVersion(
     return;
   }
 
+  const baseId = sha256Hex(
+    `${artifact.projectId}:${artifact.kind}:${artifact.logicalKey}`,
+  );
+  const namespace = projectArtifactsNamespace(artifact.projectId);
+  const vector = getVectorIndex().namespace(namespace);
+  const chunkIdPrefix = `${baseId}:`;
+
+  // Cleanup first so shrinking chunk sets never leave stale vectors behind.
+  await vector.delete({ prefix: chunkIdPrefix });
+
   const markdown = getMarkdownContent(artifact.content);
   if (!markdown) {
     // Only markdown artifacts are indexed for retrieval today.
@@ -140,21 +150,15 @@ export async function indexArtifactVersion(
   }
 
   const texts = chunkMarkdown(`${markdown.title}\n\n${markdown.markdown}`);
-  if (texts.length === 0) return;
-
   const limited = texts.slice(0, budgets.maxEmbedBatchSize);
-  const baseId = sha256Hex(
-    `${artifact.projectId}:${artifact.kind}:${artifact.logicalKey}`,
-  );
+  if (limited.length === 0) return;
+
   const chunks = buildChunkIds(baseId, limited);
 
   const embeddings = await embedTexts(
     chunks.map((c) => c.text),
     { maxParallelCalls: 2 },
   );
-
-  const namespace = projectArtifactsNamespace(artifact.projectId);
-  const vector = getVectorIndex().namespace(namespace);
 
   await vector.upsert(
     chunks.map((c, idx) => {

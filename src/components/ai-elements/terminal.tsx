@@ -305,10 +305,22 @@ export const TerminalContent = (props: TerminalContentProps) => {
   const { className, children, announceStreaming = true, ...rest } = props;
   const { output, mode, scroll } = useContext(TerminalContext);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [hasStreamed, setHasStreamed] = useState(false);
   const statusMessage =
     mode === "streaming"
       ? "Terminal output is streaming."
-      : "Terminal output stream finished.";
+      : hasStreamed
+        ? "Terminal output stream finished."
+        : null;
+
+  useEffect(() => {
+    if (mode === "streaming" && !hasStreamed) {
+      const timer = window.setTimeout(() => {
+        setHasStreamed(true);
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, [hasStreamed, mode]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: output triggers auto-scroll when new content arrives
   useEffect(() => {
@@ -326,7 +338,7 @@ export const TerminalContent = (props: TerminalContentProps) => {
       ref={containerRef}
       {...rest}
     >
-      {announceStreaming ? (
+      {announceStreaming && statusMessage ? (
         <output aria-live="polite" className="sr-only">
           {statusMessage}
         </output>

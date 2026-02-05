@@ -3,6 +3,7 @@ import "server-only";
 import { getRun, start } from "workflow/api";
 
 import { AppError } from "@/lib/core/errors";
+import { log } from "@/lib/core/log";
 import { getProjectById } from "@/lib/data/projects.server";
 import {
   cancelRun,
@@ -10,6 +11,7 @@ import {
   getRunById,
   type RunDto,
   setRunWorkflowRunId,
+  updateRunStatus,
 } from "@/lib/data/runs.server";
 import { projectRun } from "@/workflows/runs/project-run.workflow";
 
@@ -38,8 +40,20 @@ export async function startProjectRun(
     ...(input.metadata === undefined ? {} : { metadata: input.metadata }),
   });
 
-  const wf = await start(projectRun, [run.id]);
-  return await setRunWorkflowRunId(run.id, wf.runId);
+  try {
+    const wf = await start(projectRun, [run.id]);
+    return await setRunWorkflowRunId(run.id, wf.runId);
+  } catch (error) {
+    try {
+      await updateRunStatus(run.id, "failed");
+    } catch (compensationError) {
+      log.error("run_start_compensation_failed", {
+        err: compensationError,
+        runId: run.id,
+      });
+    }
+    throw error;
+  }
 }
 
 /**
@@ -47,7 +61,6 @@ export async function startProjectRun(
  *
  * @param runId - Durable run ID.
  * @throws AppError - With code "not_found" (404) when the run does not exist.
- * @throws AppError - With code "conflict" (409) when the run has no workflow handle.
  */
 export async function cancelProjectRun(runId: string): Promise<void> {
   const run = await getRunById(runId);
@@ -64,17 +77,18 @@ export async function cancelProjectRun(runId: string): Promise<void> {
   }
 
   if (!run.workflowRunId) {
-    throw new AppError(
-      "conflict",
-      409,
-      "Run cannot be canceled (missing workflowRunId).",
-    );
+    await cancelRun(runId);
+    return;
   }
 
   try {
     await getRun(run.workflowRunId).cancel();
-  } catch {
-    // Best effort only; persistence is still updated below.
+  } catch (error) {
+    log.error("workflow_run_cancel_failed", {
+      err: error,
+      runId,
+      workflowRunId: run.workflowRunId,
+    });
   }
 
   await cancelRun(runId);

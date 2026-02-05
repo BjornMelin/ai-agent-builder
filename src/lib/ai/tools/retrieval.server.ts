@@ -164,6 +164,12 @@ function extractStringField(
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+type ArtifactHitCandidate = Readonly<{
+  hit: ArtifactRetrievalHit;
+  logicalArtifactKey: string;
+  version: number;
+}>;
+
 /**
  * Retrieve relevant artifacts for a project using Upstash Vector.
  *
@@ -202,15 +208,16 @@ export async function retrieveProjectArtifacts(
   const embedding = await embedText(input.q);
   const namespace = projectArtifactsNamespace(input.projectId);
   const vector = getVectorIndex().namespace(namespace);
+  const queryTopK = Math.min(budgets.maxVectorTopK, Math.max(topK, topK * 3));
 
   const results = await vector.query<VectorMetadata>({
     filter: `projectId = '${input.projectId}' AND type = 'artifact'`,
     includeMetadata: true,
-    topK,
+    topK: queryTopK,
     vector: embedding,
   });
 
-  const hits: ArtifactRetrievalHit[] = results.flatMap((r) => {
+  const candidates: ArtifactHitCandidate[] = results.flatMap((r) => {
     const meta = r.metadata;
     if (!meta || meta.type !== "artifact") return [];
 
@@ -228,16 +235,38 @@ export async function retrieveProjectArtifacts(
       version: meta.artifactVersion,
     };
 
+    const hit: ArtifactRetrievalHit = {
+      id: String(r.id),
+      provenance,
+      score: r.score,
+      snippet,
+      title,
+    };
+
     return [
       {
-        id: String(r.id),
-        provenance,
-        score: r.score,
-        snippet,
-        title,
+        hit,
+        logicalArtifactKey: `${meta.artifactKind}:${meta.artifactKey}`,
+        version: meta.artifactVersion,
       },
     ];
   });
+
+  const latestVersionByKey = new Map<string, number>();
+  for (const candidate of candidates) {
+    const existing = latestVersionByKey.get(candidate.logicalArtifactKey);
+    if (existing === undefined || candidate.version > existing) {
+      latestVersionByKey.set(candidate.logicalArtifactKey, candidate.version);
+    }
+  }
+
+  const hits: ArtifactRetrievalHit[] = [];
+  for (const candidate of candidates) {
+    const latest = latestVersionByKey.get(candidate.logicalArtifactKey);
+    if (latest !== candidate.version) continue;
+    hits.push(candidate.hit);
+    if (hits.length >= topK) break;
+  }
 
   if (redis) {
     await redis.setex(key, budgets.toolCacheTtlSeconds, hits).catch(() => {

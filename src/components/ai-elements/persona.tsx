@@ -245,7 +245,7 @@ const setBooleanInput = (
 /**
  * Renders an animated persona avatar using Rive.
  *
- * @param props - Persona props including state and event callbacks.
+ * @param props - Persona props including state, activation control, and event callbacks.
  * @returns A persona animation component.
  * @throws Error if the provided variant is not supported.
  */
