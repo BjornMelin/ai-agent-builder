@@ -26,8 +26,11 @@ export async function POST(
     const paramsPromise = context.params;
     const bodyPromise = parseJsonBody(req, bodySchema);
 
-    const [params, parsed] = await Promise.all([paramsPromise, bodyPromise]);
-    await authPromise;
+    const [params, parsed] = await Promise.all([
+      paramsPromise,
+      bodyPromise,
+      authPromise,
+    ]);
 
     await chatMessageHook.resume(params.runId, { message: parsed.message });
 

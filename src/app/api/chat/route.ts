@@ -40,9 +40,7 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const authPromise = requireAppUserApi();
     const bodyPromise = parseJsonBody(req, bodySchema);
-    await authPromise;
-
-    const parsed = await bodyPromise;
+    const [, parsed] = await Promise.all([authPromise, bodyPromise]);
 
     const validated = await safeValidateUIMessages<ProjectChatUIMessage>({
       messages: parsed.messages,

@@ -91,7 +91,13 @@ export default async function RunDetailPage(
               No steps recorded yet.
             </p>
           ) : (
-            <ul className="grid gap-2">
+            <ul
+              className="grid gap-2"
+              style={{
+                containIntrinsicSize: "auto 200px",
+                contentVisibility: "auto",
+              }}
+            >
               {steps.map((step) => (
                 <li
                   className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2"

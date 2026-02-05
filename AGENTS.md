@@ -6,7 +6,7 @@ This repo is optimized for agent-driven development (Codex + local automation).
 
 - **Bun only** for installs and scripts.
 - **Next.js App Router** patterns only.
-- **No manual memoization** (`useMemo`, `useCallback`).
+- **Memoization policy**: Follow $vercel-react-best-practices. Use memoization (`useMemo`, `useCallback`, `React.memo`) only for expensive computations or to prevent costly re-renders (`rerender-memo`). Avoid memo for simple primitives/cheap work (`rerender-simple-expression-in-memo`). Hoist stable non-primitive defaults (`rerender-memo-with-default-value`).
 - **Strict TypeScript** (no `any`).
 - **Docs required** for exported APIs (TSDoc syntax enforced).
 

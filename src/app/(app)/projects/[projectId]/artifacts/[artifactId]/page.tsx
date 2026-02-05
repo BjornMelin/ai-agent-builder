@@ -145,7 +145,13 @@ export default async function ArtifactDetailPage(
             No citations recorded for this version.
           </p>
         ) : (
-          <ul className="grid gap-2">
+          <ul
+            className="grid gap-2"
+            style={{
+              containIntrinsicSize: "auto 200px",
+              contentVisibility: "auto",
+            }}
+          >
             {citations.map((c) => (
               <li className="rounded-md border bg-card px-3 py-2" key={c.id}>
                 <p className="font-medium text-sm">{c.sourceType}</p>
