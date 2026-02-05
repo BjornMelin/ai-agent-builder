@@ -56,6 +56,12 @@ flowchart LR
   API --> UPAPI
 ```
 
+Notes:
+
+- Some integrations in the diagram are **optional / spec’d** and may not be
+  implemented in the current repo snapshot (for example: Exa/Firecrawl web
+  research, Sandbox job runner, RepoOps automation, webhooks).
+
 ## Repository alignment (current)
 
 - The Next.js app lives under `src/app`.
