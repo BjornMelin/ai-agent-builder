@@ -197,9 +197,9 @@ For implementation runs, add:
 - Cancellation semantics are first-class:
   - User-initiated cancellations MUST persist and emit as `canceled`, not
     `failed`.
-  - Cancellation MUST be idempotent and cancel any non-terminal steps.
-  - Cancellation MUST NOT overwrite immutable terminal outcomes
-    (`succeeded|failed`).
+  - The operation MUST be idempotent and cancel any non-terminal steps.
+  - Terminal outcomes (`succeeded|failed`) MUST NOT be overwritten by
+    cancellation.
   - Implementation details: [SPEC-0024](./SPEC-0024-run-cancellation-and-stream-resilience.md).
 
 ## Decision Framework Score (must be ≥ 9.0)

@@ -164,9 +164,9 @@ The client MUST persist a monotonic `startIndex` cursor (session-scoped).
 
 - Endpoint: `GET /api/runs/:runId/stream?startIndex=N`
 - `startIndex` is the number of chunks already processed on the client.
-- Auto reconnect budget:
+- Auto-reconnect budget:
   - 3 consecutive attempts
-  - backoff: 250ms, 750ms, 1500ms
+  - backoff intervals: 250 ms, 750 ms, 1,500 ms
 
 If budget is exhausted, the UI remains `done` with `wasInterrupted = true` and
 offers a manual “Reconnect” action.

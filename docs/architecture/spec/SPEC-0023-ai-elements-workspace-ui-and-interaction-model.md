@@ -135,7 +135,21 @@ Initial Runs tab must show:
 - approvals required (FR-031)
 - “resume” action when blocked
 - a resilient stream view that never remains stuck in `streaming` after the SSE
-  connection ends unexpectedly (show interruption banner + reconnect)
+  connection ends unexpectedly, with explicit reconnect semantics:
+  - interruption banner appears immediately when the SSE disconnect is detected
+    while status is `streaming` (no grace delay), with status text
+    "Connection interrupted. Reconnecting…"
+  - reconnect mode is automatic first: retry SSE with `startIndex` resume; surface
+    a visible `Reconnect` button after attempt 1 fails so users can force an
+    immediate retry while automatic retries continue
+  - retry policy is capped exponential backoff: attempts at 1s, 2s, 4s, 8s, 16s
+    delays (max 5 attempts total); if all attempts fail, transition the run
+    stream UI to a permanent error state with `Reconnect` and `Retry from latest`
+    actions, and do not leave the view in `streaming`
+  - `startIndex` storage/usage: keep the latest rendered event index in client run
+    stream state and include it on every reconnect request (`?startIndex=<n>`) so
+    the server resumes from the next event without duplicating already-rendered
+    items
 
 ### P1: Graph view (AI Elements workflow example baseline)
 
@@ -179,8 +193,8 @@ Settings tab must expose:
 - Runs:
   - run shows steps updating in real time (poll or stream depending on implementation)
   - approval gate blocks UI until approved, then resumes
-  - cancel run surfaces `canceled` terminal state (not failed)
-  - stream ending without a finish sentinel transitions out of `streaming` and
+  - canceling a run shows the `canceled` terminal state (not failed)
+  - stream ending without an explicit end marker transitions out of `streaming` and
     can reconnect/resume from `startIndex`
 - Uploads:
   - async ingestion path triggers background job and status updates

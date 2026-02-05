@@ -1,6 +1,5 @@
 ---
 title: SPEC Index
-version: 0.3.2
 date: 2026-02-05
 status: Active
 ---
@@ -14,7 +13,7 @@ status: Active
 - [SPEC-0007](./SPEC-0007-web-research-citations-framework.md) — Web research + citations framework
 - [SPEC-0008](./SPEC-0008-artifact-generation-versioning-and-export-zip.md) — Artifact generation, versioning, and export zip
 - [SPEC-0009](./SPEC-0009-sandbox-code-mode.md) — Sandbox “Code Mode”
-- [SPEC-0010](./SPEC-0010-observability-budgets-and-cost-controls.md) — Observability, budgets, and cost controls (Owner: Bjorn Melin, Status: Proposed, v0.3.1: Defines run-level budgets with file-level contracts in src/lib/config/budgets.server.ts for defaults/hard limits and gating behavior in src/lib/runs/* and src/workflows/** for durable run execution)
+- [SPEC-0010](./SPEC-0010-observability-budgets-and-cost-controls.md) — Observability, budgets, and cost controls
 - [SPEC-0011](./SPEC-0011-bun-toolchain-scripts-and-ci-cd.md) — Bun toolchain, scripts, and CI/CD
 - [SPEC-0012](./SPEC-0012-ci-cd-pipeline-and-supply-chain-security-controls.md) — CI/CD pipeline and supply chain security controls
 - [SPEC-0013](./SPEC-0013-release-management-and-versioning.md) — Release management and versioning
