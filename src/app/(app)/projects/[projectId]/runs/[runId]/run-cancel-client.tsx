@@ -48,7 +48,7 @@ export function RunCancelClient(
           {isPending ? (
             <span
               aria-hidden="true"
-              className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+              className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
             />
           ) : null}
           <span>Cancel run</span>

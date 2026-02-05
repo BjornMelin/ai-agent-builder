@@ -21,6 +21,7 @@ import {
 } from "@/lib/runs/run-stream";
 
 type StreamStatus = "idle" | "streaming" | "done" | "error";
+const STREAM_EVENT_FLUSH_MS = 16;
 
 function toMarkdown(event: RunStreamEvent): string {
   switch (event.type) {
@@ -102,6 +103,26 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
     async function openAndReadOnce(): Promise<
       "done" | "interrupted" | "error" | "aborted"
     > {
+      let pendingEvents: RunStreamEvent[] = [];
+      let flushTimer: number | null = null;
+      const flushPendingEvents = () => {
+        if (pendingEvents.length === 0) {
+          return;
+        }
+        const nextEvents = pendingEvents;
+        pendingEvents = [];
+        setEvents((prev) => prev.concat(nextEvents));
+      };
+      const scheduleFlush = () => {
+        if (flushTimer !== null) {
+          return;
+        }
+        flushTimer = window.setTimeout(() => {
+          flushTimer = null;
+          flushPendingEvents();
+        }, STREAM_EVENT_FLUSH_MS);
+      };
+
       const url = new URL(
         `/api/runs/${props.runId}/stream`,
         window.location.origin,
@@ -192,7 +213,8 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
               const parsed = runStreamEventSchema.safeParse(chunk.data);
               if (!parsed.success) continue;
 
-              setEvents((prev) => prev.concat(parsed.data));
+              pendingEvents.push(parsed.data);
+              scheduleFlush();
             }
           }
         }
@@ -201,6 +223,13 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
         setError(err instanceof Error ? err.message : "Stream disconnected.");
         return "error";
       } finally {
+        if (flushTimer !== null) {
+          window.clearTimeout(flushTimer);
+          flushTimer = null;
+        }
+        if (!abort.signal.aborted) {
+          flushPendingEvents();
+        }
         try {
           reader.releaseLock();
         } catch {

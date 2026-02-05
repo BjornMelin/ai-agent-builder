@@ -291,7 +291,9 @@ export const TerminalClearButton = (props: TerminalClearButtonProps) => {
 };
 
 /** Props for the `TerminalContent` component. */
-export type TerminalContentProps = HTMLAttributes<HTMLDivElement>;
+export type TerminalContentProps = HTMLAttributes<HTMLDivElement> & {
+  announceStreaming?: boolean;
+};
 
 /**
  * Renders terminal output content and optional auto-scroll behavior.
@@ -300,9 +302,13 @@ export type TerminalContentProps = HTMLAttributes<HTMLDivElement>;
  * @returns Terminal output content.
  */
 export const TerminalContent = (props: TerminalContentProps) => {
-  const { className, children, ...rest } = props;
+  const { className, children, announceStreaming = true, ...rest } = props;
   const { output, mode, scroll } = useContext(TerminalContext);
   const containerRef = useRef<HTMLDivElement>(null);
+  const statusMessage =
+    mode === "streaming"
+      ? "Terminal output is streaming."
+      : "Terminal output stream finished.";
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: output triggers auto-scroll when new content arrives
   useEffect(() => {
@@ -320,11 +326,19 @@ export const TerminalContent = (props: TerminalContentProps) => {
       ref={containerRef}
       {...rest}
     >
+      {announceStreaming ? (
+        <output aria-live="polite" className="sr-only">
+          {statusMessage}
+        </output>
+      ) : null}
       {children ?? (
         <pre className="whitespace-pre-wrap break-words">
           <Ansi>{output}</Ansi>
           {mode === "streaming" ? (
-            <span className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-zinc-100 motion-reduce:animate-none" />
+            <span
+              aria-hidden="true"
+              className="ml-0.5 inline-block h-4 w-2 animate-pulse bg-zinc-100 motion-reduce:animate-none"
+            />
           ) : null}
         </pre>
       )}

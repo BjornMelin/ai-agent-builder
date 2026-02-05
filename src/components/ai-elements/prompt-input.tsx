@@ -875,7 +875,9 @@ export const PromptInputBody = (props: PromptInputBodyProps) => {
 /** Props for the `PromptInputTextareaProps` type. */
 export type PromptInputTextareaProps = ComponentProps<
   typeof InputGroupTextarea
->;
+> & {
+  labelId?: string;
+};
 
 /**
  * Textarea for prompt input with submit, paste-to-attach, and shortcut handling.
@@ -888,6 +890,8 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
     onChange,
     onKeyDown,
     className,
+    labelId,
+    "aria-labelledby": ariaLabelledBy,
     placeholder = "What would you like to know… e.g., summarize the attached article",
     ...rest
   } = props;
@@ -979,8 +983,11 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
         onChange,
       };
 
+  const resolvedAriaLabelledBy = ariaLabelledBy ?? labelId;
+
   return (
     <InputGroupTextarea
+      aria-labelledby={resolvedAriaLabelledBy}
       className={cn("field-sizing-content max-h-48 min-h-16", className)}
       name="message"
       onCompositionEnd={() => setIsComposing(false)}

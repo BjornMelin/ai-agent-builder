@@ -53,7 +53,7 @@ export function RunControlsClient(props: Readonly<{ projectId: string }>) {
             {isPending && submittedKind === "research" ? (
               <span
                 aria-hidden="true"
-                className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+                className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
               />
             ) : null}
             <span>Start research run</span>
@@ -72,7 +72,7 @@ export function RunControlsClient(props: Readonly<{ projectId: string }>) {
             {isPending && submittedKind === "implementation" ? (
               <span
                 aria-hidden="true"
-                className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+                className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
               />
             ) : null}
             <span>Start implementation run</span>

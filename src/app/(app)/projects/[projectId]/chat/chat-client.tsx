@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { WorkflowChatTransport } from "@workflow/ai";
 import type { ChatTransport, UIDataTypes, UIMessage, UITools } from "ai";
 import { getToolName, isToolUIPart } from "ai";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Conversation,
@@ -285,8 +285,15 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
 
   const [composerError, setComposerError] = useState<string | null>(null);
   const composerErrorId = `project-chat-composer-error-${props.projectId}`;
+  const composerInputId = `project-chat-composer-${props.projectId}`;
+  const composerLabelId = `${composerInputId}-label`;
+  const [messages, setDisplayMessages] = useState<AppUIMessage[]>(() =>
+    reconstructMessages(rawMessages),
+  );
 
-  const messages = reconstructMessages(rawMessages);
+  useEffect(() => {
+    setDisplayMessages(reconstructMessages(rawMessages));
+  }, [rawMessages]);
 
   async function sendFollowUp(text: string): Promise<boolean> {
     if (!runId) return false;
@@ -536,10 +543,18 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
           className="rounded-md border bg-card"
         >
           <PromptInputBody>
+            <label
+              className="sr-only"
+              htmlFor={composerInputId}
+              id={composerLabelId}
+            >
+              Message
+            </label>
             <PromptInputTextarea
               aria-describedby={composerError ? composerErrorId : undefined}
               aria-invalid={composerError ? "true" : undefined}
-              aria-label="Message"
+              id={composerInputId}
+              labelId={composerLabelId}
               placeholder="Ask about your project…"
               className="min-h-[120px]"
             />

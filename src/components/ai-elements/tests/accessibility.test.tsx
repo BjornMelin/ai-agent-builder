@@ -1,7 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { ArtifactAction } from "@/components/ai-elements/artifact";
+import {
+  ArtifactAction,
+  ArtifactClose,
+} from "@/components/ai-elements/artifact";
 import {
   AudioPlayerPlayButton,
   AudioPlayerSeekBackwardButton,
@@ -20,6 +23,7 @@ import {
   StackTrace,
   StackTraceCopyButton,
 } from "@/components/ai-elements/stack-trace";
+import { Task, TaskTrigger } from "@/components/ai-elements/task";
 import { VoiceSelectorInput } from "@/components/ai-elements/voice-selector";
 import {
   WebPreview,
@@ -66,6 +70,11 @@ describe("ai-elements accessibility defaults", () => {
     expect(html).toContain("Artifact action");
   });
 
+  it("assigns an explicit accessible name to artifact close controls", () => {
+    const html = renderToStaticMarkup(<ArtifactClose />);
+    expect(html).toContain('aria-label="Close"');
+  });
+
   it("includes a descriptive accessible name for context usage trigger", () => {
     const html = renderToStaticMarkup(
       <Context maxTokens={1000} usedTokens={420}>
@@ -97,6 +106,17 @@ describe("ai-elements accessibility defaults", () => {
     expect(html).toContain("<button");
     expect(html).not.toContain('role="treeitem"');
     expect(html).toContain('aria-controls="file-tree-content-src"');
+  });
+
+  it("renders task trigger fallback content as a semantic button", () => {
+    const html = renderToStaticMarkup(
+      <Task>
+        <TaskTrigger title="Reviewing files" />
+      </Task>,
+    );
+
+    expect(html).toContain("<button");
+    expect(html).toContain("Reviewing files");
   });
 
   it("provides default labels for audio player icon controls", () => {
