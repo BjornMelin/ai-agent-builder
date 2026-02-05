@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.6](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.5...ai-agent-builder-v0.1.6) (2026-02-05)
+
+
+### Features
+
+* **app:** improve accessibility, motion performance, and metadata ([00575c8](https://github.com/BjornMelin/ai-agent-builder/commit/00575c8bbce625c208706f857a750fd131ba8d99))
+* **artifacts:** add versioned artifacts and citations DAL ([d734a58](https://github.com/BjornMelin/ai-agent-builder/commit/d734a58b309b0a8a7c991ec2fdcbfb24edaee26b))
+* **artifacts:** enhance artifact export functionality with improved download link and relative date formatting ([86a8e95](https://github.com/BjornMelin/ai-agent-builder/commit/86a8e95702f39bf56b31febb8b91a01854115fd7))
+* **artifacts:** implement artifact versioning and retrieval enhancements with comprehensive tests ([05fdc5a](https://github.com/BjornMelin/ai-agent-builder/commit/05fdc5af709ddbe5692d8cb00410c9e2657bda1d))
+* **dependencies:** add @tanstack/react-virtual and @tanstack/virtual-core to package.json and bun.lock; update SPEC index metadata and improve artifact listing component ([9d9da78](https://github.com/BjornMelin/ai-agent-builder/commit/9d9da784f773bf23bc3dee6c33be051bfbb204d8))
+* **export:** add deterministic artifact zip export ([da0c333](https://github.com/BjornMelin/ai-agent-builder/commit/da0c3332e0b59542b287abea5b285e5855d175a0))
+* **export:** enhance deterministic ZIP export with path sanitization and conflict handling ([5dcab7f](https://github.com/BjornMelin/ai-agent-builder/commit/5dcab7ffcbeec5856815d2d3d34870e838750d99))
+* **export:** implement deterministic artifact export ZIP with enhanced sanitization and manifest integrity ([a02d2cf](https://github.com/BjornMelin/ai-agent-builder/commit/a02d2cff40f99c604de073bf59e3d7969d2d09db))
+* **metadata:** add SITE_TAGLINE for enhanced branding in Open Graph and Twitter images ([cf00993](https://github.com/BjornMelin/ai-agent-builder/commit/cf009934eae3fc2a7a748255aa7d18b6e0ec746b))
+* **runs:** migrate durable runs to Workflow DevKit ([f6b1b09](https://github.com/BjornMelin/ai-agent-builder/commit/f6b1b096c0d6045097e4acc2675a2c4d587376ac))
+* **search:** index artifacts and include in project search ([7a7c3ca](https://github.com/BjornMelin/ai-agent-builder/commit/7a7c3ca347206475265357716f9499d48699b883))
+* **ui:** add project artifacts tab ([ff2f62f](https://github.com/BjornMelin/ai-agent-builder/commit/ff2f62f67bfb6fed38e8a9bb7c95f05a4d62de02))
+* unify durable runs workflow devkit ([39ad336](https://github.com/BjornMelin/ai-agent-builder/commit/39ad336c8982a66b6e4a57a369937137785859d9))
+* **workflows:** add tests for projectRun workflow and enhance error handling ([3ec3103](https://github.com/BjornMelin/ai-agent-builder/commit/3ec3103e522d54c19a55f09d67ed93bfea36273e))
+* **workflows:** persist run summary artifact ([4a2b50c](https://github.com/BjornMelin/ai-agent-builder/commit/4a2b50cb2b959adbc7c1d6a79a384cda35aa0d1d))
+
+
+### Bug Fixes
+
+* **retrieval:** dedupe latest artifact hits by logical key ([05828fa](https://github.com/BjornMelin/ai-agent-builder/commit/05828faa983139ff4ad46a078a00cf442ad32eba))
+* **runs:** harden stream resilience and workflow cancellation ([9fa1bad](https://github.com/BjornMelin/ai-agent-builder/commit/9fa1bad132dc6309ed3e267da41a5db3b71e2326))
+
 ## [0.1.5](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.4...ai-agent-builder-v0.1.5) (2026-02-04)
 
 
