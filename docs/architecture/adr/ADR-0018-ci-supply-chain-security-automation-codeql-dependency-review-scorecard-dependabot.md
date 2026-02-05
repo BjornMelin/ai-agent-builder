@@ -1,7 +1,7 @@
 ---
 ADR: 0018
 Title: CI + supply chain security automation (CodeQL, Dependency Review, Scorecard, Dependabot)
-Status: Accepted
+Status: Implemented
 Version: 0.2
 Date: 2026-01-30
 Supersedes: []
@@ -18,6 +18,7 @@ References:
 ## Status
 
 Accepted — 2026-01-30.
+Implemented — 2026-02-05.
 
 ## Description
 
