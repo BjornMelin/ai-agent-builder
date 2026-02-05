@@ -7,6 +7,7 @@ import { sha256Hex } from "@/lib/core/sha256";
 import { getRedis } from "@/lib/upstash/redis.server";
 import {
   getVectorIndex,
+  projectArtifactsNamespace,
   projectChunksNamespace,
   type VectorMetadata,
 } from "@/lib/upstash/vector.server";
@@ -25,6 +26,24 @@ export type RetrievalHit = Readonly<{
     chunkIndex: number;
     pageStart?: number;
     pageEnd?: number;
+  }>;
+}>;
+
+/**
+ * A single artifact retrieval result with score, snippet, and provenance metadata.
+ */
+export type ArtifactRetrievalHit = Readonly<{
+  id: string;
+  score: number;
+  title: string;
+  snippet: string;
+  provenance: Readonly<{
+    type: "artifact";
+    projectId: string;
+    artifactId: string;
+    kind: string;
+    logicalKey: string;
+    version: number;
   }>;
 }>;
 
@@ -48,6 +67,18 @@ function cacheKey(
     topK: input.topK,
   });
   return `cache:retrieval:${sha256Hex(payload)}`;
+}
+
+function cacheKeyArtifacts(
+  input: Readonly<{ projectId: string; q: string; topK: number }>,
+): string {
+  const payload = JSON.stringify({
+    projectId: input.projectId,
+    q: input.q.trim().toLowerCase(),
+    topK: input.topK,
+    type: "artifact",
+  });
+  return `cache:retrieval:artifacts:${sha256Hex(payload)}`;
 }
 
 /**
@@ -119,6 +150,98 @@ export async function retrieveProjectChunks(
     // Cache write is best-effort; don't fail the request if Redis is unavailable.
     await redis.setex(key, budgets.toolCacheTtlSeconds, hits).catch(() => {
       // Silently ignore cache write failures.
+    });
+  }
+
+  return hits;
+}
+
+function extractStringField(
+  meta: Readonly<Record<string, unknown>>,
+  key: string,
+): string | null {
+  const value = meta[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+/**
+ * Retrieve relevant artifacts for a project using Upstash Vector.
+ *
+ * @param input - Retrieval input.
+ * @returns Artifact retrieval hits with provenance and deep-linkable identifiers.
+ * @throws AppError - When projectId is not a UUID or topK is out of range.
+ */
+export async function retrieveProjectArtifacts(
+  input: Readonly<{ projectId: string; q: string; topK?: number }>,
+): Promise<readonly ArtifactRetrievalHit[]> {
+  if (!uuidRegex.test(input.projectId)) {
+    throw new AppError("bad_request", 400, "Invalid projectId format.");
+  }
+
+  const topK = input.topK ?? budgets.maxVectorTopK;
+  if (topK < 1 || topK > budgets.maxVectorTopK) {
+    throw new AppError(
+      "bad_request",
+      400,
+      `topK must be between 1 and ${budgets.maxVectorTopK}.`,
+    );
+  }
+
+  const redis = getRedisOptional();
+  const key = cacheKeyArtifacts({
+    projectId: input.projectId,
+    q: input.q,
+    topK,
+  });
+
+  if (redis) {
+    const cached = await redis.get<readonly ArtifactRetrievalHit[]>(key);
+    if (cached) return cached;
+  }
+
+  const embedding = await embedText(input.q);
+  const namespace = projectArtifactsNamespace(input.projectId);
+  const vector = getVectorIndex().namespace(namespace);
+
+  const results = await vector.query<VectorMetadata>({
+    filter: `projectId = '${input.projectId}' AND type = 'artifact'`,
+    includeMetadata: true,
+    topK,
+    vector: embedding,
+  });
+
+  const hits: ArtifactRetrievalHit[] = results.flatMap((r) => {
+    const meta = r.metadata;
+    if (!meta || meta.type !== "artifact") return [];
+
+    const title =
+      extractStringField(meta, "title") ??
+      `${meta.artifactKind} ${meta.artifactKey} v${meta.artifactVersion}`;
+    const snippet = extractStringField(meta, "snippet") ?? "";
+
+    const provenance: ArtifactRetrievalHit["provenance"] = {
+      artifactId: meta.artifactId,
+      kind: meta.artifactKind,
+      logicalKey: meta.artifactKey,
+      projectId: meta.projectId,
+      type: "artifact",
+      version: meta.artifactVersion,
+    };
+
+    return [
+      {
+        id: String(r.id),
+        provenance,
+        score: r.score,
+        snippet,
+        title,
+      },
+    ];
+  });
+
+  if (redis) {
+    await redis.setex(key, budgets.toolCacheTtlSeconds, hits).catch(() => {
+      // Ignore cache write failures.
     });
   }
 

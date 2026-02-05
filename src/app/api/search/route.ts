@@ -3,7 +3,10 @@ import type { NextResponse } from "next/server";
 
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
-import { retrieveProjectChunks } from "@/lib/ai/tools/retrieval.server";
+import {
+  retrieveProjectArtifacts,
+  retrieveProjectChunks,
+} from "@/lib/ai/tools/retrieval.server";
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import type { JsonError } from "@/lib/core/errors";
 import { AppError } from "@/lib/core/errors";
@@ -29,6 +32,21 @@ type SearchResult =
         chunkIndex: number;
         pageStart: number | undefined;
         pageEnd: number | undefined;
+      }>;
+    }>
+  | Readonly<{
+      type: "artifact";
+      id: string;
+      score: number;
+      title: string;
+      snippet: string;
+      href: string;
+      provenance: Readonly<{
+        projectId: string;
+        artifactId: string;
+        kind: string;
+        logicalKey: string;
+        version: number;
       }>;
     }>;
 
@@ -61,9 +79,13 @@ export async function GET(
     await authPromise;
 
     if (projectId) {
-      const hits = await retrieveProjectChunks({ projectId, q });
-      return jsonOk<SearchResponse>({
-        results: hits.map((h) => ({
+      const [chunkHits, artifactHits] = await Promise.all([
+        retrieveProjectChunks({ projectId, q }),
+        retrieveProjectArtifacts({ projectId, q }),
+      ]);
+
+      const merged: SearchResult[] = [
+        ...chunkHits.map((h) => ({
           href: `/projects/${h.provenance.projectId}/uploads/${h.provenance.fileId}`,
           id: h.id,
           provenance: {
@@ -76,8 +98,34 @@ export async function GET(
           score: h.score,
           snippet: h.snippet,
           title: `Upload chunk ${h.provenance.chunkIndex}`,
-          type: "chunk",
+          type: "chunk" as const,
         })),
+        ...artifactHits.map((h) => ({
+          href: `/projects/${h.provenance.projectId}/artifacts/${h.provenance.artifactId}`,
+          id: h.id,
+          provenance: {
+            artifactId: h.provenance.artifactId,
+            kind: h.provenance.kind,
+            logicalKey: h.provenance.logicalKey,
+            projectId: h.provenance.projectId,
+            version: h.provenance.version,
+          },
+          score: h.score,
+          snippet: h.snippet,
+          title: h.title,
+          type: "artifact" as const,
+        })),
+      ];
+
+      merged.sort((a, b) => {
+        if ("score" in a && "score" in b) return b.score - a.score;
+        if ("score" in a) return -1;
+        if ("score" in b) return 1;
+        return 0;
+      });
+
+      return jsonOk<SearchResponse>({
+        results: merged.slice(0, 10),
       });
     }
 

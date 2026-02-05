@@ -21,6 +21,14 @@ type SearchResult =
       title: string;
       snippet: string;
       href: string;
+    }>
+  | Readonly<{
+      type: "artifact";
+      id: string;
+      score: number;
+      title: string;
+      snippet: string;
+      href: string;
     }>;
 
 type SearchResponse = Readonly<{ results: readonly SearchResult[] }>;
@@ -185,6 +193,10 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
                 {r.title}
               </Link>
               {r.type === "chunk" ? (
+                <p className="text-muted-foreground text-sm">
+                  {r.snippet || "(no snippet)"}
+                </p>
+              ) : r.type === "artifact" ? (
                 <p className="text-muted-foreground text-sm">
                   {r.snippet || "(no snippet)"}
                 </p>
