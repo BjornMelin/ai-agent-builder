@@ -6,8 +6,8 @@ import { listCitationsByArtifactIds } from "@/lib/data/citations.server";
 import { getProjectById } from "@/lib/data/projects.server";
 import {
   artifactExportBasePath,
-  buildDeterministicZipStream,
-} from "@/lib/export/deterministic-zip.server";
+  buildExportZipStream,
+} from "@/lib/export/zip.server";
 import { jsonError } from "@/lib/next/responses";
 
 function toUtf8Bytes(value: string): Uint8Array {
@@ -84,7 +84,7 @@ export async function GET(
       ];
     });
 
-    const { stream } = await buildDeterministicZipStream({
+    const { stream } = await buildExportZipStream({
       files,
       project: { id: project.id, name: project.name, slug: project.slug },
     });

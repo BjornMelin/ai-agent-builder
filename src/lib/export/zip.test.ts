@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { AppError } from "@/lib/core/errors";
 import { sha256Hex } from "@/lib/core/sha256";
 import {
-  buildDeterministicZipBytes,
-  buildDeterministicZipStream,
-} from "@/lib/export/deterministic-zip.server";
+  buildExportZipBytes,
+  buildExportZipStream,
+} from "@/lib/export/zip.server";
 
 async function streamToBytes(
   stream: ReadableStream<Uint8Array>,
@@ -31,7 +31,7 @@ async function streamToBytes(
   return out;
 }
 
-describe("buildDeterministicZipBytes", () => {
+describe("buildExportZipBytes", () => {
   it("produces identical ZIP bytes for identical inputs (ordering-independent)", async () => {
     const project = { id: "proj_1", name: "Project", slug: "project" } as const;
 
@@ -48,8 +48,8 @@ describe("buildDeterministicZipBytes", () => {
 
     const filesB = [...filesA].reverse();
 
-    const a = await buildDeterministicZipBytes({ files: filesA, project });
-    const b = await buildDeterministicZipBytes({ files: filesB, project });
+    const a = await buildExportZipBytes({ files: filesA, project });
+    const b = await buildExportZipBytes({ files: filesB, project });
 
     expect(sha256Hex(a.bytes)).toBe(sha256Hex(b.bytes));
   });
@@ -76,7 +76,7 @@ describe("buildDeterministicZipBytes", () => {
       },
     ] as const;
 
-    const res = await buildDeterministicZipBytes({ files, project });
+    const res = await buildExportZipBytes({ files, project });
 
     const { default: JSZip } = await import("jszip");
     const zip = await new JSZip().loadAsync(res.bytes);
@@ -117,7 +117,7 @@ describe("buildDeterministicZipBytes", () => {
       },
     ] as const;
 
-    const res = await buildDeterministicZipBytes({ files, project });
+    const res = await buildExportZipBytes({ files, project });
 
     const { default: JSZip } = await import("jszip");
     const zip = await new JSZip().loadAsync(res.bytes);
@@ -147,8 +147,8 @@ describe("buildDeterministicZipBytes", () => {
       },
     ] as const;
 
-    const bytesRes = await buildDeterministicZipBytes({ files, project });
-    const streamRes = await buildDeterministicZipStream({ files, project });
+    const bytesRes = await buildExportZipBytes({ files, project });
+    const streamRes = await buildExportZipStream({ files, project });
 
     const streamBytes = await streamToBytes(streamRes.stream);
 
@@ -170,7 +170,7 @@ describe("buildDeterministicZipBytes", () => {
     ] as const;
 
     await expect(
-      buildDeterministicZipBytes({ files, project }),
+      buildExportZipBytes({ files, project }),
     ).rejects.toBeInstanceOf(AppError);
   });
 });

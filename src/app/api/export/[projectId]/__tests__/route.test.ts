@@ -4,7 +4,7 @@ import type { ArtifactDto } from "@/lib/data/artifacts.server";
 import type { ProjectDto } from "@/lib/data/projects.server";
 
 const state = vi.hoisted(() => ({
-  buildDeterministicZipStream: vi.fn(),
+  buildExportZipStream: vi.fn(),
   getProjectById: vi.fn(),
   listCitationsByArtifactIds: vi.fn(),
   listLatestArtifacts: vi.fn(),
@@ -27,13 +27,13 @@ vi.mock("@/lib/data/citations.server", () => ({
   listCitationsByArtifactIds: state.listCitationsByArtifactIds,
 }));
 
-vi.mock("@/lib/export/deterministic-zip.server", () => ({
+vi.mock("@/lib/export/zip.server", () => ({
   artifactExportBasePath: (input: {
     kind: string;
     logicalKey: string;
     version: number;
   }) => `${input.kind}/${input.logicalKey}.v${input.version}`,
-  buildDeterministicZipStream: state.buildDeterministicZipStream,
+  buildExportZipStream: state.buildExportZipStream,
 }));
 
 async function loadRoute() {
@@ -60,7 +60,7 @@ beforeEach(() => {
   state.getProjectById.mockResolvedValue(baseProject);
   state.listLatestArtifacts.mockResolvedValue([] satisfies ArtifactDto[]);
   state.listCitationsByArtifactIds.mockResolvedValue([]);
-  state.buildDeterministicZipStream.mockResolvedValue({
+  state.buildExportZipStream.mockResolvedValue({
     manifest: {
       entries: [],
       project: { id: projectId, name: "Project", slug: "project" },

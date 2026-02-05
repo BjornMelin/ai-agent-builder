@@ -39,6 +39,16 @@ See:
   - When `projectId` is present, performs project-scoped retrieval against the
     indexed upload chunks.
 
+## Export (deterministic artifacts ZIP)
+
+- `GET /api/export/:projectId`
+  - Streams a deterministic ZIP of the latest artifact versions plus citations.
+  - Includes `manifest.json` inside the ZIP for integrity and provenance.
+
+See:
+
+- [SPEC-0008](./spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md)
+
 ## Chat (durable session, Workflow DevKit)
 
 Chat sessions are durable workflow runs. The API uses AI SDK UI message streams
@@ -86,7 +96,6 @@ this repository snapshot:
 
 - Project CRUD endpoints under `/api/projects/*` (projects exist via DAL + server actions)
 - Artifacts listing / regeneration
-- Deterministic export zip endpoint
 - RepoOps endpoints (connect/create/index)
 - Approvals endpoints
 - Provisioning + deployment automation endpoints

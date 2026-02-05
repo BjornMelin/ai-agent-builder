@@ -1,7 +1,7 @@
 ---
 spec: SPEC-0024
 title: Run cancellation + stream resilience hardening
-version: 0.1.0
+version: 0.1.1
 date: 2026-02-05
 owners: ["Bjorn Melin"]
 status: Implemented
@@ -90,6 +90,17 @@ When canceling a run:
 - Run status becomes `canceled` (unless already `succeeded|failed`).
 - All steps that are not terminal MUST transition to `canceled` and record an
   `endedAt` timestamp.
+
+### Cancellation must win step persistence races
+
+Cancellation is a first-class terminal state for steps. Persistence helpers that
+transition step state (for example: `beginRunStep` and `finishRunStep`) MUST NOT:
+
+- restart a step once it is `canceled`
+- overwrite a `canceled` step to `succeeded|failed`
+
+This MUST be enforced at the database update layer using `WHERE` predicates
+(not just in application logic) to remain safe under concurrency.
 
 ## Workflow Cancellation Handling
 

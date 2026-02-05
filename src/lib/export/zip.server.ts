@@ -157,7 +157,7 @@ function prepareZipInputs(
  * @param input - Bundle inputs.
  * @returns ZIP bytes and manifest.
  */
-export async function buildDeterministicZipBytes(
+export async function buildExportZipBytes(
   input: Readonly<{
     project: ExportManifest["project"];
     files: readonly ExportFileInput[];
@@ -182,7 +182,7 @@ export async function buildDeterministicZipBytes(
  * @param input - Bundle inputs.
  * @returns Web ReadableStream and manifest.
  */
-export async function buildDeterministicZipStream(
+export async function buildExportZipStream(
   input: Readonly<{
     project: ExportManifest["project"];
     files: readonly ExportFileInput[];
