@@ -108,6 +108,10 @@ repomix-output.md
 .claude/
 opensrc/
 config/mcporter.json
+
 # next-agents-md
 .next-docs/
 .env*.local
+
+# agent-browser persisted browser state (contains cookies/sessions)
+.agent-browser/
