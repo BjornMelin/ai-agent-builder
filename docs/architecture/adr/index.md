@@ -17,7 +17,7 @@
 - [ADR-0015](./ADR-0015-runtime-and-package-manager-bun-local-ci-vercel.md) — Runtime + package manager: Bun (local/CI/Vercel)
 - [ADR-0016](./ADR-0016-repository-layout-src-directory-path-aliases.md) — Repository layout: `src/` directory + `@/*` path aliases
 - [ADR-0017](./ADR-0017-code-quality-gates-biome-eslint-tsdoc-jsdoc-strict-ts.md) — Code quality gates: Biome + ESLint (TSDoc/JSDoc) + strict TS
-- [ADR-0018](./ADR-0018-ci-supply-chain-security-automation-codeql-dependency-review-scorecard-dependabot.md) — CI + supply chain security automation (CodeQL, Dependency Review, Scorecard, Dependabot)
+- [ADR-0018](./ADR-0018-ci-supply-chain-security-automation-codeql-dependency-review-scorecard-dependabot.md) — CI + supply chain security automation (CodeQL, Dependency Review, Scorecard, Dependabot) (Implemented)
 - [ADR-0019](./ADR-0019-release-automation-release-please-conventional-commits.md) — Release automation: Release Please + Conventional Commits
 - [ADR-0020](./ADR-0020-next-js-dev-build-strategy-turbopack-react-compiler-typegen.md) — Next.js dev/build strategy: Turbopack + React Compiler + typegen
 - [ADR-0021](./ADR-0021-environment-configuration-contracts-and-secret-handling.md) — Environment configuration contracts and secret handling

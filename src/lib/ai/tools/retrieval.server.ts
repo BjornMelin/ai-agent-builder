@@ -221,18 +221,40 @@ export async function retrieveProjectArtifacts(
     const meta = r.metadata;
     if (!meta || meta.type !== "artifact") return [];
 
+    if (r.id === null || r.id === undefined) return [];
+
+    const artifactId = extractStringField(meta, "artifactId");
+    const artifactKind = extractStringField(meta, "artifactKind");
+    const artifactKey = extractStringField(meta, "artifactKey");
+    const projectId = extractStringField(meta, "projectId");
+    const version =
+      typeof meta.artifactVersion === "number" &&
+      Number.isFinite(meta.artifactVersion)
+        ? meta.artifactVersion
+        : null;
+
+    if (
+      !artifactId ||
+      !artifactKind ||
+      !artifactKey ||
+      !projectId ||
+      version === null
+    ) {
+      return [];
+    }
+
     const title =
       extractStringField(meta, "title") ??
-      `${meta.artifactKind} ${meta.artifactKey} v${meta.artifactVersion}`;
+      `${artifactKind} ${artifactKey} v${version}`;
     const snippet = extractStringField(meta, "snippet") ?? "";
 
     const provenance: ArtifactRetrievalHit["provenance"] = {
-      artifactId: meta.artifactId,
-      kind: meta.artifactKind,
-      logicalKey: meta.artifactKey,
-      projectId: meta.projectId,
+      artifactId,
+      kind: artifactKind,
+      logicalKey: artifactKey,
+      projectId,
       type: "artifact",
-      version: meta.artifactVersion,
+      version,
     };
 
     const hit: ArtifactRetrievalHit = {
@@ -246,8 +268,8 @@ export async function retrieveProjectArtifacts(
     return [
       {
         hit,
-        logicalArtifactKey: `${meta.artifactKind}:${meta.artifactKey}`,
-        version: meta.artifactVersion,
+        logicalArtifactKey: `${artifactKind}:${artifactKey}`,
+        version,
       },
     ];
   });

@@ -15,7 +15,7 @@ References:
 
 ## Status
 
-Accepted — 2026-01-30.
+Implemented — 2026-02-05.
 
 ## Description
 
