@@ -7,6 +7,13 @@
       "tag": "0000_certain_galactus",
       "version": "7",
       "when": 1770105589655
+    },
+    {
+      "breakpoints": true,
+      "idx": 1,
+      "tag": "0001_daily_ken_ellis",
+      "version": "7",
+      "when": 1770247702357
     }
   ],
   "version": "7"
