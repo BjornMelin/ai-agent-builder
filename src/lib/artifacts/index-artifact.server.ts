@@ -114,7 +114,8 @@ function buildChunkIds(
  * by deleting the deterministic chunk-id prefix before upserting the latest chunks.
  *
  * @param input - Artifact index input.
- * @throws AppError - When the artifact cannot be found or does not match the input.
+ * @throws AppError - When the artifact cannot be found, does not match the input,
+ * or when retrieved artifact embeddings do not match the expected chunk count/shape.
  */
 export async function indexArtifactVersion(
   input: ArtifactIndexInput,

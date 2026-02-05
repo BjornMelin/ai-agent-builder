@@ -39,10 +39,10 @@ This spec is an implementation-level addendum aligned with:
   without a finish sentinel.
 - Ensure reconnect/resume works using `startIndex` without duplicated events.
 - Enforce repo constraints:
-  - Next.js App Router patterns only
-  - No manual memoization (`useMemo`, `useCallback`)
-  - Strict TypeScript (no `any`)
-  - TSDoc for exported APIs
+  - Next.js App Router patterns only.
+  - No manual memoization (`useMemo`, `useCallback`).
+  - Strict TypeScript (no `any`).
+  - TSDoc for exported APIs.
 
 ## Non-goals
 

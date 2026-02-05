@@ -21,6 +21,8 @@ import { projectRun } from "@/workflows/runs/project-run.workflow";
  * @param input - Run creation inputs.
  * @returns Created run DTO with `workflowRunId` set.
  * @throws AppError - With code "not_found" (404) when the project does not exist.
+ * @throws Error - When starting the workflow or persisting the `workflowRunId`
+ * fails (errors rethrown from `start()` or `setRunWorkflowRunId()`).
  */
 export async function startProjectRun(
   input: Readonly<{
@@ -40,9 +42,26 @@ export async function startProjectRun(
     ...(input.metadata === undefined ? {} : { metadata: input.metadata }),
   });
 
+  let workflowRunId: string | null = null;
   try {
     const wf = await start(projectRun, [run.id]);
-    return await setRunWorkflowRunId(run.id, wf.runId);
+    workflowRunId = wf.runId;
+    try {
+      return await setRunWorkflowRunId(run.id, wf.runId);
+    } catch (error) {
+      if (workflowRunId) {
+        try {
+          await getRun(workflowRunId).cancel();
+        } catch (cancelError) {
+          log.error("workflow_run_cancel_failed", {
+            err: cancelError,
+            runId: run.id,
+            workflowRunId,
+          });
+        }
+      }
+      throw error;
+    }
   } catch (error) {
     try {
       await updateRunStatus(run.id, "failed");

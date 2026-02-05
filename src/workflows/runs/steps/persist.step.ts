@@ -24,7 +24,12 @@ type RunStepKind =
   | "approval"
   | "external_poll";
 
-const TERMINAL_STATUSES: RunStatus[] = ["canceled", "failed", "succeeded"];
+const TERMINAL_STATUSES = [
+  "canceled",
+  "failed",
+  "succeeded",
+] as const satisfies readonly RunStatus[];
+type TerminalRunStatus = Extract<RunStatus, (typeof TERMINAL_STATUSES)[number]>;
 
 /**
  * Load the minimal run info needed for orchestration.
@@ -67,7 +72,7 @@ export async function markRunRunning(runId: string): Promise<void> {
     .where(
       and(
         eq(schema.runsTable.id, runId),
-        notInArray(schema.runsTable.status, TERMINAL_STATUSES),
+        notInArray(schema.runsTable.status, [...TERMINAL_STATUSES]),
       ),
     );
 }
@@ -172,7 +177,7 @@ export async function finishRunStep(
   input: Readonly<{
     runId: string;
     stepId: string;
-    status: RunStatus;
+    status: TerminalRunStatus;
     outputs?: Record<string, unknown>;
     error?: Record<string, unknown> | null;
   }>,
@@ -227,7 +232,7 @@ export async function finishRunStep(
  */
 export async function markRunTerminal(
   runId: string,
-  status: Extract<RunStatus, "succeeded" | "failed" | "canceled">,
+  status: TerminalRunStatus,
 ): Promise<void> {
   "use step";
 
@@ -240,7 +245,7 @@ export async function markRunTerminal(
     .where(
       and(
         eq(schema.runsTable.id, runId),
-        notInArray(schema.runsTable.status, TERMINAL_STATUSES),
+        notInArray(schema.runsTable.status, [...TERMINAL_STATUSES]),
       ),
     );
 }

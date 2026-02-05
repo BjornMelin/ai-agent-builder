@@ -44,6 +44,8 @@ function toStepErrorPayload(error: unknown): Record<string, unknown> {
  *
  * @param runId - Durable run ID stored in Neon.
  * @returns Ok result.
+ * @throws Error - Rethrows runtime/persistence errors encountered during
+ * orchestration (including cancellation/runtime failures).
  */
 export async function projectRun(
   runId: string,
@@ -184,6 +186,20 @@ export async function projectRun(
     const cancelled = isWorkflowRunCancelledError(error);
     try {
       if (cancelled) {
+        if (activeStepId !== null) {
+          await finishRunStep({
+            runId,
+            status: "canceled",
+            stepId: activeStepId,
+          });
+          await writeRunEvent(writable, {
+            runId,
+            status: "canceled",
+            stepId: activeStepId,
+            timestamp: nowTimestamp(),
+            type: "step-finished",
+          });
+        }
         await cancelRunAndSteps(runId);
         await writeRunEvent(writable, {
           runId,

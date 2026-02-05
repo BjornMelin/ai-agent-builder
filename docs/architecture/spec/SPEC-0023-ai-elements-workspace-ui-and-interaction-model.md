@@ -149,7 +149,7 @@ Initial Runs tab must show:
   - `startIndex` storage/usage: keep the latest rendered event index in client run
     stream state and include it on every reconnect request (`?startIndex=<n>`) so
     the server resumes from the next event without duplicating already-rendered
-    items
+    items.
 
 ### P1: Graph view (AI Elements workflow example baseline)
 

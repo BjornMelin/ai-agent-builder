@@ -81,7 +81,9 @@ function persistStartIndex(storageKey: string, startIndex: number): void {
  * @remarks
  * Uses the AI SDK's SSE response format to resume stream reading by `startIndex`.
  *
- * @param props - Client props.
+ * @param props - Object containing `runId` (non-empty string) used to identify and
+ * resume the SSE run stream via `startIndex`; `props.runId` must match the route
+ * `[runId]` value and remain stable for the component lifetime.
  * @returns Stream UI.
  */
 export function RunStreamClient(props: Readonly<{ runId: string }>) {
@@ -299,7 +301,13 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
       }
     }
 
-    void run();
+    run().catch((err: unknown) => {
+      if (abort.signal.aborted) {
+        return;
+      }
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Stream disconnected.");
+    });
 
     return () => {
       abort.abort();

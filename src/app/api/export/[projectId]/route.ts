@@ -46,8 +46,12 @@ export async function GET(
     for (const c of citations) {
       const artifactId = c.artifactId;
       if (!artifactId) continue;
-      const prev = citationsByArtifactId.get(artifactId) ?? [];
-      citationsByArtifactId.set(artifactId, prev.concat(c));
+      const existing = citationsByArtifactId.get(artifactId);
+      if (existing) {
+        existing.push(c);
+        continue;
+      }
+      citationsByArtifactId.set(artifactId, [c]);
     }
 
     const files = artifacts.flatMap((a) => {

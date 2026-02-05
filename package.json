@@ -22,7 +22,7 @@
     "test": "bun run typegen && vitest run",
     "test:watch": "vitest",
     "typecheck": "bun run typegen && tsc -p tsconfig.json --noEmit",
-    "typegen": "rm -rf .next/types .next/dev/types && bun --bun next typegen"
+    "typegen": "bun -e \"import { rmSync } from 'node:fs'; rmSync('.next/types', { recursive: true, force: true }); rmSync('.next/dev/types', { recursive: true, force: true });\" && bun --bun next typegen"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.72",

@@ -42,6 +42,8 @@ import { projectRun } from "./project-run.workflow";
 
 describe("projectRun", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+
     persistMocks.beginRunStep.mockResolvedValue(undefined);
     persistMocks.cancelRunAndSteps.mockResolvedValue(undefined);
     persistMocks.ensureRunStepRow.mockResolvedValue(undefined);
@@ -94,6 +96,79 @@ describe("projectRun", () => {
       "failed",
     );
     expect(persistMocks.cancelRunAndSteps).not.toHaveBeenCalled();
+    expect(writerMocks.closeRunStream).toHaveBeenCalledWith(state.writable);
+  });
+
+  it("completes successfully and emits terminal success events", async () => {
+    await expect(projectRun("run_1")).resolves.toEqual({ ok: true });
+
+    expect(artifactsMocks.createRunSummaryArtifact).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: "research",
+        projectId: "project_1",
+        runId: "run_1",
+        status: "succeeded",
+        workflowRunId: "wf_1",
+      }),
+    );
+
+    expect(persistMocks.finishRunStep).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: "run_1",
+        status: "succeeded",
+        stepId: "artifact.run_summary",
+      }),
+    );
+    expect(persistMocks.markRunTerminal).toHaveBeenCalledWith(
+      "run_1",
+      "succeeded",
+    );
+    expect(writerMocks.writeRunEvent).toHaveBeenCalledWith(
+      state.writable,
+      expect.objectContaining({
+        runId: "run_1",
+        status: "succeeded",
+        stepId: "artifact.run_summary",
+        type: "step-finished",
+      }),
+    );
+    expect(writerMocks.writeRunEvent).toHaveBeenCalledWith(
+      state.writable,
+      expect.objectContaining({
+        runId: "run_1",
+        status: "succeeded",
+        type: "run-finished",
+      }),
+    );
+    expect(writerMocks.closeRunStream).toHaveBeenCalledWith(state.writable);
+  });
+
+  it("persists cancellation when a cancellation error occurs mid-step", async () => {
+    const cancellationError = new Error("run cancelled");
+    artifactsMocks.createRunSummaryArtifact.mockRejectedValueOnce(
+      cancellationError,
+    );
+    workflowErrorMocks.isWorkflowRunCancelledError.mockReturnValueOnce(true);
+
+    await expect(projectRun("run_1")).rejects.toBe(cancellationError);
+
+    expect(persistMocks.finishRunStep).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: "run_1",
+        status: "canceled",
+        stepId: "artifact.run_summary",
+      }),
+    );
+    expect(persistMocks.cancelRunAndSteps).toHaveBeenCalledWith("run_1");
+    expect(persistMocks.markRunTerminal).not.toHaveBeenCalled();
+    expect(writerMocks.writeRunEvent).toHaveBeenCalledWith(
+      state.writable,
+      expect.objectContaining({
+        runId: "run_1",
+        status: "canceled",
+        type: "run-finished",
+      }),
+    );
     expect(writerMocks.closeRunStream).toHaveBeenCalledWith(state.writable);
   });
 });

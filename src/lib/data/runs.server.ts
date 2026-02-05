@@ -137,11 +137,21 @@ export async function setRunWorkflowRunId(
   workflowRunId: string,
 ): Promise<RunDto> {
   const db = getDb();
-  const [row] = await db
-    .update(schema.runsTable)
-    .set({ updatedAt: new Date(), workflowRunId })
-    .where(eq(schema.runsTable.id, runId))
-    .returning();
+  let row: RunRow | undefined;
+  try {
+    [row] = await db
+      .update(schema.runsTable)
+      .set({ updatedAt: new Date(), workflowRunId })
+      .where(eq(schema.runsTable.id, runId))
+      .returning();
+  } catch (error) {
+    throw new AppError(
+      "db_update_failed",
+      500,
+      "Failed to persist workflow run ID.",
+      error,
+    );
+  }
 
   if (!row) {
     throw new AppError("not_found", 404, "Run not found.");

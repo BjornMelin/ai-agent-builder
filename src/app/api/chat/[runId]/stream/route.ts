@@ -18,9 +18,6 @@ const parseStartIndex = (startIndexRaw: string | null) => {
   }
 
   const parsed = Number.parseInt(startIndexRaw, 10);
-  if (Number.isNaN(parsed)) {
-    throw new AppError("bad_request", 400, "Invalid startIndex.");
-  }
   if (!Number.isSafeInteger(parsed)) {
     throw new AppError("bad_request", 400, "Invalid startIndex.");
   }
