@@ -141,6 +141,9 @@ export async function beginRunStep(
     .update(schema.runStepsTable)
     .set({
       attempt: row.attempt + 1,
+      endedAt: null,
+      error: null,
+      outputs: {},
       startedAt: now,
       status: "running",
       updatedAt: now,

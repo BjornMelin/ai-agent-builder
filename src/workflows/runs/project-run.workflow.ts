@@ -22,6 +22,18 @@ function nowTimestamp(): number {
   return Date.now();
 }
 
+function toStepErrorPayload(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    return { message: error.message || "Failed." };
+  }
+
+  if (typeof error === "string" && error.length > 0) {
+    return { message: error };
+  }
+
+  return { message: "Failed." };
+}
+
 /**
  * Durable run workflow (Workflow DevKit).
  *
@@ -40,6 +52,7 @@ export async function projectRun(
 
   const { workflowRunId } = getWorkflowMetadata();
   const writable = getWritable<UIMessageChunk>();
+  let activeStepId: string | null = null;
 
   try {
     const runInfo = await getRunInfo(runId);
@@ -70,6 +83,7 @@ export async function projectRun(
       timestamp: nowTimestamp(),
       type: "step-started",
     });
+    activeStepId = "run.start";
     await finishRunStep({
       outputs: { ok: true },
       runId,
@@ -84,6 +98,7 @@ export async function projectRun(
       timestamp: nowTimestamp(),
       type: "step-finished",
     });
+    activeStepId = null;
 
     await ensureRunStepRow({
       runId,
@@ -100,6 +115,7 @@ export async function projectRun(
       timestamp: nowTimestamp(),
       type: "step-started",
     });
+    activeStepId = "run.complete";
     await finishRunStep({
       outputs: { ok: true },
       runId,
@@ -114,6 +130,7 @@ export async function projectRun(
       timestamp: nowTimestamp(),
       type: "step-finished",
     });
+    activeStepId = null;
 
     await ensureRunStepRow({
       runId,
@@ -130,6 +147,7 @@ export async function projectRun(
       timestamp: nowTimestamp(),
       type: "step-started",
     });
+    activeStepId = "artifact.run_summary";
     const summary = await createRunSummaryArtifact({
       kind: runInfo.kind,
       projectId: runInfo.projectId,
@@ -151,6 +169,7 @@ export async function projectRun(
       timestamp: nowTimestamp(),
       type: "step-finished",
     });
+    activeStepId = null;
 
     await markRunTerminal(runId, "succeeded");
     await writeRunEvent(writable, {
@@ -173,6 +192,28 @@ export async function projectRun(
           type: "run-finished",
         });
       } else {
+        if (activeStepId !== null) {
+          try {
+            const stepError = toStepErrorPayload(error);
+            await finishRunStep({
+              error: stepError,
+              runId,
+              status: "failed",
+              stepId: activeStepId,
+            });
+            await writeRunEvent(writable, {
+              error: stepError,
+              runId,
+              status: "failed",
+              stepId: activeStepId,
+              timestamp: nowTimestamp(),
+              type: "step-finished",
+            });
+          } catch {
+            // Best effort only; still attempt to mark the run as failed.
+          }
+        }
+
         await markRunTerminal(runId, "failed");
         await writeRunEvent(writable, {
           runId,

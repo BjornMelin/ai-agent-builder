@@ -97,6 +97,9 @@ describe("persist.step", () => {
       const setArg = set.mock.calls[0]?.[0] as unknown;
       expect(setArg).toMatchObject({
         attempt: 6,
+        endedAt: null,
+        error: null,
+        outputs: {},
         status: "running",
       });
 
