@@ -16,8 +16,7 @@ The repository is currently bootstrapped with:
 
 - Bun toolchain + Bun runtime on Vercel (`vercel.json` has `bunVersion: "1.x"`)
 - Next.js 16 (App Router) under `src/app`
-- Drizzle configured for `src/db/schema.ts` + `src/db/migrations` (target paths;
-  not committed yet)
+- Drizzle schema + migrations under `src/db/schema.ts` + `src/db/migrations`
 - CI workflows (Biome + ESLint, typecheck, Vitest, build)
 - Supply-chain security workflows (CodeQL, Dependency Review, Scorecard)
 
