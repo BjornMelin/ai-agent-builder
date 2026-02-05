@@ -26,6 +26,7 @@ flowchart LR
   BLOB[(Vercel Blob)]
   REDIS[(Upstash Redis + Ratelimit)]
   VECTOR[(Upstash Vector)]
+  WF[(Vercel Workflow DevKit)]
   QSTASH[(Upstash QStash)]
   AIGW[Vercel AI Gateway]
   EXA[Exa]
@@ -42,6 +43,7 @@ flowchart LR
   API --> BLOB
   API --> REDIS
   API --> VECTOR
+  API --> WF
   API --> QSTASH
   API --> AIGW
   API --> EXA
@@ -67,10 +69,11 @@ See [repository baseline](./repository-baseline.md).
 
 - **Runtime/toolchain:** Bun for installs and scripts; Bun runtime on Vercel.
   ([Vercel Bun runtime](https://vercel.com/docs/functions/runtimes/bun))
-- **Agents:** AI SDK v6 `ToolLoopAgent` and streaming responses via
-  `createAgentUIStreamResponse`.
-  ([ToolLoopAgent](https://ai-sdk.dev/docs/reference/ai-sdk-core/tool-loop-agent),
-  [createAgentUIStreamResponse](https://ai-sdk.dev/docs/reference/ai-sdk-core/create-agent-ui-stream-response))
+- **Agents:** AI SDK v6 + Workflow DevKit `DurableAgent`, streaming responses via
+  AI SDK UI message streams (`createUIMessageStreamResponse`).
+  ([AI SDK agents](https://ai-sdk.dev/docs/agents/overview),
+  [createUIMessageStreamResponse](https://ai-sdk.dev/docs/reference/ai-sdk-ui/create-ui-message-stream-response),
+  [Workflow DevKit: DurableAgent](https://useworkflow.dev/docs/api-reference/workflow-ai/durable-agent))
 - **Dynamic tools:** runtime tool injection via `dynamicTool()`.
   ([dynamicTool()](https://ai-sdk.dev/docs/reference/ai-sdk-core/dynamic-tool))
 - **Model routing:** Vercel AI Gateway exclusively.
@@ -78,8 +81,10 @@ See [repository baseline](./repository-baseline.md).
 - **Authentication:** Neon Auth + allowlist access control.
   (See [ADR-0022](./adr/ADR-0022-authentication-neon-auth-oauth-allowlist.md) and
   [SPEC-0002](./spec/SPEC-0002-authentication-access-control.md).)
-- **Durable workflows:** Upstash QStash with signature verification.
-  ([QStash Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs))
+- **Interactive orchestration:** Vercel Workflow DevKit (durable runs + resumable streams).
+  (See [ADR-0026](./adr/ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md).)
+- **Background jobs:** Upstash QStash with signature verification (ingestion + fanout).
+  (See [ADR-0005](./adr/ADR-0005-orchestration-upstash-qstash-for-durable-workflows.md).)
 - **Vector retrieval:** Upstash Vector.
   ([Upstash Vector + AI SDK](https://upstash.com/docs/vector/integrations/ai-sdk))
 - **DB:** Neon Postgres + Drizzle ORM.

@@ -1,12 +1,11 @@
 # API Surface (Route Handlers)
 
 The system uses Next.js Route Handlers under `src/app/api/*` as the public HTTP
-API, plus Server Actions — invoked only from the authenticated UI, not exposed
-as public HTTP endpoints.
+API. Server Actions exist, but are invoked only from the authenticated UI and
+are not treated as stable public HTTP endpoints.
 
-Chat and agent output are streamed using AI SDK v6 streaming helpers:
-
-- [createAgentUIStreamResponse](https://ai-sdk.dev/docs/reference/ai-sdk-core/create-agent-ui-stream-response)
+Unless explicitly documented, endpoints require an authenticated app user via
+`requireAppUserApi()` and return JSON errors via `jsonError()`.
 
 ## Auth
 
@@ -20,104 +19,83 @@ See:
 
 - [SPEC-0002](./spec/SPEC-0002-authentication-access-control.md)
 
-## Projects
-
-- `GET /api/projects`
-- `POST /api/projects`
-- `GET /api/projects/:projectId`
-- `PATCH /api/projects/:projectId`
-- `DELETE /api/projects/:projectId` (hard delete + cleanup)
-
-## Upload & ingestion
+## Upload & ingestion (background jobs via QStash)
 
 - `POST /api/upload`
-  - stores original in Vercel Blob ([Vercel Blob](https://vercel.com/docs/vercel-blob))
-  - processes independent files in parallel; when `async=true`, enqueues
-    QStash ingestion jobs with per-file labels/dedup ids
-  - extracts text (PDF/DOCX/PPTX/XLSX/TXT/MD)
-  - chunks
-  - embeds via AI Gateway
-  - indexes in Upstash Vector
+  - stores originals in Vercel Blob
+  - writes metadata in Neon Postgres
+  - may enqueue async ingestion jobs via Upstash QStash (`async=true`)
+- `POST /api/jobs/ingest-file` (QStash-signed)
+  - executes extract → chunk → embed → index asynchronously
 
-- `POST /api/jobs/ingest-file` (QStash-secured)
-  - runs extraction/chunking/embedding/indexing asynchronously
+See:
 
-## Chat
-
-- `POST /api/chat`
-  - input: `projectId`, `threadId?`, `agentMode`, `message`, `model`
-  - output: streaming UI message parts
+- [SPEC-0003](./spec/SPEC-0003-upload-ingestion-pipeline.md)
+- [ADR-0005](./adr/ADR-0005-orchestration-upstash-qstash-for-durable-workflows.md)
 
 ## Search
 
-- `GET /api/search?q=...&projectId=... (optional)&types=...`
-  - merges DB metadata matches and vector-based content matches
-  - supports deep links to artifacts/files/run steps/repo paths
+- `GET /api/search?q=...&projectId=... (optional)`
+  - When `projectId` is present, performs project-scoped retrieval against the
+    indexed upload chunks.
 
-## Artifacts
+## Chat (durable session, Workflow DevKit)
 
-- `GET /api/projects/:projectId/artifacts`
-- `GET /api/projects/:projectId/artifacts/:artifactId`
-- `POST /api/projects/:projectId/artifacts/:artifactId/regenerate`
+Chat sessions are durable workflow runs. The API uses AI SDK UI message streams
+and supports stream resumption via a `startIndex` cursor.
 
-## Runs (durable workflows)
+- `POST /api/chat`
+  - body: `{ projectId: string, messages: UIMessage[] }`
+  - response:
+    - streaming UI message event stream
+    - header `x-workflow-run-id` (the durable run ID used to resume the stream)
+- `POST /api/chat/:runId`
+  - body: `{ message: string }` (inject a follow-up message into the in-flight session)
+  - response: `{ ok: true }`
+- `GET /api/chat/:runId/stream?startIndex=N`
+  - resumes an existing stream; rejects invalid `startIndex`
 
-Runs are durable workflows backed by Workflow DevKit (durable runs + streaming).
+See:
+
+- [SPEC-0022](./spec/SPEC-0022-vercel-workflow-durable-runs-and-streaming-contracts.md)
+- [ADR-0026](./adr/ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md)
+
+## Runs (durable workflows, Workflow DevKit)
+
+Runs are durable workflows backed by Workflow DevKit. Streaming is resumable
+using `startIndex` and cancellation is persisted as `canceled` (not `failed`).
 
 - `POST /api/runs`
-  - creates run row in Neon
-  - starts a Workflow DevKit run
-  - returns `x-workflow-run-id` header
-- `GET /api/runs/:runId/stream?startIndex=...`
-  - reconnect/resume to an existing run stream
+  - body: `{ projectId: string, kind: "research" | "implementation", metadata?: Record<string, unknown> }`
+  - response: JSON run payload + header `x-workflow-run-id`
+- `GET /api/runs/:runId/stream?startIndex=N`
+  - resumes an existing run stream; rejects invalid `startIndex`
 - `POST /api/runs/:runId/cancel`
-  - cancels the workflow run and marks persisted run/steps as canceled
+  - cancels the workflow run and marks persisted run/steps as `canceled`
 
-## Export
+See:
 
-- `POST /api/projects/:projectId/export`
-  - produces deterministic zip of latest artifacts + citations + manifests
-  - stores zip in blob and returns download URL
+- [SPEC-0005](./spec/SPEC-0005-durable-runs-orchestration.md)
+- [SPEC-0024](./spec/SPEC-0024-run-cancellation-and-stream-resilience.md)
+- [ADR-0026](./adr/ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md)
 
-## Implementation: RepoOps
+## Planned (Not Implemented)
 
-- `POST /api/projects/:projectId/repo/connect`
-  - connect an existing GitHub repo
-- `POST /api/projects/:projectId/repo/create`
-  - create a new GitHub repo and connect it
-- `POST /api/projects/:projectId/repo/index`
-  - triggers repo indexing job and writes to a vector namespace
-- `GET /api/projects/:projectId/repo`
-  - returns repo connection status + metadata
+The following endpoints are **spec’d** but not implemented as Route Handlers in
+this repository snapshot:
 
-## Implementation: Approvals
+- Project CRUD endpoints under `/api/projects/*` (projects exist via DAL + server actions)
+- Artifacts listing / regeneration
+- Deterministic export zip endpoint
+- RepoOps endpoints (connect/create/index)
+- Approvals endpoints
+- Provisioning + deployment automation endpoints
+- Webhook endpoints (GitHub/Vercel)
+- Sandbox job runner endpoints
 
-- `GET /api/runs/:runId/approvals`
-- `POST /api/runs/:runId/approvals/:approvalId/approve`
-- `POST /api/runs/:runId/approvals/:approvalId/reject`
+Refer to the SPEC/ADR documents for the intended design and implementation
+order:
 
-Approvals unblock approval-gated steps (push/merge/provision/deploy).
-
-## Implementation: Provisioning and deployments
-
-- `POST /api/projects/:projectId/provision`
-  - triggers infra provisioning step(s) (approval-gated)
-- `POST /api/projects/:projectId/deploy`
-  - triggers deployment step(s) (approval-gated)
-
-## Webhooks (optional)
-
-Webhooks reduce polling and improve responsiveness.
-
-- `POST /api/webhooks/github`
-  - PR status updates, check completion, etc.
-- `POST /api/webhooks/vercel`
-  - deployment status updates
-
-All webhook endpoints must verify signatures and be idempotent.
-
-## Sandbox execution
-
-- `POST /api/sandbox/jobs`
-  - starts a sandbox job (Code Mode and implementation verification)
-  - streams logs or provides polling handles
+- [Implementation order](./implementation-order.md)
+- [Specs index](./spec/index.md)
+- [ADRs index](./adr/index.md)

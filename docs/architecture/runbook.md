@@ -52,6 +52,18 @@ connection (`pg`) to Neon, attaching the pool with `attachDatabasePool`.
   dashboard. Reference:
   [Upstash QStash overview](https://upstash.com/docs/qstash/overview).
 
+## Workflow DevKit debugging
+
+Interactive runs and chat streams are backed by Workflow DevKit.
+
+- Check workflow endpoints are reachable:
+  - `npx workflow health`
+- Visual dashboard for runs:
+  - `npx workflow web`
+- CLI inspection:
+  - `npx workflow inspect runs`
+  - `npx workflow inspect run <run_id>`
+
 ## Common issues
 
 ### “Missing env var …”
@@ -102,22 +114,12 @@ If OAuth is disabled on Preview, use **email OTP** or **magic link** auth flows:
      [“Sign in with Vercel”](https://vercel.com/docs/sign-in-with-vercel/)
    - Confirm you can complete OAuth and return to the app without errors.
 
-### Vector indexing not returning results
+### Retrieval not returning results
 
 - Confirm Upstash Vector URL/token are set.
 - Confirm chunks are being created and indexed.
-- For repos, confirm repo indexing run completed (Implementation → Repo → Index).
-
-### Implementation run stuck “waiting approval”
-
-- Navigate to the run timeline and approve the pending action.
-- If you intended to run fully automatically, adjust approval policy (not
-  recommended by default).
-
-### Implementation run stuck “waiting external”
-
-- Check GitHub PR checks and Vercel deployment status links in the run step.
-- If webhooks are not configured, the system will poll (slower).
+- Repo indexing and approval-gated implementation steps are spec’d but not yet
+  implemented in this repository snapshot (see SPEC-0016/SPEC-0017/SPEC-0018).
 
 ## Rotating secrets
 
