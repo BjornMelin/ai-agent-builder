@@ -1,7 +1,7 @@
 ---
 ADR: 0004
 Title: Retrieval: Upstash Vector for semantic + hybrid search
-Status: Accepted
+Status: Implemented
 Version: 0.4
 Date: 2026-02-03
 Supersedes: []
@@ -18,6 +18,7 @@ References:
 
 Accepted — 2026-01-30.  
 Updated — 2026-02-01 (hybrid retrieval guidance).
+Implemented — 2026-02-05.
 
 ## Description
 

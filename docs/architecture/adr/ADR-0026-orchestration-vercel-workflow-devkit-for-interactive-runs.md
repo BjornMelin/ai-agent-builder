@@ -1,7 +1,7 @@
 ---
 ADR: 0026
 Title: Orchestration: Vercel Workflow DevKit for interactive runs (QStash for background jobs)
-Status: Accepted
+Status: Implemented
 Version: 0.1
 Date: 2026-02-03
 Supersedes: []
@@ -21,7 +21,7 @@ References:
 
 ## Status
 
-Accepted — 2026-02-03.
+Implemented — 2026-02-05.
 
 ## Description
 
@@ -37,7 +37,7 @@ Use **Upstash QStash** only for **background jobs** (primarily the ingestion pip
 See:
 
 - [SPEC-0021](../spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md) (integrator spec)
-- [SPEC-0022](../spec/SPEC-0022-durable-runs-streaming-contracts.md) (durable runs + streaming contracts; created as part of this plan)
+- [SPEC-0022](../spec/SPEC-0022-vercel-workflow-durable-runs-and-streaming-contracts.md) (durable runs + streaming contracts)
 
 ## Context
 
