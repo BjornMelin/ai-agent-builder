@@ -2,17 +2,9 @@ import { z } from "zod";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
-import { getProjectById } from "@/lib/data/projects.server";
-import {
-  createRun,
-  ensureRunStep,
-  updateRunStatus,
-  updateRunStepStatus,
-} from "@/lib/data/runs.server";
-import { env } from "@/lib/env";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonCreated, jsonError } from "@/lib/next/responses";
-import { enqueueRunStep } from "@/lib/runs/run-engine.server";
+import { startProjectRun } from "@/lib/runs/project-run.server";
 
 const createRunSchema = z.strictObject({
   kind: z.enum(["research", "implementation"]),
@@ -21,53 +13,35 @@ const createRunSchema = z.strictObject({
 });
 
 /**
- * Create a new run for a project and enqueue its first step.
+ * Create a new run for a project using Workflow DevKit.
  *
  * @param req - HTTP request.
  * @returns Run response or JSON error.
  * @throws AppError - When request body is invalid (400).
  * @throws AppError - When project is not found (404).
- * @throws AppError - When callback origin configuration is invalid.
  */
 export async function POST(req: Request) {
   try {
     await requireAppUserApi();
     const parsed = await parseJsonBody(req, createRunSchema);
 
-    const project = await getProjectById(parsed.projectId);
-    if (!project) {
-      throw new AppError("not_found", 404, "Project not found.");
-    }
-
-    const callbackOrigin = env.app.baseUrl;
-    const run = await createRun({
+    const run = await startProjectRun({
       kind: parsed.kind,
       projectId: parsed.projectId,
-      ...(parsed.metadata ? { metadata: parsed.metadata } : {}),
+      ...(parsed.metadata === undefined ? {} : { metadata: parsed.metadata }),
     });
 
-    await ensureRunStep({
-      runId: run.id,
-      stepId: "run.start",
-      stepKind: "tool",
-      stepName: "Start run",
-    });
-
-    try {
-      await enqueueRunStep({
-        origin: callbackOrigin,
-        runId: run.id,
-        stepId: "run.start",
-      });
-    } catch (error) {
-      await Promise.all([
-        updateRunStatus(run.id, "blocked"),
-        updateRunStepStatus(run.id, "run.start", "blocked"),
-      ]);
-      throw error;
+    if (!run.workflowRunId) {
+      throw new AppError(
+        "db_update_failed",
+        500,
+        "Failed to persist workflow run id.",
+      );
     }
 
-    return jsonCreated(run);
+    return jsonCreated(run, {
+      headers: { "x-workflow-run-id": run.workflowRunId },
+    });
   } catch (err) {
     return jsonError(err);
   }
