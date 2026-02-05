@@ -36,7 +36,7 @@ export function Command(props: React.ComponentProps<typeof CommandPrimitive>) {
 /**
  * Renders a command palette inside the shared dialog shell.
  *
- * @param props - Dialog props plus optional `title?: string`, `description?: string`, `className?: string`, and `showCloseButton?: boolean`; defaults are `"Command Palette"`, `"Search for a command to run..."`, and `true`, and remaining props are forwarded via `{...rest}`.
+ * @param props - Dialog props plus optional `title?: string`, `description?: string`, `className?: string`, and `showCloseButton?: boolean`; defaults are `"Command Palette"`, `"Search for a command to run…"`, and `true`, and remaining props are forwarded via `{...rest}`.
  * @returns Returns a JSX.Element rendering the Command dialog with passed props, dialog metadata defaults, and styled content wrappers.
  */
 export function CommandDialog(
@@ -49,7 +49,7 @@ export function CommandDialog(
 ) {
   const {
     title = "Command Palette",
-    description = "Search for a command to run...",
+    description = "Search for a command to run…",
     children,
     className,
     showCloseButton = true,

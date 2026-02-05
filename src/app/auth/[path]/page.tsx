@@ -40,7 +40,11 @@ export default async function AuthPage(
   const { path } = await props.params;
 
   return (
-    <main className="container mx-auto flex grow flex-col items-center justify-center p-4 md:p-6">
+    <main
+      className="container mx-auto flex grow flex-col items-center justify-center p-4 md:p-6"
+      id="main"
+      tabIndex={-1}
+    >
       <AuthViewClient path={path} />
     </main>
   );

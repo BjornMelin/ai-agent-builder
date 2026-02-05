@@ -37,7 +37,7 @@ export default async function AccountPage(
   const [{ path }] = await Promise.all([props.params, requireAppUser()]);
 
   return (
-    <main className="container mx-auto p-4 md:p-6">
+    <main className="container mx-auto p-4 md:p-6" id="main" tabIndex={-1}>
       <AccountView path={path} />
     </main>
   );

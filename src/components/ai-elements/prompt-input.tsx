@@ -962,11 +962,6 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
     }
 
     if (files.length > 0) {
-      const hasText =
-        event.clipboardData.getData("text/plain").trim().length > 0;
-      if (!hasText) {
-        event.preventDefault();
-      }
       attachments.add(files);
     }
   };
@@ -987,6 +982,7 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
 
   return (
     <InputGroupTextarea
+      autoComplete="off"
       aria-labelledby={resolvedAriaLabelledBy}
       className={cn("field-sizing-content max-h-48 min-h-16", className)}
       name="message"

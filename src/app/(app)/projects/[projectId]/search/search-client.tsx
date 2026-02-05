@@ -127,13 +127,17 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
           Search this project
         </label>
         <Input
+          autoComplete="off"
           aria-describedby={
             error ? `${searchStatusId} ${searchErrorId}` : searchStatusId
           }
           aria-invalid={status === "error"}
           id={searchInputId}
+          inputMode="search"
+          name="q"
           onChange={(e) => setQ(e.currentTarget.value)}
           placeholder="Search this project…"
+          type="search"
           value={q}
         />
         <Button
