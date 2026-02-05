@@ -38,6 +38,10 @@ import {
   type ToolPart,
 } from "@/components/ai-elements/tool";
 import { Button } from "@/components/ui/button";
+import {
+  type ChatThreadStatus,
+  resolveRunStatusAfterChatEnd,
+} from "./run-status";
 
 type UserMessageMarker = Readonly<{
   type: "user-message";
@@ -48,15 +52,6 @@ type UserMessageMarker = Readonly<{
 
 type AppUIMessage = UIMessage<unknown, UIDataTypes, UITools>;
 type AppUIMessagePart = AppUIMessage["parts"][number];
-
-type ChatThreadStatus =
-  | "pending"
-  | "running"
-  | "waiting"
-  | "blocked"
-  | "succeeded"
-  | "failed"
-  | "canceled";
 
 const STORAGE_LOG_THROTTLE_MS = 10_000;
 const storageLogTimestamps = new Map<string, number>();
@@ -208,7 +203,9 @@ export function ProjectChatClient(
     const workflowTransport = new WorkflowChatTransport<AppUIMessage>({
       api: "/api/chat",
       onChatEnd: () => {
-        setRunStatus("succeeded");
+        setRunStatus((previousStatus) =>
+          resolveRunStatusAfterChatEnd(previousStatus),
+        );
         setRunId(null);
         try {
           window.localStorage.removeItem(storageKey);

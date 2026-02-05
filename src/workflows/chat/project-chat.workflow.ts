@@ -23,11 +23,13 @@ import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
  *
  * @param projectId - Project scope for retrieval and persistence.
  * @param initialMessages - Initial UI messages (must end with a user message).
+ * @param threadTitle - Thread title used when lifecycle persistence needs to create the row.
  * @returns Final conversation messages.
  */
 export async function projectChat(
   projectId: string,
   initialMessages: UIMessage[],
+  threadTitle: string,
 ): Promise<Readonly<{ messages: ModelMessage[] }>> {
   "use workflow";
 
@@ -36,6 +38,11 @@ export async function projectChat(
   let finishedStatus: "succeeded" | "failed" | "canceled" | null = null;
   let thrownError: unknown = null;
   const messages: ModelMessage[] = [];
+  const threadStateInput = {
+    projectId,
+    title: threadTitle,
+    workflowRunId: runId,
+  } as const;
 
   try {
     messages.push(
@@ -44,7 +51,7 @@ export async function projectChat(
       })),
     );
 
-    await touchChatThreadState({ status: "running", workflowRunId: runId });
+    await touchChatThreadState({ ...threadStateInput, status: "running" });
 
     // Write markers for initial user messages so replay can reconstruct order.
     for (const msg of initialMessages) {
@@ -73,7 +80,7 @@ export async function projectChat(
     while (true) {
       turnNumber += 1;
 
-      await touchChatThreadState({ status: "running", workflowRunId: runId });
+      await touchChatThreadState({ ...threadStateInput, status: "running" });
 
       const result = await agent.stream({
         experimental_context: { projectId },
@@ -86,7 +93,7 @@ export async function projectChat(
       });
       messages.push(...result.messages.slice(messages.length));
 
-      await touchChatThreadState({ status: "waiting", workflowRunId: runId });
+      await touchChatThreadState({ ...threadStateInput, status: "waiting" });
 
       const { message: followUp } = await hook;
       if (followUp === "/done") break;
@@ -109,9 +116,9 @@ export async function projectChat(
     if (finishedStatus) {
       finalizationTasks.push(
         touchChatThreadState({
+          ...threadStateInput,
           endedAt: new Date(),
           status: finishedStatus,
-          workflowRunId: runId,
         }),
       );
     }

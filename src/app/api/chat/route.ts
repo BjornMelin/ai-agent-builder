@@ -8,6 +8,7 @@ import { getRun, start } from "workflow/api";
 import { z } from "zod";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
+import { toChatTitle } from "@/lib/chat/title";
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
 import { ensureChatThreadForWorkflowRun } from "@/lib/data/chat.server";
@@ -27,21 +28,6 @@ const bodySchema = z.strictObject({
   messages: z.array(z.unknown()),
   projectId: z.string().min(1),
 });
-
-function toChatTitle(message: ProjectChatUIMessage): string {
-  const text = message.parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join("")
-    .trim();
-
-  if (text.length === 0) {
-    return "New chat";
-  }
-
-  const normalized = text.replace(/\s+/g, " ");
-  return normalized.length > 80 ? `${normalized.slice(0, 80)}…` : normalized;
-}
 
 /**
  * Start a durable multi-turn chat session for a project.
@@ -87,11 +73,16 @@ export async function POST(req: Request): Promise<Response> {
       );
     }
 
-    const run = await start(projectChat, [parsed.projectId, validated.data]);
+    const title = toChatTitle(last);
+    const run = await start(projectChat, [
+      parsed.projectId,
+      validated.data,
+      title,
+    ]);
     try {
       await ensureChatThreadForWorkflowRun({
         projectId: parsed.projectId,
-        title: toChatTitle(last),
+        title,
         workflowRunId: run.runId,
       });
     } catch (error) {

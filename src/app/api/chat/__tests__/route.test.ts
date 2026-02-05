@@ -180,5 +180,15 @@ describe("POST /api/chat", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("x-workflow-run-id")).toBe("run_123");
     expect(state.start).toHaveBeenCalledTimes(1);
+    expect(state.start).toHaveBeenCalledWith("projectChatWorkflow", [
+      "proj_1",
+      [{ id: "m1", parts: [{ text: "hi", type: "text" }], role: "user" }],
+      "hi",
+    ]);
+    expect(state.ensureChatThreadForWorkflowRun).toHaveBeenCalledWith({
+      projectId: "proj_1",
+      title: "hi",
+      workflowRunId: "run_123",
+    });
   });
 });

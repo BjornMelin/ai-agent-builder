@@ -1,11 +1,11 @@
-import { eq } from "drizzle-orm";
-
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import type { ChatThreadStatus } from "@/lib/data/chat.server";
 
 type TouchInput = Readonly<{
+  projectId: string;
   status: ChatThreadStatus;
+  title: string;
   workflowRunId: string;
   endedAt?: Date | null;
 }>;
@@ -24,14 +24,23 @@ export async function touchChatThreadState(input: TouchInput): Promise<void> {
 
   const db = getDb();
   const now = new Date();
+  const stateUpdate = {
+    ...(input.endedAt === undefined ? {} : { endedAt: input.endedAt }),
+    lastActivityAt: now,
+    status: input.status,
+    updatedAt: now,
+  };
 
   await db
-    .update(schema.chatThreadsTable)
-    .set({
-      ...(input.endedAt === undefined ? {} : { endedAt: input.endedAt }),
-      lastActivityAt: now,
-      status: input.status,
-      updatedAt: now,
+    .insert(schema.chatThreadsTable)
+    .values({
+      ...stateUpdate,
+      projectId: input.projectId,
+      title: input.title,
+      workflowRunId: input.workflowRunId,
     })
-    .where(eq(schema.chatThreadsTable.workflowRunId, input.workflowRunId));
+    .onConflictDoUpdate({
+      set: stateUpdate,
+      target: schema.chatThreadsTable.workflowRunId,
+    });
 }
