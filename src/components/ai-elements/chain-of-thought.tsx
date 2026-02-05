@@ -107,7 +107,7 @@ export const ChainOfThoughtHeader = memo((props: ChainOfThoughtHeaderProps) => {
       <span className="flex-1 text-left">{children ?? "Chain of Thought"}</span>
       <ChevronDownIcon
         className={cn(
-          "size-4 transition-transform",
+          "size-4 motion-safe:transition-transform motion-reduce:transition-none",
           isOpen ? "rotate-180" : "rotate-0",
         )}
       />

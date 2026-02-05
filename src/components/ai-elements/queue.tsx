@@ -342,7 +342,7 @@ export const QueueSectionLabel = (props: QueueSectionLabelProps) => {
     <span className={cn("flex items-center gap-2", className)} {...rest}>
       <ChevronDownIcon
         aria-hidden="true"
-        className="size-4 transition-transform group-data-[state=closed]:-rotate-90"
+        className="size-4 motion-safe:transition-transform motion-reduce:transition-none group-data-[state=closed]:-rotate-90"
       />
       {icon}
       <span>{count === undefined ? label : `${count} ${label}`}</span>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-
+import { ArtifactListClient } from "@/app/(app)/projects/[projectId]/artifacts/artifact-list-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMarkdownContent } from "@/lib/artifacts/content.server";
 import { listLatestArtifacts } from "@/lib/data/artifacts.server";
@@ -20,6 +20,18 @@ export default async function ArtifactsPage(
 ) {
   const { projectId } = await props.params;
   const artifacts = await listLatestArtifacts(projectId, { limit: 200 });
+  const artifactItems = artifacts.map((a) => {
+    const markdown = getMarkdownContent(a.content);
+    const title =
+      markdown?.title ?? `${a.kind} · ${a.logicalKey} · v${a.version}`;
+    return {
+      id: a.id,
+      kind: a.kind,
+      logicalKey: a.logicalKey,
+      title,
+      version: a.version,
+    };
+  });
 
   return (
     <Card>
@@ -39,42 +51,7 @@ export default async function ArtifactsPage(
             and search.
           </p>
         ) : (
-          <ul
-            className="grid gap-2"
-            style={{
-              containIntrinsicSize: "auto 200px",
-              contentVisibility: "auto",
-            }}
-          >
-            {artifacts.map((a) => {
-              const markdown = getMarkdownContent(a.content);
-              const title =
-                markdown?.title ??
-                `${a.kind} · ${a.logicalKey} · v${a.version}`;
-
-              return (
-                <li
-                  className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2"
-                  key={a.id}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{title}</p>
-                    <p className="truncate text-muted-foreground text-sm">
-                      {a.kind} · {a.logicalKey} · v{a.version}
-                    </p>
-                  </div>
-                  <Link
-                    className="text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline"
-                    href={`/projects/${encodeURIComponent(projectId)}/artifacts/${encodeURIComponent(
-                      a.id,
-                    )}`}
-                  >
-                    Open
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <ArtifactListClient artifacts={artifactItems} projectId={projectId} />
         )}
       </CardContent>
     </Card>

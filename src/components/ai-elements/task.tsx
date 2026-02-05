@@ -99,7 +99,7 @@ export const TaskTrigger = (props: TaskTriggerProps) => {
           <span className="text-sm">{title}</span>
           <ChevronDownIcon
             aria-hidden="true"
-            className="size-4 transition-transform group-data-[state=open]:rotate-180"
+            className="size-4 motion-safe:transition-transform motion-reduce:transition-none group-data-[state=open]:rotate-180"
           />
         </button>
       )}

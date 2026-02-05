@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { WorkflowChatTransport } from "@workflow/ai";
 import type { ChatTransport, UIDataTypes, UIMessage, UITools } from "ai";
 import { getToolName, isToolUIPart } from "ai";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   Conversation,
@@ -287,13 +287,7 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
   const composerErrorId = `project-chat-composer-error-${props.projectId}`;
   const composerInputId = `project-chat-composer-${props.projectId}`;
   const composerLabelId = `${composerInputId}-label`;
-  const [messages, setDisplayMessages] = useState<AppUIMessage[]>(() =>
-    reconstructMessages(rawMessages),
-  );
-
-  useEffect(() => {
-    setDisplayMessages(reconstructMessages(rawMessages));
-  }, [rawMessages]);
+  const messages = reconstructMessages(rawMessages);
 
   async function sendFollowUp(text: string): Promise<boolean> {
     if (!runId) return false;
@@ -399,7 +393,7 @@ export function ProjectChatClient(props: Readonly<{ projectId: string }>) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-muted-foreground text-sm">Project chat</p>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-muted-foreground text-xs" suppressHydrationWarning>
             {runId ? `Session: ${runId}` : "Start a new session"}
           </p>
         </div>

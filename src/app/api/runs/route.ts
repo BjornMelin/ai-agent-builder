@@ -22,8 +22,9 @@ const createRunSchema = z.strictObject({
  */
 export async function POST(req: Request) {
   try {
-    await requireAppUserApi();
-    const parsed = await parseJsonBody(req, createRunSchema);
+    const authPromise = requireAppUserApi();
+    const bodyPromise = parseJsonBody(req, createRunSchema);
+    const [, parsed] = await Promise.all([authPromise, bodyPromise]);
 
     const run = await startProjectRun({
       kind: parsed.kind,

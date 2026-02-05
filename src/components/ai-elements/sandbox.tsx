@@ -65,7 +65,7 @@ export const SandboxHeader = (props: SandboxHeaderProps) => {
         <span className="font-medium text-sm">{title}</span>
         {getStatusBadge(state)}
       </div>
-      <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+      <ChevronDownIcon className="size-4 text-muted-foreground motion-safe:transition-transform motion-reduce:transition-none group-data-[state=open]:rotate-180" />
     </CollapsibleTrigger>
   );
 };

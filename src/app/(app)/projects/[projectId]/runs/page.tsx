@@ -52,7 +52,10 @@ export default async function RunsPage(
                   <div className="min-w-0">
                     <p className="truncate font-medium">{run.kind}</p>
                     <p className="truncate text-muted-foreground text-sm">
-                      {run.status} · {new Date(run.createdAt).toLocaleString()}
+                      {run.status} ·{" "}
+                      <time dateTime={run.createdAt} suppressHydrationWarning>
+                        {new Date(run.createdAt).toLocaleString()}
+                      </time>
                     </p>
                   </div>
                   <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">

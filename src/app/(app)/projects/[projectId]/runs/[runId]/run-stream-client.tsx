@@ -60,6 +60,7 @@ function readStartIndex(storageKey: string): number {
     const raw = window.sessionStorage.getItem(storageKey);
     if (!raw) return 0;
     const parsed = Number.parseInt(raw, 10);
+    if (Number.isNaN(parsed)) return 0;
     return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
   } catch {
     return 0;
