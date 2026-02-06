@@ -24,6 +24,44 @@ preview env vars for that branch:
 
 - `vercel env pull --environment=preview --git-branch=<branch>`
 
+### Fix Neon Auth email/password 500s in local development
+
+Use this when `POST <NEON_AUTH_BASE_URL>/sign-in/email` returns `500` for valid
+credential users in the local development setup.
+
+1. Refresh local env from Vercel Development:
+   - `vercel env pull --yes --environment=development .env.local`
+2. Audit current local Neon Auth wiring and credential health:
+   - `bun run auth:audit:local`
+3. Repair broken credential users:
+   - Auto-detect and repair users that return `500` on a wrong-password probe:
+     - `bun run auth:repair:local`
+   - Or repair specific users:
+     - `bun run auth:repair:local --email agent@example.com --email user@example.com`
+   - Dry-run mode:
+     - `bun run auth:repair:local --dry-run`
+4. Verify post-repair auth behavior:
+   - `bun run auth:smoke:local`
+   - Optional success checks with known credentials:
+     - `bun run auth:smoke:local --check 'agent@example.com:temporary-password'`
+
+CLI reference:
+
+- All three commands above are wrappers around one unified script:
+  - `bun scripts/neon-auth-local.ts --help`
+  - `bun scripts/neon-auth-local.ts audit --help`
+  - `bun scripts/neon-auth-local.ts repair --help`
+  - `bun scripts/neon-auth-local.ts smoke --help`
+
+Important notes:
+
+- These scripts are intended for local development against the Neon
+  `vercel-dev` branch by default.
+- Repair deletes and recreates affected Neon Auth users via supported APIs, so
+  user IDs are expected to change.
+- Required env: `NEON_AUTH_BASE_URL`, `DATABASE_URL`, `NEON_API_KEY`, and a
+  Neon project id via `.neon` or `NEON_PROJECT_ID`.
+
 ### Preview branch env automation
 
 Preview branch env vars are managed by:

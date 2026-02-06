@@ -6,6 +6,9 @@
     "bun": ">=1.2.0"
   },
   "scripts": {
+    "auth:audit:local": "bun scripts/neon-auth-local.ts audit",
+    "auth:repair:local": "bun scripts/neon-auth-local.ts repair",
+    "auth:smoke:local": "bun scripts/neon-auth-local.ts smoke",
     "build": "bun --bun next build",
     "build:vercel": "bun run db:migrate && bun run build",
     "ci": "bun run lint && bun run typecheck && bun run test && bun run build",

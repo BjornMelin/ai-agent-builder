@@ -64,6 +64,13 @@ This project centralizes environment access in `src/lib/env.ts`.
   - Cookie domain for sharing session cookies across subdomains (e.g.
     `.example.com`).
 
+Local Neon Auth diagnostics (optional helpers):
+
+- `NEON_AUTH_LOCAL_AGENT_USER_EMAIL` (optional)
+  - Convenience value for local smoke tests and scripted auth checks.
+- `NEON_AUTH_LOCAL_AGENT_USER_PASS` (optional)
+  - Convenience value for local smoke tests and scripted auth checks.
+
 Auth UI / OAuth providers:
 
 - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` (optional)
