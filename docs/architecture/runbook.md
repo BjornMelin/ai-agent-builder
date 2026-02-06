@@ -40,6 +40,10 @@ credential users in the local development setup.
      - `bun run auth:repair:local --email agent@example.com --email user@example.com`
    - Dry-run mode:
      - `bun run auth:repair:local --dry-run`
+4. Create new users (create-only; no delete/recreate):
+   - `bun run auth:create:local --email you@example.com --password 'StrongPass!2026'`
+   - Optional: skip sign-in verification:
+     - `bun run auth:create:local --email you@example.com --password 'StrongPass!2026' --no-verify`
 4. Verify post-repair auth behavior:
    - `bun run auth:smoke:local`
    - Optional success checks with known credentials:

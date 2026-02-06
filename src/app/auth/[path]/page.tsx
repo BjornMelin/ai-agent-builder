@@ -1,5 +1,6 @@
 import { authViewPaths } from "@neondatabase/auth/react/ui/server";
 import { notFound } from "next/navigation";
+import { NeonAuthUiProvider } from "@/app/_auth/neon-auth-ui-provider";
 import { AuthViewClient } from "./auth-view-client";
 
 const ALLOWED_AUTH_VIEW_PATHS = Object.values(authViewPaths).filter(
@@ -37,12 +38,14 @@ export default async function AuthPage(
   }
 
   return (
-    <main
-      className="container mx-auto flex grow flex-col items-center justify-center p-4 md:p-6"
-      id="main"
-      tabIndex={-1}
-    >
-      <AuthViewClient path={path} />
-    </main>
+    <NeonAuthUiProvider>
+      <main
+        className="container mx-auto flex grow flex-col items-center justify-center p-4 md:p-6"
+        id="main"
+        tabIndex={-1}
+      >
+        <AuthViewClient path={path} />
+      </main>
+    </NeonAuthUiProvider>
   );
 }

@@ -7,6 +7,7 @@
   },
   "scripts": {
     "auth:audit:local": "bun scripts/neon-auth-local.ts audit",
+    "auth:create:local": "bun scripts/neon-auth-local.ts create",
     "auth:repair:local": "bun scripts/neon-auth-local.ts repair",
     "auth:smoke:local": "bun scripts/neon-auth-local.ts smoke",
     "build": "bun --bun next build",

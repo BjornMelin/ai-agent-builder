@@ -9,7 +9,7 @@ const DEFAULT_EXPECTED_BRANCH = "vercel-dev";
 const DEFAULT_LOCAL_ORIGIN = "http://localhost:3000";
 const MAX_SIGNUP_RETRIES = 5;
 
-type Action = "audit" | "info" | "lib" | "repair" | "smoke";
+type Action = "audit" | "create" | "info" | "lib" | "repair" | "smoke";
 
 type HeadersInput = Record<string, string>;
 
@@ -86,6 +86,17 @@ interface SmokeArgs {
   skipWrongPasswordProbe: boolean;
 }
 
+interface CreateArgs {
+  allowBranchMismatch: boolean;
+  dryRun: boolean;
+  emails: string[];
+  expectedBranchName: string;
+  name?: string;
+  password?: string;
+  projectId?: string;
+  verify: boolean;
+}
+
 async function main(): Promise<void> {
   loadLocalEnv();
 
@@ -104,6 +115,12 @@ async function main(): Promise<void> {
   if (action === "audit") {
     const args = parseAuditArgs(argv);
     await runAudit(args);
+    return;
+  }
+
+  if (action === "create") {
+    const args = parseCreateArgs(argv);
+    await runCreate(args);
     return;
   }
 
@@ -885,6 +902,119 @@ async function runSmoke(args: SmokeArgs): Promise<void> {
   if (failures.length > 0) process.exitCode = 1;
 }
 
+async function runCreate(args: CreateArgs): Promise<void> {
+  const neonAuthBaseUrl = getRequiredEnv("NEON_AUTH_BASE_URL");
+  const neonApiKey = getRequiredEnv("NEON_API_KEY");
+  const projectId = resolveProjectId(args.projectId);
+  const origin = resolveLocalOrigin();
+
+  const context = await resolveAuthBranchContext(
+    projectId,
+    neonApiKey,
+    neonAuthBaseUrl,
+  );
+
+  console.log("");
+  console.log("Neon Auth Local Create");
+  console.log("======================");
+  printSummary("Project", context.projectId);
+  printSummary("Auth Endpoint", context.endpointId);
+  printSummary(
+    "Resolved Branch",
+    `${context.branchName} (${context.branchId})`,
+  );
+  printSummary("Expected Branch", args.expectedBranchName);
+  printSummary("Dry Run", args.dryRun ? "yes" : "no");
+  printSummary("Verify", args.verify ? "yes" : "no");
+  printSummary("Origin", origin);
+
+  if (
+    !args.allowBranchMismatch &&
+    context.branchName !== args.expectedBranchName
+  ) {
+    throw new Error(
+      `Resolved branch "${context.branchName}" does not match expected "${args.expectedBranchName}".`,
+    );
+  }
+
+  if (args.emails.length === 0) {
+    throw new Error("Provide at least one --email.");
+  }
+
+  const successes: Array<{ email: string; password: string; userId: string }> =
+    [];
+  const failures: Array<{ email: string; error: string }> = [];
+
+  for (const email of args.emails) {
+    const normalized = normalizeEmail(email);
+    const password = args.password ?? generateTemporaryPassword();
+    const name = args.name?.trim() || deriveDisplayName(normalized);
+
+    if (args.dryRun) {
+      console.log(`[dry-run] would create ${normalized}`);
+      continue;
+    }
+
+    try {
+      const signUpResult = await signUpWithRetry(
+        neonAuthBaseUrl,
+        origin,
+        origin,
+        normalized,
+        password,
+        name,
+      );
+
+      if (signUpResult.status !== 200 || !signUpResult.userId) {
+        throw new Error(
+          `Sign-up failed (${signUpResult.status}): ${signUpResult.responseBody}`,
+        );
+      }
+
+      if (args.verify) {
+        const verifySignIn = await probeSignInEmailPassword(
+          neonAuthBaseUrl,
+          origin,
+          normalized,
+          password,
+        );
+        if (verifySignIn.status !== 200) {
+          throw new Error(
+            `Sign-in verification failed (${verifySignIn.status}): ${verifySignIn.responseBody}`,
+          );
+        }
+      }
+
+      successes.push({
+        email: normalized,
+        password,
+        userId: signUpResult.userId,
+      });
+    } catch (error) {
+      failures.push({ email: normalized, error: formatError(error) });
+    }
+  }
+
+  if (successes.length > 0) {
+    console.log("");
+    console.log("Created users (save passwords securely)");
+    console.table(successes);
+  }
+
+  if (failures.length > 0) {
+    console.log("");
+    console.log("Create failures");
+    console.table(failures);
+  }
+
+  console.log("");
+  printSummary(
+    "Create Result",
+    failures.length > 0 ? "partial_or_failed" : "ok",
+  );
+  if (failures.length > 0) process.exitCode = 1;
+}
+
 async function detectBrokenEmails(
   users: CredentialUserRow[],
   neonAuthBaseUrl: string,
@@ -1023,6 +1153,7 @@ function parseAction(args: string[]): {
 function normalizeAction(value: string): Action | null {
   const v = value.trim().toLowerCase();
   if (v === "audit") return "audit";
+  if (v === "create") return "create";
   if (v === "repair") return "repair";
   if (v === "smoke") return "smoke";
   if (v === "info") return "info";
@@ -1116,6 +1247,37 @@ function parseSmokeArgs(argv: string[]): SmokeArgs {
   return out;
 }
 
+function parseCreateArgs(argv: string[]): CreateArgs {
+  const expectedBranchName =
+    readStringFlag(argv, "--expected-branch-name")?.trim() ??
+    DEFAULT_EXPECTED_BRANCH;
+  const projectId = readStringFlag(argv, "--project-id")?.trim();
+  const password = readStringFlag(argv, "--password");
+  const name = readStringFlag(argv, "--name");
+
+  const emails: string[] = [];
+  for (let i = 0; i < argv.length; i += 1) {
+    if (argv[i] === "--email") {
+      const value = argv[i + 1];
+      if (!value) throw new Error("Missing value for --email");
+      emails.push(normalizeEmail(value));
+      i += 1;
+    }
+  }
+
+  const out: CreateArgs = {
+    allowBranchMismatch: argv.includes("--allow-branch-mismatch"),
+    dryRun: argv.includes("--dry-run"),
+    emails: Array.from(new Set(emails)),
+    expectedBranchName,
+    verify: !argv.includes("--no-verify"),
+  };
+  if (projectId && projectId.length > 0) out.projectId = projectId;
+  if (password && password.length > 0) out.password = password;
+  if (name && name.trim().length > 0) out.name = name.trim();
+  return out;
+}
+
 function readStringFlag(argv: string[], flag: string): string | undefined {
   const idx = argv.indexOf(flag);
   if (idx === -1) return undefined;
@@ -1129,6 +1291,7 @@ function printHelp(action?: Action): void {
   const actions = [
     "info|lib  Resolve project/branch context and show key config",
     "audit     Validate wiring and detect malformed credential rows",
+    "create    Create new email/password users (no delete/recreate)",
     "repair    Delete+recreate broken credential users (IDs change)",
     "smoke     Assert wrong-password => 401 and optional success checks",
   ];
@@ -1156,6 +1319,23 @@ function printHelp(action?: Action): void {
     );
     console.log(
       "  --no-strict                   Do not exit non-zero on issues",
+    );
+  }
+  if (action === "create") {
+    console.log("create flags:");
+    console.log("  --email <email>               Target email(s); repeatable");
+    console.log(
+      "  --password <password>         Set explicit password (otherwise generated)",
+    );
+    console.log(
+      "  --name <name>                 Optional display name (applied to all emails)",
+    );
+    console.log(
+      "  --no-verify                   Skip sign-in verification (default verifies)",
+    );
+    console.log("  --dry-run                     Print planned actions only");
+    console.log(
+      "  --allow-branch-mismatch       Allow running even if not on expected branch",
     );
   }
   if (action === "repair") {

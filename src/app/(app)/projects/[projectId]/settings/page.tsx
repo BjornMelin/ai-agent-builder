@@ -22,7 +22,7 @@ function safeFeature(getter: () => unknown): FeatureStatus {
  *
  * @returns The settings page.
  */
-export default async function ProjectSettingsPage() {
+export default function ProjectSettingsPage() {
   const aiGateway = safeFeature(() => env.aiGateway);
   const upstash = safeFeature(() => env.upstash);
   const qstashPublish = safeFeature(() => env.qstashPublish);

@@ -1,8 +1,8 @@
-import { connection } from "next/server";
 import type { ReactNode } from "react";
-
+import { Suspense } from "react";
+import { AccountAuthGate } from "@/app/account/account-auth-gate";
 import { AppShell } from "@/components/shell/app-shell";
-import { requireAppUser } from "@/lib/auth/require-app-user";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Account route layout rendered inside the authenticated application shell.
@@ -10,12 +10,24 @@ import { requireAppUser } from "@/lib/auth/require-app-user";
  * @param props - Layout props containing nested account page content.
  * @returns Account layout wrapped in the shared app shell.
  */
-export default async function AccountLayout(
+export default function AccountLayout(
   props: Readonly<{
     children: ReactNode;
   }>,
 ) {
-  await connection();
-  await requireAppUser();
-  return <AppShell>{props.children}</AppShell>;
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      }
+    >
+      <AccountAuthGate>
+        <AppShell>{props.children}</AppShell>
+      </AccountAuthGate>
+    </Suspense>
+  );
 }

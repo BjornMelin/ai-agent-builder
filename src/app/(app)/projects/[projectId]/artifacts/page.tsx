@@ -1,15 +1,6 @@
-import Link from "next/link";
-
-import { ArtifactListClient } from "@/app/(app)/projects/[projectId]/artifacts/artifact-list-client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { getMarkdownContent } from "@/lib/artifacts/content.server";
-import { listLatestArtifacts } from "@/lib/data/artifacts.server";
+import { Suspense } from "react";
+import { ArtifactsContent } from "@/app/(app)/projects/[projectId]/artifacts/artifacts-content";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Artifacts tab: list latest versions by key.
@@ -21,47 +12,22 @@ export default async function ArtifactsPage(
   props: Readonly<{ params: Promise<{ projectId: string }> }>,
 ) {
   const { projectId } = await props.params;
-  const artifacts = await listLatestArtifacts(projectId, { limit: 200 });
-  const artifactItems = artifacts.map((a) => {
-    const markdown = getMarkdownContent(a.content);
-    const title =
-      markdown?.title ?? `${a.kind} · ${a.logicalKey} · v${a.version}`;
-    return {
-      id: a.id,
-      kind: a.kind,
-      logicalKey: a.logicalKey,
-      title,
-      version: a.version,
-    };
-  });
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <CardTitle>Artifacts</CardTitle>
-        <Link
-          className="text-sm underline-offset-4 hover:underline"
-          download
-          href={`/api/export/${encodeURIComponent(projectId)}`}
-        >
-          Export ZIP
-        </Link>
-      </CardHeader>
-      <CardContent>
-        {artifacts.length === 0 ? (
-          <Empty className="min-h-[180px] rounded-xl border">
-            <EmptyHeader>
-              <EmptyTitle>No artifacts generated yet</EmptyTitle>
-              <EmptyDescription>
-                Run workflows to generate versioned artifacts for export and
-                search.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : (
-          <ArtifactListClient artifacts={artifactItems} projectId={projectId} />
-        )}
-      </CardContent>
-    </Card>
+    <Suspense
+      fallback={
+        <div className="space-y-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <Skeleton className="h-7 w-28" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      }
+    >
+      <ArtifactsContent projectId={projectId} />
+    </Suspense>
   );
 }

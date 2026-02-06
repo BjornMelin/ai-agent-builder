@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
-import { connection } from "next/server";
-
-import { requireAppUser } from "@/lib/auth/require-app-user";
+import { Suspense } from "react";
+import { HomeRedirect } from "@/app/home-redirect";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Home page.
@@ -11,8 +10,17 @@ import { requireAppUser } from "@/lib/auth/require-app-user";
  *
  * @returns Never returns; always redirects.
  */
-export default async function Home() {
-  await connection();
-  await requireAppUser();
-  redirect("/projects");
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-3">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+      }
+    >
+      <HomeRedirect />
+    </Suspense>
+  );
 }

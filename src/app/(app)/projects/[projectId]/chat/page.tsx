@@ -1,5 +1,6 @@
-import { ProjectChatClient } from "@/app/(app)/projects/[projectId]/chat/chat-client";
-import { getLatestChatThreadByProjectId } from "@/lib/data/chat.server";
+import { Suspense } from "react";
+import { ChatContent } from "@/app/(app)/projects/[projectId]/chat/chat-content";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Chat tab.
@@ -12,18 +13,18 @@ export default async function ChatPage(
   props: Readonly<{ params: Promise<{ projectId: string }> }>,
 ) {
   const { projectId } = await props.params;
-  const latestThread = await getLatestChatThreadByProjectId(projectId);
+
   return (
-    <ProjectChatClient
-      initialThread={
-        latestThread?.workflowRunId
-          ? {
-              status: latestThread.status,
-              workflowRunId: latestThread.workflowRunId,
-            }
-          : null
+    <Suspense
+      fallback={
+        <div className="space-y-4">
+          <Skeleton className="h-7 w-28" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
       }
-      projectId={projectId}
-    />
+    >
+      <ChatContent projectId={projectId} />
+    </Suspense>
   );
 }
