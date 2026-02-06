@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.7](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.6...ai-agent-builder-v0.1.7) (2026-02-06)
+
+
+### Features
+
+* add GitHub Actions workflows for Vercel preview environment management ([60fe032](https://github.com/BjornMelin/ai-agent-builder/commit/60fe032bc22e142a84c8cc98eab9371cf85bc6c1))
+* enhance chat functionality with initial thread support and status management ([9a9dac6](https://github.com/BjornMelin/ai-agent-builder/commit/9a9dac6150b80a2e90a1ed1e82a09f8324ef3d04))
+* implement dynamic loading for AI elements and enhance audio player functionality ([9630036](https://github.com/BjornMelin/ai-agent-builder/commit/96300368c69ab2f37ab53df6f5ec296883620f13))
+* react + accessibility optimizations, bundle size reductions, GHA for Vercel preview branches ([63787f4](https://github.com/BjornMelin/ai-agent-builder/commit/63787f466ccd88f2a87daaa885922b9e4a4e5832))
+
+
+### Bug Fixes
+
+* **a11y:** keep labeled disabled audio fallback controls ([d1fc2c7](https://github.com/BjornMelin/ai-agent-builder/commit/d1fc2c7b3a71bed7f79376e1e75efc697918d6ef))
+* **ai-elements:** harden accessibility semantics and test flow ([306fc02](https://github.com/BjornMelin/ai-agent-builder/commit/306fc02654990add3fdb27ffe40bf69c6c333678))
+* **chat:** apply review follow-up fixes ([11dbe46](https://github.com/BjornMelin/ai-agent-builder/commit/11dbe4627d2a81922a8955caa08790c681d25e70))
+* **chat:** enhance session termination and message handling in chat client ([d156530](https://github.com/BjornMelin/ai-agent-builder/commit/d156530a6e13fb5c5fbd2129fe2ceaf1bff5919f))
+* **chat:** harden thread lifecycle persistence and preserve terminal ui status ([9f26fa2](https://github.com/BjornMelin/ai-agent-builder/commit/9f26fa2862f820bbd55817e34fc7f041c6a400c7))
+* **chat:** improve chat client session handling and message management ([d1760da](https://github.com/BjornMelin/ai-agent-builder/commit/d1760daf82fe3ba689bd0f0c75e5b9e6e070d124))
+* **chat:** update chat client props and streamline message submission ([9642c0e](https://github.com/BjornMelin/ai-agent-builder/commit/9642c0e1f094d77dd86eed2524deaaa52fa5a97c))
+* **pr-19:** address unresolved CodeRabbit review threads ([862c694](https://github.com/BjornMelin/ai-agent-builder/commit/862c6941e3b774e9e09e965895a70e07ab49f8c1))
+* **pr-19:** resolve unresolved CodeRabbit review threads ([2c86aaf](https://github.com/BjornMelin/ai-agent-builder/commit/2c86aafabb8e8286de6206e53f167ccccbbaf958))
+* **review:** address unresolved PR [#19](https://github.com/BjornMelin/ai-agent-builder/issues/19) feedback threads ([ed8831c](https://github.com/BjornMelin/ai-agent-builder/commit/ed8831c019ffdb15646858efe035d68f77ebe29c))
+
 ## [0.1.6](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.5...ai-agent-builder-v0.1.6) (2026-02-05)
 
 
