@@ -1,15 +1,9 @@
 import { AccountView } from "@neondatabase/auth/react";
-import { accountViewPaths } from "@neondatabase/auth/react/ui/server";
 import { notFound } from "next/navigation";
-import { connection } from "next/server";
-
-import { requireAppUser } from "@/lib/auth/require-app-user";
-
-const ALLOWED_ACCOUNT_VIEW_PATHS = [
-  accountViewPaths.SETTINGS,
-  accountViewPaths.SECURITY,
-];
-const ALLOWED_ACCOUNT_VIEW_PATH_SET = new Set(ALLOWED_ACCOUNT_VIEW_PATHS);
+import {
+  ACCOUNT_ROUTES,
+  getAccountRoute,
+} from "@/lib/navigation/account-routes";
 
 /**
  * Statically enumerate supported Neon Auth account views.
@@ -17,7 +11,7 @@ const ALLOWED_ACCOUNT_VIEW_PATH_SET = new Set(ALLOWED_ACCOUNT_VIEW_PATHS);
  * @returns Route params for `/account/[path]`.
  */
 export function generateStaticParams() {
-  return ALLOWED_ACCOUNT_VIEW_PATHS.map((path) => ({ path }));
+  return ACCOUNT_ROUTES.map((route) => ({ path: route.segment }));
 }
 
 /**
@@ -31,15 +25,15 @@ export default async function AccountPage(
     params: Promise<{ path: string }>;
   }>,
 ) {
-  await connection();
-  const [{ path }] = await Promise.all([props.params, requireAppUser()]);
-  if (!ALLOWED_ACCOUNT_VIEW_PATH_SET.has(path)) {
+  const { path } = await props.params;
+  const accountRoute = getAccountRoute(path);
+  if (!accountRoute) {
     notFound();
   }
 
   return (
-    <main className="container mx-auto p-4 md:p-6" id="main" tabIndex={-1}>
-      <AccountView path={path} />
-    </main>
+    <div className="mx-auto w-full max-w-4xl rounded-2xl border bg-card/60 p-4 md:p-6">
+      <AccountView path={accountRoute.segment} />
+    </div>
   );
 }

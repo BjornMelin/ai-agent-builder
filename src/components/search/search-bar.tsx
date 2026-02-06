@@ -1,5 +1,7 @@
 "use client";
 
+import { SearchIcon } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -40,24 +42,29 @@ export function SearchBar(props: SearchBarProps) {
       <label className="sr-only" htmlFor={props.inputId}>
         {props.label}
       </label>
-      <Input
-        autoComplete="off"
-        aria-describedby={
-          props.error ? `${props.statusId} ${props.errorId}` : props.statusId
-        }
-        aria-invalid={props.status === "error"}
-        id={props.inputId}
-        inputMode="search"
-        name="q"
-        onChange={(event) => {
-          props.onQueryChange(event.currentTarget.value);
-        }}
-        placeholder={props.placeholder}
-        type="search"
-        value={props.query}
-      />
+      <div className="relative flex-1">
+        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          autoComplete="off"
+          aria-describedby={
+            props.error ? `${props.statusId} ${props.errorId}` : props.statusId
+          }
+          aria-invalid={props.status === "error"}
+          className="h-10 pl-9"
+          id={props.inputId}
+          inputMode="search"
+          name="q"
+          onChange={(event) => {
+            props.onQueryChange(event.currentTarget.value);
+          }}
+          placeholder={props.placeholder}
+          type="search"
+          value={props.query}
+        />
+      </div>
       <Button
         aria-busy={props.status === "loading"}
+        className="h-10 min-w-24"
         disabled={props.status === "loading"}
         type="submit"
       >
@@ -67,7 +74,7 @@ export function SearchBar(props: SearchBarProps) {
             className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
           />
         ) : null}
-        <span>Search</span>
+        <span>{props.status === "loading" ? "Searching" : "Search"}</span>
       </Button>
 
       <output aria-live="polite" className="sr-only" id={props.statusId}>

@@ -3,6 +3,12 @@ import Link from "next/link";
 import { RunControlsClient } from "@/app/(app)/projects/[projectId]/runs/run-controls-client";
 import { RunDateClient } from "@/app/(app)/projects/[projectId]/runs/run-date-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { listRunsByProject } from "@/lib/data/runs.server";
 
 /**
@@ -22,27 +28,31 @@ export default async function RunsPage(
       <CardHeader>
         <CardTitle>Runs</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="mb-6">
-          <RunControlsClient projectId={projectId} />
-        </div>
+      <CardContent className="space-y-6">
+        <RunControlsClient projectId={projectId} />
 
         {runs.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No runs yet. Start one to see its progress and artifacts.
-          </p>
+          <Empty className="min-h-[180px] rounded-xl border">
+            <EmptyHeader>
+              <EmptyTitle>No runs yet</EmptyTitle>
+              <EmptyDescription>
+                Start a research or implementation run to stream workflow
+                output.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <ul
             className="grid gap-2"
             style={{
-              containIntrinsicSize: "auto 200px",
+              containIntrinsicSize: "auto 220px",
               contentVisibility: "auto",
             }}
           >
             {runs.map((run) => (
               <li key={run.id}>
                 <Link
-                  className="group flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2 transition-colors hover:bg-muted/50"
+                  className="group flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:bg-muted/60"
                   href={`/projects/${projectId}/runs/${run.id}`}
                 >
                   <div className="min-w-0">

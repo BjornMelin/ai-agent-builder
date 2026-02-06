@@ -1,8 +1,23 @@
 import Link from "next/link";
 
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { SearchResult } from "@/lib/search/types";
 
 type SearchStatus = "idle" | "loading" | "error";
+const LOADING_ROW_IDS = [
+  "loading-row-1",
+  "loading-row-2",
+  "loading-row-3",
+  "loading-row-4",
+  "loading-row-5",
+  "loading-row-6",
+] as const;
 
 /**
  * Reusable search results list with shared empty/error states.
@@ -34,6 +49,19 @@ function resultSnippet(result: SearchResult): string | null {
   return null;
 }
 
+function LoadingRows() {
+  return (
+    <div className="grid gap-2">
+      {LOADING_ROW_IDS.map((rowId) => (
+        <div className="rounded-xl border p-3" key={rowId}>
+          <Skeleton className="mb-2 h-4 w-1/3" />
+          <Skeleton className="h-3 w-5/6" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /**
  * Search results renderer.
  *
@@ -49,31 +77,32 @@ export function SearchResults(props: SearchResultsProps) {
     );
   }
 
+  if (props.status === "loading") {
+    return <LoadingRows />;
+  }
+
   if (props.results.length === 0) {
-    if (props.query.trim().length === 0) {
+    if (props.query.trim().length === 0 || !props.hasSearched) {
       return (
         <p className="text-muted-foreground text-sm">{props.idleMessage}</p>
       );
     }
 
-    if (props.status === "loading") {
-      return <p className="text-muted-foreground text-sm">Searching…</p>;
-    }
-
-    if (props.hasSearched) {
-      return (
-        <p className="text-muted-foreground text-sm">{props.emptyMessage}</p>
-      );
-    }
-
-    return null;
+    return (
+      <Empty className="min-h-[180px] rounded-xl border">
+        <EmptyHeader>
+          <EmptyTitle>No matches found</EmptyTitle>
+          <EmptyDescription>{props.emptyMessage}</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
   }
 
   return (
     <ul
       className="grid gap-2"
       style={{
-        containIntrinsicSize: "auto 200px",
+        containIntrinsicSize: "auto 220px",
         contentVisibility: "auto",
       }}
     >
@@ -81,7 +110,7 @@ export function SearchResults(props: SearchResultsProps) {
         const snippet = resultSnippet(result);
         return (
           <li
-            className="flex flex-col gap-1 rounded-md border bg-card px-3 py-2"
+            className="rounded-xl border bg-card px-4 py-3"
             key={`${result.type}-${result.id}`}
           >
             <Link
@@ -91,7 +120,7 @@ export function SearchResults(props: SearchResultsProps) {
               {result.title}
             </Link>
             {snippet ? (
-              <p className="text-muted-foreground text-sm">{snippet}</p>
+              <p className="mt-1 text-muted-foreground text-sm">{snippet}</p>
             ) : null}
           </li>
         );

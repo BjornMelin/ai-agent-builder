@@ -10,9 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
  */
 export default function GlobalSearchPage() {
   return (
-    <Card className="mt-6">
+    <Card>
       <CardHeader>
-        <CardTitle>Search</CardTitle>
+        <CardTitle>Search Across Projects</CardTitle>
       </CardHeader>
       <CardContent>
         <Suspense

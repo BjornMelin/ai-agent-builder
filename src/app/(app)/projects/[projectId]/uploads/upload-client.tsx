@@ -70,7 +70,6 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
       return;
     }
 
-    // Best-effort parse (useful for debugging); UI refresh is the real update.
     await res.json().catch(() => null);
 
     setStatus("success");
@@ -83,10 +82,10 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
   }
 
   return (
-    <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <label className="sr-only" htmlFor={fileInputId}>
-          Select files to upload
+    <form className="space-y-4" onSubmit={handleSubmit}>
+      <div className="space-y-1.5">
+        <label className="font-medium text-sm" htmlFor={fileInputId}>
+          Files
         </label>
         <Input
           aria-describedby={
@@ -100,9 +99,27 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
           onChange={(e) => setFiles(e.currentTarget.files)}
           type="file"
         />
+        <p className="text-muted-foreground text-xs">
+          Supported formats depend on ingestion pipelines configured on the
+          server.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={asyncIngest}
+            id={ingestToggleId}
+            onCheckedChange={setAsyncIngest}
+          />
+          <label className="text-sm" htmlFor={ingestToggleId}>
+            Async ingest
+          </label>
+        </div>
 
         <Button
           aria-busy={status === "uploading"}
+          className="min-w-24"
           disabled={status === "uploading"}
           type="submit"
         >
@@ -112,19 +129,8 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
               className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
             />
           ) : null}
-          <span>Upload</span>
+          <span>{status === "uploading" ? "Uploading" : "Upload"}</span>
         </Button>
-      </div>
-
-      <div className="flex items-center gap-3 text-sm">
-        <Switch
-          checked={asyncIngest}
-          id={ingestToggleId}
-          onCheckedChange={setAsyncIngest}
-        />
-        <label className="text-muted-foreground" htmlFor={ingestToggleId}>
-          Async ingest (QStash) {asyncIngest ? "enabled" : "disabled"}
-        </label>
       </div>
 
       <output aria-live="polite" className="sr-only" id={statusMessageId}>

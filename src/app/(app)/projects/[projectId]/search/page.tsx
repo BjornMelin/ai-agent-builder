@@ -16,7 +16,7 @@ export default async function SearchPage(
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Search</CardTitle>
+        <CardTitle>Search This Project</CardTitle>
       </CardHeader>
       <CardContent>
         <Suspense

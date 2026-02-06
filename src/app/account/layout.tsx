@@ -5,19 +5,17 @@ import { AppShell } from "@/components/shell/app-shell";
 import { requireAppUser } from "@/lib/auth/require-app-user";
 
 /**
- * Authenticated application layout.
+ * Account route layout rendered inside the authenticated application shell.
  *
- * @param props - Layout props containing child routes.
- * @returns Unified application shell for authenticated routes.
+ * @param props - Layout props containing nested account page content.
+ * @returns Account layout wrapped in the shared app shell.
  */
-export default async function AppLayout(
+export default async function AccountLayout(
   props: Readonly<{
     children: ReactNode;
   }>,
 ) {
-  const { children } = props;
   await connection();
   await requireAppUser();
-
-  return <AppShell>{children}</AppShell>;
+  return <AppShell>{props.children}</AppShell>;
 }

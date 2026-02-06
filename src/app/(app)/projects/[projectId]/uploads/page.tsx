@@ -1,6 +1,13 @@
 import Link from "next/link";
+
 import { UploadClient } from "@/app/(app)/projects/[projectId]/uploads/upload-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { listProjectFiles } from "@/lib/data/files.server";
 
 /**
@@ -20,8 +27,8 @@ export default async function UploadsPage(
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
+    <div className="flex flex-col gap-5">
+      <Card className="border-dashed">
         <CardHeader>
           <CardTitle>Upload files</CardTitle>
         </CardHeader>
@@ -36,21 +43,26 @@ export default async function UploadsPage(
         </CardHeader>
         <CardContent>
           {files.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No files uploaded yet.
-            </p>
+            <Empty className="min-h-[160px] rounded-xl border">
+              <EmptyHeader>
+                <EmptyTitle>No files uploaded yet</EmptyTitle>
+                <EmptyDescription>
+                  Add files above to start ingestion and project search.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <ul
               className="grid gap-2"
               style={{
-                containIntrinsicSize: "auto 200px",
+                containIntrinsicSize: "auto 220px",
                 contentVisibility: "auto",
               }}
             >
               {files.map((file) => (
                 <li key={file.id}>
                   <Link
-                    className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2 transition-colors hover:bg-muted/50"
+                    className="group flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:bg-muted/60"
                     href={`/projects/${projectId}/uploads/${file.id}`}
                   >
                     <div className="min-w-0">
@@ -61,7 +73,9 @@ export default async function UploadsPage(
                         {"\u00A0"}KB
                       </p>
                     </div>
-                    <span className="text-muted-foreground text-sm">Open</span>
+                    <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">
+                      Open
+                    </span>
                   </Link>
                 </li>
               ))}
