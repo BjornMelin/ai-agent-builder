@@ -37,6 +37,7 @@ beforeEach(() => {
   state.resume.mockResolvedValue(undefined);
   state.getChatThreadByWorkflowRunId.mockResolvedValue({
     projectId: "proj_1",
+    status: "running",
   });
   state.getProjectById.mockResolvedValue({ id: "proj_1" });
   state.updateChatThreadByWorkflowRunId.mockResolvedValue(undefined);

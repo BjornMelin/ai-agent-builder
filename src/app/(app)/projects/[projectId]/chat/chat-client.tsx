@@ -370,6 +370,7 @@ export function ProjectChatClient(
 
       // Session may have ended; start a new session using the current transcript as context.
       try {
+        setComposerError(null);
         await baseSendMessage({ text });
       } catch (error) {
         setComposerError(
@@ -597,7 +598,7 @@ export function ProjectChatClient(
         ) : null}
 
         <PromptInput
-          onSubmit={(message) => sendMessage(message)}
+          onSubmit={sendMessage}
           className="rounded-md border bg-card"
         >
           <PromptInputBody>

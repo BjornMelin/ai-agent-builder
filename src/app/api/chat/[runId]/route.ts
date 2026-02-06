@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
+import { log } from "@/lib/core/log";
 import {
   getChatThreadByWorkflowRunId,
   updateChatThreadByWorkflowRunId,
@@ -68,12 +69,11 @@ export async function POST(
         status: parsed.message === "/done" ? "waiting" : "running",
       });
     } catch (updateError) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error(
-          "[api/chat/:runId] Message resumed but state update failed.",
-          updateError,
-        );
-      }
+      log.error("chat_resume_state_update_failed", {
+        action: "resume",
+        err: updateError,
+        runId: params.runId,
+      });
     }
 
     return jsonOk({ ok: true });

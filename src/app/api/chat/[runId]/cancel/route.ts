@@ -2,6 +2,7 @@ import { getRun } from "workflow/api";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
+import { log } from "@/lib/core/log";
 import {
   getChatThreadByWorkflowRunId,
   updateChatThreadByWorkflowRunId,
@@ -37,17 +38,17 @@ export async function POST(
       throw new AppError("not_found", 404, "Chat session not found.");
     }
 
-    const project = await getProjectById(thread.projectId);
-    if (!project) {
-      throw new AppError("forbidden", 403, "Forbidden.");
-    }
-
     if (
       thread.status === "succeeded" ||
       thread.status === "failed" ||
       thread.status === "canceled"
     ) {
       throw new AppError("conflict", 409, "Chat session is no longer active.");
+    }
+
+    const project = await getProjectById(thread.projectId);
+    if (!project) {
+      throw new AppError("forbidden", 403, "Forbidden.");
     }
 
     const run = getRun(params.runId);
@@ -65,12 +66,11 @@ export async function POST(
         status: "canceled",
       });
     } catch (updateError) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error(
-          "[api/chat/:runId/cancel] Workflow canceled but state update failed.",
-          updateError,
-        );
-      }
+      log.error("chat_cancel_state_update_failed", {
+        err: updateError,
+        operation: "cancel run state update",
+        runId: params.runId,
+      });
     }
 
     return jsonOk({ ok: true });

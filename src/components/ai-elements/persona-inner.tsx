@@ -71,7 +71,7 @@ const sources = {
     hasModel: false,
     source: `${RIVE_BASE_URL}/orb-1.2.riv`,
   },
-};
+} as const;
 
 const getCurrentTheme = (): "light" | "dark" => {
   if (typeof window !== "undefined") {
