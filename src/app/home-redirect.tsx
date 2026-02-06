@@ -12,5 +12,6 @@ export async function HomeRedirect() {
   await connection();
   await requireAppUser();
   redirect("/projects");
+  // redirect() doesn't return; keep a ReactNode return type for JSX usage.
   return null;
 }

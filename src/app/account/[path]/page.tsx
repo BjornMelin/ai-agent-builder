@@ -1,9 +1,7 @@
 import { AccountView } from "@neondatabase/auth/react";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 import { NeonAuthUiProvider } from "@/app/_auth/neon-auth-ui-provider";
-import { Skeleton } from "@/components/ui/skeleton";
 import { getAccountRoute } from "@/lib/navigation/account-routes";
 
 /**
@@ -24,20 +22,10 @@ export default async function AccountPage(
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="mx-auto w-full max-w-4xl space-y-3 rounded-2xl border bg-card/60 p-4 md:p-6">
-          <Skeleton className="h-7 w-44" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </div>
-      }
-    >
-      <NeonAuthUiProvider>
-        <div className="mx-auto w-full max-w-4xl rounded-2xl border bg-card/60 p-4 md:p-6">
-          <AccountView path={accountRoute.segment} />
-        </div>
-      </NeonAuthUiProvider>
-    </Suspense>
+    <NeonAuthUiProvider>
+      <div className="mx-auto w-full max-w-4xl rounded-2xl border bg-card/60 p-4 md:p-6">
+        <AccountView path={accountRoute.segment} />
+      </div>
+    </NeonAuthUiProvider>
   );
 }

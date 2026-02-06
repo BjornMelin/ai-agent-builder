@@ -13,11 +13,13 @@ import { MessageResponse } from "@/components/ai-elements/message";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { getMarkdownContent } from "@/lib/artifacts/content.server";
+import { requireAppUser } from "@/lib/auth/require-app-user";
 import {
   getArtifactById,
   listArtifactVersions,
 } from "@/lib/data/artifacts.server";
 import { listCitationsByArtifactId } from "@/lib/data/citations.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 
 /**
  * Artifact detail content (suspends for request-time data).
@@ -33,8 +35,14 @@ export async function ArtifactDetailContent(
 ) {
   const { projectId, artifactId } = props;
 
+  const user = await requireAppUser();
+  const project = await getProjectByIdForUser(projectId, user.id);
+  if (!project) {
+    notFound();
+  }
+
   const artifact = await getArtifactById(artifactId);
-  if (!artifact || artifact.projectId !== projectId) {
+  if (!artifact || artifact.projectId !== project.id) {
     notFound();
   }
 
@@ -79,9 +87,9 @@ export async function ArtifactDetailContent(
           </div>
           <ArtifactActions>
             <Button asChild size="sm" variant="secondary">
-              <Link href={`/api/export/${encodeURIComponent(projectId)}`}>
+              <a href={`/api/export/${encodeURIComponent(projectId)}`}>
                 Export ZIP
-              </Link>
+              </a>
             </Button>
           </ArtifactActions>
         </ArtifactHeader>
@@ -109,13 +117,18 @@ export async function ArtifactDetailContent(
               return (
                 <Button
                   asChild
-                  disabled={isActive}
                   key={v.id}
                   size="sm"
                   variant={isActive ? "secondary" : "outline"}
                 >
                   {isActive ? (
-                    <span aria-current="page">v{v.version}</span>
+                    <span
+                      aria-current="page"
+                      aria-disabled="true"
+                      data-disabled="true"
+                    >
+                      v{v.version}
+                    </span>
                   ) : (
                     <Link
                       href={`/projects/${encodeURIComponent(

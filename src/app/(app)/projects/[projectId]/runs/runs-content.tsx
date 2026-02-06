@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { RunControlsClient } from "@/app/(app)/projects/[projectId]/runs/run-controls-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,8 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { requireAppUser } from "@/lib/auth/require-app-user";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { listRunsByProject } from "@/lib/data/runs.server";
 
 function formatUtcMinute(isoString: string): string {
@@ -32,6 +35,12 @@ export async function RunsContent(
   }>,
 ) {
   const { projectId } = props;
+  const user = await requireAppUser();
+  const project = await getProjectByIdForUser(projectId, user.id);
+  if (!project) {
+    notFound();
+  }
+
   const runs = await listRunsByProject(projectId, { limit: 50 });
 
   return (

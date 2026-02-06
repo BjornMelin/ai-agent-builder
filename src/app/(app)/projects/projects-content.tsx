@@ -18,11 +18,17 @@ import { listProjects } from "@/lib/data/projects.server";
 /**
  * Project list page content (suspends for request-time data).
  *
+ * @param props - Optional project list options.
  * @returns The projects dashboard content.
  */
-export async function ProjectsContent() {
+export async function ProjectsContent(
+  props: Readonly<{
+    limit?: number;
+  }> = {},
+) {
   const user = await requireAppUser();
-  const projects = await listProjects(user.id, { limit: 50 });
+  const limit = Math.min(Math.max(props.limit ?? 50, 1), 200);
+  const projects = await listProjects(user.id, { limit });
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,33 +72,49 @@ export async function ProjectsContent() {
               </EmptyContent>
             </Empty>
           ) : (
-            <ul
-              className="grid gap-2"
-              style={{
-                containIntrinsicSize: "auto 220px",
-                contentVisibility: "auto",
-              }}
-            >
-              {projects.map((project) => (
-                <li key={project.id}>
-                  <Link
-                    className="group flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:bg-muted/60"
-                    href={`/projects/${project.id}`}
-                    prefetch={false}
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{project.name}</p>
-                      <p className="truncate text-muted-foreground text-sm">
-                        {project.slug}
-                      </p>
-                    </div>
-                    <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">
-                      Open
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <div className="grid gap-3">
+              <ul
+                className="grid gap-2"
+                style={{
+                  containIntrinsicSize: "auto 220px",
+                  contentVisibility: "auto",
+                }}
+              >
+                {projects.map((project) => (
+                  <li key={project.id}>
+                    <Link
+                      className="group flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:bg-muted/60"
+                      href={`/projects/${project.id}`}
+                      prefetch={false}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{project.name}</p>
+                        <p className="truncate text-muted-foreground text-sm">
+                          {project.slug}
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">
+                        Open
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {projects.length >= limit ? (
+                <div className="flex items-center justify-end gap-2 text-muted-foreground text-sm">
+                  <span>Showing {limit} projects.</span>
+                  {limit < 200 ? (
+                    <Link
+                      className="underline-offset-4 hover:underline"
+                      href="/projects?limit=200"
+                      prefetch={false}
+                    >
+                      View more
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           )}
         </CardContent>
       </Card>
