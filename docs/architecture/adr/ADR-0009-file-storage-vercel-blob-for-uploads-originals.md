@@ -2,7 +2,7 @@
 ADR: 0009
 Title: File storage: Vercel Blob for uploads/originals
 Status: Implemented
-Version: 0.2
+Version: 0.3
 Date: 2026-01-30
 Supersedes: []
 Superseded-by: []
@@ -57,8 +57,9 @@ We will store originals in **Vercel Blob** and store blob URL, size, mime type, 
 
 ## Constraints
 
-- Never expose private blob URLs to unauthenticated users.
 - Enforce file type and size limits.
+- Ingestion fetches must only read trusted Blob URLs for the matching project
+  path.
 - Deleting a project must delete blob objects.
 
 ## High-Level Architecture
@@ -99,12 +100,14 @@ flowchart LR
 
 ### Implementation Details
 
-- `src/app/api/upload/route.ts`: streams to Blob.
+- `src/app/api/upload/route.ts`: uploads originals to Blob and persists
+  `storageKey`.
 - Upload processing runs per-file work in parallel; async ingestion enqueues a
   QStash job per file with deduplication ids and labels.
   ([QStash deduplication](https://upstash.com/docs/qstash/features/deduplication),
   [QStash publish API](https://upstash.com/docs/qstash/api-reference/messages/publish-a-message))
-- `src/lib/blob/client.ts`: wrapper with typed metadata.
+- `src/app/api/jobs/ingest-file/route.ts`: validates `storageKey` host/protocol
+  and `/projects/:projectId/uploads/*` path before Blob fetch.
 - Persist `blobUrl`, `sha256`, `sizeBytes`, `mimeType`.
 
 ## Testing
@@ -141,3 +144,4 @@ flowchart LR
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-06)**: Documented trusted Blob URL validation in ingestion worker and removed stale private-URL constraint wording.

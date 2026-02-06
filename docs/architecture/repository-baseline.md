@@ -70,7 +70,7 @@ Major gaps that remain:
   - audit bundle export
     ([SPEC-0016](./spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md) +
     [SPEC-0008](./spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md))
-- Artifact generation/regeneration and export endpoints (spec’d; see SPEC-0008).
+- Full artifact regeneration workflows remain partial; deterministic export endpoint is implemented (`GET /api/export/:projectId`).
 - Webhooks for external status updates (GitHub/Vercel) where polling is insufficient.
 
 These are intentional: the repository is bootstrapped to keep initial complexity

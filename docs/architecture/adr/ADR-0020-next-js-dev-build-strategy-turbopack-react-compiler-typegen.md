@@ -1,9 +1,9 @@
 ---
 ADR: 0020
 Title: Next.js dev/build strategy: Turbopack + React Compiler + typegen
-Status: Accepted
-Version: 0.2
-Date: 2026-01-30
+Status: Implemented
+Version: 0.3
+Date: 2026-02-06
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0017, ADR-0015]
@@ -16,7 +16,7 @@ References:
 
 ## Status
 
-Accepted — 2026-01-30.
+Implemented — 2026-02-06.
 
 ## Description
 
@@ -94,7 +94,7 @@ flowchart LR
 
 ### Architecture Overview
 
-- `next.config.ts`: `reactCompiler: true`, `turbopack.root` set.
+- `next.config.ts`: `reactCompiler: true`, `turbopack.root` set, and `cacheComponents: true`.
 - `package.json` scripts run `bun --bun next typegen`.
 
 ### Implementation Details
@@ -135,3 +135,4 @@ flowchart LR
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-06)**: Marked implemented; aligned with Next 16 Cache Components enablement in `next.config.ts`.

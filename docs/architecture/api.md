@@ -27,6 +27,8 @@ See:
   - may enqueue async ingestion jobs via Upstash QStash (`async=true`)
 - `POST /api/jobs/ingest-file` (QStash-signed)
   - executes extract → chunk → embed → index asynchronously
+  - validates `storageKey` is an HTTPS Vercel Blob URL under
+    `/projects/:projectId/uploads/*` before fetching
 
 See:
 
@@ -35,9 +37,26 @@ See:
 
 ## Search
 
-- `GET /api/search?q=...&projectId=... (optional)`
-  - When `projectId` is present, performs project-scoped retrieval against the
-    indexed upload chunks.
+- `GET /api/search`
+  - Query params:
+    - required: `q` (2-256 chars)
+    - optional: `projectId`, `scope=global|project`, `types`, `limit`, `cursor`
+    - `types` supports: `projects|uploads|chunks|artifacts|runs`
+    - `limit` max: `20`
+  - Scope behavior:
+    - default scope is `project` when `projectId` is present
+    - default scope is `global` when `projectId` is absent
+  - Authorization/scoping:
+    - global scope is ownership-filtered (`projects.owner_user_id = current user`)
+    - project scope requires project ownership
+  - Rate limiting:
+    - server-side user/IP keyed limit (429 + `Retry-After`, `X-RateLimit-*` headers)
+  - Returns merged, ranked results with deep links for:
+    - projects
+    - uploads
+    - chunks
+    - artifacts
+    - runs
 
 ## Export (deterministic artifacts ZIP)
 

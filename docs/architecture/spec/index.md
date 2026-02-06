@@ -1,6 +1,6 @@
 ---
 title: SPEC Index
-date: 2026-02-05
+date: 2026-02-06
 status: Active
 ---
 
@@ -31,3 +31,4 @@ status: Active
 - [SPEC-0022](./SPEC-0022-vercel-workflow-durable-runs-and-streaming-contracts.md) — Durable runs & streaming contracts (Vercel Workflow DevKit)
 - [SPEC-0023](./SPEC-0023-ai-elements-workspace-ui-and-interaction-model.md) — AI Elements workspace UI and interaction model
 - [SPEC-0024](./SPEC-0024-run-cancellation-and-stream-resilience.md) — Run cancellation + stream resilience hardening
+- [SPEC-0025](./SPEC-0025-cache-components-search-authorization-finalization.md) — Cache Components + search authorization + doc alignment finalization

@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0021
 title: Full-stack finalization (Fluid Compute + Neon/Drizzle + Upstash + AI Gateway + AI Elements UI)
-version: 0.1.0
-date: 2026-02-03
+version: 0.1.4
+date: 2026-02-06
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements:
   [
     "FR-003",
@@ -52,7 +52,7 @@ related_adrs:
     "ADR-0021",
     "ADR-0025"
   ]
-notes: "Cross-cutting: records current implementation snapshot and defines the remaining work to finalize Neon/Drizzle, Upstash (Redis/Vector/QStash), AI Gateway, and AI Elements UI for production."
+notes: "Cross-cutting implementation spec for Neon/Drizzle, Upstash (Redis/Vector/QStash), AI Gateway, AI Elements UI, cache components, and ownership-scoped search hardening."
 ---
 
 ## Summary
@@ -70,7 +70,6 @@ This spec is the “stitching document” that finalizes the end-to-end system:
 This spec explicitly documents:
 
 - what is already implemented (code snapshot)
-- what remains (decision-complete implementation plan)
 - how Vercel/Neon/Upstash environments and secrets should be configured
 
 ## Scope / Non-goals
@@ -120,9 +119,11 @@ This section is the authoritative snapshot of the current repository state as of
 - Retrieval tool wrapper: `src/lib/ai/tools/retrieval.server.ts`
   - Optional Redis caching (if configured)
   - Enforces top-k bounds and project scoping
-- Search Route Handler (minimal): `src/app/api/search/route.ts`
-  - Project-scoped: Upstash Vector query
-  - Global: Postgres metadata search (projects)
+- Search Route Handler: `src/app/api/search/route.ts`
+  - Supports `scope`, `types`, `limit`, `cursor` query params.
+  - Project-scoped: uploads/chunks/artifacts/runs.
+  - Global: projects/uploads/chunks/artifacts/runs.
+  - Non-breaking compatibility for legacy `q + projectId` requests.
 
 ### Durable runs / orchestration
 
@@ -156,15 +157,13 @@ Workspace pages under `src/app/(app)/…` are implemented and are protected by
 - `/projects/[projectId]/search`
 - `/projects/[projectId]/runs`
 - `/projects/[projectId]/settings`
-
-`/projects` explicitly sets `export const dynamic = "force-dynamic"` to prevent
-build-time static rendering attempts (which would otherwise trigger `cookies()`
-dynamic-usage errors and accidental DB initialization during build).
+- `/search` (global search)
 
 shadcn/ui + AI Elements component code is vendored:
 
 - AI Elements: `src/components/ai-elements/**` (chat UI currently uses `conversation`, `message`, `prompt-input`, `reasoning`, `tool`)
 - shadcn/ui: `src/components/ui/**`
+- shared search UI: `src/components/search/**`
 - Shared utilities: `src/lib/utils.ts`
 
 Route handler tests exist for `/api/chat`:
@@ -405,8 +404,10 @@ Query params:
 
 - `q`: string (required)
 - `projectId`: string (optional)
-  - If provided: project-scoped vector retrieval results.
-  - If omitted: metadata search over projects.
+- `scope`: `global | project` (optional)
+- `types`: `projects|uploads|chunks|artifacts|runs` (optional, delimited by `,` or `|`)
+- `limit`: number (optional, bounded)
+- `cursor`: string (optional; accepted for forward-compatible pagination)
 
 Code: `src/app/api/search/route.ts`
 
@@ -590,13 +591,13 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 
 ### Phase 4 — Cache Components enablement
 
-1. Update `next.config.ts` to enable `cacheComponents: true`.
-2. Refactor stable server loaders to `'use cache'` and tag invalidation on upload/runs as needed.
+1. Update `next.config.ts` to enable `cacheComponents: true`. (**done**)
+2. Refactor stable server loaders to `'use cache'` and tag invalidation on write paths. (**done**)
 
 ### Phase 5 — Test coverage completion
 
-1. Add integration tests for ingestion + QStash signature verification.
-2. Add contract tests for `/api/upload`, `/api/search`, `/api/runs` validation and auth.
+1. Add integration tests for ingestion + QStash signature verification. (**done** for route-level coverage)
+2. Add contract tests for `/api/upload`, `/api/search`, `/api/runs` validation and auth. (**done** for `/api/upload` and `/api/search`; `/api/runs` already present)
 3. Ensure the “env var contract” is updated when defaults change:
    - `src/lib/env.ts`
    - `.env.example`
@@ -618,3 +619,6 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 
 - **0.1.0 (2026-02-03)**: Initial full-stack finalization spec (documents current repo snapshot + decision-complete remaining work).
 - **0.1.1 (2026-02-03)**: Updated repo snapshot to reflect vendored AI Elements/shadcn/ui and implemented Workflow DevKit chat endpoints/workflows.
+- **0.1.2 (2026-02-06)**: Implemented Cache Components, `'use cache'` read-path migration with tag invalidation, global search page, shared search UI, and expanded `/api/search` contract.
+- **0.1.3 (2026-02-06)**: Implemented ownership-scoped project access (`projects.owner_user_id`), Zod-hardened `/api/search`, Upstash rate limiting for search, and docs/ADR alignment.
+- **0.1.4 (2026-02-06)**: Hardened async ingestion by validating trusted Blob URL host/protocol/path in `POST /api/jobs/ingest-file` before fetch.

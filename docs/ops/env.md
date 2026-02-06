@@ -96,6 +96,8 @@ App-level access control (cost control):
 
 - `DATABASE_URL` (required for `env.db`)
   - Postgres connection string.
+  - Security recommendation: prefer Neon URLs that include
+    `sslmode=verify-full`.
   - Used by: Drizzle DB client (`src/db/client.ts`) and server-only DAL modules
     (`src/lib/data/*.server.ts`).
   - On Vercel Fluid compute, DB connections are pooled with `pg` and integrated
@@ -107,6 +109,8 @@ App-level access control (cost control):
     ([Neon Vercel integration](https://neon.com/docs/guides/vercel))
 - `DATABASE_URL_UNPOOLED` (optional; recommended for migrations/DDL)
   - Unpooled Postgres connection string (Neon provides this alongside pooled URLs).
+  - Security recommendation: prefer Neon URLs that include
+    `sslmode=verify-full`.
   - Used by: Drizzle tooling (`drizzle-kit migrate`) and build-time migrations.
 
 ### Upstash (Redis + Vector)
@@ -120,7 +124,7 @@ App-level access control (cost control):
   ([Upstash Vector REST API](https://upstash.com/docs/vector/features/metadata))
 - `UPSTASH_VECTOR_REST_TOKEN` (required for `env.upstash`)
   ([Upstash Vector REST API](https://upstash.com/docs/vector/features/metadata))
-  - Used by: semantic search index (planned).
+  - Used by: semantic search index (uploads + artifacts).
 
 #### Redis client usage
 

@@ -1,8 +1,8 @@
 # Product Requirements Document (PRD) — ai-agent-builder
 
-Version: 0.2.0  
-Date: 2026-02-01  
-Owner: you
+**Version**: 0.2.1  
+**Date**: 2026-02-06  
+**Owner**: Bjorn Melin
 
 ## Executive summary
 
@@ -104,7 +104,9 @@ Primary spec/ADR references:
 ### Epic 2: Projects and workspace
 
 - Project CRUD with archive/delete semantics. (FR-002, NFR-007)
+- Enforce per-user ownership across all project resources and routes. (NFR-001, NFR-003)
 - Keep all artifacts, runs, and knowledge scoped to a project. (FR-019)
+- Provide project and global search across projects/files/runs/artifacts with server-side validation and rate limiting. (FR-020, NFR-006, IR-003)
 
 Primary spec/ADR references:
 
