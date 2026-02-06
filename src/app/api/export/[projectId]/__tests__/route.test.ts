@@ -5,7 +5,7 @@ import type { ProjectDto } from "@/lib/data/projects.server";
 
 const state = vi.hoisted(() => ({
   buildExportZipStream: vi.fn(),
-  getProjectById: vi.fn(),
+  getProjectByIdForUser: vi.fn(),
   listCitationsByArtifactIds: vi.fn(),
   listLatestArtifacts: vi.fn(),
   requireAppUserApi: vi.fn(),
@@ -16,7 +16,7 @@ vi.mock("@/lib/auth/require-app-user-api.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
-  getProjectById: state.getProjectById,
+  getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
 vi.mock("@/lib/data/artifacts.server", () => ({
@@ -57,7 +57,7 @@ const baseProject = {
 beforeEach(() => {
   vi.clearAllMocks();
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
-  state.getProjectById.mockResolvedValue(baseProject);
+  state.getProjectByIdForUser.mockResolvedValue(baseProject);
   state.listLatestArtifacts.mockResolvedValue([] satisfies ArtifactDto[]);
   state.listCitationsByArtifactIds.mockResolvedValue([]);
   state.buildExportZipStream.mockResolvedValue({
@@ -86,7 +86,7 @@ describe("GET /api/export/[projectId]", () => {
 
     expect(res.status).toBe(500);
     expect(state.requireAppUserApi).toHaveBeenCalledTimes(1);
-    expect(state.getProjectById).not.toHaveBeenCalled();
+    expect(state.getProjectByIdForUser).not.toHaveBeenCalled();
     expect(state.listLatestArtifacts).not.toHaveBeenCalled();
     expect(state.listCitationsByArtifactIds).not.toHaveBeenCalled();
     expect(state.buildExportZipStream).not.toHaveBeenCalled();
@@ -94,7 +94,7 @@ describe("GET /api/export/[projectId]", () => {
 
   it("returns 404 when project is missing", async () => {
     const GET = await loadRoute();
-    state.getProjectById.mockResolvedValueOnce(null);
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
 
     const res = await GET(new Request("http://localhost/api/export/proj"), {
       params: Promise.resolve({ projectId }),
@@ -105,7 +105,7 @@ describe("GET /api/export/[projectId]", () => {
       error: { code: "not_found" },
     });
     expect(state.requireAppUserApi).toHaveBeenCalledTimes(1);
-    expect(state.getProjectById).toHaveBeenCalledWith(projectId);
+    expect(state.getProjectByIdForUser).toHaveBeenCalledWith(projectId, "user");
     expect(state.listLatestArtifacts).not.toHaveBeenCalled();
     expect(state.listCitationsByArtifactIds).not.toHaveBeenCalled();
     expect(state.buildExportZipStream).not.toHaveBeenCalled();
@@ -122,7 +122,7 @@ describe("GET /api/export/[projectId]", () => {
     expect(res.headers.get("content-type")).toBe("application/zip");
     expect(res.headers.get("content-disposition")).toContain(".zip");
     expect(state.requireAppUserApi).toHaveBeenCalledTimes(1);
-    expect(state.getProjectById).toHaveBeenCalledWith(projectId);
+    expect(state.getProjectByIdForUser).toHaveBeenCalledWith(projectId, "user");
     expect(state.listLatestArtifacts).toHaveBeenCalledWith(projectId, {
       limit: 500,
     });

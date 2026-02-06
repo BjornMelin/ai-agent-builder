@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   createUIMessageStreamResponse: vi.fn(),
   getChatThreadByWorkflowRunId: vi.fn(),
-  getProjectById: vi.fn(),
+  getProjectByIdForUser: vi.fn(),
   getReadable: vi.fn(),
   getRun: vi.fn(),
   requireAppUserApi: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock("@/lib/data/chat.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
-  getProjectById: state.getProjectById,
+  getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
 vi.mock("@/lib/auth/require-app-user-api.server", () => ({
@@ -39,7 +39,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
-  state.getProjectById.mockResolvedValue({
+  state.getProjectByIdForUser.mockResolvedValue({
     id: "proj_1",
   });
   state.getChatThreadByWorkflowRunId.mockResolvedValue({
@@ -144,7 +144,7 @@ describe("GET /api/chat/:runId/stream", () => {
 
   it("returns forbidden when the run's project is not accessible", async () => {
     const GET = await loadRoute();
-    state.getProjectById.mockResolvedValueOnce(null);
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
 
     const res = await GET(
       new Request("http://localhost/api/chat/run_1/stream?startIndex=2"),

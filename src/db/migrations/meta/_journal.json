@@ -21,6 +21,13 @@
       "tag": "0002_huge_johnny_blaze",
       "version": "7",
       "when": 1770318354759
+    },
+    {
+      "breakpoints": true,
+      "idx": 3,
+      "tag": "0003_strange_morlocks",
+      "version": "7",
+      "when": 1770351568590
     }
   ],
   "version": "7"

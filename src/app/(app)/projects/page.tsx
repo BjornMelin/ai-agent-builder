@@ -1,14 +1,10 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { CreateProjectForm } from "@/app/(app)/projects/create-project-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAppUser } from "@/lib/auth/require-app-user";
 import { listProjects } from "@/lib/data/projects.server";
-/**
- * Next.js route segment rendering mode. Allowed values include `"auto"`,
- * `"force-dynamic"`, `"error"`, and `"force-static"`; this page uses
- * `"force-dynamic"` to always render dynamically.
- */
-export const dynamic = "force-dynamic";
 
 /**
  * Project list page.
@@ -16,7 +12,9 @@ export const dynamic = "force-dynamic";
  * @returns A projects dashboard with create and recent-project sections.
  */
 export default async function ProjectsPage() {
-  const projects = await listProjects({ limit: 50 });
+  await connection();
+  const user = await requireAppUser();
+  const projects = await listProjects(user.id, { limit: 50 });
 
   return (
     <div className="flex flex-col gap-6 pt-6">

@@ -69,6 +69,7 @@ export const projectsTable = pgTable(
       .defaultNow(),
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
+    ownerUserId: text("owner_user_id").notNull(),
     slug: varchar("slug", { length: 128 }).notNull(),
     status: text("status").notNull().default("active"),
     updatedAt: timestamp("updated_at", { withTimezone: true })
@@ -76,6 +77,10 @@ export const projectsTable = pgTable(
       .defaultNow(),
   },
   (t) => [
+    index("projects_owner_user_id_updated_at_idx").on(
+      t.ownerUserId,
+      t.updatedAt,
+    ),
     uniqueIndex("projects_slug_unique").on(t.slug),
     index("projects_status_idx").on(t.status),
   ],

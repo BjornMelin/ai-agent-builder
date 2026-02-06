@@ -20,11 +20,6 @@ import {
 import { listCitationsByArtifactId } from "@/lib/data/citations.server";
 
 /**
- * Ensure this route always renders dynamically (artifact versions can be created frequently).
- */
-export const dynamic = "force-dynamic";
-
-/**
  * Artifact detail page: render markdown + citations and link to other versions.
  *
  * @param props - Route params.

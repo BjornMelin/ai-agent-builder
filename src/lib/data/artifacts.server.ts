@@ -1,10 +1,11 @@
 import "server-only";
 
 import { and, desc, eq, sql } from "drizzle-orm";
-import { cache } from "react";
+import { cacheLife, cacheTag, revalidateTag } from "next/cache";
 
 import { type DbClient, getDb } from "@/db/client";
 import * as schema from "@/db/schema";
+import { tagArtifactsIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
 import { insertArtifactCitationsTx } from "@/lib/data/citations.server";
 
@@ -148,9 +149,11 @@ export async function createArtifactVersion(
   input: Parameters<typeof createArtifactVersionTx>[1],
 ): Promise<ArtifactDto> {
   const db = getDb();
-  return await db.transaction(
+  const artifact = await db.transaction(
     async (tx) => await createArtifactVersionTx(tx, input),
   );
+  revalidateTag(tagArtifactsIndex(artifact.projectId), "max");
+  return artifact;
 }
 
 /**
@@ -159,15 +162,22 @@ export async function createArtifactVersion(
  * @param artifactId - Artifact ID.
  * @returns Artifact DTO or null.
  */
-export const getArtifactById = cache(
-  async (artifactId: string): Promise<ArtifactDto | null> => {
-    const db = getDb();
-    const row = await db.query.artifactsTable.findFirst({
-      where: eq(schema.artifactsTable.id, artifactId),
-    });
-    return row ? toArtifactDto(row) : null;
-  },
-);
+export async function getArtifactById(
+  artifactId: string,
+): Promise<ArtifactDto | null> {
+  "use cache";
+
+  cacheLife("minutes");
+
+  const db = getDb();
+  const row = await db.query.artifactsTable.findFirst({
+    where: eq(schema.artifactsTable.id, artifactId),
+  });
+  if (row) {
+    cacheTag(tagArtifactsIndex(row.projectId));
+  }
+  return row ? toArtifactDto(row) : null;
+}
 
 /**
  * List the latest version of every artifact key in a project.
@@ -183,7 +193,13 @@ export async function listLatestArtifacts(
   projectId: string,
   options: Readonly<{ limit?: number }> = {},
 ): Promise<ArtifactDto[]> {
+  "use cache";
+
   const limit = Math.min(Math.max(options.limit ?? 200, 1), 500);
+
+  cacheLife("minutes");
+  cacheTag(tagArtifactsIndex(projectId));
+
   const db = getDb();
 
   const result = await db.execute<ArtifactRow>(sql`
@@ -211,7 +227,13 @@ export async function listArtifactVersions(
   key: Readonly<{ kind: string; logicalKey: string }>,
   options: Readonly<{ limit?: number }> = {},
 ): Promise<ArtifactDto[]> {
+  "use cache";
+
   const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
+
+  cacheLife("minutes");
+  cacheTag(tagArtifactsIndex(projectId));
+
   const db = getDb();
   const rows = await db.query.artifactsTable.findMany({
     limit,

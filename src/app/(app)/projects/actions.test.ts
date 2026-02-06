@@ -1,0 +1,63 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const state = vi.hoisted(() => ({
+  createProject: vi.fn(),
+  redirect: vi.fn((path: string) => {
+    throw { digest: `NEXT_REDIRECT;push;${path};307;` };
+  }),
+  requireAppUser: vi.fn(),
+  revalidateTag: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidateTag: state.revalidateTag,
+}));
+
+vi.mock("next/navigation", () => ({
+  redirect: state.redirect,
+}));
+
+vi.mock("@/lib/auth/require-app-user", () => ({
+  requireAppUser: state.requireAppUser,
+}));
+
+vi.mock("@/lib/data/projects.server", () => ({
+  createProject: state.createProject,
+}));
+
+async function loadAction() {
+  vi.resetModules();
+  return await import("@/app/(app)/projects/actions");
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  state.requireAppUser.mockResolvedValue({ id: "user_1" });
+  state.createProject.mockResolvedValue({ id: "proj_1" });
+});
+
+describe("createProjectAction", () => {
+  it("revalidates project index before redirecting on success", async () => {
+    const { createProjectAction } = await loadAction();
+
+    const formData = new FormData();
+    formData.set("name", "Alpha");
+    formData.set("slug", "alpha");
+
+    await expect(
+      createProjectAction({ status: "idle" }, formData),
+    ).rejects.toMatchObject({
+      digest: expect.stringContaining("/projects/proj_1"),
+    });
+
+    expect(state.createProject).toHaveBeenCalledWith({
+      name: "Alpha",
+      ownerUserId: "user_1",
+      slug: "alpha",
+    });
+    expect(state.revalidateTag).toHaveBeenCalledWith(
+      "aab:projects:index:user_1",
+      "max",
+    );
+  });
+});

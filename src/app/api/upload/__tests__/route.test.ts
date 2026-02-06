@@ -25,17 +25,22 @@ const state = vi.hoisted(() => ({
     blob: { readWriteToken: "blob-token" },
     runtime: { isVercel: false },
   },
-  getProjectById: vi.fn(),
+  getProjectByIdForUser: vi.fn(),
   getProjectFileBySha256: vi.fn(),
   ingestFile: vi.fn(),
   publishJSON: vi.fn(),
   put: vi.fn(),
   requireAppUserApi: vi.fn(),
+  revalidateTag: vi.fn(),
   upsertProjectFile: vi.fn(),
 }));
 
 vi.mock("@vercel/blob", () => ({
   put: state.put,
+}));
+
+vi.mock("next/cache", () => ({
+  revalidateTag: state.revalidateTag,
 }));
 
 vi.mock("@/lib/auth/require-app-user-api.server", () => ({
@@ -52,7 +57,7 @@ vi.mock("@/lib/data/files.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
-  getProjectById: state.getProjectById,
+  getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -113,7 +118,7 @@ beforeEach(() => {
   state.budgets.maxUploadBytes = 1024;
 
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
-  state.getProjectById.mockResolvedValue(baseProject);
+  state.getProjectByIdForUser.mockResolvedValue(baseProject);
   state.getProjectFileBySha256.mockResolvedValue(null);
   state.put.mockResolvedValue({ url: "https://blob.test/file" });
   state.publishJSON.mockResolvedValue({ messageId: "msg", url: "https://q" });
@@ -155,6 +160,10 @@ describe("POST /api/upload", () => {
     expect(body.files).toHaveLength(2);
     expect(state.publishJSON).toHaveBeenCalledTimes(2);
     expect(state.ingestFile).not.toHaveBeenCalled();
+    expect(state.revalidateTag).toHaveBeenCalledTimes(2);
+    for (const call of state.revalidateTag.mock.calls) {
+      expect(call[1]).toBe("max");
+    }
 
     for (const call of state.publishJSON.mock.calls) {
       const [payload] = call;
@@ -184,6 +193,7 @@ describe("POST /api/upload", () => {
     const body = await res.json();
     expect(body.files[0].ingest?.chunksIndexed).toBe(2);
     expect(state.ingestFile).toHaveBeenCalledTimes(1);
+    expect(state.revalidateTag).toHaveBeenCalledTimes(2);
     debugSpy.mockRestore();
   });
 
@@ -215,6 +225,7 @@ describe("POST /api/upload", () => {
     expect(state.put).not.toHaveBeenCalled();
     expect(state.upsertProjectFile).not.toHaveBeenCalled();
     expect(state.ingestFile).not.toHaveBeenCalled();
+    expect(state.revalidateTag).not.toHaveBeenCalled();
   });
 
   it("rejects unsupported mime types", async () => {

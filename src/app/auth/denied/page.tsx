@@ -1,11 +1,6 @@
 import Link from "next/link";
 
 /**
- * Marks the access denied page as statically rendered.
- */
-export const dynamic = "force-static";
-
-/**
  * App-level access denied page (authenticated but not allowlisted).
  *
  * @returns The denied page UI.

@@ -4,7 +4,7 @@ import { getRun, start } from "workflow/api";
 
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
-import { getProjectById } from "@/lib/data/projects.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import {
   cancelRun,
   createRun,
@@ -27,11 +27,12 @@ import { projectRun } from "@/workflows/runs/project-run.workflow";
 export async function startProjectRun(
   input: Readonly<{
     projectId: string;
+    userId: string;
     kind: RunDto["kind"];
     metadata?: Record<string, unknown>;
   }>,
 ): Promise<RunDto> {
-  const project = await getProjectById(input.projectId);
+  const project = await getProjectByIdForUser(input.projectId, input.userId);
   if (!project) {
     throw new AppError("not_found", 404, "Project not found.");
   }
@@ -79,11 +80,20 @@ export async function startProjectRun(
  * Cancel a durable run and its workflow execution.
  *
  * @param runId - Durable run ID.
+ * @param userId - Authenticated user ID.
  * @throws AppError - With code "not_found" (404) when the run does not exist.
  */
-export async function cancelProjectRun(runId: string): Promise<void> {
+export async function cancelProjectRun(
+  runId: string,
+  userId: string,
+): Promise<void> {
   const run = await getRunById(runId);
   if (!run) {
+    throw new AppError("not_found", 404, "Run not found.");
+  }
+
+  const project = await getProjectByIdForUser(run.projectId, userId);
+  if (!project) {
     throw new AppError("not_found", 404, "Run not found.");
   }
 

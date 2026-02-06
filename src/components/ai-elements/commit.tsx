@@ -24,7 +24,21 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-const moduleNow = Date.now();
+function formatRelativeCommitTimestamp(date: Date, nowMs: number): string {
+  const diffSeconds = Math.round((date.getTime() - nowMs) / 1000);
+  const absSeconds = Math.abs(diffSeconds);
+  const [value, unit] =
+    absSeconds < 60
+      ? [diffSeconds, "second"]
+      : absSeconds < 60 * 60
+        ? [Math.round(diffSeconds / 60), "minute"]
+        : absSeconds < 60 * 60 * 24
+          ? [Math.round(diffSeconds / (60 * 60)), "hour"]
+          : [Math.round(diffSeconds / (60 * 60 * 24)), "day"];
+  return new Intl.RelativeTimeFormat(undefined, {
+    numeric: "auto",
+  }).format(value, unit as Intl.RelativeTimeFormatUnit);
+}
 
 /**
  * Props for the Commit component.
@@ -243,26 +257,18 @@ export type CommitTimestampProps = HTMLAttributes<HTMLTimeElement> & {
  */
 export const CommitTimestamp = (props: CommitTimestampProps) => {
   const { date, className, children, ...rest } = props;
-  const now = moduleNow;
-  const diffSeconds = Math.round((date.getTime() - now) / 1000);
-  const absSeconds = Math.abs(diffSeconds);
-  const [value, unit] =
-    absSeconds < 60
-      ? [diffSeconds, "second"]
-      : absSeconds < 60 * 60
-        ? [Math.round(diffSeconds / 60), "minute"]
-        : absSeconds < 60 * 60 * 24
-          ? [Math.round(diffSeconds / (60 * 60)), "hour"]
-          : [Math.round(diffSeconds / (60 * 60 * 24)), "day"];
-  const formatted = new Intl.RelativeTimeFormat(undefined, {
-    numeric: "auto",
-  }).format(value, unit as Intl.RelativeTimeFormatUnit);
+  const [formatted, setFormatted] = useState(() =>
+    formatRelativeCommitTimestamp(date, date.getTime()),
+  );
+
+  useEffect(() => {
+    setFormatted(formatRelativeCommitTimestamp(date, Date.now()));
+  }, [date]);
 
   return (
     <time
       className={cn("text-xs", className)}
       dateTime={date.toISOString()}
-      suppressHydrationWarning
       {...rest}
     >
       {children ?? formatted}

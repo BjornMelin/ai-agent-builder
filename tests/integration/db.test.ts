@@ -1,5 +1,5 @@
 import { config as loadDotenv } from "dotenv";
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { closeDb, getDb } from "@/db/client";
 import * as schema from "@/db/schema";
@@ -27,37 +27,70 @@ describeDb("db (integration)", () => {
     const db = getDb();
     const slug = `test-${crypto.randomUUID()}`;
     let createdId: string | null = null;
+    const ownerColumnQuery = await db.execute<{ present: number }>(sql`
+      select 1 as present
+      from information_schema.columns
+      where table_name = 'projects'
+        and column_name = 'owner_user_id'
+    `);
+    const ownerColumnRows = ownerColumnQuery.rows;
+    const hasOwnerUserId = ownerColumnRows.length > 0;
 
     try {
-      const [created] = await db
-        .insert(schema.projectsTable)
-        .values({ name: "Test Project", slug })
-        .returning();
+      let created: { id: string; slug: string } | undefined;
+
+      if (hasOwnerUserId) {
+        const [inserted] = await db
+          .insert(schema.projectsTable)
+          .values({
+            name: "Test Project",
+            ownerUserId: "integration-test-user",
+            slug,
+          })
+          .returning({
+            id: schema.projectsTable.id,
+            slug: schema.projectsTable.slug,
+          });
+        created = inserted;
+      } else {
+        const legacyInsert = await db.execute<{ id: string; slug: string }>(sql`
+          insert into "projects" ("name", "slug")
+          values ('Test Project', ${slug})
+          returning "id", "slug"
+        `);
+        created = legacyInsert.rows[0];
+      }
 
       expect(created).toBeTruthy();
       if (!created) throw new Error("Expected inserted project row.");
       expect(created.slug).toBe(slug);
       createdId = created.id;
 
-      const fetched = await db.query.projectsTable.findFirst({
-        where: eq(schema.projectsTable.id, createdId),
-      });
+      const fetched = await db.execute<{ id: string }>(sql`
+        select "id"
+        from "projects"
+        where "id" = ${createdId}
+        limit 1
+      `);
 
-      expect(fetched).toBeTruthy();
-      expect(fetched?.id).toBe(createdId);
+      expect(fetched.rows.at(0)?.id).toBe(createdId);
     } finally {
       if (createdId) {
-        await db
-          .delete(schema.projectsTable)
-          .where(eq(schema.projectsTable.id, createdId));
+        await db.execute(sql`
+          delete from "projects"
+          where "id" = ${createdId}
+        `);
       }
     }
 
     if (createdId) {
-      const deleted = await db.query.projectsTable.findFirst({
-        where: eq(schema.projectsTable.id, createdId),
-      });
-      expect(deleted).toBeUndefined();
+      const deleted = await db.execute<{ id: string }>(sql`
+        select "id"
+        from "projects"
+        where "id" = ${createdId}
+        limit 1
+      `);
+      expect(deleted.rows.length).toBe(0);
     }
   });
 

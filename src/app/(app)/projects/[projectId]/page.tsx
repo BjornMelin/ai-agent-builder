@@ -1,6 +1,9 @@
+import { connection } from "next/server";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { requireAppUser } from "@/lib/auth/require-app-user";
 import { listProjectFiles } from "@/lib/data/files.server";
-import { getProjectById } from "@/lib/data/projects.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { listRunsByProject } from "@/lib/data/runs.server";
 
 /**
@@ -12,10 +15,12 @@ import { listRunsByProject } from "@/lib/data/runs.server";
 export default async function ProjectOverviewPage(
   props: Readonly<{ params: Promise<{ projectId: string }> }>,
 ) {
+  await connection();
   const { projectId } = await props.params;
+  const user = await requireAppUser();
 
   const [project, files, runs] = await Promise.all([
-    getProjectById(projectId),
+    getProjectByIdForUser(projectId, user.id),
     listProjectFiles(projectId, { limit: 1 }),
     listRunsByProject(projectId, { limit: 1 }),
   ]);

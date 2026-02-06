@@ -1,10 +1,12 @@
 import { authViewPaths } from "@neondatabase/auth/react/ui/server";
+import { notFound } from "next/navigation";
 import { AuthViewClient } from "./auth-view-client";
 
-/**
- * Disables dynamic route params for auth views.
- */
-export const dynamicParams = false;
+const ALLOWED_AUTH_VIEW_PATHS = Object.values(authViewPaths).filter(
+  (path) =>
+    path !== authViewPaths.SIGN_UP && path !== authViewPaths.ACCEPT_INVITATION,
+);
+const ALLOWED_AUTH_VIEW_PATH_SET = new Set(ALLOWED_AUTH_VIEW_PATHS);
 
 /**
  * Statically enumerate supported Neon Auth views.
@@ -15,15 +17,7 @@ export const dynamicParams = false;
  * @returns Route params for `/auth/[path]`.
  */
 export function generateStaticParams() {
-  // We intentionally do not expose sign-up or invitation flows yet.
-  // Access remains admin-provisioned + allowlisted.
-  const allowed = Object.values(authViewPaths).filter(
-    (path) =>
-      path !== authViewPaths.SIGN_UP &&
-      path !== authViewPaths.ACCEPT_INVITATION,
-  );
-
-  return allowed.map((path) => ({ path }));
+  return ALLOWED_AUTH_VIEW_PATHS.map((path) => ({ path }));
 }
 
 /**
@@ -38,6 +32,9 @@ export default async function AuthPage(
   }>,
 ) {
   const { path } = await props.params;
+  if (!ALLOWED_AUTH_VIEW_PATH_SET.has(path)) {
+    notFound();
+  }
 
   return (
     <main

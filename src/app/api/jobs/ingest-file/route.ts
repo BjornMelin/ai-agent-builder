@@ -1,4 +1,6 @@
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
+import { tagUploadsIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
 import { getProjectFileById } from "@/lib/data/files.server";
 import { ingestFile } from "@/lib/ingest/ingest-file.server";
@@ -10,6 +12,42 @@ const bodySchema = z.strictObject({
   fileId: z.string().min(1),
   projectId: z.string().min(1),
 });
+const TRUSTED_BLOB_HOST_SUFFIX = ".blob.vercel-storage.com";
+
+function parseTrustedBlobUrl(storageKey: string, projectId: string): URL {
+  let url: URL;
+  try {
+    url = new URL(storageKey);
+  } catch {
+    throw new AppError(
+      "blob_fetch_failed",
+      502,
+      "Invalid blob storage URL format.",
+    );
+  }
+
+  if (url.protocol !== "https:") {
+    throw new AppError("blob_fetch_failed", 502, "Invalid blob URL protocol.");
+  }
+
+  if (
+    url.hostname !== "blob.vercel-storage.com" &&
+    !url.hostname.endsWith(TRUSTED_BLOB_HOST_SUFFIX)
+  ) {
+    throw new AppError(
+      "blob_fetch_failed",
+      502,
+      "Untrusted blob storage host.",
+    );
+  }
+
+  const expectedPrefix = `/projects/${projectId}/uploads/`;
+  if (!url.pathname.startsWith(expectedPrefix)) {
+    throw new AppError("blob_fetch_failed", 502, "Blob path/project mismatch.");
+  }
+
+  return url;
+}
 
 /**
  * Ingest a file: extract, chunk, embed, and index its content.
@@ -32,10 +70,11 @@ export const POST = verifyQstashSignatureAppRouter(async (req: Request) => {
     if (!file || file.projectId !== projectId) {
       throw new AppError("not_found", 404, "File not found.");
     }
+    const blobUrl = parseTrustedBlobUrl(file.storageKey, projectId);
 
     let res: Response;
     try {
-      res = await fetch(file.storageKey, {
+      res = await fetch(blobUrl.toString(), {
         signal: AbortSignal.timeout(30_000),
       });
     } catch (err) {
@@ -61,6 +100,7 @@ export const POST = verifyQstashSignatureAppRouter(async (req: Request) => {
       name: file.name,
       projectId,
     });
+    revalidateTag(tagUploadsIndex(projectId), "max");
 
     return jsonOk(result);
   } catch (err) {

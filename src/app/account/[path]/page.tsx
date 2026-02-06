@@ -1,16 +1,15 @@
 import { AccountView } from "@neondatabase/auth/react";
 import { accountViewPaths } from "@neondatabase/auth/react/ui/server";
+import { notFound } from "next/navigation";
+import { connection } from "next/server";
 
 import { requireAppUser } from "@/lib/auth/require-app-user";
 
-/**
- * Forces dynamic rendering for the account route.
- */
-export const dynamic = "force-dynamic";
-/**
- * Disables dynamic route params for this page.
- */
-export const dynamicParams = false;
+const ALLOWED_ACCOUNT_VIEW_PATHS = [
+  accountViewPaths.SETTINGS,
+  accountViewPaths.SECURITY,
+];
+const ALLOWED_ACCOUNT_VIEW_PATH_SET = new Set(ALLOWED_ACCOUNT_VIEW_PATHS);
 
 /**
  * Statically enumerate supported Neon Auth account views.
@@ -18,9 +17,7 @@ export const dynamicParams = false;
  * @returns Route params for `/account/[path]`.
  */
 export function generateStaticParams() {
-  // Only expose the minimal account views we need right now.
-  const allowed = [accountViewPaths.SETTINGS, accountViewPaths.SECURITY];
-  return allowed.map((path) => ({ path }));
+  return ALLOWED_ACCOUNT_VIEW_PATHS.map((path) => ({ path }));
 }
 
 /**
@@ -34,7 +31,11 @@ export default async function AccountPage(
     params: Promise<{ path: string }>;
   }>,
 ) {
+  await connection();
   const [{ path }] = await Promise.all([props.params, requireAppUser()]);
+  if (!ALLOWED_ACCOUNT_VIEW_PATH_SET.has(path)) {
+    notFound();
+  }
 
   return (
     <main className="container mx-auto p-4 md:p-6" id="main" tabIndex={-1}>

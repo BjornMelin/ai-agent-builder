@@ -89,8 +89,8 @@ Goals:
 ### Phase 1: Ownership model and migration
 
 - Add `owner_user_id` to schema and migration with backfill strategy.
-- Backfill legacy rows with sentinel owner `legacy-unowned` so pre-existing seed
-  rows are quarantined from normal user-scoped queries.
+- Backfill legacy rows with sentinel owner `legacy-unowned` and keep
+  compatibility reads enabled until an explicit ownership backfill is run.
 - Create project writes persist owner id from authenticated user.
 - Project list/detail DAL enforces owner filtering.
 

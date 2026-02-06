@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   createUIMessageStreamResponse: vi.fn(),
   ensureChatThreadForWorkflowRun: vi.fn(),
-  getProjectById: vi.fn(),
+  getProjectByIdForUser: vi.fn(),
   getRun: vi.fn(),
   requireAppUserApi: vi.fn(),
   safeValidateUIMessages: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock("@/lib/data/chat.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
-  getProjectById: state.getProjectById,
+  getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
 vi.mock("@/workflows/chat/project-chat.workflow", () => ({
@@ -50,7 +50,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
-  state.getProjectById.mockResolvedValue({ id: "proj_1" });
+  state.getProjectByIdForUser.mockResolvedValue({ id: "proj_1" });
   state.safeValidateUIMessages.mockResolvedValue({ data: [], success: true });
   state.start.mockResolvedValue({
     readable: new ReadableStream({
@@ -97,7 +97,7 @@ describe("POST /api/chat", () => {
 
   it("returns not found when the project does not exist", async () => {
     const POST = await loadRoute();
-    state.getProjectById.mockResolvedValueOnce(null);
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
 
     const res = await POST(
       new Request("http://localhost/api/chat", {

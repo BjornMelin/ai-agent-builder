@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { type ReactNode, Suspense } from "react";
 
 import { ProjectNavClient } from "@/app/(app)/projects/[projectId]/project-nav-client";
 import { Separator } from "@/components/ui/separator";
-import { getProjectById } from "@/lib/data/projects.server";
+import { requireAppUser } from "@/lib/auth/require-app-user";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 
 /**
  * Project-scoped layout: header + tabs.
@@ -18,10 +20,12 @@ export default async function ProjectLayout(
     params: Promise<{ projectId: string }>;
   }>,
 ) {
+  await connection();
   const { children } = props;
   const { projectId } = await props.params;
+  const user = await requireAppUser();
 
-  const project = await getProjectById(projectId);
+  const project = await getProjectByIdForUser(projectId, user.id);
   if (!project) notFound();
 
   return (
@@ -55,7 +59,13 @@ export default async function ProjectLayout(
       </Suspense>
       <Separator />
 
-      {children}
+      <Suspense
+        fallback={
+          <div className="text-muted-foreground text-sm">Loading project…</div>
+        }
+      >
+        {children}
+      </Suspense>
     </div>
   );
 }

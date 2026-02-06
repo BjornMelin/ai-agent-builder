@@ -465,7 +465,7 @@ export function ProjectChatClient(
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-muted-foreground text-sm">Project chat</p>
-          <p className="text-muted-foreground text-xs" suppressHydrationWarning>
+          <p className="text-muted-foreground text-xs">
             {runId
               ? `Session: ${runId}${runStatus ? ` · ${runStatus}` : ""}`
               : "Start a new session"}

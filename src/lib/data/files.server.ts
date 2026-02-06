@@ -1,10 +1,11 @@
 import "server-only";
 
 import { and, eq } from "drizzle-orm";
-import { cache } from "react";
+import { cacheLife, cacheTag } from "next/cache";
 
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
+import { tagUploadsIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
 
 /**
@@ -87,64 +88,55 @@ export async function upsertProjectFile(
 }
 
 /**
- * Get a project file by ID (cached per request).
+ * Get a project file by ID.
  *
  * @param id - File ID.
  * @returns File DTO or null.
  */
-export const getProjectFileById = cache(
-  async (id: string): Promise<ProjectFileDto | null> => {
-    const db = getDb();
-    const row = await db.query.projectFilesTable.findFirst({
-      where: eq(schema.projectFilesTable.id, id),
-    });
-    return row ? toProjectFileDto(row) : null;
-  },
-);
+export async function getProjectFileById(
+  id: string,
+): Promise<ProjectFileDto | null> {
+  "use cache";
+
+  cacheLife("minutes");
+
+  const db = getDb();
+  const row = await db.query.projectFilesTable.findFirst({
+    where: eq(schema.projectFilesTable.id, id),
+  });
+
+  if (row) {
+    cacheTag(tagUploadsIndex(row.projectId));
+  }
+
+  return row ? toProjectFileDto(row) : null;
+}
 
 /**
- * Get a project file by (projectId, sha256) (cached per request).
+ * Get a project file by (projectId, sha256).
  *
  * @param projectId - Project ID.
  * @param sha256 - File sha256 hex digest.
  * @returns File DTO or null.
  */
-export const getProjectFileBySha256 = cache(
-  async (projectId: string, sha256: string): Promise<ProjectFileDto | null> => {
-    const db = getDb();
-    const row = await db.query.projectFilesTable.findFirst({
-      where: and(
-        eq(schema.projectFilesTable.projectId, projectId),
-        eq(schema.projectFilesTable.sha256, sha256),
-      ),
-    });
-    return row ? toProjectFileDto(row) : null;
-  },
-);
+export async function getProjectFileBySha256(
+  projectId: string,
+  sha256: string,
+): Promise<ProjectFileDto | null> {
+  "use cache";
 
-/**
- * List files for a project ordered by newest first.
- *
- * @param projectId - Project ID.
- * @param options - Pagination options.
- * @returns File DTOs.
- */
-const listProjectFilesCached = cache(
-  async (
-    projectId: string,
-    limit: number,
-    offset: number,
-  ): Promise<ProjectFileDto[]> => {
-    const db = getDb();
-    const rows = await db.query.projectFilesTable.findMany({
-      limit,
-      offset,
-      orderBy: (t, { desc }) => [desc(t.createdAt)],
-      where: eq(schema.projectFilesTable.projectId, projectId),
-    });
-    return rows.map(toProjectFileDto);
-  },
-);
+  cacheLife("minutes");
+  cacheTag(tagUploadsIndex(projectId));
+
+  const db = getDb();
+  const row = await db.query.projectFilesTable.findFirst({
+    where: and(
+      eq(schema.projectFilesTable.projectId, projectId),
+      eq(schema.projectFilesTable.sha256, sha256),
+    ),
+  });
+  return row ? toProjectFileDto(row) : null;
+}
 
 /**
  * List project files with pagination guardrails.
@@ -157,7 +149,20 @@ export async function listProjectFiles(
   projectId: string,
   options: Readonly<{ limit?: number; offset?: number }> = {},
 ): Promise<ProjectFileDto[]> {
+  "use cache";
+
   const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
   const offset = Math.max(options.offset ?? 0, 0);
-  return listProjectFilesCached(projectId, limit, offset);
+
+  cacheLife("minutes");
+  cacheTag(tagUploadsIndex(projectId));
+
+  const db = getDb();
+  const rows = await db.query.projectFilesTable.findMany({
+    limit,
+    offset,
+    orderBy: (t, { desc }) => [desc(t.createdAt)],
+    where: eq(schema.projectFilesTable.projectId, projectId),
+  });
+  return rows.map(toProjectFileDto);
 }

@@ -4,11 +4,6 @@ import { getMarkdownContent } from "@/lib/artifacts/content.server";
 import { listLatestArtifacts } from "@/lib/data/artifacts.server";
 
 /**
- * Ensure this route always renders dynamically (artifacts are created frequently).
- */
-export const dynamic = "force-dynamic";
-
-/**
  * Artifacts tab: list latest versions by key.
  *
  * @param props - Route params.

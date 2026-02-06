@@ -3,7 +3,7 @@
 import { NeonAuthUIProvider, UserButton } from "@neondatabase/auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
 import { ClientOnly } from "@/components/client-only";
 import { authClient } from "@/lib/auth/neon-auth.client";
 import { parseAuthSocialProviders } from "@/lib/auth/social-providers";
@@ -65,7 +65,15 @@ export function Providers(
             <UserButton aria-label="User menu" size="icon" />
           </ClientOnly>
         </header>
-        <div className="flex-1">{children}</div>
+        <div className="flex-1">
+          <Suspense
+            fallback={
+              <div aria-hidden="true" className="min-h-[240px] w-full" />
+            }
+          >
+            {children}
+          </Suspense>
+        </div>
       </div>
     </NeonAuthUIProvider>
   );

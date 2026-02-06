@@ -25,6 +25,7 @@ import {
   type RefObject,
   useContext,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -62,6 +63,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { useHydrationSafeTextState } from "@/lib/react/use-hydration-safe-input-state";
 import { cn } from "@/lib/utils";
 
 type GlobalDropHandler = (files: FileList) => void;
@@ -127,6 +129,7 @@ export interface AttachmentsContext {
 
 /** Context for managing text input state. */
 export interface TextInputContext {
+  inputId: string;
   value: string;
   setInput: (v: string) => void;
   clear: () => void;
@@ -197,6 +200,7 @@ const useOptionalProviderAttachments = () =>
 /** Props for PromptInputProvider. */
 export type PromptInputProviderProps = PropsWithChildren<{
   initialInput?: string;
+  inputId?: string;
 }>;
 
 /**
@@ -209,9 +213,15 @@ export type PromptInputProviderProps = PropsWithChildren<{
  * @returns A React element wrapping children with prompt input context.
  */
 export function PromptInputProvider(props: PromptInputProviderProps) {
-  const { initialInput: initialTextInput = "", children } = props;
+  const { initialInput: initialTextInput = "", inputId, children } = props;
+  const generatedInputId = useId();
+  const resolvedInputId = inputId ?? `prompt-input-${generatedInputId}`;
   // ----- textInput state
-  const [textInput, setTextInput] = useState(initialTextInput);
+  const [textInput, setTextInput] = useHydrationSafeTextState({
+    element: "textarea",
+    elementId: resolvedInputId,
+    fallback: initialTextInput,
+  });
   const clearInput = () => setTextInput("");
 
   // ----- attachments state (global when wrapped)
@@ -305,6 +315,7 @@ export function PromptInputProvider(props: PromptInputProviderProps) {
     attachments,
     textInput: {
       clear: clearInput,
+      inputId: resolvedInputId,
       setInput: setTextInput,
       value: textInput,
     },
@@ -890,6 +901,7 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
     onChange,
     onKeyDown,
     className,
+    id,
     labelId,
     "aria-labelledby": ariaLabelledBy,
     placeholder = "What would you like to know… e.g., summarize the attached article",
@@ -968,6 +980,7 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
 
   const controlledProps = controller
     ? {
+        id: controller.textInput.inputId,
         onChange: (e: ChangeEvent<HTMLTextAreaElement>) => {
           controller.textInput.setInput(e.currentTarget.value);
           onChange?.(e);
@@ -975,6 +988,7 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
         value: controller.textInput.value,
       }
     : {
+        id,
         onChange,
       };
 

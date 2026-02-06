@@ -1,7 +1,9 @@
 import { put } from "@vercel/blob";
+import { revalidateTag } from "next/cache";
 import type { NextResponse } from "next/server";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
+import { tagUploadsIndex } from "@/lib/cache/tags";
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError, type JsonError } from "@/lib/core/errors";
 import { sha256Hex } from "@/lib/core/sha256";
@@ -10,7 +12,7 @@ import {
   type ProjectFileDto,
   upsertProjectFile,
 } from "@/lib/data/files.server";
-import { getProjectById } from "@/lib/data/projects.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { env } from "@/lib/env";
 import { ingestFile } from "@/lib/ingest/ingest-file.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
@@ -55,7 +57,7 @@ export async function POST(
   try {
     const authPromise = requireAppUserApi();
     const formPromise = req.formData().catch(() => null);
-    const [, form] = await Promise.all([authPromise, formPromise]);
+    const [user, form] = await Promise.all([authPromise, formPromise]);
     if (!form) {
       throw new AppError("bad_request", 400, "Invalid form data.");
     }
@@ -65,7 +67,7 @@ export async function POST(
       throw new AppError("bad_request", 400, "Missing projectId.");
     }
 
-    const project = await getProjectById(projectId);
+    const project = await getProjectByIdForUser(projectId, user.id);
     if (!project) {
       throw new AppError("not_found", 404, "Project not found.");
     }
@@ -134,6 +136,7 @@ export async function POST(
             sizeBytes,
             storageKey: blob.url,
           });
+          revalidateTag(tagUploadsIndex(projectId), "max");
 
           // Prefer QStash for heavier ingestion; fall back to inline when not configured.
           if (shouldIngestAsync) {
@@ -169,6 +172,7 @@ export async function POST(
             name: safeName,
             projectId,
           });
+          revalidateTag(tagUploadsIndex(projectId), "max");
 
           return {
             ...dbFile,

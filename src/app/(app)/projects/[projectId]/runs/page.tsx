@@ -6,11 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { listRunsByProject } from "@/lib/data/runs.server";
 
 /**
- * Ensure this route always renders dynamically (new runs are created frequently).
- */
-export const dynamic = "force-dynamic";
-
-/**
  * Runs tab (P0 list view).
  *
  * @param props - Route params.

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   getChatThreadByWorkflowRunId: vi.fn(),
-  getProjectById: vi.fn(),
+  getProjectByIdForUser: vi.fn(),
   requireAppUserApi: vi.fn(),
   resume: vi.fn(),
   updateChatThreadByWorkflowRunId: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock("@/lib/data/chat.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
-  getProjectById: state.getProjectById,
+  getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
 vi.mock("@/workflows/chat/hooks/chat-message", () => ({
@@ -39,7 +39,7 @@ beforeEach(() => {
     projectId: "proj_1",
     status: "running",
   });
-  state.getProjectById.mockResolvedValue({ id: "proj_1" });
+  state.getProjectByIdForUser.mockResolvedValue({ id: "proj_1" });
   state.updateChatThreadByWorkflowRunId.mockResolvedValue(undefined);
 });
 

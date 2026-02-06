@@ -23,3 +23,13 @@ export function isPostgresErrorCode(err: unknown, code: string): boolean {
 export function isUndefinedTableError(err: unknown): boolean {
   return isPostgresErrorCode(err, "42P01");
 }
+
+/**
+ * SQLSTATE 42703: undefined_column.
+ *
+ * @param err - Unknown thrown error.
+ * @returns `true` if {@link err} is a Postgres "undefined column" error.
+ */
+export function isUndefinedColumnError(err: unknown): boolean {
+  return isPostgresErrorCode(err, "42703");
+}

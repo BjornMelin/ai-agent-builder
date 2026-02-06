@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { ProjectSearchClient } from "@/app/(app)/projects/[projectId]/search/search-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -17,7 +19,11 @@ export default async function SearchPage(
         <CardTitle>Search</CardTitle>
       </CardHeader>
       <CardContent>
-        <ProjectSearchClient projectId={projectId} />
+        <Suspense
+          fallback={<div aria-hidden="true" className="min-h-[120px] w-full" />}
+        >
+          <ProjectSearchClient projectId={projectId} />
+        </Suspense>
       </CardContent>
     </Card>
   );

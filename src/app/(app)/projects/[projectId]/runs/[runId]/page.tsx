@@ -4,13 +4,9 @@ import { notFound } from "next/navigation";
 import { RunCancelClient } from "@/app/(app)/projects/[projectId]/runs/[runId]/run-cancel-client";
 import { RunStreamClient } from "@/app/(app)/projects/[projectId]/runs/[runId]/run-stream-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getProjectById } from "@/lib/data/projects.server";
+import { requireAppUser } from "@/lib/auth/require-app-user";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { getRunById, listRunSteps } from "@/lib/data/runs.server";
-
-/**
- * Ensure this route always renders dynamically (run status changes frequently).
- */
-export const dynamic = "force-dynamic";
 
 /**
  * Run detail page (stream + persisted step timeline).
@@ -22,9 +18,10 @@ export default async function RunDetailPage(
   props: Readonly<{ params: Promise<{ projectId: string; runId: string }> }>,
 ) {
   const { projectId, runId } = await props.params;
+  const user = await requireAppUser();
 
   const [project, run, steps] = await Promise.all([
-    getProjectById(projectId),
+    getProjectByIdForUser(projectId, user.id),
     getRunById(runId),
     listRunSteps(runId),
   ]);

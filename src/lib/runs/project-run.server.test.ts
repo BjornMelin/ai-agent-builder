@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   cancelRun: vi.fn(),
   createRun: vi.fn(),
-  getProjectById: vi.fn(),
+  getProjectByIdForUser: vi.fn(),
   getRun: vi.fn(),
   getRunById: vi.fn(),
   logError: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock("@/lib/core/log", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
-  getProjectById: state.getProjectById,
+  getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
 vi.mock("@/lib/data/runs.server", () => ({
@@ -53,11 +53,12 @@ beforeEach(() => {
   });
   state.getRunById.mockResolvedValue({
     id: "run_1",
+    projectId: "project_1",
     status: "running",
     workflowRunId: "wf_1",
   });
   state.cancelRun.mockResolvedValue(undefined);
-  state.getProjectById.mockResolvedValue({ id: "project_1" });
+  state.getProjectByIdForUser.mockResolvedValue({ id: "project_1" });
   state.createRun.mockResolvedValue({ id: "run_1" });
   state.start.mockResolvedValue({ runId: "wf_1" });
   state.setRunWorkflowRunId.mockResolvedValue({
@@ -72,7 +73,7 @@ describe("cancelProjectRun", () => {
     const error = new Error("cancel failed");
     state.workflowCancel.mockRejectedValueOnce(error);
 
-    await cancelProjectRun("run_1");
+    await cancelProjectRun("run_1", "user_1");
 
     expect(state.logError).toHaveBeenCalledWith(
       "workflow_run_cancel_failed",
@@ -86,7 +87,7 @@ describe("cancelProjectRun", () => {
   });
 
   it("does not log when workflow cancel succeeds", async () => {
-    await cancelProjectRun("run_1");
+    await cancelProjectRun("run_1", "user_1");
 
     expect(state.logError).not.toHaveBeenCalled();
     expect(state.cancelRun).toHaveBeenCalledWith("run_1");
@@ -95,11 +96,12 @@ describe("cancelProjectRun", () => {
   it("cancels persistence when workflowRunId is null", async () => {
     state.getRunById.mockResolvedValueOnce({
       id: "run_1",
+      projectId: "project_1",
       status: "running",
       workflowRunId: null,
     });
 
-    await cancelProjectRun("run_1");
+    await cancelProjectRun("run_1", "user_1");
 
     expect(state.getRun).not.toHaveBeenCalled();
     expect(state.cancelRun).toHaveBeenCalledWith("run_1");
@@ -112,7 +114,11 @@ describe("startProjectRun", () => {
     state.start.mockRejectedValueOnce(error);
 
     await expect(
-      startProjectRun({ kind: "research", projectId: "project_1" }),
+      startProjectRun({
+        kind: "research",
+        projectId: "project_1",
+        userId: "user_1",
+      }),
     ).rejects.toThrow(error);
 
     expect(state.updateRunStatus).toHaveBeenCalledWith("run_1", "failed");
@@ -124,7 +130,11 @@ describe("startProjectRun", () => {
     state.setRunWorkflowRunId.mockRejectedValueOnce(error);
 
     await expect(
-      startProjectRun({ kind: "research", projectId: "project_1" }),
+      startProjectRun({
+        kind: "research",
+        projectId: "project_1",
+        userId: "user_1",
+      }),
     ).rejects.toThrow(error);
 
     expect(state.updateRunStatus).toHaveBeenCalledWith("run_1", "failed");
@@ -137,7 +147,11 @@ describe("startProjectRun", () => {
     state.updateRunStatus.mockRejectedValueOnce(compensationError);
 
     await expect(
-      startProjectRun({ kind: "research", projectId: "project_1" }),
+      startProjectRun({
+        kind: "research",
+        projectId: "project_1",
+        userId: "user_1",
+      }),
     ).rejects.toThrow(startError);
 
     expect(state.logError).toHaveBeenCalledWith(
