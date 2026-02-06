@@ -1,14 +1,6 @@
-/**
- * Chat thread lifecycle status.
- */
-export type ChatThreadStatus =
-  | "pending"
-  | "running"
-  | "waiting"
-  | "blocked"
-  | "succeeded"
-  | "failed"
-  | "canceled";
+import type { ChatThreadStatus } from "@/lib/chat/thread-status";
+
+export type { ChatThreadStatus } from "@/lib/chat/thread-status";
 
 /**
  * Resolve the next client-visible status when a chat stream closes.

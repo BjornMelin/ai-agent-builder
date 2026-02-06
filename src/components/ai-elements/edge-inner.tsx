@@ -60,6 +60,13 @@ const getHandleCoordsByPosition = (
   );
 
   if (!handle) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[Edge] Missing handle bounds; falling back to origin.", {
+        handlePosition,
+        handleType,
+        nodeId: node.id,
+      });
+    }
     return [0, 0] as const;
   }
 

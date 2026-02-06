@@ -70,15 +70,16 @@ export const AudioPlayer = (props: AudioPlayerProps) => {
 };
 
 /** Props for `AudioPlayerElement` supporting src or speech-result audio data. */
-export type AudioPlayerElementProps = Omit<ComponentProps<"audio">, "src"> &
-  (
-    | {
-        data: SpeechResult["audio"];
-      }
-    | {
-        src: string;
-      }
-  );
+type AudioPlayerElementBaseProps = Omit<ComponentProps<"audio">, "src">;
+export type AudioPlayerElementProps =
+  | (AudioPlayerElementBaseProps & {
+      data: SpeechResult["audio"];
+      src?: never;
+    })
+  | (AudioPlayerElementBaseProps & {
+      src: string;
+      data?: never;
+    });
 
 /**
  * Renders the audio media element from direct src or speech result data.
@@ -87,6 +88,15 @@ export type AudioPlayerElementProps = Omit<ComponentProps<"audio">, "src"> &
  * @returns The audio media element.
  */
 export const AudioPlayerElement = (props: AudioPlayerElementProps) => {
+  if ("src" in props && "data" in props) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "[AudioPlayerElement] `src` and `data` are mutually exclusive props.",
+      );
+    }
+    return null;
+  }
+
   if ("src" in props) {
     const { src, ...audioProps } = props;
     return (

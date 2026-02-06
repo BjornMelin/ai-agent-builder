@@ -25,6 +25,7 @@ import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
  * @param initialMessages - Initial UI messages (must end with a user message).
  * @param threadTitle - Thread title used when lifecycle persistence needs to create the row.
  * @returns Final conversation messages.
+ * @throws Error - Propagates workflow execution or finalization failures.
  */
 export async function projectChat(
   projectId: string,

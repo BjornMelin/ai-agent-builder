@@ -25,7 +25,10 @@ export async function POST(
   try {
     const authPromise = requireAppUserApi();
     const paramsPromise = context.params;
-    const [, params] = await Promise.all([authPromise, paramsPromise]);
+    const [_authenticatedUser, params] = await Promise.all([
+      authPromise,
+      paramsPromise,
+    ]);
 
     const thread = await getChatThreadByWorkflowRunId(params.runId);
     if (!thread) {
@@ -35,6 +38,14 @@ export async function POST(
     const project = await getProjectById(thread.projectId);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
+    }
+
+    if (
+      thread.status === "succeeded" ||
+      thread.status === "failed" ||
+      thread.status === "canceled"
+    ) {
+      throw new AppError("conflict", 409, "Chat session is no longer active.");
     }
 
     const run = getRun(params.runId);

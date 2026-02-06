@@ -108,7 +108,10 @@ jobs:
 
           ENCODED_BRANCH="$(jq -nr --arg v "$GIT_BRANCH" '$v|@uri')"
           PREVIEW_HOST=""
-          for _ in $(seq 1 60); do
+          # Poll up to 60 times (5s interval ~= 5 minutes) to balance CI latency and reliability.
+          max_retries=60
+          for attempt in $(seq 1 "${max_retries}"); do
+            echo "Polling READY deployment for '${GIT_BRANCH}' (attempt ${attempt}/${max_retries})..."
             DEPLOYMENTS_RESP="$(vercel_api GET "/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=preview&branch=${ENCODED_BRANCH}&state=READY&limit=10${VERCEL_TEAM_QUERY}")"
             DEPLOYMENTS_HTTP_CODE="$(printf '%s' "$DEPLOYMENTS_RESP" | tail -n 1)"
             DEPLOYMENTS_JSON="$(printf '%s' "$DEPLOYMENTS_RESP" | sed '$d')"

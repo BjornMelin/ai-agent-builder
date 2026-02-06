@@ -32,7 +32,7 @@ export function Progress(
     >
       <ProgressPrimitive.Indicator
         data-slot="progress-indicator"
-        className="bg-primary h-full w-full flex-1 transition-transform"
+        className="bg-primary h-full w-full flex-1 motion-safe:transition-transform motion-reduce:transition-none"
         style={{ transform: `translateX(-${100 - clampedValue}%)` }}
       />
     </ProgressPrimitive.Root>

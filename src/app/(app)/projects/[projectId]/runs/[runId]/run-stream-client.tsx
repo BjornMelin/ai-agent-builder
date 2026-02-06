@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessageChunk } from "ai";
-import { startTransition, useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 
 import {
   Conversation,
@@ -93,14 +93,10 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
   const [status, setStatus] = useState<StreamStatus>("idle");
   const [wasInterrupted, setWasInterrupted] = useState(false);
   const [reconnectSeed, setReconnectSeed] = useState(0);
-  const eventViews = useMemo(
-    () =>
-      events.map((event, index) => ({
-        key: `${event.type}-${event.runId}-${event.timestamp ?? index}`,
-        markdown: toMarkdown(event),
-      })),
-    [events],
-  );
+  const eventViews = events.map((event, index) => ({
+    key: `${event.type}-${event.runId}-${event.timestamp ?? index}`,
+    markdown: toMarkdown(event),
+  }));
 
   useEffect(() => {
     // Used as a manual "restart stream" trigger for this effect.

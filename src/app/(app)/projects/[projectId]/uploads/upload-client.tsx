@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type SubmitEvent, startTransition, useState } from "react";
+import { type FormEvent, startTransition, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
   const statusMessageId = "uploads-status-message";
   const errorMessageId = "uploads-error-message";
 
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 

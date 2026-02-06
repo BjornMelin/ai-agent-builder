@@ -36,6 +36,7 @@ beforeEach(() => {
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
   state.getChatThreadByWorkflowRunId.mockResolvedValue({
     projectId: "proj_1",
+    status: "running",
   });
   state.getProjectById.mockResolvedValue({ id: "proj_1" });
   state.getRun.mockReturnValue({ cancel: vi.fn() });
@@ -95,6 +96,22 @@ describe("POST /api/chat/:runId/cancel", () => {
     expect(state.updateChatThreadByWorkflowRunId).not.toHaveBeenCalled();
   });
 
+  it("returns conflict when the chat session is terminal", async () => {
+    const POST = await loadRoute();
+    state.getChatThreadByWorkflowRunId.mockResolvedValueOnce({
+      projectId: "proj_1",
+      status: "succeeded",
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/chat/run_1/cancel", { method: "POST" }),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(409);
+    expect(state.getRun).not.toHaveBeenCalled();
+    expect(state.updateChatThreadByWorkflowRunId).not.toHaveBeenCalled();
+  });
   it("cancels the workflow run and updates persistence", async () => {
     const POST = await loadRoute();
     const cancel = vi.fn().mockResolvedValue(undefined);

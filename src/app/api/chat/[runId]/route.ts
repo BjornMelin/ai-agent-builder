@@ -32,7 +32,7 @@ export async function POST(
     const paramsPromise = context.params;
     const bodyPromise = parseJsonBody(req, bodySchema);
 
-    const [params, parsed] = await Promise.all([
+    const [params, parsed, _authenticatedUser] = await Promise.all([
       paramsPromise,
       bodyPromise,
       authPromise,

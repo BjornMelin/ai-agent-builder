@@ -362,7 +362,12 @@ export const Persona: FC<PersonaProps> = memo((props) => {
 
   return (
     <Component rive={rive} source={source}>
-      <div className={cn("size-16 shrink-0", className)} ref={containerRef}>
+      <div
+        aria-label={`AI assistant is ${state}`}
+        className={cn("size-16 shrink-0", className)}
+        ref={containerRef}
+        role="img"
+      >
         <RiveComponent className="size-full" />
       </div>
     </Component>

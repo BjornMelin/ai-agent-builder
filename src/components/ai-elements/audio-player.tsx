@@ -70,7 +70,7 @@ export const AudioPlayerPlayButton = dynamic<
 >(
   () => import("./audio-player-inner").then((mod) => mod.AudioPlayerPlayButton),
   {
-    loading: () => <button aria-label="Play or pause audio" type="button" />,
+    loading: () => <span aria-hidden="true" />,
     ssr: false,
   },
 );
@@ -89,7 +89,7 @@ export const AudioPlayerSeekBackwardButton = dynamic<
       (mod) => mod.AudioPlayerSeekBackwardButton,
     ),
   {
-    loading: () => <button aria-label="Seek back 10 seconds" type="button" />,
+    loading: () => <span aria-hidden="true" />,
     ssr: false,
   },
 );
@@ -108,9 +108,7 @@ export const AudioPlayerSeekForwardButton = dynamic<
       (mod) => mod.AudioPlayerSeekForwardButton,
     ),
   {
-    loading: () => (
-      <button aria-label="Seek forward 10 seconds" type="button" />
-    ),
+    loading: () => <span aria-hidden="true" />,
     ssr: false,
   },
 );

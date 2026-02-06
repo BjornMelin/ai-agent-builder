@@ -191,4 +191,29 @@ describe("POST /api/chat", () => {
       workflowRunId: "run_123",
     });
   });
+
+  it("cancels the workflow run when chat thread creation fails", async () => {
+    const POST = await loadRoute();
+    const cancelMock = vi.fn().mockResolvedValue(undefined);
+    state.getRun.mockReturnValue({ cancel: cancelMock });
+    state.ensureChatThreadForWorkflowRun.mockRejectedValueOnce(
+      new Error("DB error"),
+    );
+    state.safeValidateUIMessages.mockResolvedValueOnce({
+      data: [{ id: "m1", parts: [{ text: "hi", type: "text" }], role: "user" }],
+      success: true,
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({ messages: [], projectId: "proj_1" }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBeGreaterThanOrEqual(500);
+    expect(state.start).toHaveBeenCalledTimes(1);
+    expect(state.getRun).toHaveBeenCalledWith("run_123");
+    expect(cancelMock).toHaveBeenCalledTimes(1);
+  });
 });

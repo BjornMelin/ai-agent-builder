@@ -1,6 +1,6 @@
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
-import type { ChatThreadStatus } from "@/lib/data/chat.server";
+import type { ChatThreadStatus } from "@/lib/chat/thread-status";
 
 type TouchInput = Readonly<{
   projectId: string;
@@ -27,7 +27,9 @@ export async function touchChatThreadState(input: TouchInput): Promise<void> {
   const stateUpdate = {
     ...(input.endedAt === undefined ? {} : { endedAt: input.endedAt }),
     lastActivityAt: now,
+    projectId: input.projectId,
     status: input.status,
+    title: input.title,
     updatedAt: now,
   };
 
@@ -35,8 +37,6 @@ export async function touchChatThreadState(input: TouchInput): Promise<void> {
     .insert(schema.chatThreadsTable)
     .values({
       ...stateUpdate,
-      projectId: input.projectId,
-      title: input.title,
       workflowRunId: input.workflowRunId,
     })
     .onConflictDoUpdate({

@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { WorkflowChatTransport } from "@workflow/ai";
 import type { ChatTransport, UIDataTypes, UIMessage, UITools } from "ai";
 import { getToolName, isToolUIPart } from "ai";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import {
   Conversation,
@@ -286,10 +286,7 @@ export function ProjectChatClient(
     runStatus === "failed" ||
     runStatus === "canceled";
   const hasActiveSession = Boolean(runId) && !isTerminalStatus;
-  const messages = useMemo(
-    () => reconstructMessages(rawMessages),
-    [rawMessages],
-  );
+  const messages = reconstructMessages(rawMessages);
 
   async function sendFollowUp(text: string): Promise<boolean> {
     if (!runId) return false;

@@ -5,24 +5,11 @@ import { cache } from "react";
 
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
+import type { ChatThreadStatus } from "@/lib/chat/thread-status";
 import { AppError } from "@/lib/core/errors";
 import { isUndefinedTableError } from "@/lib/db/postgres-errors";
 
-/**
- * Status values for chat threads.
- *
- * @remarks
- * Reuses the durable run status enum for consistent lifecycle semantics
- * (running/waiting/succeeded/failed/canceled).
- */
-export type ChatThreadStatus =
-  | "pending"
-  | "running"
-  | "waiting"
-  | "blocked"
-  | "succeeded"
-  | "failed"
-  | "canceled";
+export type { ChatThreadStatus } from "@/lib/chat/thread-status";
 
 /**
  * JSON-safe chat thread DTO.
@@ -63,6 +50,7 @@ function toChatThreadDto(row: ChatThreadRow): ChatThreadDto {
  *
  * @param input - Thread creation inputs.
  * @returns Chat thread DTO.
+ * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
  * @throws AppError - With code "db_insert_failed" (500) when the thread cannot be created or found.
  */
 export async function ensureChatThreadForWorkflowRun(
@@ -182,6 +170,7 @@ export const getLatestChatThreadByProjectId = cache(
  *
  * @param workflowRunId - Workflow DevKit run id.
  * @param input - Partial update fields.
+ * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
  */
 export async function updateChatThreadByWorkflowRunId(
   workflowRunId: string,

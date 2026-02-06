@@ -72,7 +72,9 @@ describe("chat-thread-state.step", () => {
     expect(conflictArg.target).toBe(schema.chatThreadsTable.workflowRunId);
     expect(conflictArg.set).toMatchObject({
       endedAt: new Date(1_000),
+      projectId: "project_1",
       status: "failed",
+      title: "Thread title",
     });
     assertIsDate(conflictArg.set.lastActivityAt);
     assertIsDate(conflictArg.set.updatedAt);
