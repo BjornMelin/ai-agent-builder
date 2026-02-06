@@ -32,3 +32,4 @@ status: Active
 - [SPEC-0023](./SPEC-0023-ai-elements-workspace-ui-and-interaction-model.md) — AI Elements workspace UI and interaction model
 - [SPEC-0024](./SPEC-0024-run-cancellation-and-stream-resilience.md) — Run cancellation + stream resilience hardening
 - [SPEC-0025](./SPEC-0025-cache-components-search-authorization-finalization.md) — Cache Components + search authorization + doc alignment finalization
+- [SPEC-0026](./SPEC-0026-bot-branch-preview-resource-governance-vercel-neon.md) — Bot-branch preview resource governance (Vercel + Neon)

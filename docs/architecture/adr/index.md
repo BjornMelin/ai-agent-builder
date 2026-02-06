@@ -24,6 +24,7 @@
 - [ADR-0022](./ADR-0022-authentication-neon-auth-oauth-allowlist.md) — Authentication: Neon Auth (OAuth + UI) + allowlist access control
 - [ADR-0023](./ADR-0023-public-signup-deferred-until-byok.md) — Public sign-up deferred until BYOK (deferred)
 - [ADR-0026](./ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md) — Orchestration: Vercel Workflow DevKit for interactive runs (QStash for background jobs)
+- [ADR-0027](./ADR-0027-preview-resource-governance-for-bot-branches-vercel-neon.md) — Preview resource governance for bot branches (Vercel + Neon) (Implemented)
 
 ## Implementation & deployment automation
 

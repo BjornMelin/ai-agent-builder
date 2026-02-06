@@ -27,6 +27,24 @@ Branching. When enabled, Neon will automatically provision:
 This avoids duplicating branch/env provisioning logic in GitHub Actions and
 prevents races between push and pull_request workflows.
 
+### Bot branch suppression policy (implemented)
+
+Dependabot/Renovate branches are explicitly prevented from creating preview
+resources:
+
+- `vercel.json`
+  - `git.deploymentEnabled` disables deploys for:
+    - `dependabot/**`
+    - `renovate/**`
+  - `ignoreCommand` calls `scripts/vercel-ignore-build.sh` as a fallback guard.
+- Preview workflows skip bot actors/branches:
+  - `.github/workflows/vercel-preview-env-sync.yml`
+  - `.github/workflows/vercel-preview-env-cleanup.yml`
+  - `.github/workflows/neon-auth-trusted-domains.yml`
+
+This keeps preview behavior for human branches while suppressing bot preview
+resource creation.
+
 ### Branch-scoped `APP_BASE_URL` sync (optional, recommended)
 
 `APP_BASE_URL` is required by `env.app` and must resolve to the active Preview
@@ -44,6 +62,12 @@ deployment host for each branch. This repo includes:
   - Trigger: pull request `closed`
   - Behavior: removes branch-scoped `APP_BASE_URL` entries for the closed branch
     (best-effort cleanup).
+- `.github/workflows/preview-bot-resource-drift-audit.yml`
+  - Trigger: weekly schedule + manual dispatch.
+  - Behavior:
+    - Detects bot-scoped preview `APP_BASE_URL` env vars and Neon preview branches.
+    - Auto-cleans env vars/Neon branches in `audit-and-cleanup` mode.
+    - Fails if unresolved bot preview deployments/resources remain.
 
 Required repo configuration:
 
@@ -51,6 +75,9 @@ Required repo configuration:
   - `VERCEL_PROJECT_ID`
   - `VERCEL_TOKEN`
   - `VERCEL_TEAM_ID` (optional; required for team-scoped projects)
+  - `NEON_API_KEY` (for drift cleanup of Neon branches)
+- GitHub Actions variables:
+  - `NEON_PROJECT_ID` (for drift cleanup of Neon branches)
 
 ## Database connection method (Vercel)
 

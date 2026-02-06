@@ -22,6 +22,14 @@ jobs:
   cleanup:
     name: Remove branch-scoped APP_BASE_URL
     runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    if: |
+      github.event_name != 'pull_request' ||
+      (
+        github.event.pull_request.user.login != 'dependabot[bot]' &&
+        github.event.pull_request.user.login != 'renovate[bot]' &&
+        !startsWith(github.event.pull_request.head.ref, 'dependabot/') &&
+        !startsWith(github.event.pull_request.head.ref, 'renovate/')
+      )
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -61,6 +69,11 @@ jobs:
 
           if [ -z "${GIT_BRANCH}" ]; then
             echo "::warning::Unable to resolve git branch. Skipping cleanup."
+            exit 0
+          fi
+
+          if printf '%s' "${GIT_BRANCH}" | grep -Eq '^(dependabot/|renovate/)'; then
+            echo "::warning::Bot branch detected (${GIT_BRANCH}). Skipping preview env cleanup."
             exit 0
           fi
 

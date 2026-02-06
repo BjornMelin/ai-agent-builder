@@ -30,9 +30,24 @@ Preview branch env vars are managed by:
 
 - `.github/workflows/vercel-preview-env-sync.yml` (upserts branch-scoped `APP_BASE_URL`)
 - `.github/workflows/vercel-preview-env-cleanup.yml` (best-effort cleanup on PR close)
+- `.github/workflows/preview-bot-resource-drift-audit.yml` (scheduled/manual bot drift detection + remediation)
 
 Fork PRs skip this automation because GitHub Actions secrets are unavailable for
 untrusted forks.
+
+### Bot branch suppression checks
+
+Dependabot/Renovate preview suppression is enforced at three layers:
+
+1. `vercel.json` (`git.deploymentEnabled` branch patterns + `ignoreCommand`)
+2. Preview-related GitHub workflows (job-level + in-script bot guards)
+3. Scheduled drift audit (`preview-bot-resource-drift-audit.yml`)
+
+Manual verification commands:
+
+- `vercel env list preview dependabot/npm_and_yarn/example`
+- `vercel env list preview renovate/example`
+- `neon branches list --project-id <project-id> --output json | jq -r '.branches[]?.name' | rg '^preview/(dependabot|renovate)/'`
 
 ### Validate preview env resolution (CLI)
 
@@ -49,6 +64,17 @@ For full cross-environment validation (env completeness, AI Gateway, Upstash,
 database, deployment behavior, and logs), use:
 
 - [docs/ops/env.md](../ops/env.md) → **Validation checklist**
+
+### Run drift audit manually
+
+Use GitHub Actions `workflow_dispatch` for
+`.github/workflows/preview-bot-resource-drift-audit.yml`:
+
+1. `mode: audit-only` to inspect without mutation.
+2. `mode: audit-and-cleanup` to remove bot-scoped preview env vars and Neon
+   preview branches.
+3. Investigate/remove any reported bot preview deployments if the workflow fails
+   with unresolved deployment drift.
 
 ## Database migrations
 
