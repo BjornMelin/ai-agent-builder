@@ -64,9 +64,7 @@ export async function POST(
     const now = new Date();
     await updateChatThreadByWorkflowRunId(params.runId, {
       lastActivityAt: now,
-      ...(parsed.message === "/done"
-        ? { endedAt: now, status: "succeeded" }
-        : { status: "running" }),
+      status: parsed.message === "/done" ? "waiting" : "running",
     });
 
     return jsonOk({ ok: true });

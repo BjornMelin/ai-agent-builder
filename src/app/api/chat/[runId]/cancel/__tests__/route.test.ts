@@ -112,6 +112,7 @@ describe("POST /api/chat/:runId/cancel", () => {
     expect(state.getRun).not.toHaveBeenCalled();
     expect(state.updateChatThreadByWorkflowRunId).not.toHaveBeenCalled();
   });
+
   it("cancels the workflow run and updates persistence", async () => {
     const POST = await loadRoute();
     const cancel = vi.fn().mockResolvedValue(undefined);

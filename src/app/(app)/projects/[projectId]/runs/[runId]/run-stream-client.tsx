@@ -94,7 +94,7 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
   const [wasInterrupted, setWasInterrupted] = useState(false);
   const [reconnectSeed, setReconnectSeed] = useState(0);
   const eventViews = events.map((event, index) => ({
-    key: `${event.type}-${event.runId}-${event.timestamp ?? index}`,
+    key: `${event.type}-${event.runId}-${event.timestamp ?? "na"}-${index}`,
     markdown: toMarkdown(event),
   }));
 

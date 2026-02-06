@@ -133,7 +133,7 @@ export async function projectChat(
     }
   }
 
-  if (thrownError) {
+  if (thrownError !== null && thrownError !== undefined) {
     throw thrownError;
   }
 

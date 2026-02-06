@@ -16,6 +16,7 @@ import { jsonError, jsonOk } from "@/lib/next/responses";
  * @param context - Route params.
  * @returns JSON ok or JSON error.
  * @throws AppError - With code "not_found" when the session cannot be found.
+ * @throws AppError - With code "conflict" when the session is no longer active.
  * @throws AppError - With code "forbidden" when the session's project is not accessible.
  */
 export async function POST(
@@ -56,11 +57,20 @@ export async function POST(
     await run.cancel();
 
     const now = new Date();
-    await updateChatThreadByWorkflowRunId(params.runId, {
-      endedAt: now,
-      lastActivityAt: now,
-      status: "canceled",
-    });
+    try {
+      await updateChatThreadByWorkflowRunId(params.runId, {
+        endedAt: now,
+        lastActivityAt: now,
+        status: "canceled",
+      });
+    } catch (updateError) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "[api/chat/:runId/cancel] Workflow canceled but state update failed.",
+          updateError,
+        );
+      }
+    }
 
     return jsonOk({ ok: true });
   } catch (err) {

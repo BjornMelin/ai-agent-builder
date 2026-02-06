@@ -23,6 +23,7 @@ jobs:
   sync:
     name: Ensure preview branch APP_BASE_URL
     runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -30,6 +31,7 @@ jobs:
       - name: Upsert branch-scoped APP_BASE_URL
         env:
           FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+          GITHUB_EVENT_ACTION: ${{ github.event.action }}
           GIT_BRANCH_INPUT: ${{ inputs.gitBranch }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
@@ -78,36 +80,50 @@ jobs:
             local path="$2"
             local data="${3:-}"
             local resp=""
+            local stderr_file=""
             local curl_status=0
+            stderr_file="$(mktemp)"
 
             if [ -n "$data" ]; then
+              set +e
               resp="$(curl -sS -X "$method" "${VERCEL_API_BASE}${path}" \
                 -H "Authorization: Bearer ${VERCEL_TOKEN}" \
                 -H "Accept: application/json" \
                 -H "Content-Type: application/json" \
                 -d "$data" \
-                -w '\n%{http_code}' 2>&1)"
+                -w '\n%{http_code}' 2>"${stderr_file}")"
               curl_status=$?
+              set -e
             else
+              set +e
               resp="$(curl -sS -X "$method" "${VERCEL_API_BASE}${path}" \
                 -H "Authorization: Bearer ${VERCEL_TOKEN}" \
                 -H "Accept: application/json" \
-                -w '\n%{http_code}' 2>&1)"
+                -w '\n%{http_code}' 2>"${stderr_file}")"
               curl_status=$?
+              set -e
             fi
 
             if [ $curl_status -ne 0 ]; then
-              printf '%s\n' "${resp}"
+              if [ -s "${stderr_file}" ]; then
+                cat "${stderr_file}" >&2
+              fi
+              rm -f "${stderr_file}"
+              printf '\n'
               printf '%s\n' "000"
               return 0
             fi
 
+            rm -f "${stderr_file}"
             printf '%s\n' "${resp%$'\n'*}"
             printf '%s\n' "${resp##*$'\n'}"
           }
 
           ENCODED_BRANCH="$(jq -nr --arg v "$GIT_BRANCH" '$v|@uri')"
           PREVIEW_HOST=""
+          if [ "${GITHUB_EVENT_ACTION:-}" = "synchronize" ]; then
+            sleep 10
+          fi
           # Poll up to 60 times (5s interval ~= 5 minutes) to balance CI latency and reliability.
           max_retries=60
           for attempt in $(seq 1 "${max_retries}"); do
@@ -133,7 +149,32 @@ jobs:
             ')"
 
             if [ -z "${PREVIEW_HOST}" ]; then
-              PREVIEW_HOST="$(printf '%s' "$DEPLOYMENTS_JSON" | jq -r '(.deployments // [])[] | select(.url != null) | .url' | head -n 1)"
+              PREVIEW_HOST="$(printf '%s' "$DEPLOYMENTS_JSON" | jq -r '
+                (.deployments // []) as $deployments
+                | (
+                    $deployments
+                    | map(select(.alias != null))
+                    | map(.alias[])
+                    | map(select(type == "string"))
+                    | map(select(endswith(".vercel.app")))
+                    | map(select(test("-git-"; "i")))
+                    | .[0]
+                  )
+                  // (
+                    $deployments
+                    | map(select(.alias != null))
+                    | map(.alias[])
+                    | map(select(type == "string"))
+                    | map(select(endswith(".vercel.app")))
+                    | .[0]
+                  )
+                  // (
+                    $deployments[]?
+                    | select(.url != null)
+                    | .url
+                  )
+                  // empty
+              ' | head -n 1)"
             fi
 
             if [ -n "${PREVIEW_HOST}" ] && [ "${PREVIEW_HOST}" != "null" ]; then

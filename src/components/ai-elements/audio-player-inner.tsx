@@ -110,6 +110,19 @@ export const AudioPlayerElement = (props: AudioPlayerElementProps) => {
   }
 
   const { data, ...audioProps } = props;
+  if (
+    typeof data?.mediaType !== "string" ||
+    data.mediaType.length === 0 ||
+    typeof data?.base64 !== "string" ||
+    data.base64.length === 0
+  ) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "[AudioPlayerElement] Invalid `data` payload; expected non-empty `mediaType` and `base64`.",
+      );
+    }
+    return null;
+  }
   const src = `data:${data.mediaType};base64,${data.base64}`;
 
   return (
@@ -303,6 +316,7 @@ export const AudioPlayerMuteButton = (props: AudioPlayerMuteButtonProps) => {
   return (
     <ButtonGroupText asChild className="bg-transparent">
       <MediaMuteButton
+        aria-label={rest["aria-label"] ?? "Mute or unmute audio"}
         className={className}
         data-slot="audio-player-mute-button"
         {...rest}

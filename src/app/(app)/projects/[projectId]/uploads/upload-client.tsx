@@ -96,7 +96,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
           id={fileInputId}
           key={inputKey}
           multiple
-          name="files"
+          name="file"
           onChange={(e) => setFiles(e.currentTarget.files)}
           type="file"
         />

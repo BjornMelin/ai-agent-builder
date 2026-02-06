@@ -1,5 +1,6 @@
 import type { ChatThreadStatus } from "@/lib/chat/thread-status";
 
+/** Chat thread status values used by project chat client state transitions. */
 export type { ChatThreadStatus } from "@/lib/chat/thread-status";
 
 /**

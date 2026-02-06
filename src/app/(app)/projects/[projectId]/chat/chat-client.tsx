@@ -320,7 +320,7 @@ export function ProjectChatClient(
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
         setComposerError(errorMessage);
         if (response.status === 404 || response.status === 409) {
-          setRunStatus("succeeded");
+          setRunStatus(null);
           setRunId(null);
           try {
             window.localStorage.removeItem(storageKey);

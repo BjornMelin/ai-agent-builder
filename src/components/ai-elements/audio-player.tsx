@@ -18,7 +18,7 @@ export type {
 } from "./audio-player-inner";
 
 /**
- * Audio player component.
+ * Lazily loads the client-only audio player root and renders a stable-sized placeholder.
  *
  * @param props - Audio player props.
  * @returns The root audio player controller.
@@ -71,7 +71,12 @@ export const AudioPlayerPlayButton = dynamic<
   () => import("./audio-player-inner").then((mod) => mod.AudioPlayerPlayButton),
   {
     loading: () => (
-      <button aria-label="Play or pause audio" disabled type="button" />
+      <button
+        aria-label="Play or pause audio"
+        className="size-7 rounded-md border"
+        disabled
+        type="button"
+      />
     ),
     ssr: false,
   },
@@ -92,7 +97,12 @@ export const AudioPlayerSeekBackwardButton = dynamic<
     ),
   {
     loading: () => (
-      <button aria-label="Seek back 10 seconds" disabled type="button" />
+      <button
+        aria-label="Seek back 10 seconds"
+        className="size-7 rounded-md border"
+        disabled
+        type="button"
+      />
     ),
     ssr: false,
   },
@@ -113,7 +123,12 @@ export const AudioPlayerSeekForwardButton = dynamic<
     ),
   {
     loading: () => (
-      <button aria-label="Seek forward 10 seconds" disabled type="button" />
+      <button
+        aria-label="Seek forward 10 seconds"
+        className="size-7 rounded-md border"
+        disabled
+        type="button"
+      />
     ),
     ssr: false,
   },

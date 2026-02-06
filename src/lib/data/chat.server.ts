@@ -9,6 +9,7 @@ import type { ChatThreadStatus } from "@/lib/chat/thread-status";
 import { AppError } from "@/lib/core/errors";
 import { isUndefinedTableError } from "@/lib/db/postgres-errors";
 
+/** Chat thread status values shared with chat data DTOs and update helpers. */
 export type { ChatThreadStatus } from "@/lib/chat/thread-status";
 
 /**
@@ -113,6 +114,7 @@ export async function ensureChatThreadForWorkflowRun(
  *
  * @param workflowRunId - Workflow DevKit run id.
  * @returns Chat thread DTO or null.
+ * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
  */
 export const getChatThreadByWorkflowRunId = cache(
   async (workflowRunId: string): Promise<ChatThreadDto | null> => {
@@ -141,6 +143,7 @@ export const getChatThreadByWorkflowRunId = cache(
  *
  * @param projectId - Project id.
  * @returns Latest chat thread DTO or null.
+ * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
  */
 export const getLatestChatThreadByProjectId = cache(
   async (projectId: string): Promise<ChatThreadDto | null> => {

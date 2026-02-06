@@ -9,7 +9,7 @@ import {
   useViewModelInstanceColor,
 } from "@rive-app/react-webgl2";
 import type { FC, ReactNode, RefObject } from "react";
-import { memo, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /** Represents the Persona animation state for the avatar. */
@@ -20,7 +20,9 @@ export type PersonaState =
   | "speaking"
   | "asleep";
 
-/** Props for the Persona component. */
+/**
+ * Configures the persona avatar animation state, lifecycle callbacks, and visual variant.
+ */
 export interface PersonaProps {
   state: PersonaState;
   onLoad?: RiveParameters["onLoad"];
@@ -36,43 +38,38 @@ export interface PersonaProps {
 
 // The state machine name is always 'default' for Elements AI visuals
 const stateMachine = "default";
+const RIVE_BASE_URL = "https://ejiidnob33g9ap1r.public.blob.vercel-storage.com";
 
 const sources = {
   command: {
     dynamicColor: true,
     hasModel: true,
-    source:
-      "https://ejiidnob33g9ap1r.public.blob.vercel-storage.com/command-2.0.riv",
+    source: `${RIVE_BASE_URL}/command-2.0.riv`,
   },
   glint: {
     dynamicColor: true,
     hasModel: true,
-    source:
-      "https://ejiidnob33g9ap1r.public.blob.vercel-storage.com/glint-2.0.riv",
+    source: `${RIVE_BASE_URL}/glint-2.0.riv`,
   },
   halo: {
     dynamicColor: true,
     hasModel: true,
-    source:
-      "https://ejiidnob33g9ap1r.public.blob.vercel-storage.com/halo-2.0.riv",
+    source: `${RIVE_BASE_URL}/halo-2.0.riv`,
   },
   mana: {
     dynamicColor: false,
     hasModel: true,
-    source:
-      "https://ejiidnob33g9ap1r.public.blob.vercel-storage.com/mana-2.0.riv",
+    source: `${RIVE_BASE_URL}/mana-2.0.riv`,
   },
   obsidian: {
     dynamicColor: true,
     hasModel: true,
-    source:
-      "https://ejiidnob33g9ap1r.public.blob.vercel-storage.com/obsidian-2.0.riv",
+    source: `${RIVE_BASE_URL}/obsidian-2.0.riv`,
   },
   opal: {
     dynamicColor: false,
     hasModel: false,
-    source:
-      "https://ejiidnob33g9ap1r.public.blob.vercel-storage.com/orb-1.2.riv",
+    source: `${RIVE_BASE_URL}/orb-1.2.riv`,
   },
 };
 
@@ -187,7 +184,7 @@ const useElementVisibility = (
     };
   }, [enabled, ref]);
 
-  return enabled ? isVisible : false;
+  return enabled ? isVisible : true;
 };
 
 interface PersonaWithModelProps {
@@ -196,31 +193,33 @@ interface PersonaWithModelProps {
   children: ReactNode;
 }
 
-const PersonaWithModel = memo(
-  ({ rive, source, children }: PersonaWithModelProps) => {
-    const theme = useTheme(source.dynamicColor);
-    const viewModel = useViewModel(rive, { useDefault: true });
-    const viewModelInstance = useViewModelInstance(viewModel, {
-      rive,
-      useDefault: true,
-    });
-    const viewModelInstanceColor = useViewModelInstanceColor(
-      "color",
-      viewModelInstance,
-    );
+const PersonaWithModel = ({
+  rive,
+  source,
+  children,
+}: PersonaWithModelProps) => {
+  const theme = useTheme(source.dynamicColor);
+  const viewModel = useViewModel(rive, { useDefault: true });
+  const viewModelInstance = useViewModelInstance(viewModel, {
+    rive,
+    useDefault: true,
+  });
+  const viewModelInstanceColor = useViewModelInstanceColor(
+    "color",
+    viewModelInstance,
+  );
 
-    useEffect(() => {
-      if (!(viewModelInstanceColor && source.dynamicColor)) {
-        return;
-      }
+  useEffect(() => {
+    if (!(viewModelInstanceColor && source.dynamicColor)) {
+      return;
+    }
 
-      const [r, g, b] = theme === "dark" ? [255, 255, 255] : [0, 0, 0];
-      viewModelInstanceColor.setRgb(r, g, b);
-    }, [viewModelInstanceColor, theme, source.dynamicColor]);
+    const [r, g, b] = theme === "dark" ? [255, 255, 255] : [0, 0, 0];
+    viewModelInstanceColor.setRgb(r, g, b);
+  }, [viewModelInstanceColor, theme, source.dynamicColor]);
 
-    return children;
-  },
-);
+  return children;
+};
 
 PersonaWithModel.displayName = "PersonaWithModel";
 
@@ -228,9 +227,8 @@ interface PersonaWithoutModelProps {
   children: ReactNode;
 }
 
-const PersonaWithoutModel = memo(
-  ({ children }: PersonaWithoutModelProps) => children,
-);
+const PersonaWithoutModel = ({ children }: PersonaWithoutModelProps) =>
+  children;
 
 PersonaWithoutModel.displayName = "PersonaWithoutModel";
 
@@ -248,9 +246,8 @@ const setBooleanInput = (
  *
  * @param props - Persona props including state, activation control, and event callbacks.
  * @returns A persona animation component.
- * @throws Error if the provided variant is not supported.
  */
-export const Persona: FC<PersonaProps> = memo((props) => {
+export const Persona: FC<PersonaProps> = (props) => {
   const {
     variant = "obsidian",
     isActive = true,
@@ -263,11 +260,7 @@ export const Persona: FC<PersonaProps> = memo((props) => {
     onStop,
     className,
   } = props;
-  const source = sources[variant];
-
-  if (!source) {
-    throw new Error(`Invalid variant: ${variant}`);
-  }
+  const source = sources[variant] ?? sources.obsidian;
 
   // Stabilize callbacks to prevent useRive from reinitializing
   const callbacksRef = useRef({
@@ -305,7 +298,7 @@ export const Persona: FC<PersonaProps> = memo((props) => {
     onPlay: ((event) => callbacksRef.current.onPlay?.(event)) as NonNullable<
       RiveParameters["onPlay"]
     >,
-    onReady: (() => {
+    onReady: ((_rive: unknown) => {
       callbacksRef.current.onReady?.();
     }) as NonNullable<(rive: unknown) => void>,
     onStop: ((event) => callbacksRef.current.onStop?.(event)) as NonNullable<
@@ -372,6 +365,6 @@ export const Persona: FC<PersonaProps> = memo((props) => {
       </div>
     </Component>
   );
-});
+};
 
 Persona.displayName = "Persona";
