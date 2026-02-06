@@ -418,6 +418,13 @@ export function ProjectChatClient(
       }
       setComposerError(null);
       setRunStatus("succeeded");
+      setRunId(null);
+      try {
+        window.localStorage.removeItem(storageKey);
+        window.localStorage.removeItem(legacyStorageKey);
+      } catch {
+        // Ignore.
+      }
     } catch (error) {
       setComposerError(
         error instanceof Error ? error.message : "Failed to end session.",

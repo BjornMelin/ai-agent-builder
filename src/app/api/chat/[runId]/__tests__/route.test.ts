@@ -109,6 +109,36 @@ describe("POST /api/chat/:runId", () => {
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ ok: true });
     expect(state.resume).toHaveBeenCalledWith("run_1", { message: "hello" });
+    expect(state.updateChatThreadByWorkflowRunId).toHaveBeenCalledWith(
+      "run_1",
+      {
+        lastActivityAt: expect.any(Date),
+        status: "running",
+      },
+    );
+  });
+
+  it("sets status to waiting when the message is /done", async () => {
+    const POST = await loadRoute();
+
+    const res = await POST(
+      new Request("http://localhost/api/chat/run_1", {
+        body: JSON.stringify({ message: "/done" }),
+        method: "POST",
+      }),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ ok: true });
+    expect(state.resume).toHaveBeenCalledWith("run_1", { message: "/done" });
+    expect(state.updateChatThreadByWorkflowRunId).toHaveBeenCalledWith(
+      "run_1",
+      {
+        lastActivityAt: expect.any(Date),
+        status: "waiting",
+      },
+    );
   });
 
   it("still returns ok when state update fails after resume succeeds", async () => {
