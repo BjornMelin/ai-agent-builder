@@ -18,7 +18,9 @@ Default runtime strategy (Vercel deployments):
 - Attach the pool with `attachDatabasePool` so idle connections are released
   before a Fluid compute function suspends.
   ([Vercel Functions package reference](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package))
-- Prefer Neon connection strings configured with `sslmode=verify-full`.
+- Prefer Neon connection strings configured with `sslmode=verify-full`
+  ([PostgreSQL libpq SSL modes](https://www.postgresql.org/docs/current/libpq-ssl.html),
+  [Neon: Connect to Neon securely](https://neon.com/docs/connect/connect-securely)).
 
 Implementation:
 

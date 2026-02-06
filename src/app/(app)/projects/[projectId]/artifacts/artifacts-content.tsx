@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { ArtifactListClient } from "@/app/(app)/projects/[projectId]/artifacts/artifact-list-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -42,13 +40,13 @@ export async function ArtifactsContent(
     <Card>
       <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <CardTitle>Artifacts</CardTitle>
-        <Link
+        <a
           className="text-sm underline-offset-4 hover:underline"
           download
           href={`/api/export/${encodeURIComponent(projectId)}`}
         >
           Export ZIP
-        </Link>
+        </a>
       </CardHeader>
       <CardContent>
         {artifacts.length === 0 ? (

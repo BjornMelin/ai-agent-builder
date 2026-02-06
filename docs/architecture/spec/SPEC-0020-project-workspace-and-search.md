@@ -1,7 +1,7 @@
 ---
 spec: SPEC-0020
 title: Project workspace and search UX
-version: 0.2.0
+version: 0.2.1
 date: 2026-02-06
 owners: ["Bjorn Melin"]
 status: Implemented

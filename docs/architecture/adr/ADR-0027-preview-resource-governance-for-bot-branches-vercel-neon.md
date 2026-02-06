@@ -8,6 +8,7 @@ Supersedes: []
 Superseded-by: []
 Related: [ADR-0018, ADR-0025]
 Tags: [architecture, ci-cd, vercel, neon, dependabot, renovate]
+Related-Requirements: [FR-028, NFR-006, NFR-009, NFR-010, NFR-015, IR-012, IR-013]
 References:
   - [Vercel git deployment configuration](https://vercel.com/docs/project-configuration/git-configuration)
   - [Vercel project configuration (`ignoreCommand`)](https://vercel.com/docs/project-configuration)
@@ -123,6 +124,24 @@ Why this choice:
 - Option C adds minimal but material safeguards against workflow drift and stale
   resources.
 - Both selected decisions are above the 9.0 threshold.
+
+## Related Requirements
+
+### Functional Requirements
+
+- **FR-028:** Manage deployments and environment variables via Vercel.
+
+### Non-Functional Requirements
+
+- **NFR-006:** cost controls.
+- **NFR-009:** supply chain dependency governance.
+- **NFR-010:** CI quality gates.
+- **NFR-015:** auditability for side-effectful actions.
+
+### Integration Requirements
+
+- **IR-012:** deployments and env var management via Vercel API/SDK.
+- **IR-013:** optional Neon API provisioning (where used for cleanup/governance).
 
 ## Implementation
 

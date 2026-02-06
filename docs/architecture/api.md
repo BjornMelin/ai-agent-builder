@@ -58,6 +58,12 @@ See:
     - artifacts
     - runs
 
+See:
+
+- [SPEC-0020](./spec/SPEC-0020-project-workspace-and-search.md)
+- [SPEC-0025](./spec/SPEC-0025-cache-components-search-authorization-finalization.md)
+- [ADR-0013](./adr/ADR-0013-caching-cost-controls-next-js-caching-upstash-redis-budgets.md)
+
 ## Export (deterministic artifacts ZIP)
 
 - `GET /api/export/:projectId`

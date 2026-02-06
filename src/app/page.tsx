@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  * Home page.
  *
  * This app is currently private, so we redirect authenticated + allowlisted
- * users to their account settings.
+ * users to the projects dashboard.
  *
  * @returns JSX that renders a Suspense boundary; redirects are handled by {@link HomeRedirect}.
  */

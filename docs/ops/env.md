@@ -104,7 +104,7 @@ App-level access control (cost control):
 - `DATABASE_URL` (required for `env.db`)
   - Postgres connection string.
   - Security recommendation: prefer Neon URLs that include
-    `sslmode=verify-full`.
+    `sslmode=verify-full` ([Neon: Connect to Neon securely](https://neon.com/docs/connect/connect-securely), see [SPEC-0007](../architecture/spec/SPEC-0007-web-research-citations-framework.md)).
   - Used by: Drizzle DB client (`src/db/client.ts`) and server-only DAL modules
     (`src/lib/data/*.server.ts`).
   - On Vercel Fluid compute, DB connections are pooled with `pg` and integrated
@@ -117,7 +117,7 @@ App-level access control (cost control):
 - `DATABASE_URL_UNPOOLED` (optional; recommended for migrations/DDL)
   - Unpooled Postgres connection string (Neon provides this alongside pooled URLs).
   - Security recommendation: prefer Neon URLs that include
-    `sslmode=verify-full`.
+    `sslmode=verify-full` ([Neon: Connect to Neon securely](https://neon.com/docs/connect/connect-securely), see [SPEC-0007](../architecture/spec/SPEC-0007-web-research-citations-framework.md)).
   - Used by: Drizzle tooling (`drizzle-kit migrate`) and build-time migrations.
 
 ### Upstash (Redis + Vector)

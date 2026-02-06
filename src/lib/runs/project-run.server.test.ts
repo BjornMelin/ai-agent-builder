@@ -86,6 +86,18 @@ describe("cancelProjectRun", () => {
     expect(state.cancelRun).toHaveBeenCalledWith("run_1");
   });
 
+  it("throws not_found when project is not owned by user", async () => {
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
+
+    await expect(cancelProjectRun("run_1", "other_user")).rejects.toThrow(
+      expect.objectContaining({ code: "not_found" }),
+    );
+
+    expect(state.getRun).not.toHaveBeenCalled();
+    expect(state.workflowCancel).not.toHaveBeenCalled();
+    expect(state.cancelRun).not.toHaveBeenCalled();
+  });
+
   it("does not log when workflow cancel succeeds", async () => {
     await cancelProjectRun("run_1", "user_1");
 

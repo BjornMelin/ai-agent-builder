@@ -67,10 +67,12 @@ jobs:
             TEAM_QUERY="teamId=${VERCEL_TEAM_ID}"
           fi
 
-          vercel_api() {
+          api_call() {
             local method="$1"
-            local path="$2"
-            local data="${3:-}"
+            local base_url="$2"
+            local token="$3"
+            local path="$4"
+            local data="${5:-}"
             local resp=""
             local stderr_file=""
             local curl_status=0
@@ -78,8 +80,8 @@ jobs:
 
             if [ -n "${data}" ]; then
               set +e
-              resp="$(curl -sS -X "${method}" "${VERCEL_API_BASE}${path}" \
-                -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              resp="$(curl -sS -X "${method}" "${base_url}${path}" \
+                -H "Authorization: Bearer ${token}" \
                 -H "Accept: application/json" \
                 -H "Content-Type: application/json" \
                 -d "${data}" \
@@ -88,8 +90,8 @@ jobs:
               set -e
             else
               set +e
-              resp="$(curl -sS -X "${method}" "${VERCEL_API_BASE}${path}" \
-                -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              resp="$(curl -sS -X "${method}" "${base_url}${path}" \
+                -H "Authorization: Bearer ${token}" \
                 -H "Accept: application/json" \
                 -w '\n%{http_code}' 2>"${stderr_file}")"
               curl_status=$?
@@ -111,48 +113,18 @@ jobs:
             printf '%s\n' "${resp##*$'\n'}"
           }
 
+          vercel_api() {
+            local method="$1"
+            local path="$2"
+            local data="${3:-}"
+            api_call "${method}" "${VERCEL_API_BASE}" "${VERCEL_TOKEN}" "${path}" "${data}"
+          }
+
           neon_api() {
             local method="$1"
             local path="$2"
             local data="${3:-}"
-            local resp=""
-            local stderr_file=""
-            local curl_status=0
-            stderr_file="$(mktemp)"
-
-            if [ -n "${data}" ]; then
-              set +e
-              resp="$(curl -sS -X "${method}" "${NEON_API_BASE}${path}" \
-                -H "Authorization: Bearer ${NEON_API_KEY}" \
-                -H "Accept: application/json" \
-                -H "Content-Type: application/json" \
-                -d "${data}" \
-                -w '\n%{http_code}' 2>"${stderr_file}")"
-              curl_status=$?
-              set -e
-            else
-              set +e
-              resp="$(curl -sS -X "${method}" "${NEON_API_BASE}${path}" \
-                -H "Authorization: Bearer ${NEON_API_KEY}" \
-                -H "Accept: application/json" \
-                -w '\n%{http_code}' 2>"${stderr_file}")"
-              curl_status=$?
-              set -e
-            fi
-
-            if [ "${curl_status}" -ne 0 ]; then
-              if [ -s "${stderr_file}" ]; then
-                cat "${stderr_file}" >&2
-              fi
-              rm -f "${stderr_file}"
-              printf '\n'
-              printf '%s\n' "000"
-              return 0
-            fi
-
-            rm -f "${stderr_file}"
-            printf '%s\n' "${resp%$'\n'*}"
-            printf '%s\n' "${resp##*$'\n'}"
+            api_call "${method}" "${NEON_API_BASE}" "${NEON_API_KEY}" "${path}" "${data}"
           }
 
           #
@@ -209,8 +181,15 @@ jobs:
           #
           BOT_DEPLOYMENTS="[]"
           DEPLOY_UNTIL=""
+          NEXT_DEPLOY_UNTIL=""
+          MAX_DEPLOY_PAGES=50
           deploy_page=1
           while :; do
+            if [ "${deploy_page}" -ge "${MAX_DEPLOY_PAGES}" ]; then
+              echo "::warning::Vercel deployments pagination hit page cap (deploy_page=${deploy_page} >= MAX_DEPLOY_PAGES=${MAX_DEPLOY_PAGES}). Stopping pagination with DEPLOY_UNTIL='${DEPLOY_UNTIL}' NEXT_DEPLOY_UNTIL='${NEXT_DEPLOY_UNTIL}' and BOT_DEPLOYMENTS length $(printf '%s' "${BOT_DEPLOYMENTS}" | jq 'length')."
+              break
+            fi
+
             DEPLOY_PATH="/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=preview&limit=100"
             if [ -n "${DEPLOY_UNTIL}" ]; then
               ENCODED_DEPLOY_UNTIL="$(printf '%s' "${DEPLOY_UNTIL}" | jq -sRr @uri)"
@@ -257,7 +236,7 @@ jobs:
               break
             fi
             if [ "${NEXT_DEPLOY_UNTIL}" = "${DEPLOY_UNTIL}" ]; then
-              echo "::warning::Vercel deployments pagination cursor did not advance (page ${deploy_page}); stopping pagination."
+              echo "::warning::Vercel deployments pagination cursor did not advance (deploy_page=${deploy_page}, MAX_DEPLOY_PAGES=${MAX_DEPLOY_PAGES}, DEPLOY_UNTIL='${DEPLOY_UNTIL}', NEXT_DEPLOY_UNTIL='${NEXT_DEPLOY_UNTIL}'). Stopping pagination with BOT_DEPLOYMENTS length $(printf '%s' "${BOT_DEPLOYMENTS}" | jq 'length')."
               break
             fi
 
@@ -278,8 +257,14 @@ jobs:
           #
           BOT_NEON_BRANCHES=""
           NEON_CURSOR=""
+          MAX_NEON_BRANCH_PAGES=50
           neon_page=1
           while :; do
+            if [ "${neon_page}" -ge "${MAX_NEON_BRANCH_PAGES}" ]; then
+              echo "::warning::Neon branches pagination hit page cap (neon_page=${neon_page} >= MAX_NEON_BRANCH_PAGES=${MAX_NEON_BRANCH_PAGES}). Stopping pagination with NEON_CURSOR='${NEON_CURSOR}'."
+              break
+            fi
+
             BRANCHES_PATH="/projects/${NEON_PROJECT_ID}/branches?limit=100"
             if [ -n "${NEON_CURSOR}" ]; then
               ENCODED_NEON_CURSOR="$(printf '%s' "${NEON_CURSOR}" | jq -sRr @uri)"
@@ -312,7 +297,7 @@ jobs:
               break
             fi
             if [ "${NEXT_NEON_CURSOR}" = "${NEON_CURSOR}" ]; then
-              echo "::warning::Neon branches pagination cursor did not advance (page ${neon_page}); stopping pagination."
+              echo "::warning::Neon branches pagination cursor did not advance (neon_page=${neon_page}, MAX_NEON_BRANCH_PAGES=${MAX_NEON_BRANCH_PAGES}, NEON_CURSOR='${NEON_CURSOR}', NEXT_NEON_CURSOR='${NEXT_NEON_CURSOR}'); stopping pagination."
               break
             fi
 

@@ -95,11 +95,11 @@ export async function createProject(
       .values({ name, ownerUserId, slug })
       .returning();
   } catch (err) {
-    if (isUndefinedTableError(err)) {
+    if (isUndefinedTableError(err) || isUndefinedColumnError(err)) {
       throw new AppError(
         "db_not_migrated",
         500,
-        "Database is not migrated. Run migrations and try again.",
+        "Database is not migrated. Run migrations and refresh the page.",
         err,
       );
     }

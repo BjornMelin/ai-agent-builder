@@ -2,7 +2,7 @@
 ADR: 0013
 Title: Caching + cost controls: Next.js caching + Upstash Redis + budgets
 Status: Implemented
-Version: 0.4
+Version: 0.5
 Date: 2026-02-06
 Supersedes: []
 Superseded-by: []

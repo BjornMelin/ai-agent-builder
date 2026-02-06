@@ -43,7 +43,7 @@ export function ProjectNavClient(props: Readonly<{ projectId: string }>) {
             <Button
               asChild
               className={cn(
-                "h-8 rounded-full px-3.5 text-xs",
+                "h-11 rounded-full px-3.5 text-xs md:h-8",
                 isActive
                   ? "border border-border bg-background text-foreground shadow-xs"
                   : "border border-transparent text-muted-foreground",

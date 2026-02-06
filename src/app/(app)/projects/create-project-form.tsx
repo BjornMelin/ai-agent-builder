@@ -44,7 +44,7 @@ export function CreateProjectForm() {
             autoComplete="off"
             id="create-project-name"
             name="name"
-            placeholder="Customer knowledge base"
+            placeholder="Customer knowledge base…"
             required
           />
           <p className="text-muted-foreground text-xs">
@@ -61,7 +61,7 @@ export function CreateProjectForm() {
             autoCorrect="off"
             id="create-project-slug"
             name="slug"
-            placeholder="customer-kb"
+            placeholder="customer-kb…"
             spellCheck={false}
           />
           <p className="text-muted-foreground text-xs">

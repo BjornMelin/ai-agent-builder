@@ -22,10 +22,10 @@ related_requirements:
     "FR-023",
     "FR-031",
     "IR-001",
+    "IR-002",
     "IR-004",
     "IR-005",
     "IR-006",
-    "IR-002",
     "NFR-003",
     "NFR-004",
     "NFR-006",
@@ -89,7 +89,7 @@ This spec explicitly documents:
 
 ## Current Implementation Snapshot (Repo Truth)
 
-This section is the authoritative snapshot of the current repository state as of **2026-02-03**.
+This section is the authoritative snapshot of the current repository state as of **2026-02-06**.
 
 ### Database (Neon + Drizzle)
 
