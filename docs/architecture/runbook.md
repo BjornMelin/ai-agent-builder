@@ -29,6 +29,10 @@ preview env vars for that branch:
 Use this when `POST <NEON_AUTH_BASE_URL>/sign-in/email` returns `500` for valid
 credential users in the local development setup.
 
+Full instructions (prereqs, setup, and CLI reference):
+
+- [docs/ops/neon-auth-local.md](../ops/neon-auth-local.md)
+
 1. Refresh local env from Vercel Development:
    - `vercel env pull --yes --environment=development .env.local`
 2. Audit current local Neon Auth wiring and credential health:
@@ -54,6 +58,7 @@ CLI reference:
 - All three commands above are wrappers around one unified script:
   - `bun scripts/neon-auth-local.ts --help`
   - `bun scripts/neon-auth-local.ts audit --help`
+  - `bun scripts/neon-auth-local.ts create --help`
   - `bun scripts/neon-auth-local.ts repair --help`
   - `bun scripts/neon-auth-local.ts smoke --help`
 
