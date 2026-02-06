@@ -195,9 +195,7 @@ export function ProjectChatClient(
     () =>
       props.initialThread?.workflowRunId ?? `project-chat:${props.projectId}`,
   );
-  const [shouldResume] = useState(
-    () => props.initialThread?.workflowRunId !== undefined,
-  );
+  const [shouldResume] = useState(() => props.initialThread !== null);
 
   const [transport] = useState(() => {
     const workflowTransport = new WorkflowChatTransport<AppUIMessage>({

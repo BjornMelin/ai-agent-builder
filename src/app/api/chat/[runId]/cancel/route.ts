@@ -15,7 +15,8 @@ import { jsonError, jsonOk } from "@/lib/next/responses";
  * @param _req - HTTP request.
  * @param context - Route params.
  * @returns JSON ok or JSON error.
- * @throws AppError - With code "not_found" when the session cannot be found.
+ * @throws AppError - With code "not_found" when the chat session cannot be found.
+ * @throws AppError - With code "not_found" when the workflow run cannot be found.
  * @throws AppError - With code "conflict" when the session is no longer active.
  * @throws AppError - With code "forbidden" when the session's project is not accessible.
  */

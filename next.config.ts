@@ -5,12 +5,7 @@ import { withWorkflow } from "workflow/next";
 /** Base Next.js configuration for app runtime, images, and build behavior. */
 const nextConfig: NextConfig = {
   experimental: {
-    optimizePackageImports: [
-      "radix-ui",
-      "lucide-react",
-      "media-chrome",
-      "@xyflow/react",
-    ],
+    optimizePackageImports: ["radix-ui", "lucide-react"],
   },
   images: {
     contentDispositionType: "attachment",

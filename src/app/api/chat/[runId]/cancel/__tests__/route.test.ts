@@ -127,5 +127,13 @@ describe("POST /api/chat/:runId/cancel", () => {
     await expect(res.json()).resolves.toEqual({ ok: true });
     expect(cancel).toHaveBeenCalledTimes(1);
     expect(state.updateChatThreadByWorkflowRunId).toHaveBeenCalledTimes(1);
+    expect(state.updateChatThreadByWorkflowRunId).toHaveBeenCalledWith(
+      "run_1",
+      expect.objectContaining({
+        endedAt: expect.any(Date),
+        lastActivityAt: expect.any(Date),
+        status: "canceled",
+      }),
+    );
   });
 });

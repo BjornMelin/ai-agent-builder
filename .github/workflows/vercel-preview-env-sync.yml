@@ -157,15 +157,6 @@ jobs:
                     | map(.alias[])
                     | map(select(type == "string"))
                     | map(select(endswith(".vercel.app")))
-                    | map(select(test("-git-"; "i")))
-                    | .[0]
-                  )
-                  // (
-                    $deployments
-                    | map(select(.alias != null))
-                    | map(.alias[])
-                    | map(select(type == "string"))
-                    | map(select(endswith(".vercel.app")))
                     | .[0]
                   )
                   // (

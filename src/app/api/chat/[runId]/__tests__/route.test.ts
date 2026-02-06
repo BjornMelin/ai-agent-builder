@@ -110,4 +110,23 @@ describe("POST /api/chat/:runId", () => {
     await expect(res.json()).resolves.toEqual({ ok: true });
     expect(state.resume).toHaveBeenCalledWith("run_1", { message: "hello" });
   });
+
+  it("still returns ok when state update fails after resume succeeds", async () => {
+    const POST = await loadRoute();
+    state.updateChatThreadByWorkflowRunId.mockRejectedValueOnce(
+      new Error("db timeout"),
+    );
+
+    const res = await POST(
+      new Request("http://localhost/api/chat/run_1", {
+        body: JSON.stringify({ message: "hello" }),
+        method: "POST",
+      }),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ ok: true });
+    expect(state.resume).toHaveBeenCalledWith("run_1", { message: "hello" });
+  });
 });

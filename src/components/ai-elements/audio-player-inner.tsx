@@ -69,8 +69,8 @@ export const AudioPlayer = (props: AudioPlayerProps) => {
   );
 };
 
-/** Props for `AudioPlayerElement` supporting src or speech-result audio data. */
 type AudioPlayerElementBaseProps = Omit<ComponentProps<"audio">, "src">;
+/** Props for `AudioPlayerElement` supporting src or speech-result audio data. */
 export type AudioPlayerElementProps =
   | (AudioPlayerElementBaseProps & {
       data: SpeechResult["audio"];
@@ -163,11 +163,11 @@ export type AudioPlayerPlayButtonProps = ComponentProps<typeof MediaPlayButton>;
  * @returns The play button component.
  */
 export const AudioPlayerPlayButton = (props: AudioPlayerPlayButtonProps) => {
-  const { className, ...rest } = props;
+  const { className, "aria-label": ariaLabel, ...rest } = props;
   return (
     <Button asChild size="icon-sm" variant="outline">
       <MediaPlayButton
-        aria-label={rest["aria-label"] ?? "Play or pause audio"}
+        aria-label={ariaLabel ?? "Play or pause audio"}
         className={cn("bg-transparent", className)}
         data-slot="audio-player-play-button"
         {...rest}
@@ -190,11 +190,11 @@ export type AudioPlayerSeekBackwardButtonProps = ComponentProps<
 export const AudioPlayerSeekBackwardButton = (
   props: AudioPlayerSeekBackwardButtonProps,
 ) => {
-  const { seekOffset = 10, ...rest } = props;
+  const { seekOffset = 10, "aria-label": ariaLabel, ...rest } = props;
   return (
     <Button asChild size="icon-sm" variant="outline">
       <MediaSeekBackwardButton
-        aria-label={rest["aria-label"] ?? `Seek back ${seekOffset} seconds`}
+        aria-label={ariaLabel ?? `Seek back ${seekOffset} seconds`}
         data-slot="audio-player-seek-backward-button"
         seekOffset={seekOffset}
         {...rest}
@@ -217,11 +217,11 @@ export type AudioPlayerSeekForwardButtonProps = ComponentProps<
 export const AudioPlayerSeekForwardButton = (
   props: AudioPlayerSeekForwardButtonProps,
 ) => {
-  const { seekOffset = 10, ...rest } = props;
+  const { seekOffset = 10, "aria-label": ariaLabel, ...rest } = props;
   return (
     <Button asChild size="icon-sm" variant="outline">
       <MediaSeekForwardButton
-        aria-label={rest["aria-label"] ?? `Seek forward ${seekOffset} seconds`}
+        aria-label={ariaLabel ?? `Seek forward ${seekOffset} seconds`}
         data-slot="audio-player-seek-forward-button"
         seekOffset={seekOffset}
         {...rest}

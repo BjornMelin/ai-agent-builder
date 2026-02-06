@@ -94,6 +94,10 @@ const useTheme = (enabled: boolean) => {
       return;
     }
 
+    const syncFrame = window.requestAnimationFrame(() => {
+      setTheme(getCurrentTheme());
+    });
+
     // Watch for classList changes
     const observer = new MutationObserver(() => {
       setTheme(getCurrentTheme());
@@ -116,6 +120,7 @@ const useTheme = (enabled: boolean) => {
     }
 
     return () => {
+      window.cancelAnimationFrame(syncFrame);
       observer.disconnect();
       if (mql) {
         mql.removeEventListener("change", handleMediaChange);
@@ -224,6 +229,8 @@ const PersonaWithModel = ({
 PersonaWithModel.displayName = "PersonaWithModel";
 
 interface PersonaWithoutModelProps {
+  rive: ReturnType<typeof useRive>["rive"];
+  source: (typeof sources)[keyof typeof sources];
   children: ReactNode;
 }
 

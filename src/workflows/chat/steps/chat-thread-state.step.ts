@@ -20,6 +20,7 @@ type TouchInput = Readonly<{
  * orchestrator functions.
  *
  * @param input - Update payload.
+ * @throws AppError - With code "db_not_migrated" when the database schema is missing.
  */
 export async function touchChatThreadState(input: TouchInput): Promise<void> {
   "use step";

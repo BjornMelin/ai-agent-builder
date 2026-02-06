@@ -62,10 +62,19 @@ export async function POST(
     await chatMessageHook.resume(params.runId, { message: parsed.message });
 
     const now = new Date();
-    await updateChatThreadByWorkflowRunId(params.runId, {
-      lastActivityAt: now,
-      status: parsed.message === "/done" ? "waiting" : "running",
-    });
+    try {
+      await updateChatThreadByWorkflowRunId(params.runId, {
+        lastActivityAt: now,
+        status: parsed.message === "/done" ? "waiting" : "running",
+      });
+    } catch (updateError) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error(
+          "[api/chat/:runId] Message resumed but state update failed.",
+          updateError,
+        );
+      }
+    }
 
     return jsonOk({ ok: true });
   } catch (err) {
