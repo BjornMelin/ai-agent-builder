@@ -97,7 +97,10 @@ function BreadcrumbEllipsis({
 }
 
 /**
- * Breadcrumb components.
+ * Accessible breadcrumb navigation primitives built on Radix Slot, providing
+ * presentational building blocks for `Breadcrumb`, `BreadcrumbList`,
+ * `BreadcrumbItem`, `BreadcrumbLink`, `BreadcrumbPage`, `BreadcrumbSeparator`,
+ * and `BreadcrumbEllipsis`.
  */
 export {
   Breadcrumb,

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -41,23 +41,27 @@ function findSuppressHydrationWarnings(): string[] {
 
   for (const root of TARGET_ROOTS) {
     const absoluteRoot = path.join(projectRoot, root);
+    if (!existsSync(absoluteRoot)) {
+      continue;
+    }
     if (!statSync(absoluteRoot).isDirectory()) {
       continue;
     }
     const files = collectSourceFiles(absoluteRoot);
     for (const file of files) {
       const relativePath = path.relative(projectRoot, file);
+      const normalizedPath = relativePath.replaceAll("\\", "/");
       const content = readFileSync(file, "utf8");
       if (!content.includes(SUPPRESS_PATTERN)) {
         continue;
       }
-      if (ALLOWLIST.has(relativePath)) {
+      if (ALLOWLIST.has(normalizedPath)) {
         continue;
       }
       const lines = content.split("\n");
       for (let index = 0; index < lines.length; index++) {
         if (lines[index]?.includes(SUPPRESS_PATTERN)) {
-          results.push(`${relativePath}:${index + 1}`);
+          results.push(`${normalizedPath}:${index + 1}`);
         }
       }
     }

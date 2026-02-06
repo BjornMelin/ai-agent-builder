@@ -8,7 +8,14 @@ import { getRedis } from "@/lib/upstash/redis.server";
 const SEARCH_REQUESTS_PER_MINUTE = 60;
 
 /**
- * Search rate-limit decision.
+ * Result of evaluating the per-user search rate limit.
+ *
+ * Fields:
+ * - `success`: Whether the request is allowed.
+ * - `limit`: Max number of requests in the configured window.
+ * - `remaining`: Remaining requests in the current window.
+ * - `reset`: Unix timestamp (ms) when the window resets.
+ * - `retryAfterSeconds`: Suggested client wait time when blocked, otherwise null.
  */
 export type SearchRateLimitDecision = Readonly<{
   success: boolean;

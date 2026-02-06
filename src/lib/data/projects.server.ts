@@ -119,6 +119,9 @@ export async function createProject(
  * @param id - Project ID.
  * @param userId - Authenticated user ID.
  * @returns Project DTO or null.
+ * @throws AppError - With code "db_not_migrated" when the database schema is missing or outdated.
+ * @throws Error - When building the project owner access filter fails.
+ * @throws unknown - Re-throws unexpected database errors.
  */
 export async function getProjectByIdForUser(
   id: string,
@@ -160,6 +163,9 @@ export async function getProjectByIdForUser(
  * @param slug - Project slug.
  * @param userId - Authenticated user ID.
  * @returns Project DTO or null.
+ * @throws AppError - With code "db_not_migrated" when the database schema is missing or outdated.
+ * @throws Error - When building the project owner access filter fails.
+ * @throws unknown - Re-throws unexpected database errors.
  */
 export async function getProjectBySlugForUser(
   slug: string,
@@ -203,6 +209,9 @@ export async function getProjectBySlugForUser(
  * @param userId - Authenticated user ID (part of the cache key).
  * @param options - Pagination options (limit/offset).
  * @returns Project DTOs ordered by newest first.
+ * @throws AppError - With code "db_not_migrated" when the database schema is missing or outdated.
+ * @throws Error - When building the project owner access filter fails.
+ * @throws unknown - Re-throws unexpected database errors.
  */
 export async function listProjects(
   userId: string,

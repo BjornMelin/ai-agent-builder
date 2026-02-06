@@ -1,9 +1,23 @@
 import "server-only";
 
-const prefix = "aab";
+/**
+ * Cache tag namespace prefix for this app ("AI Agent Builder").
+ *
+ * Cache tags are shared within a deployment, so we keep them namespaced to avoid
+ * collisions with other apps/projects that may share the same cache backend.
+ */
+const CACHE_TAG_NAMESPACE = "aab";
 
 function normalizeSegment(value: string): string {
-  return value.trim().toLowerCase();
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) {
+    throw new Error(
+      `normalizeSegment(): expected a non-empty segment after normalization (input: ${JSON.stringify(
+        value,
+      )}).`,
+    );
+  }
+  return normalized;
 }
 
 /**
@@ -13,7 +27,7 @@ function normalizeSegment(value: string): string {
  * @returns Stable cache tag.
  */
 export function tagProjectsIndex(userId: string): string {
-  return `${prefix}:projects:index:${normalizeSegment(userId)}`;
+  return `${CACHE_TAG_NAMESPACE}:projects:index:${normalizeSegment(userId)}`;
 }
 
 /**
@@ -23,7 +37,7 @@ export function tagProjectsIndex(userId: string): string {
  * @returns Stable cache tag.
  */
 export function tagProject(projectId: string): string {
-  return `${prefix}:project:${normalizeSegment(projectId)}`;
+  return `${CACHE_TAG_NAMESPACE}:project:${normalizeSegment(projectId)}`;
 }
 
 /**
@@ -33,7 +47,7 @@ export function tagProject(projectId: string): string {
  * @returns Stable cache tag.
  */
 export function tagArtifactsIndex(projectId: string): string {
-  return `${prefix}:artifacts:index:${normalizeSegment(projectId)}`;
+  return `${CACHE_TAG_NAMESPACE}:artifacts:index:${normalizeSegment(projectId)}`;
 }
 
 /**
@@ -43,7 +57,7 @@ export function tagArtifactsIndex(projectId: string): string {
  * @returns Stable cache tag.
  */
 export function tagUploadsIndex(projectId: string): string {
-  return `${prefix}:uploads:index:${normalizeSegment(projectId)}`;
+  return `${CACHE_TAG_NAMESPACE}:uploads:index:${normalizeSegment(projectId)}`;
 }
 
 /**
@@ -52,5 +66,5 @@ export function tagUploadsIndex(projectId: string): string {
  * @returns Stable cache tag.
  */
 export function tagModelCatalog(): string {
-  return `${prefix}:models:catalog`;
+  return `${CACHE_TAG_NAMESPACE}:models:catalog`;
 }

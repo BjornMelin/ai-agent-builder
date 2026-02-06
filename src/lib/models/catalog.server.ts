@@ -5,6 +5,7 @@ import path from "node:path";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { tagModelCatalog } from "@/lib/cache/tags";
+import { log } from "@/lib/core/log";
 
 /**
  * Minimal model descriptor loaded from AI Gateway models JSON.
@@ -29,9 +30,15 @@ export async function loadModelCatalog(): Promise<
   cacheLife("hours");
   cacheTag(tagModelCatalog());
 
-  const filePath = path.join(process.cwd(), "docs/ai-gateway-models.json");
-  const json = await readFile(filePath, "utf8");
-  const parsed = JSON.parse(json) as unknown;
+  let parsed: unknown;
+  try {
+    const filePath = path.join(process.cwd(), "docs/ai-gateway-models.json");
+    const json = await readFile(filePath, "utf8");
+    parsed = JSON.parse(json) as unknown;
+  } catch (error) {
+    log.warn("model_catalog_load_failed", { err: error });
+    return [];
+  }
   if (!Array.isArray(parsed)) {
     return [];
   }

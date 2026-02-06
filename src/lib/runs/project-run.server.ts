@@ -40,7 +40,7 @@ export async function startProjectRun(
   const run = await createRun({
     kind: input.kind,
     projectId: input.projectId,
-    ...(input.metadata === undefined ? {} : { metadata: input.metadata }),
+    ...(input.metadata != null ? { metadata: input.metadata } : {}),
   });
 
   let workflowRunId: string | null = null;
