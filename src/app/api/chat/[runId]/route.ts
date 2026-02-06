@@ -22,6 +22,9 @@ const bodySchema = z.strictObject({
  * @param context - Route params.
  * @returns JSON ok or JSON error.
  * @throws AppError - When the request body is invalid.
+ * @throws AppError - With code "not_found" when the chat session cannot be found.
+ * @throws AppError - With code "conflict" when the chat session is no longer active.
+ * @throws AppError - With code "forbidden" when the session's project is not accessible.
  */
 export async function POST(
   req: Request,

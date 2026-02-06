@@ -171,7 +171,7 @@ function reconstructMessages(
 /**
  * Streaming multi-turn chat client for a project.
  *
- * @param props - Props object for the chat client in `chat-client.tsx`; requires `projectId` (string), a non-empty project identifier used for chat-session storage keys and chat API routing.
+ * @param props - Props object requiring `projectId` (non-empty string for storage keys and API routing) and optional `initialThread` (existing thread to resume, with `workflowRunId` and `status`).
  * @returns The chat UI for the project.
  */
 export function ProjectChatClient(
@@ -591,9 +591,7 @@ export function ProjectChatClient(
         ) : null}
 
         <PromptInput
-          onSubmit={(message) =>
-            Promise.resolve().then(() => sendMessage(message))
-          }
+          onSubmit={(message) => sendMessage(message)}
           className="rounded-md border bg-card"
         >
           <PromptInputBody>
