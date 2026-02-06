@@ -18,6 +18,9 @@ import {
 import { chatTools } from "@/workflows/chat/tools";
 import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
 
+/** Maximum tool-use steps the agent may take in a single turn. */
+const MAX_AGENT_STEPS_PER_TURN = 12;
+
 /**
  * Durable multi-turn chat workflow for a single project.
  *
@@ -85,7 +88,7 @@ export async function projectChat(
 
       const result = await agent.stream({
         experimental_context: { projectId },
-        maxSteps: 12,
+        maxSteps: MAX_AGENT_STEPS_PER_TURN,
         messages,
         preventClose: true,
         sendFinish: false,

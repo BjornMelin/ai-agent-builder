@@ -281,12 +281,13 @@ export function ProjectChatClient(
   const composerErrorId = `project-chat-composer-error-${props.projectId}`;
   const composerInputId = `project-chat-composer-${props.projectId}`;
   const composerLabelId = `${composerInputId}-label`;
+  const messages = reconstructMessages(rawMessages);
+  const hasMessages = messages.length > 0;
   const isTerminalStatus =
     runStatus === "succeeded" ||
     runStatus === "failed" ||
     runStatus === "canceled";
   const hasActiveSession = Boolean(runId) && !isTerminalStatus;
-  const messages = reconstructMessages(rawMessages);
 
   async function sendFollowUp(text: string): Promise<boolean> {
     if (!runId) return false;
@@ -466,14 +467,14 @@ export function ProjectChatClient(
         </div>
         <div className="flex items-center gap-2">
           <Button
-            disabled={!hasActiveSession}
+            disabled={!hasActiveSession && !hasMessages}
             onClick={async () => {
               await endSession();
             }}
             type="button"
             variant="outline"
           >
-            End session
+            {hasActiveSession ? "End session" : "Clear chat"}
           </Button>
         </div>
       </div>
