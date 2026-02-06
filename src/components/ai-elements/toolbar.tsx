@@ -1,25 +1,17 @@
-import { NodeToolbar, Position } from "@xyflow/react";
-import type { ComponentProps } from "react";
-import { cn } from "@/lib/utils";
+"use client";
 
-type ToolbarProps = ComponentProps<typeof NodeToolbar>;
+import dynamic from "next/dynamic";
+
+/** Props for the lazily loaded `Toolbar` component. */
+export type ToolbarProps = import("./toolbar-inner").ToolbarProps;
 
 /**
- * Renders a node toolbar fixed to the bottom position.
- *
- * @param props - Toolbar props for NodeToolbar.
- * @returns A positioned toolbar element.
+ * Lazily load the XYFlow toolbar to keep `xyflow/react` out of the main bundle.
  */
-export const Toolbar = (props: ToolbarProps) => {
-  const { className, ...rest } = props;
-  return (
-    <NodeToolbar
-      {...rest}
-      className={cn(
-        "flex items-center gap-1 rounded-sm border bg-background p-1.5",
-        className,
-      )}
-      position={Position.Bottom}
-    />
-  );
-};
+export const Toolbar = dynamic<ToolbarProps>(
+  () => import("./toolbar-inner").then((mod) => mod.ToolbarInner),
+  {
+    loading: () => <div aria-hidden="true" className="h-full w-full" />,
+    ssr: false,
+  },
+);

@@ -56,7 +56,7 @@ Implementation runs add new constraints:
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -115,7 +115,7 @@ This spec’s design details are captured in the following sections:
 
 ### Data contracts (if applicable)
 
-- Run + step persistence: see `docs/architecture/data-model.md`.
+- Run + step persistence: see [docs/architecture/data-model.md](/docs/architecture/data-model.md).
 - Step IO contract:
   - `run_steps.inputs`: stable JSON inputs and provenance references
   - `run_steps.outputs`: stable JSON outputs and external IDs.
@@ -128,7 +128,7 @@ This spec’s design details are captured in the following sections:
 
 ### Configuration
 
-- See `docs/ops/env.md`.
+- See [docs/ops/env.md](/docs/ops/env.md).
   - Workflow DevKit does not require additional env vars for the core run/start/stream path when deployed to Vercel.
   - QStash env vars apply to background jobs (especially ingestion) per ADR-0005.
 
@@ -255,9 +255,9 @@ For implementation runs, add:
 
 ## Key files
 
-- `docs/specs/requirements.md`
-- `docs/architecture/spec/SPEC-0005-durable-runs-orchestration.md`
-- `docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`
+- [docs/specs/requirements.md](/docs/specs/requirements.md)
+- [docs/architecture/spec/SPEC-0005-durable-runs-orchestration.md](/docs/architecture/spec/SPEC-0005-durable-runs-orchestration.md)
+- [docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md](/docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
 - `src/lib/upstash/qstash.server.ts`
 - `src/app/api/runs/route.ts`
 - `src/app/api/runs/[runId]/stream/route.ts`

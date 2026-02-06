@@ -102,7 +102,7 @@ flowchart LR
 
 - Persist `model`, `provider`, `token_usage`, `latency_ms` in run steps.
 - Provide run-level budget checks before expensive steps.
-- Default model IDs are config-driven via env vars (see `docs/ops/env.md` and
+- Default model IDs are config-driven via env vars (see [docs/ops/env.md](/docs/ops/env.md) and
   SPEC-0021):
   - `AI_GATEWAY_CHAT_MODEL` (default: `xai/grok-4.1-fast-reasoning`)
   - `AI_GATEWAY_EMBEDDING_MODEL` (default: `alibaba/qwen3-embedding-4b`)

@@ -24,6 +24,32 @@ preview env vars for that branch:
 
 - `vercel env pull --environment=preview --git-branch=<branch>`
 
+### Preview branch env automation
+
+Preview branch env vars are managed by:
+
+- `.github/workflows/vercel-preview-env-sync.yml` (upserts branch-scoped `APP_BASE_URL`)
+- `.github/workflows/vercel-preview-env-cleanup.yml` (best-effort cleanup on PR close)
+
+Fork PRs skip this automation because GitHub Actions secrets are unavailable for
+untrusted forks.
+
+### Validate preview env resolution (CLI)
+
+1. List branch-scoped preview env vars:
+   - `vercel env list preview <branch>`
+2. Pull branch preview env vars locally:
+   - `vercel env pull --environment=preview --git-branch=<branch> .env.preview.local`
+3. Verify `APP_BASE_URL` value under preview branch context:
+   - `vercel env run -e preview --git-branch=<branch> -- bun -e "console.log(process.env.APP_BASE_URL)"`
+4. Verify app env parsing under the same branch context:
+   - `vercel env run -e preview --git-branch=<branch> -- bun -e "import('./src/lib/env').then((m)=>console.log(m.env.app.baseUrl))"`
+
+For full cross-environment validation (env completeness, AI Gateway, Upstash,
+database, deployment behavior, and logs), use:
+
+- [docs/ops/env.md](../ops/env.md) → **Validation checklist**
+
 ## Database migrations
 
 Generate migration:
@@ -119,7 +145,10 @@ If OAuth is disabled on Preview, use **email OTP** or **magic link** auth flows:
 - Confirm Upstash Vector URL/token are set.
 - Confirm chunks are being created and indexed.
 - Repo indexing and approval-gated implementation steps are spec’d but not yet
-  implemented in this repository snapshot (see SPEC-0016/SPEC-0017/SPEC-0018).
+  implemented in this repository snapshot (see
+  [SPEC-0016](./spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md),
+  [SPEC-0017](./spec/SPEC-0017-repo-ops-and-github-integration.md),
+  [SPEC-0018](./spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)).
 
 ## Rotating secrets
 

@@ -290,16 +290,37 @@ export const chatThreadsTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
     id: uuid("id").primaryKey().defaultRandom(),
+    lastActivityAt: timestamp("last_activity_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     projectId: uuid("project_id")
       .notNull()
       .references(() => projectsTable.id, { onDelete: "cascade" }),
+    status: runStatusEnum("status").notNull().default("running"),
     title: text("title").notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /**
+     * Workflow DevKit run ID backing this chat thread (used for streaming/cancel).
+     *
+     * @remarks
+     * Nullable for historical rows (pre-migration) and for threads created but
+     * not yet started successfully.
+     */
+    workflowRunId: varchar("workflow_run_id", { length: 128 }),
   },
-  (t) => [index("chat_threads_project_id_idx").on(t.projectId)],
+  (t) => [
+    index("chat_threads_project_id_idx").on(t.projectId),
+    uniqueIndex("chat_threads_workflow_run_id_unique").on(t.workflowRunId),
+    index("chat_threads_project_id_status_idx").on(t.projectId, t.status),
+    index("chat_threads_project_id_last_activity_at_idx").on(
+      t.projectId,
+      t.lastActivityAt,
+    ),
+  ],
 );
 
 /**
@@ -313,13 +334,26 @@ export const chatMessagesTable = pgTable(
       .notNull()
       .defaultNow(),
     id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * UI message ID from the AI SDK message list (for idempotent inserts).
+     */
+    messageUid: varchar("message_uid", { length: 128 }),
     role: varchar("role", { length: 32 }).notNull(),
+    textContent: text("text_content"),
     threadId: uuid("thread_id")
       .notNull()
       .references(() => chatThreadsTable.id, { onDelete: "cascade" }),
+    /**
+     * Full AI SDK UI message payload (including parts/tools/reasoning).
+     */
+    uiMessage: jsonb("ui_message").$type<Record<string, unknown>>(),
   },
   (t) => [
     index("chat_messages_thread_id_created_at_idx").on(t.threadId, t.createdAt),
+    uniqueIndex("chat_messages_thread_id_message_uid_unique").on(
+      t.threadId,
+      t.messageUid,
+    ),
   ],
 );
 

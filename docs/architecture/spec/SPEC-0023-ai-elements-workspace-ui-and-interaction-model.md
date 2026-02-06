@@ -29,7 +29,7 @@ This spec is the UI companion to:
 
 - Server Components for data reads; Client Components only for interactive surfaces.
 - Avoid waterfalls: parallelize independent fetches (`Promise.all`) and stream with Suspense.
-- **No manual memoization**: do not use `useMemo` or `useCallback` (repo rule).
+- Memoization follows `$vercel-react-best-practices`: use `useMemo`/`useCallback` only for genuinely expensive work or to prevent costly re-renders (`rerender-memo`), and avoid memo for cheap primitives (`rerender-simple-expression-in-memo`).
 - **No barrel files**: import from concrete module paths only.
 - Accessibility baseline: shadcn/ui + semantic HTML, keyboard nav, focus states.
 - Use `next/image` for rendered images and configure external domains via `images.remotePatterns` (use `unoptimized` for blob/data URLs as needed). [Next.js Image component](https://nextjs.org/docs/app/api-reference/components/image).

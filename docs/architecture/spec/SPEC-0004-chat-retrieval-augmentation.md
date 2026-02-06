@@ -43,7 +43,7 @@ Users iterate on specs and artifacts via chat. Chat must stream, persist, and us
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -97,7 +97,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Data contracts (if applicable)
 
-- Chat message persistence: see `docs/architecture/data-model.md`.
+- Chat message persistence: see [docs/architecture/data-model.md](/docs/architecture/data-model.md).
 - Retrieval results include enough metadata to render citations:
   - `url` (for web sources)
   - `fileId`/`chunkId` (for uploaded and generated sources)
@@ -112,7 +112,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Configuration
 
-- See `docs/ops/env.md`:
+- See [docs/ops/env.md](/docs/ops/env.md):
   - AI Gateway: `AI_GATEWAY_API_KEY` (optional `AI_GATEWAY_BASE_URL`)
   - Upstash Vector: `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`
   - Optional caching: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`

@@ -34,7 +34,7 @@ extractions must be cached and converted into a minimal citation schema.
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -93,7 +93,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Configuration
 
-- See `docs/ops/env.md`:
+- See [docs/ops/env.md](/docs/ops/env.md):
   - Web research: `EXA_API_KEY`, `FIRECRAWL_API_KEY`
   - Optional caching: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 

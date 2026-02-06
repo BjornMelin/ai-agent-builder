@@ -29,15 +29,15 @@ export async function GET(
   try {
     const paramsPromise = context.params;
     const authPromise = requireAppUserApi();
-    await Promise.all([authPromise, paramsPromise]);
-    const { projectId } = await paramsPromise;
+    const [params] = await Promise.all([paramsPromise, authPromise]);
+    const { projectId } = params;
 
     const project = await getProjectById(projectId);
     if (!project) {
       throw new AppError("not_found", 404, "Project not found.");
     }
 
-    const artifacts = await listLatestArtifacts(project.id, { limit: 500 });
+    const artifacts = await listLatestArtifacts(projectId, { limit: 500 });
     const citations = await listCitationsByArtifactIds(
       artifacts.map((a) => a.id),
     );

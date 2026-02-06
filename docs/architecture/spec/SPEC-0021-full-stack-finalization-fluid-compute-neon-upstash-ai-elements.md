@@ -237,7 +237,7 @@ development, Vercel Preview deployments, and Production.
 ### Environment tiers
 
 We use Vercel’s standard env tiers and keep the contracts aligned with
-`docs/ops/env.md` and `src/lib/env.ts` (ADR-0021 / SPEC-0015):
+[docs/ops/env.md](/docs/ops/env.md) and `src/lib/env.ts` (ADR-0021 / SPEC-0015):
 
 - **Development**: local dev + `vercel dev` + Vercel “Development” env vars.
 - **Preview**: per-branch deployments (and, when enabled, per-branch Neon DB branch).
@@ -271,7 +271,7 @@ prefer production-scoped resources and tokens.
 ### Env var matrix (minimum required)
 
 These are “minimum required for full functionality” env vars. Each group is
-feature-gated in `src/lib/env.ts` and documented in `docs/ops/env.md`.
+feature-gated in `src/lib/env.ts` and documented in [docs/ops/env.md](/docs/ops/env.md).
 
 - **DB**:
   - `DATABASE_URL`
@@ -480,7 +480,7 @@ This app’s UI must make all major capabilities discoverable and fast:
 
 - Default to Server Components for data reads; use Client Components only for interactive surfaces.
 - Avoid waterfalls: start independent server work early, `Promise.all` where safe.
-- No manual memoization (`useMemo`, `useCallback`).
+- Memoization follows `$vercel-react-best-practices`: use `useMemo`/`useCallback` only for genuinely expensive work or to prevent costly re-renders (`rerender-memo`), and avoid memo for cheap primitives (`rerender-simple-expression-in-memo`).
 - No barrel files / no new barrel imports.
 - Use `next/image` for rendered images (configure external domains via `images.remotePatterns`; use `unoptimized` for blob/data URLs when needed). [Next.js Image component](https://nextjs.org/docs/app/api-reference/components/image).
 - Lazy-load heavy client renderers with `next/dynamic` to reduce initial bundle size. [Next.js lazy loading](https://nextjs.org/docs/app/building-your-application/optimizing/lazy-loading).
@@ -600,7 +600,7 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 3. Ensure the “env var contract” is updated when defaults change:
    - `src/lib/env.ts`
    - `.env.example`
-   - `docs/ops/env.md`
+   - [docs/ops/env.md](/docs/ops/env.md)
    - `src/lib/env.test.ts`
 
 ## References

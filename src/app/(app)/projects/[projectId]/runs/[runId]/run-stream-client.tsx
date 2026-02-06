@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessageChunk } from "ai";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 
 import {
   Conversation,
@@ -93,6 +93,10 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
   const [status, setStatus] = useState<StreamStatus>("idle");
   const [wasInterrupted, setWasInterrupted] = useState(false);
   const [reconnectSeed, setReconnectSeed] = useState(0);
+  const eventViews = events.map((event, index) => ({
+    key: `${event.type}-${event.runId}-${event.timestamp ?? "na"}-${index}`,
+    markdown: toMarkdown(event),
+  }));
 
   useEffect(() => {
     // Used as a manual "restart stream" trigger for this effect.
@@ -114,7 +118,9 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
         }
         const nextEvents = pendingEvents;
         pendingEvents = [];
-        setEvents((prev) => prev.concat(nextEvents));
+        startTransition(() => {
+          setEvents((prev) => prev.concat(nextEvents));
+        });
       };
       const scheduleFlush = () => {
         if (flushTimer !== null) {
@@ -357,13 +363,10 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
                 title="No events yet"
               />
             ) : (
-              events.map((ev, index) => (
-                <Message
-                  from="assistant"
-                  key={`${ev.type}-${ev.runId}-${ev.timestamp ?? index}`}
-                >
+              eventViews.map((view) => (
+                <Message from="assistant" key={view.key}>
                   <MessageContent>
-                    <MessageResponse>{toMarkdown(ev)}</MessageResponse>
+                    <MessageResponse>{view.markdown}</MessageResponse>
                   </MessageContent>
                 </Message>
               ))

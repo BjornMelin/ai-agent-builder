@@ -309,7 +309,6 @@ export const InlineCitationCarouselPrev = (
 
   return (
     <button
-      aria-disabled={!canScrollPrev}
       aria-label="Previous citation"
       className={cn(
         "inline-flex size-6 min-h-11 min-w-11 shrink-0 touch-manipulation items-center justify-center transition-opacity sm:min-h-6 sm:min-w-6",
@@ -355,7 +354,6 @@ export const InlineCitationCarouselNext = (
 
   return (
     <button
-      aria-disabled={!canScrollNext}
       aria-label="Next citation"
       className={cn(
         "inline-flex size-6 min-h-11 min-w-11 shrink-0 touch-manipulation items-center justify-center transition-opacity sm:min-h-6 sm:min-w-6",

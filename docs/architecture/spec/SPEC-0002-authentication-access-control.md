@@ -42,7 +42,7 @@ authentication subsystem.
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -122,7 +122,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ### Configuration
 
-- See `docs/ops/env.md` for env vars used by auth and access control:
+- See [docs/ops/env.md](/docs/ops/env.md) for env vars used by auth and access control:
   - `NEON_AUTH_BASE_URL`
   - `NEON_AUTH_COOKIE_SECRET`
   - `NEON_AUTH_COOKIE_DOMAIN` (optional)
@@ -163,7 +163,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
   - Local/development: set `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS=vercel`.
   - Preview: set `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` to an empty string (disable social providers).
   - Production: set `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS=github,vercel`.
-  - See `docs/ops/env.md`.
+  - See [docs/ops/env.md](/docs/ops/env.md).
 
 ## Failure modes and mitigation
 

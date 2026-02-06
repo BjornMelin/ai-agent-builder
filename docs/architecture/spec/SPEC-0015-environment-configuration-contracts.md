@@ -67,7 +67,7 @@ optional provisioning APIs), which must remain feature-gated.
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Non-functional requirements
 
@@ -163,14 +163,14 @@ Implementation/deploy automation (optional feature gates):
 ### File-level contracts
 
 - `src/lib/env.ts`: single boundary for `process.env` reads; feature-gated getters.
-- `docs/ops/env.md`: canonical docs for each variable and how it is used.
+- [docs/ops/env.md](/docs/ops/env.md): canonical docs for each variable and how it is used.
 - `.env.example`: canonical set of variables for local setup.
 
 ### Configuration
 
 - Add a new env var only by introducing a new feature gate (or extending an
   existing one) in `src/lib/env.ts`.
-- Keep `.env.example` and `docs/ops/env.md` aligned with `src/lib/env.ts` (see
+- Keep `.env.example` and [docs/ops/env.md](/docs/ops/env.md) aligned with `src/lib/env.ts` (see
   `AGENTS.md` “Env var contract” rule).
 
 ## Acceptance criteria
@@ -198,7 +198,7 @@ Implementation/deploy automation (optional feature gates):
 ## Failure modes and mitigation
 
 - Missing/invalid env vars → fail on first feature use with `AppError` and a
-  message pointing to `docs/ops/env.md`.
+  message pointing to [docs/ops/env.md](/docs/ops/env.md).
 - Accidental client import of `@/lib/env` → prevented by `server-only`; treat
   any bundler leak as a release blocker.
 
@@ -213,7 +213,7 @@ Implementation/deploy automation (optional feature gates):
 - `src/lib/upstash/qstash.server.ts`
 - `src/lib/env.test.ts`
 - `.env.example`
-- `docs/ops/env.md`
+- [docs/ops/env.md](/docs/ops/env.md)
 
 ## References
 

@@ -45,7 +45,7 @@ high-risk (especially during implementation/deploy workflows).
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -83,7 +83,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - Agent registry entry (conceptual):
   - `modeId`, `displayName`, `instructions`, `tools`, `budgets`
 - Run step payloads:
-  - `toolCalls[]`, `toolResults[]`, `citations[]` (see `docs/architecture/data-model.md`)
+  - `toolCalls[]`, `toolResults[]`, `citations[]` (see [docs/architecture/data-model.md](/docs/architecture/data-model.md))
 
 ### File-level contracts
 
@@ -208,9 +208,9 @@ Only after approval is the tool call executed.
 
 ## Key files
 
-- `docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md`
-- `docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md`
-- `docs/architecture/adr/ADR-0012-mcp-dynamic-tools-context7-via-mcp-dynamictool.md`
+- [docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md](/docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md)
+- [docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md](/docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md)
+- [docs/architecture/adr/ADR-0012-mcp-dynamic-tools-context7-via-mcp-dynamictool.md](/docs/architecture/adr/ADR-0012-mcp-dynamic-tools-context7-via-mcp-dynamictool.md)
 
 ## References
 

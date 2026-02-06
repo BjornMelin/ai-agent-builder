@@ -20,6 +20,8 @@
     "lint:eslint": "eslint .",
     "start": "bun --bun next start",
     "test": "bun run typegen && vitest run",
+    "test:a11y": "vitest run src/components/ai-elements/tests/accessibility.test.tsx src/components/ai-elements/tests/code-block.test.tsx src/components/ui/tests/command.test.tsx",
+    "test:a11y:watch": "vitest src/components/ai-elements/tests/accessibility.test.tsx src/components/ai-elements/tests/code-block.test.tsx src/components/ui/tests/command.test.tsx",
     "test:watch": "vitest",
     "typecheck": "bun run typegen && tsc -p tsconfig.json --noEmit",
     "typegen": "bun -e \"import { rmSync } from 'node:fs'; rmSync('.next/types', { recursive: true, force: true }); rmSync('.next/dev/types', { recursive: true, force: true });\" && bun --bun next typegen"

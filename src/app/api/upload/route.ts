@@ -55,9 +55,7 @@ export async function POST(
   try {
     const authPromise = requireAppUserApi();
     const formPromise = req.formData().catch(() => null);
-    await authPromise;
-
-    const form = await formPromise;
+    const [, form] = await Promise.all([authPromise, formPromise]);
     if (!form) {
       throw new AppError("bad_request", 400, "Invalid form data.");
     }

@@ -16,8 +16,12 @@ export default async function AppLayout(
   await requireAppUser();
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-12 md:px-6">
+    <main
+      className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-12 md:px-6"
+      id="main"
+      tabIndex={-1}
+    >
       {children}
-    </div>
+    </main>
   );
 }

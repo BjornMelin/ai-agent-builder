@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, startTransition, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,7 +77,9 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
     setFiles(null);
     setInputKey((currentKey) => currentKey + 1);
 
-    router.refresh();
+    startTransition(() => {
+      router.refresh();
+    });
   }
 
   return (
@@ -94,6 +96,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
           id={fileInputId}
           key={inputKey}
           multiple
+          name="file"
           onChange={(e) => setFiles(e.currentTarget.files)}
           type="file"
         />

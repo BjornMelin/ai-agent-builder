@@ -4,11 +4,15 @@ import {
   safeValidateUIMessages,
   type UIMessage,
 } from "ai";
-import { start } from "workflow/api";
+import { getRun, start } from "workflow/api";
 import { z } from "zod";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
+import { toChatTitle } from "@/lib/chat/title";
 import { AppError } from "@/lib/core/errors";
+import { log } from "@/lib/core/log";
+import { ensureChatThreadForWorkflowRun } from "@/lib/data/chat.server";
+import { getProjectById } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError } from "@/lib/next/responses";
 import { projectChat } from "@/workflows/chat/project-chat.workflow";
@@ -40,9 +44,12 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const authPromise = requireAppUserApi();
     const bodyPromise = parseJsonBody(req, bodySchema);
-    await authPromise;
+    const [, parsed] = await Promise.all([authPromise, bodyPromise]);
 
-    const parsed = await bodyPromise;
+    const project = await getProjectById(parsed.projectId);
+    if (!project) {
+      throw new AppError("not_found", 404, "Project not found.");
+    }
 
     const validated = await safeValidateUIMessages<ProjectChatUIMessage>({
       messages: parsed.messages,
@@ -66,7 +73,30 @@ export async function POST(req: Request): Promise<Response> {
       );
     }
 
-    const run = await start(projectChat, [parsed.projectId, validated.data]);
+    const title = toChatTitle(last);
+    const run = await start(projectChat, [
+      parsed.projectId,
+      validated.data,
+      title,
+    ]);
+    try {
+      await ensureChatThreadForWorkflowRun({
+        projectId: parsed.projectId,
+        title,
+        workflowRunId: run.runId,
+      });
+    } catch (error) {
+      try {
+        await getRun(run.runId).cancel();
+      } catch (cancelError) {
+        log.error("workflow_run_cancel_failed", {
+          err: cancelError,
+          projectId: parsed.projectId,
+          workflowRunId: run.runId,
+        });
+      }
+      throw error;
+    }
 
     return createUIMessageStreamResponse({
       headers: { "x-workflow-run-id": run.runId },

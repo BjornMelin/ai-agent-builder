@@ -12,7 +12,11 @@ export const dynamic = "force-static";
  */
 export default function AccessDeniedPage() {
   return (
-    <main className="container mx-auto flex min-h-[60vh] flex-col items-center justify-center gap-4 p-6 text-center">
+    <main
+      className="container mx-auto flex min-h-[60vh] flex-col items-center justify-center gap-4 p-6 text-center"
+      id="main"
+      tabIndex={-1}
+    >
       <h1 className="text-2xl font-semibold tracking-tight">Access Denied</h1>
       <p className="max-w-lg text-sm text-zinc-600 dark:text-zinc-400">
         This app is currently restricted to an allowlisted set of users. If you

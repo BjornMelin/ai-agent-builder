@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   createUIMessageStreamResponse: vi.fn(),
+  ensureChatThreadForWorkflowRun: vi.fn(),
+  getProjectById: vi.fn(),
+  getRun: vi.fn(),
   requireAppUserApi: vi.fn(),
   safeValidateUIMessages: vi.fn(),
   start: vi.fn(),
@@ -13,11 +16,20 @@ vi.mock("ai", () => ({
 }));
 
 vi.mock("workflow/api", () => ({
+  getRun: state.getRun,
   start: state.start,
 }));
 
 vi.mock("@/lib/auth/require-app-user-api.server", () => ({
   requireAppUserApi: state.requireAppUserApi,
+}));
+
+vi.mock("@/lib/data/chat.server", () => ({
+  ensureChatThreadForWorkflowRun: state.ensureChatThreadForWorkflowRun,
+}));
+
+vi.mock("@/lib/data/projects.server", () => ({
+  getProjectById: state.getProjectById,
 }));
 
 vi.mock("@/workflows/chat/project-chat.workflow", () => ({
@@ -38,6 +50,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
+  state.getProjectById.mockResolvedValue({ id: "proj_1" });
   state.safeValidateUIMessages.mockResolvedValue({ data: [], success: true });
   state.start.mockResolvedValue({
     readable: new ReadableStream({
@@ -46,6 +59,18 @@ beforeEach(() => {
       },
     }),
     runId: "run_123",
+  });
+  state.getRun.mockReturnValue({ cancel: vi.fn() });
+  state.ensureChatThreadForWorkflowRun.mockResolvedValue({
+    createdAt: new Date().toISOString(),
+    endedAt: null,
+    id: "thread_1",
+    lastActivityAt: new Date().toISOString(),
+    projectId: "proj_1",
+    status: "running",
+    title: "New chat",
+    updatedAt: new Date().toISOString(),
+    workflowRunId: "run_123",
   });
   state.createUIMessageStreamResponse.mockImplementation(
     ({ headers }: { headers?: Record<string, string> }) =>
@@ -67,6 +92,21 @@ describe("POST /api/chat", () => {
 
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(res.headers.get("x-workflow-run-id")).toBeNull();
+    expect(state.start).not.toHaveBeenCalled();
+  });
+
+  it("returns not found when the project does not exist", async () => {
+    const POST = await loadRoute();
+    state.getProjectById.mockResolvedValueOnce(null);
+
+    const res = await POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({ messages: [], projectId: "missing" }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(404);
     expect(state.start).not.toHaveBeenCalled();
   });
 
@@ -140,5 +180,40 @@ describe("POST /api/chat", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("x-workflow-run-id")).toBe("run_123");
     expect(state.start).toHaveBeenCalledTimes(1);
+    expect(state.start).toHaveBeenCalledWith("projectChatWorkflow", [
+      "proj_1",
+      [{ id: "m1", parts: [{ text: "hi", type: "text" }], role: "user" }],
+      "hi",
+    ]);
+    expect(state.ensureChatThreadForWorkflowRun).toHaveBeenCalledWith({
+      projectId: "proj_1",
+      title: "hi",
+      workflowRunId: "run_123",
+    });
+  });
+
+  it("cancels the workflow run when chat thread creation fails", async () => {
+    const POST = await loadRoute();
+    const cancelMock = vi.fn().mockResolvedValue(undefined);
+    state.getRun.mockReturnValue({ cancel: cancelMock });
+    state.ensureChatThreadForWorkflowRun.mockRejectedValueOnce(
+      new Error("DB error"),
+    );
+    state.safeValidateUIMessages.mockResolvedValueOnce({
+      data: [{ id: "m1", parts: [{ text: "hi", type: "text" }], role: "user" }],
+      success: true,
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({ messages: [], projectId: "proj_1" }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBeGreaterThanOrEqual(500);
+    expect(state.start).toHaveBeenCalledTimes(1);
+    expect(state.getRun).toHaveBeenCalledWith("run_123");
+    expect(cancelMock).toHaveBeenCalledTimes(1);
   });
 });

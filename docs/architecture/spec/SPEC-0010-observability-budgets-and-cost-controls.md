@@ -41,7 +41,7 @@ and hard to debug.
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -92,7 +92,7 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 - `src/lib/runs/*` + `src/workflows/**`: durable run execution uses budgets to
   gate expensive operations (LLM calls, sandbox jobs, external API usage).
 - `src/lib/core/log.ts`: log redaction and structured logging.
-- `docs/architecture/runbook.md`: operational guidance for budgets.
+- [docs/architecture/runbook.md](/docs/architecture/runbook.md): operational guidance for budgets.
 
 ### Configuration
 
@@ -186,9 +186,9 @@ Requirement IDs are defined in `docs/specs/requirements.md`.
 
 ## Key files
 
-- `docs/architecture/spec/SPEC-0010-observability-budgets-and-cost-controls.md`
-- `docs/architecture/runbook.md`
-- `docs/architecture/security.md`
+- [docs/architecture/spec/SPEC-0010-observability-budgets-and-cost-controls.md](/docs/architecture/spec/SPEC-0010-observability-budgets-and-cost-controls.md)
+- [docs/architecture/runbook.md](/docs/architecture/runbook.md)
+- [docs/architecture/security.md](/docs/architecture/security.md)
 
 ## References
 

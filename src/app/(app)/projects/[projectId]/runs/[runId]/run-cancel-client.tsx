@@ -28,6 +28,14 @@ export function RunCancelClient(
       action={formAction}
       aria-describedby={state.status === "error" ? errorId : undefined}
       className="flex flex-col gap-2"
+      onSubmit={(event) => {
+        const confirmed = window.confirm(
+          "Cancel this run? This action cannot be undone.",
+        );
+        if (!confirmed) {
+          event.preventDefault();
+        }
+      }}
     >
       <input name="projectId" type="hidden" value={props.projectId} />
       <input name="runId" type="hidden" value={props.runId} />

@@ -32,7 +32,7 @@ Release Please already exists in the repo; this spec defines the policy so the r
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 

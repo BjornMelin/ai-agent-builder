@@ -66,7 +66,7 @@ Reference pattern: “Multi-Turn Workflows” ([Chat session modeling](https://u
 
 All contracts are validated with Zod v4 on the server.
 
-### 1) Start chat session
+### 1. Start chat session
 
 `POST /api/chat`
 
@@ -83,7 +83,7 @@ Response:
   - `x-workflow-run-id`: string (required) — identifies the durable run + stream ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)).
 - Body: an AI SDK UI message event stream (SSE-compatible) that may remain open across turns.
 
-### 2) Send follow-up message (resume hook)
+### 2. Send follow-up message (resume hook)
 
 `POST /api/chat/:runId`
 
@@ -96,7 +96,7 @@ Response:
 - Status: `200`
 - Body: `{ "ok": true }`
 
-### 3) Reconnect to stream (resume)
+### 3. Reconnect to stream (resume)
 
 `GET /api/chat/:runId/stream?startIndex=N`
 
@@ -108,6 +108,20 @@ Response:
 
 - Status: `200`
 - Body: AI SDK UI message event stream that resumes from `startIndex` ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)).
+
+### 4. Cancel chat session (recommended)
+
+`POST /api/chat/:runId/cancel`
+
+Response:
+
+- Status: `200`
+- Body: `{ "ok": true }`
+
+Behavior:
+
+- Cancels the Workflow DevKit run (`workflow/api` `getRun(runId).cancel()`).
+- Persists the chat thread as `canceled` with an `endedAt` timestamp.
 
 ## Event Schema (UIMessageChunk)
 
@@ -128,6 +142,15 @@ Reference: “writeUserMessageMarker” in the multi-turn workflow example ([Cha
 
 - Workflow functions (`"use workflow"`) are orchestrators and must remain deterministic.
 - All side effects (DB reads/writes, network calls, AI Gateway calls, vector/redis operations) MUST be performed in `"use step"` functions ([Workflow DevKit Next.js getting started](https://useworkflow.dev/docs/getting-started/next)).
+
+### Persistence + authorization (required)
+
+- The server MUST persist a mapping from `workflowRunId` → `projectId` for chat sessions so that:
+  - `GET /api/chat/:runId/stream` can authenticate/authorize stream reads.
+  - `POST /api/chat/:runId` can authenticate/authorize hook resumes.
+  - The UI can resume sessions after refresh/reconnects even when client state (localStorage/sessionStorage) is unavailable.
+- Canonical implementation: `chat_threads.workflow_run_id` (unique) + `project_id`.
+- Terminal statuses for a chat thread mirror durable runs: `succeeded|failed|canceled`.
 
 ### Chat workflow contract
 
@@ -151,11 +174,11 @@ The chat workflow must:
 
 Client must use `useChat` with `WorkflowChatTransport` ([WorkflowChatTransport](https://useworkflow.dev/docs/api-reference/workflow-ai/workflow-chat-transport)).
 
-Repo constraint: **no manual memoization** (`useMemo`, `useCallback`). The implementation must:
+Memoization policy follows `$vercel-react-best-practices`:
 
-- create the transport once (e.g., `useState(() => new WorkflowChatTransport(...))`)
-- use `useEffect` for reading/writing localStorage state (run id)
-- avoid useMemo-based derived state; derive message view models directly in render
+- Prefer a stable transport instance (e.g., `useState(() => new WorkflowChatTransport(...))`) and refs/effects for mutable session state (`advanced-event-handler-refs`).
+- Use memoization (`useMemo`, `useCallback`, `React.memo`) only when it measurably reduces expensive work or prevents costly re-renders (`rerender-memo`).
+- Avoid memo for simple primitives/cheap computations (`rerender-simple-expression-in-memo`).
 
 ## Testing Requirements (Contract + Integration)
 

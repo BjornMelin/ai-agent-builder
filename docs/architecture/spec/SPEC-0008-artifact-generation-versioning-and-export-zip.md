@@ -38,7 +38,7 @@ Users need deterministic export to share, archive, or attach provenance to a PR.
 
 ## Requirements
 
-Requirement IDs are defined in `docs/specs/requirements.md`.
+Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirements.md).
 
 ### Functional requirements
 
@@ -143,7 +143,7 @@ Implementation artifacts:
 
 ### Configuration
 
-- See `docs/ops/env.md`:
+- See [docs/ops/env.md](/docs/ops/env.md):
   - DB: `DATABASE_URL`
   - Blob (if exporting originals too): `BLOB_READ_WRITE_TOKEN`
   - Upstash Vector (for retrieval indexing of artifacts): `UPSTASH_VECTOR_REST_URL`, `UPSTASH_VECTOR_REST_TOKEN`

@@ -224,11 +224,15 @@ export const WebPreviewUrl = (props: WebPreviewUrlProps) => {
 
   return (
     <Input
+      autoComplete="off"
       aria-label={rest["aria-label"] ?? "Preview URL"}
       className="h-8 flex-1 text-sm"
+      inputMode="url"
+      name="preview-url"
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       placeholder="Enter URL…"
+      type="url"
       value={isControlled ? value : inputValue}
       {...rest}
     />

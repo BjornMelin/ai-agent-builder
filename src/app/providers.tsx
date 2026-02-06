@@ -50,7 +50,7 @@ export function Providers(
       <div className="flex min-h-dvh flex-col">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-background focus:p-2"
+          className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:z-50 focus-visible:bg-background focus-visible:p-2"
         >
           Skip to content
         </a>
@@ -62,12 +62,10 @@ export function Providers(
             AI Agent Builder
           </Link>
           <ClientOnly fallback={<div aria-hidden="true" className="h-9 w-9" />}>
-            <UserButton size="icon" />
+            <UserButton aria-label="User menu" size="icon" />
           </ClientOnly>
         </header>
-        <div id="main" tabIndex={-1} className="flex-1">
-          {children}
-        </div>
+        <div className="flex-1">{children}</div>
       </div>
     </NeonAuthUIProvider>
   );

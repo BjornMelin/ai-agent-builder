@@ -1,309 +1,206 @@
 "use client";
 
-import type { Experimental_SpeechResult as SpeechResult } from "ai";
-import {
-  MediaControlBar,
-  MediaController,
-  MediaDurationDisplay,
-  MediaMuteButton,
-  MediaPlayButton,
-  MediaSeekBackwardButton,
-  MediaSeekForwardButton,
-  MediaTimeDisplay,
-  MediaTimeRange,
-  MediaVolumeRange,
-} from "media-chrome/react";
-import type { ComponentProps, CSSProperties } from "react";
-import { Button } from "@/components/ui/button";
-import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
-import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
 
-export type AudioPlayerProps = Omit<
-  ComponentProps<typeof MediaController>,
-  "audio"
->;
+/** Prop types re-exported from the client-only audio player implementation. */
+export type {
+  AudioPlayerControlBarProps,
+  AudioPlayerDurationDisplayProps,
+  AudioPlayerElementProps,
+  AudioPlayerMuteButtonProps,
+  AudioPlayerPlayButtonProps,
+  AudioPlayerProps,
+  AudioPlayerSeekBackwardButtonProps,
+  AudioPlayerSeekForwardButtonProps,
+  AudioPlayerTimeDisplayProps,
+  AudioPlayerTimeRangeProps,
+  AudioPlayerVolumeRangeProps,
+} from "./audio-player-inner";
 
 /**
- * Renders the root audio player controller.
+ * Lazily loads the client-only audio player root and renders a stable-sized placeholder.
  *
- * @param props - Media controller props.
- * @returns The audio player root element.
+ * @param props - Audio player props.
+ * @returns The root audio player controller.
  */
-export const AudioPlayer = (props: AudioPlayerProps) => {
-  const { className, children, style, ...rest } = props;
-  return (
-    <MediaController
-      audio
-      className={className}
-      data-slot="audio-player"
-      style={
-        {
-          "--media-background-color": "transparent",
-          "--media-button-icon-height": "1rem",
-          "--media-button-icon-width": "1rem",
-          "--media-control-background": "transparent",
-          "--media-control-hover-background": "var(--color-accent)",
-          "--media-control-padding": "0",
-          "--media-font": "var(--font-sans)",
-          "--media-font-size": "10px",
-          "--media-icon-color": "currentColor",
-          "--media-preview-time-background": "var(--color-background)",
-          "--media-preview-time-border-radius": "var(--radius-md)",
-          "--media-preview-time-text-shadow": "none",
-          "--media-primary-color": "var(--color-primary)",
-          "--media-range-bar-color": "var(--color-primary)",
-          "--media-range-track-background": "var(--color-secondary)",
-          "--media-secondary-color": "var(--color-secondary)",
-          "--media-text-color": "var(--color-foreground)",
-          "--media-tooltip-arrow-display": "none",
-          "--media-tooltip-background": "var(--color-background)",
-          "--media-tooltip-border-radius": "var(--radius-md)",
-          ...style,
-        } as CSSProperties
-      }
-      {...rest}
-    >
-      {children}
-    </MediaController>
-  );
-};
-
-/** Props for `AudioPlayerElement` supporting src or speech-result audio data. */
-export type AudioPlayerElementProps = Omit<ComponentProps<"audio">, "src"> &
-  (
-    | {
-        data: SpeechResult["audio"];
-      }
-    | {
-        src: string;
-      }
-  );
+export const AudioPlayer = dynamic<
+  import("./audio-player-inner").AudioPlayerProps
+>(() => import("./audio-player-inner").then((mod) => mod.AudioPlayer), {
+  loading: () => <div aria-hidden="true" className="h-full w-full" />,
+  ssr: false,
+});
 
 /**
  * Renders the audio media element from direct src or speech result data.
  *
  * @param props - Audio element props with either `src` or encoded speech data.
- * @returns The audio media element.
+ * @returns The audio media element from direct src or speech result data.
  */
-export const AudioPlayerElement = (props: AudioPlayerElementProps) => {
-  if ("src" in props) {
-    const { src, ...audioProps } = props;
-    return (
-      <audio
-        data-slot="audio-player-element"
-        slot="media"
-        src={src}
-        {...audioProps}
-      />
-    );
-  }
-
-  const { data, ...audioProps } = props;
-  const src = `data:${data.mediaType};base64,${data.base64}`;
-
-  return (
-    <audio
-      data-slot="audio-player-element"
-      slot="media"
-      src={src}
-      {...audioProps}
-    />
-  );
-};
-
-/** Props for the AudioPlayerControlBar component. */
-export type AudioPlayerControlBarProps = ComponentProps<typeof MediaControlBar>;
+export const AudioPlayerElement = dynamic<
+  import("./audio-player-inner").AudioPlayerElementProps
+>(() => import("./audio-player-inner").then((mod) => mod.AudioPlayerElement), {
+  loading: () => null,
+  ssr: false,
+});
 
 /**
  * Renders the player control bar and button group wrapper.
  *
  * @param props - Control bar props.
- * @returns The control bar wrapper.
+ * @returns The player control bar and button group wrapper.
  */
-export const AudioPlayerControlBar = (props: AudioPlayerControlBarProps) => {
-  const { children, ...rest } = props;
-  return (
-    <MediaControlBar data-slot="audio-player-control-bar" {...rest}>
-      <ButtonGroup orientation="horizontal">{children}</ButtonGroup>
-    </MediaControlBar>
-  );
-};
-
-/** Props for the AudioPlayerPlayButton component. */
-export type AudioPlayerPlayButtonProps = ComponentProps<typeof MediaPlayButton>;
+export const AudioPlayerControlBar = dynamic<
+  import("./audio-player-inner").AudioPlayerControlBarProps
+>(
+  () => import("./audio-player-inner").then((mod) => mod.AudioPlayerControlBar),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 /**
  * Renders the play/pause control button.
  *
  * @param props - Play button props.
- * @returns The play button component.
+ * @returns The play/pause control button.
  */
-export const AudioPlayerPlayButton = (props: AudioPlayerPlayButtonProps) => {
-  const { className, ...rest } = props;
-  return (
-    <Button asChild size="icon-sm" variant="outline">
-      <MediaPlayButton
-        aria-label={rest["aria-label"] ?? "Play or pause audio"}
-        className={cn("bg-transparent", className)}
-        data-slot="audio-player-play-button"
-        {...rest}
+export const AudioPlayerPlayButton = dynamic<
+  import("./audio-player-inner").AudioPlayerPlayButtonProps
+>(
+  () => import("./audio-player-inner").then((mod) => mod.AudioPlayerPlayButton),
+  {
+    loading: () => (
+      <button
+        aria-label="Play or pause audio"
+        className="size-7 rounded-md border"
+        disabled
+        type="button"
       />
-    </Button>
-  );
-};
-
-/** Props for the AudioPlayerSeekBackwardButton component. */
-export type AudioPlayerSeekBackwardButtonProps = ComponentProps<
-  typeof MediaSeekBackwardButton
->;
+    ),
+    ssr: false,
+  },
+);
 
 /**
  * Renders the backward seek control.
  *
  * @param props - Seek backward button props.
- * @returns The seek backward button.
+ * @returns The backward seek control.
  */
-export const AudioPlayerSeekBackwardButton = (
-  props: AudioPlayerSeekBackwardButtonProps,
-) => {
-  const { seekOffset = 10, ...rest } = props;
-  return (
-    <Button asChild size="icon-sm" variant="outline">
-      <MediaSeekBackwardButton
-        aria-label={rest["aria-label"] ?? `Seek back ${seekOffset} seconds`}
-        data-slot="audio-player-seek-backward-button"
-        seekOffset={seekOffset}
-        {...rest}
+export const AudioPlayerSeekBackwardButton = dynamic<
+  import("./audio-player-inner").AudioPlayerSeekBackwardButtonProps
+>(
+  () =>
+    import("./audio-player-inner").then(
+      (mod) => mod.AudioPlayerSeekBackwardButton,
+    ),
+  {
+    loading: () => (
+      <button
+        aria-label="Seek back 10 seconds"
+        className="size-7 rounded-md border"
+        disabled
+        type="button"
       />
-    </Button>
-  );
-};
-
-/** Props for the AudioPlayerSeekForwardButton component. */
-export type AudioPlayerSeekForwardButtonProps = ComponentProps<
-  typeof MediaSeekForwardButton
->;
+    ),
+    ssr: false,
+  },
+);
 
 /**
  * Renders the forward seek control.
  *
  * @param props - Seek forward button props.
- * @returns The seek forward button.
+ * @returns The forward seek control.
  */
-export const AudioPlayerSeekForwardButton = (
-  props: AudioPlayerSeekForwardButtonProps,
-) => {
-  const { seekOffset = 10, ...rest } = props;
-  return (
-    <Button asChild size="icon-sm" variant="outline">
-      <MediaSeekForwardButton
-        aria-label={rest["aria-label"] ?? `Seek forward ${seekOffset} seconds`}
-        data-slot="audio-player-seek-forward-button"
-        seekOffset={seekOffset}
-        {...rest}
+export const AudioPlayerSeekForwardButton = dynamic<
+  import("./audio-player-inner").AudioPlayerSeekForwardButtonProps
+>(
+  () =>
+    import("./audio-player-inner").then(
+      (mod) => mod.AudioPlayerSeekForwardButton,
+    ),
+  {
+    loading: () => (
+      <button
+        aria-label="Seek forward 10 seconds"
+        className="size-7 rounded-md border"
+        disabled
+        type="button"
       />
-    </Button>
-  );
-};
-
-/** Props for the AudioPlayerTimeDisplay component. */
-export type AudioPlayerTimeDisplayProps = ComponentProps<
-  typeof MediaTimeDisplay
->;
+    ),
+    ssr: false,
+  },
+);
 
 /**
- * Renders elapsed playback time.
+ * Renders the time display component.
  *
  * @param props - Time display props.
  * @returns The elapsed time display.
  */
-export const AudioPlayerTimeDisplay = (props: AudioPlayerTimeDisplayProps) => {
-  const { className, ...rest } = props;
-  return (
-    <ButtonGroupText asChild className="bg-transparent">
-      <MediaTimeDisplay
-        className={cn("tabular-nums", className)}
-        data-slot="audio-player-time-display"
-        {...rest}
-      />
-    </ButtonGroupText>
-  );
-};
-
-/** Props for the AudioPlayerTimeRange component. */
-export type AudioPlayerTimeRangeProps = ComponentProps<typeof MediaTimeRange>;
+export const AudioPlayerTimeDisplay = dynamic<
+  import("./audio-player-inner").AudioPlayerTimeDisplayProps
+>(
+  () =>
+    import("./audio-player-inner").then((mod) => mod.AudioPlayerTimeDisplay),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 /**
- * Renders the seekable timeline range.
+ * Renders the time range component.
  *
  * @param props - Time range props.
- * @returns The timeline range control.
+ * @returns The elapsed/remaining time range display.
  */
-export const AudioPlayerTimeRange = (props: AudioPlayerTimeRangeProps) => {
-  const { className, ...rest } = props;
-  return (
-    <ButtonGroupText asChild className="bg-transparent">
-      <MediaTimeRange
-        className={className}
-        data-slot="audio-player-time-range"
-        {...rest}
-      />
-    </ButtonGroupText>
-  );
-};
-
-/** Props for the AudioPlayerDurationDisplay component. */
-export type AudioPlayerDurationDisplayProps = ComponentProps<
-  typeof MediaDurationDisplay
->;
+export const AudioPlayerTimeRange = dynamic<
+  import("./audio-player-inner").AudioPlayerTimeRangeProps
+>(
+  () => import("./audio-player-inner").then((mod) => mod.AudioPlayerTimeRange),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 /**
- * Renders total media duration.
+ * Renders the duration display component.
  *
  * @param props - Duration display props.
  * @returns The total duration display.
  */
-export const AudioPlayerDurationDisplay = (
-  props: AudioPlayerDurationDisplayProps,
-) => {
-  const { className, ...rest } = props;
-  return (
-    <ButtonGroupText asChild className="bg-transparent">
-      <MediaDurationDisplay
-        className={cn("tabular-nums", className)}
-        data-slot="audio-player-duration-display"
-        {...rest}
-      />
-    </ButtonGroupText>
-  );
-};
-
-/** Props for the AudioPlayerMuteButton component. */
-export type AudioPlayerMuteButtonProps = ComponentProps<typeof MediaMuteButton>;
+export const AudioPlayerDurationDisplay = dynamic<
+  import("./audio-player-inner").AudioPlayerDurationDisplayProps
+>(
+  () =>
+    import("./audio-player-inner").then(
+      (mod) => mod.AudioPlayerDurationDisplay,
+    ),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 /**
- * Renders the mute toggle button.
+ * Renders the mute control button.
  *
  * @param props - Mute button props.
- * @returns The mute toggle button.
+ * @returns The mute control button.
  */
-export const AudioPlayerMuteButton = (props: AudioPlayerMuteButtonProps) => {
-  const { className, ...rest } = props;
-  return (
-    <ButtonGroupText asChild className="bg-transparent">
-      <MediaMuteButton
-        className={className}
-        data-slot="audio-player-mute-button"
-        {...rest}
-      />
-    </ButtonGroupText>
-  );
-};
-
-/** Props for the AudioPlayerVolumeRange component. */
-export type AudioPlayerVolumeRangeProps = ComponentProps<
-  typeof MediaVolumeRange
->;
+export const AudioPlayerMuteButton = dynamic<
+  import("./audio-player-inner").AudioPlayerMuteButtonProps
+>(
+  () => import("./audio-player-inner").then((mod) => mod.AudioPlayerMuteButton),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);
 
 /**
  * Renders the volume range control.
@@ -311,15 +208,13 @@ export type AudioPlayerVolumeRangeProps = ComponentProps<
  * @param props - Volume range props.
  * @returns The volume range control.
  */
-export const AudioPlayerVolumeRange = (props: AudioPlayerVolumeRangeProps) => {
-  const { className, ...rest } = props;
-  return (
-    <ButtonGroupText asChild className="bg-transparent">
-      <MediaVolumeRange
-        className={className}
-        data-slot="audio-player-volume-range"
-        {...rest}
-      />
-    </ButtonGroupText>
-  );
-};
+export const AudioPlayerVolumeRange = dynamic<
+  import("./audio-player-inner").AudioPlayerVolumeRangeProps
+>(
+  () =>
+    import("./audio-player-inner").then((mod) => mod.AudioPlayerVolumeRange),
+  {
+    loading: () => null,
+    ssr: false,
+  },
+);

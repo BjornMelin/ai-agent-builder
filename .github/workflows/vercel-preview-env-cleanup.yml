@@ -1,0 +1,159 @@
+name: Preview (Vercel env cleanup)
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      gitBranch:
+        description: "Git branch name (for manual runs)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-preview-env-cleanup-${{ github.workflow }}-${{ github.event.pull_request.head.ref || inputs.gitBranch || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    name: Remove branch-scoped APP_BASE_URL
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Cleanup branch-scoped preview env
+        env:
+          FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+          GIT_BRANCH_INPUT: ${{ inputs.gitBranch }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ "${FORK_PR}" = "true" ]; then
+            echo "::warning::Fork pull request detected. Skipping cleanup because GitHub Actions secrets are unavailable."
+            exit 0
+          fi
+
+          if [ -z "${VERCEL_PROJECT_ID:-}" ] || [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "::warning::Missing required secrets (VERCEL_PROJECT_ID, VERCEL_TOKEN). Skipping cleanup."
+            exit 0
+          fi
+
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::warning::jq is not available on this runner. Skipping cleanup."
+            exit 0
+          fi
+
+          GIT_BRANCH="${GITHUB_HEAD_REF:-}"
+          if [ -z "${GIT_BRANCH}" ]; then
+            GIT_BRANCH="${GIT_BRANCH_INPUT:-}"
+          fi
+          if [ -z "${GIT_BRANCH}" ]; then
+            GIT_BRANCH="${GITHUB_REF_NAME}"
+          fi
+
+          if [ -z "${GIT_BRANCH}" ]; then
+            echo "::warning::Unable to resolve git branch. Skipping cleanup."
+            exit 0
+          fi
+
+          echo "Using git branch: ${GIT_BRANCH}"
+
+          VERCEL_API_BASE="https://api.vercel.com"
+          VERCEL_TEAM_QUERY=""
+          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
+            VERCEL_TEAM_QUERY="teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          vercel_api() {
+            local method="$1"
+            local path="$2"
+            local data="${3:-}"
+            local resp=""
+            local curl_status=0
+
+            if [ -n "$data" ]; then
+              resp="$(curl -sS -X "$method" "${VERCEL_API_BASE}${path}" \
+                -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+                -H "Accept: application/json" \
+                -H "Content-Type: application/json" \
+                -d "$data" \
+                -w '\n%{http_code}' 2>&1)"
+              curl_status=$?
+            else
+              resp="$(curl -sS -X "$method" "${VERCEL_API_BASE}${path}" \
+                -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+                -H "Accept: application/json" \
+                -w '\n%{http_code}' 2>&1)"
+              curl_status=$?
+            fi
+
+            if [ $curl_status -ne 0 ]; then
+              printf '%s\n' "${resp}"
+              printf '%s\n' "000"
+              return 0
+            fi
+
+            printf '%s\n' "${resp%$'\n'*}"
+            printf '%s\n' "${resp##*$'\n'}"
+          }
+
+          ENV_LIST_PATH="/v10/projects/${VERCEL_PROJECT_ID}/env?decrypt=false"
+          if [ -n "${VERCEL_TEAM_QUERY:-}" ]; then
+            ENV_LIST_PATH="${ENV_LIST_PATH}&${VERCEL_TEAM_QUERY}"
+          fi
+
+          ENV_LIST_RESP="$(vercel_api GET "${ENV_LIST_PATH}")"
+          ENV_LIST_HTTP_CODE="$(printf '%s' "$ENV_LIST_RESP" | tail -n 1)"
+          ENV_LIST_JSON="$(printf '%s' "$ENV_LIST_RESP" | sed '$d')"
+
+          if [ "${ENV_LIST_HTTP_CODE}" != "200" ]; then
+            echo "::warning::Failed to list environment variables (HTTP ${ENV_LIST_HTTP_CODE}). Skipping cleanup."
+            exit 0
+          fi
+
+          MATCHING_IDS="$(printf '%s' "$ENV_LIST_JSON" | jq -r --arg key "APP_BASE_URL" --arg branch "${GIT_BRANCH}" '
+            (.envs // [])[]
+            | select(.key == $key and (.gitBranch // "") == $branch and ((.target // []) | index("preview")))
+            | .id
+          ')"
+
+          if [ -z "${MATCHING_IDS}" ]; then
+            echo "No branch-scoped APP_BASE_URL entries found for '${GIT_BRANCH}'."
+            exit 0
+          fi
+
+          FAILED_DELETIONS=0
+          while IFS= read -r ENV_ID; do
+            if [ -z "${ENV_ID}" ] || [ "${ENV_ID}" = "null" ]; then
+              continue
+            fi
+
+            DELETE_PATH="/v9/projects/${VERCEL_PROJECT_ID}/env/${ENV_ID}"
+            if [ -n "${VERCEL_TEAM_QUERY:-}" ]; then
+              DELETE_PATH="${DELETE_PATH}?${VERCEL_TEAM_QUERY}"
+            fi
+
+            DELETE_RESP="$(vercel_api DELETE "${DELETE_PATH}")"
+            DELETE_HTTP_CODE="$(printf '%s' "$DELETE_RESP" | tail -n 1)"
+
+            if [ "${DELETE_HTTP_CODE}" = "200" ] || [ "${DELETE_HTTP_CODE}" = "204" ]; then
+              echo "Deleted APP_BASE_URL env var id: ${ENV_ID}"
+            else
+              echo "::warning::Failed to delete env var id ${ENV_ID} (HTTP ${DELETE_HTTP_CODE})."
+              FAILED_DELETIONS=$((FAILED_DELETIONS + 1))
+            fi
+          done <<EOF
+          ${MATCHING_IDS}
+          EOF
+
+          if [ "${FAILED_DELETIONS}" -gt 0 ]; then
+            echo "::warning::Cleanup completed with ${FAILED_DELETIONS} deletion warning(s)."
+          fi

@@ -1,28 +1,17 @@
 "use client";
 
-import { Controls as ControlsPrimitive } from "@xyflow/react";
-import type { ComponentProps } from "react";
-import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
 
 /** Props for the Controls component. */
-export type ControlsProps = ComponentProps<typeof ControlsPrimitive>;
+export type ControlsProps = import("./controls-inner").ControlsProps;
 
 /**
- * Renders styled XYFlow controls.
- *
- * @param props - Controls props for the XYFlow controls.
- * @returns A controls element.
+ * Lazily load the XYFlow controls to keep `xyflow/react` out of the main bundle.
  */
-export const Controls = (props: ControlsProps) => {
-  const { className, ...rest } = props;
-  return (
-    <ControlsPrimitive
-      className={cn(
-        "gap-px overflow-hidden rounded-md border bg-card p-1 shadow-none!",
-        "[&>button]:rounded-md [&>button]:border-none! [&>button]:bg-transparent! [&>button]:hover:bg-secondary!",
-        className,
-      )}
-      {...rest}
-    />
-  );
-};
+export const Controls = dynamic<ControlsProps>(
+  () => import("./controls-inner").then((mod) => mod.ControlsInner),
+  {
+    loading: () => <div aria-hidden="true" className="h-full w-full" />,
+    ssr: false,
+  },
+);

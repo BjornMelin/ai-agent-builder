@@ -1,0 +1,232 @@
+name: Preview (Vercel env sync)
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      gitBranch:
+        description: "Git branch name (for manual runs)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # Ensure re-runs for the same branch don't race.
+  group: vercel-preview-env-sync-${{ github.workflow }}-${{ github.event.pull_request.head.ref || inputs.gitBranch || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Ensure preview branch APP_BASE_URL
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+
+      - name: Upsert branch-scoped APP_BASE_URL
+        env:
+          FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+          GITHUB_EVENT_ACTION: ${{ github.event.action }}
+          GIT_BRANCH_INPUT: ${{ inputs.gitBranch }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ "${FORK_PR}" = "true" ]; then
+            echo "::warning::Fork pull request detected. Skipping preview env sync because GitHub Actions secrets are unavailable."
+            exit 0
+          fi
+
+          if [ -z "${VERCEL_PROJECT_ID:-}" ] || [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "::warning::Missing required secrets (VERCEL_PROJECT_ID, VERCEL_TOKEN). Skipping preview env sync."
+            exit 0
+          fi
+
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::jq is required but not available on this runner."
+            exit 1
+          fi
+
+          GIT_BRANCH="${GITHUB_HEAD_REF:-}"
+          if [ -z "${GIT_BRANCH}" ]; then
+            GIT_BRANCH="${GIT_BRANCH_INPUT:-}"
+          fi
+          if [ -z "${GIT_BRANCH}" ]; then
+            GIT_BRANCH="${GITHUB_REF_NAME}"
+          fi
+
+          if [ -z "${GIT_BRANCH}" ]; then
+            echo "::error::Unable to resolve git branch."
+            exit 1
+          fi
+
+          echo "Using git branch: ${GIT_BRANCH}"
+
+          VERCEL_API_BASE="https://api.vercel.com"
+          VERCEL_TEAM_QUERY=""
+          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
+            VERCEL_TEAM_QUERY="&teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          vercel_api() {
+            local method="$1"
+            local path="$2"
+            local data="${3:-}"
+            local resp=""
+            local stderr_file=""
+            local curl_status=0
+            stderr_file="$(mktemp)"
+
+            if [ -n "$data" ]; then
+              set +e
+              resp="$(curl -sS -X "$method" "${VERCEL_API_BASE}${path}" \
+                -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+                -H "Accept: application/json" \
+                -H "Content-Type: application/json" \
+                -d "$data" \
+                -w '\n%{http_code}' 2>"${stderr_file}")"
+              curl_status=$?
+              set -e
+            else
+              set +e
+              resp="$(curl -sS -X "$method" "${VERCEL_API_BASE}${path}" \
+                -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+                -H "Accept: application/json" \
+                -w '\n%{http_code}' 2>"${stderr_file}")"
+              curl_status=$?
+              set -e
+            fi
+
+            if [ $curl_status -ne 0 ]; then
+              if [ -s "${stderr_file}" ]; then
+                cat "${stderr_file}" >&2
+              fi
+              rm -f "${stderr_file}"
+              printf '\n'
+              printf '%s\n' "000"
+              return 0
+            fi
+
+            rm -f "${stderr_file}"
+            printf '%s\n' "${resp%$'\n'*}"
+            printf '%s\n' "${resp##*$'\n'}"
+          }
+
+          ENCODED_BRANCH="$(jq -nr --arg v "$GIT_BRANCH" '$v|@uri')"
+          PREVIEW_HOST=""
+          if [ "${GITHUB_EVENT_ACTION:-}" = "synchronize" ]; then
+            sleep 10
+          fi
+          # Poll up to 60 times (5s interval ~= 5 minutes) to balance CI latency and reliability.
+          max_retries=60
+          for attempt in $(seq 1 "${max_retries}"); do
+            echo "Polling READY deployment for '${GIT_BRANCH}' (attempt ${attempt}/${max_retries})..."
+            DEPLOYMENTS_RESP="$(vercel_api GET "/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=preview&branch=${ENCODED_BRANCH}&state=READY&limit=10${VERCEL_TEAM_QUERY}")"
+            DEPLOYMENTS_HTTP_CODE="$(printf '%s' "$DEPLOYMENTS_RESP" | tail -n 1)"
+            DEPLOYMENTS_JSON="$(printf '%s' "$DEPLOYMENTS_RESP" | sed '$d')"
+
+            if [ "${DEPLOYMENTS_HTTP_CODE}" != "200" ]; then
+              echo "::error::Failed to list Vercel preview deployments (HTTP ${DEPLOYMENTS_HTTP_CODE})."
+              exit 1
+            fi
+
+            PREVIEW_HOST="$(printf '%s' "$DEPLOYMENTS_JSON" | jq -r '
+              .deployments
+              | map(select(.alias != null))
+              | map(.alias[])
+              | map(select(type == "string"))
+              | map(select(endswith(".vercel.app")))
+              | map(select(test("-git-"; "i")))
+              | .[0]
+              // empty
+            ')"
+
+            if [ -z "${PREVIEW_HOST}" ]; then
+              PREVIEW_HOST="$(printf '%s' "$DEPLOYMENTS_JSON" | jq -r '
+                (.deployments // []) as $deployments
+                | (
+                    $deployments
+                    | map(select(.alias != null))
+                    | map(.alias[])
+                    | map(select(type == "string"))
+                    | map(select(endswith(".vercel.app")))
+                    | .[0]
+                  )
+                  // (
+                    $deployments[]?
+                    | select(.url != null)
+                    | .url
+                  )
+                  // empty
+              ' | head -n 1)"
+            fi
+
+            if [ -n "${PREVIEW_HOST}" ] && [ "${PREVIEW_HOST}" != "null" ]; then
+              break
+            fi
+
+            PREVIEW_HOST=""
+            sleep 5
+          done
+
+          if [ -z "${PREVIEW_HOST}" ] || [ "${PREVIEW_HOST}" = "null" ]; then
+            echo "::error::No READY preview deployment URL found for branch '${GIT_BRANCH}'."
+            exit 1
+          fi
+
+          PREVIEW_HOST="${PREVIEW_HOST#https://}"
+          PREVIEW_HOST="${PREVIEW_HOST#http://}"
+          APP_BASE_URL="https://${PREVIEW_HOST}"
+          echo "Resolved APP_BASE_URL=${APP_BASE_URL}"
+
+          UPSERT_PATH="/v10/projects/${VERCEL_PROJECT_ID}/env?upsert=true"
+          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
+            UPSERT_PATH="${UPSERT_PATH}&teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          UPSERT_BODY="$(jq -cn \
+            --arg key "APP_BASE_URL" \
+            --arg value "${APP_BASE_URL}" \
+            --arg branch "${GIT_BRANCH}" \
+            '{key: $key, value: $value, type: "encrypted", target: ["preview"], gitBranch: $branch, comment: "Auto-managed preview branch base URL"}')"
+
+          UPSERT_RESP="$(vercel_api POST "${UPSERT_PATH}" "$UPSERT_BODY")"
+          UPSERT_HTTP_CODE="$(printf '%s' "$UPSERT_RESP" | tail -n 1)"
+          if [ "${UPSERT_HTTP_CODE}" != "200" ] && [ "${UPSERT_HTTP_CODE}" != "201" ]; then
+            echo "::error::Failed to upsert APP_BASE_URL (HTTP ${UPSERT_HTTP_CODE})."
+            exit 1
+          fi
+
+          VERIFY_PATH="/v10/projects/${VERCEL_PROJECT_ID}/env?decrypt=false"
+          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
+            VERIFY_PATH="${VERIFY_PATH}&teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          VERIFY_RESP="$(vercel_api GET "${VERIFY_PATH}")"
+          VERIFY_HTTP_CODE="$(printf '%s' "$VERIFY_RESP" | tail -n 1)"
+          VERIFY_JSON="$(printf '%s' "$VERIFY_RESP" | sed '$d')"
+
+          if [ "${VERIFY_HTTP_CODE}" != "200" ]; then
+            echo "::error::Failed to verify environment variables (HTTP ${VERIFY_HTTP_CODE})."
+            exit 1
+          fi
+
+          MATCHING_ENV_ID="$(printf '%s' "$VERIFY_JSON" | jq -r --arg key "APP_BASE_URL" --arg branch "${GIT_BRANCH}" '
+            (.envs // [])[]
+            | select(.key == $key and (.gitBranch // "") == $branch and ((.target // []) | index("preview")))
+            | .id
+          ' | head -n 1)"
+
+          if [ -z "${MATCHING_ENV_ID}" ] || [ "${MATCHING_ENV_ID}" = "null" ]; then
+            echo "::error::APP_BASE_URL was not found as a branch-scoped preview env var after upsert."
+            exit 1
+          fi
+
+          echo "Verified branch-scoped APP_BASE_URL env var id: ${MATCHING_ENV_ID}"

@@ -62,6 +62,8 @@ and supports stream resumption via a `startIndex` cursor.
 - `POST /api/chat/:runId`
   - body: `{ message: string }` (inject a follow-up message into the in-flight session)
   - response: `{ ok: true }`
+- `POST /api/chat/:runId/cancel`
+  - cancels the workflow run and marks the persisted chat thread as `canceled`
 - `GET /api/chat/:runId/stream?startIndex=N`
   - resumes an existing stream; rejects invalid `startIndex`
 

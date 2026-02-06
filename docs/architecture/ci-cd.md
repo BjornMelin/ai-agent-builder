@@ -27,6 +27,31 @@ Branching. When enabled, Neon will automatically provision:
 This avoids duplicating branch/env provisioning logic in GitHub Actions and
 prevents races between push and pull_request workflows.
 
+### Branch-scoped `APP_BASE_URL` sync (optional, recommended)
+
+`APP_BASE_URL` is required by `env.app` and must resolve to the active Preview
+deployment host for each branch. This repo includes:
+
+- `.github/workflows/vercel-preview-env-sync.yml`
+  - Trigger: pull requests (`opened`, `synchronize`, `reopened`, `ready_for_review`)
+  - Behavior:
+    - Resolves the branch's READY Vercel Preview deployment URL
+    - Upserts `APP_BASE_URL` as a branch-scoped Preview env var (`gitBranch`)
+    - Verifies the branch-scoped env var exists after upsert
+  - Fork PR policy: skips automatically (non-blocking) because repository
+    secrets are unavailable on forked PRs.
+- `.github/workflows/vercel-preview-env-cleanup.yml`
+  - Trigger: pull request `closed`
+  - Behavior: removes branch-scoped `APP_BASE_URL` entries for the closed branch
+    (best-effort cleanup).
+
+Required repo configuration:
+
+- GitHub Actions secrets:
+  - `VERCEL_PROJECT_ID`
+  - `VERCEL_TOKEN`
+  - `VERCEL_TEAM_ID` (optional; required for team-scoped projects)
+
 ## Database connection method (Vercel)
 
 On Vercel **Fluid compute**, this app uses a pooled Postgres TCP connection via
