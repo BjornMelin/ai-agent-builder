@@ -54,10 +54,11 @@ export async function UploadDetailContent(
       </Card>
 
       <Link
+        aria-label="Back to uploads"
         className="text-sm underline-offset-4 hover:underline"
         href={`/projects/${projectId}/uploads`}
       >
-        Back to uploads
+        ← Back to uploads
       </Link>
     </div>
   );

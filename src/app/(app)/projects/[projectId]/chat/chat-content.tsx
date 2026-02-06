@@ -4,7 +4,7 @@ import { getLatestChatThreadByProjectId } from "@/lib/data/chat.server";
 /**
  * Chat tab content (suspends for request-time data).
  *
- * @param props - Route params.
+ * @param props - Component props containing the target `props.projectId`.
  * @returns Chat page content.
  */
 export async function ChatContent(

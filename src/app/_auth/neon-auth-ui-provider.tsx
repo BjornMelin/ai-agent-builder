@@ -26,9 +26,9 @@ export function NeonAuthUiProvider(
   const { children } = props;
   const router = useRouter();
 
-  const socialProviders = Array.from(
-    parseAuthSocialProviders(process.env.NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS),
-  );
+  const socialProviders = [
+    ...parseAuthSocialProviders(process.env.NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS),
+  ];
 
   const socialProps =
     socialProviders.length > 0

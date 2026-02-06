@@ -464,6 +464,9 @@ async function sleep(ms: number): Promise<void> {
 }
 
 function normalizeEmail(value: string): string {
+  // Intentional duplication of `normalizeEmail` from `src/lib/env.ts` to keep this
+  // CLI script isolated from app-only env parsing dependencies.
+  // TODO(normalizeEmail): centralize and import from `src/lib/env.ts` (or a shared module).
   return value.trim().toLowerCase();
 }
 
@@ -513,7 +516,15 @@ async function runInfo(args: { projectId?: string }): Promise<void> {
       context.branchId,
       neonApiKey,
     );
-    const configString = JSON.stringify(emailPasswordConfig);
+    const safeSummary =
+      emailPasswordConfig && typeof emailPasswordConfig === "object"
+        ? {
+            keys: Object.keys(
+              emailPasswordConfig as Record<string, unknown>,
+            ).sort(),
+          }
+        : { type: typeof emailPasswordConfig };
+    const configString = JSON.stringify(safeSummary);
     printSummary(
       "Email/Password Config",
       configString.length > 96
@@ -584,7 +595,15 @@ async function runAudit(args: AuditArgs): Promise<void> {
       context.branchId,
       neonApiKey,
     );
-    const configString = JSON.stringify(emailPasswordConfig);
+    const safeSummary =
+      emailPasswordConfig && typeof emailPasswordConfig === "object"
+        ? {
+            keys: Object.keys(
+              emailPasswordConfig as Record<string, unknown>,
+            ).sort(),
+          }
+        : { type: typeof emailPasswordConfig };
+    const configString = JSON.stringify(safeSummary);
     printSummary(
       "Email/Password Config",
       configString.length > 96
@@ -1279,10 +1298,27 @@ function parseCreateArgs(argv: string[]): CreateArgs {
 }
 
 function readStringFlag(argv: string[], flag: string): string | undefined {
+  for (const token of argv) {
+    if (token === flag) continue;
+    if (!token.startsWith(flag)) continue;
+    if (token.length === flag.length) continue;
+    if (token[flag.length] !== "=") continue;
+
+    const value = token.slice(flag.length + 1);
+    return value.length > 0 ? value : undefined;
+  }
+
   const idx = argv.indexOf(flag);
   if (idx === -1) return undefined;
+
   const value = argv[idx + 1];
-  if (!value || value.startsWith("-")) return undefined;
+  if (!value) return undefined;
+  if (value.startsWith("--")) {
+    console.warn(`Missing value for ${flag}; got another flag: ${value}`);
+    return undefined;
+  }
+
+  // Accept values that start with a single dash (e.g. passwords like "-secret").
   return value;
 }
 

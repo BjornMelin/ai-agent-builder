@@ -1,5 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
+const ARTIFACT_SKELETON_KEYS = ["a", "b", "c"] as const;
+
 /**
  * Artifact detail loading UI.
  *
@@ -33,9 +35,8 @@ export default function Loading() {
       <div className="space-y-3">
         <Skeleton className="h-5 w-20" />
         <div className="flex flex-wrap gap-2">
-          {Array.from({ length: 3 }).map((_, idx) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: stable skeleton list
-            <Skeleton className="h-9 w-16" key={idx} />
+          {ARTIFACT_SKELETON_KEYS.map((key) => (
+            <Skeleton className="h-9 w-16" key={key} />
           ))}
         </div>
       </div>
@@ -45,9 +46,8 @@ export default function Loading() {
       <div className="space-y-3">
         <Skeleton className="h-5 w-24" />
         <div className="grid gap-2">
-          {Array.from({ length: 3 }).map((_, idx) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: stable skeleton list
-            <div className="rounded-md border bg-card px-3 py-2" key={idx}>
+          {ARTIFACT_SKELETON_KEYS.map((key) => (
+            <div className="rounded-md border bg-card px-3 py-2" key={key}>
               <Skeleton className="h-4 w-24" />
               <Skeleton className="mt-2 h-4 w-full" />
             </div>

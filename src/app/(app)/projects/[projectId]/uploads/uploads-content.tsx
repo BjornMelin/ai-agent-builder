@@ -13,7 +13,7 @@ import { listProjectFiles } from "@/lib/data/files.server";
 /**
  * Uploads tab content (suspends for request-time data).
  *
- * @param props - Route params.
+ * @param props - Component props including the target project identifier (`projectId`).
  * @returns Uploads page content.
  */
 export async function UploadsContent(

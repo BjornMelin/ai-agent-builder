@@ -5,8 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 /**
  * Chat tab.
  *
- * @param props - The component properties.
  * @remarks `props.params` resolves to an object containing the required `projectId`.
+ * @param props - The component properties.
  * @returns The chat page.
  */
 export default async function ChatPage(

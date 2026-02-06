@@ -48,7 +48,7 @@ Full instructions (prereqs, setup, and CLI reference):
    - `bun run auth:create:local --email you@example.com --password 'StrongPass!2026'`
    - Optional: skip sign-in verification:
      - `bun run auth:create:local --email you@example.com --password 'StrongPass!2026' --no-verify`
-4. Verify post-repair auth behavior:
+5. Verify post-repair auth behavior:
    - `bun run auth:smoke:local`
    - Optional success checks with known credentials:
      - `bun run auth:smoke:local --check 'agent@example.com:temporary-password'`

@@ -5,9 +5,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 /**
  * Project list page.
  *
+ * @param props - Next.js page props including optional `searchParams.limit`.
  * @returns A projects dashboard with create and recent-project sections.
  */
-export default function ProjectsPage() {
+export default async function ProjectsPage(
+  props: Readonly<{
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }>,
+) {
+  const searchParams = await props.searchParams;
+  const rawLimit = searchParams.limit;
+  const parsedLimit =
+    typeof rawLimit === "string" ? Number.parseInt(rawLimit, 10) : undefined;
+  const limit = Number.isFinite(parsedLimit) ? parsedLimit : undefined;
+
   return (
     <Suspense
       fallback={
@@ -31,7 +42,7 @@ export default function ProjectsPage() {
         </div>
       }
     >
-      <ProjectsContent />
+      <ProjectsContent {...(limit === undefined ? {} : { limit })} />
     </Suspense>
   );
 }

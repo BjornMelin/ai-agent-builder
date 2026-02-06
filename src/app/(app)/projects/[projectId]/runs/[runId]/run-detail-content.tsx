@@ -21,12 +21,16 @@ export async function RunDetailContent(
   }>,
 ) {
   const { projectId, runId } = props;
+
+  const runPromise = getRunById(runId);
+  const stepsPromise = listRunSteps(runId);
   const user = await requireAppUser();
 
+  const projectPromise = getProjectByIdForUser(projectId, user.id);
   const [project, run, steps] = await Promise.all([
-    getProjectByIdForUser(projectId, user.id),
-    getRunById(runId),
-    listRunSteps(runId),
+    projectPromise,
+    runPromise,
+    stepsPromise,
   ]);
 
   if (!project || !run || run.projectId !== project.id) {
@@ -50,7 +54,7 @@ export async function RunDetailContent(
         </div>
         <Link
           className="text-sm underline-offset-4 hover:underline"
-          href={`/projects/${projectId}/runs`}
+          href={`/projects/${encodeURIComponent(projectId)}/runs`}
         >
           Back to runs
         </Link>

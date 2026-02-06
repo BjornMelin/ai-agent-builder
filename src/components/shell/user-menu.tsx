@@ -20,6 +20,8 @@ import { ACCOUNT_DEFAULT_ROUTE } from "@/lib/navigation/account-routes";
  * @returns User profile/menu button.
  */
 export function UserMenu() {
+  const signOutFormId = "user-menu-sign-out";
+
   return (
     <ClientOnly fallback={<div aria-hidden="true" className="h-8 w-8" />}>
       <DropdownMenu>
@@ -29,6 +31,12 @@ export function UserMenu() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
+          <form
+            action="/auth/sign-out"
+            className="hidden"
+            id={signOutFormId}
+            method="post"
+          />
           <DropdownMenuItem asChild>
             <Link
               className="flex items-center gap-2"
@@ -40,10 +48,14 @@ export function UserMenu() {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link className="flex items-center gap-2" href="/auth/sign-out">
+            <button
+              className="flex w-full items-center gap-2"
+              form={signOutFormId}
+              type="submit"
+            >
               <LogOutIcon className="size-4" />
               <span>Sign out</span>
-            </Link>
+            </button>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

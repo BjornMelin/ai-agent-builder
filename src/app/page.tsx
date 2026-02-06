@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  * This app is currently private, so we redirect authenticated + allowlisted
  * users to their account settings.
  *
- * @returns Never returns; always redirects.
+ * @returns JSX that renders a Suspense boundary; redirects are handled by {@link HomeRedirect}.
  */
 export default function Home() {
   return (
