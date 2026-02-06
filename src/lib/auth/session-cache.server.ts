@@ -8,6 +8,11 @@ type SessionResult = Awaited<
   ReturnType<ReturnType<typeof getAuth>["getSession"]>
 >;
 
+const sessionParams =
+  process.env.NEXT_PHASE === "phase-production-build"
+    ? ({ query: { disableCookieCache: "true" } } as const)
+    : undefined;
+
 /**
  * Get the current request session (deduped per request).
  *
@@ -21,5 +26,5 @@ type SessionResult = Awaited<
  * @returns The Neon Auth session result.
  */
 export const getSessionCached = cache(async (): Promise<SessionResult> => {
-  return await getAuth().getSession();
+  return await getAuth().getSession(sessionParams);
 });
