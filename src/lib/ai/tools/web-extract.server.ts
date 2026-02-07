@@ -6,6 +6,7 @@ import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
 import { sha256Hex } from "@/lib/core/sha256";
 import { env } from "@/lib/env";
+import { assertSafeExternalHttpUrl } from "@/lib/security/url-safety.server";
 import { getRedis } from "@/lib/upstash/redis.server";
 
 /**
@@ -60,16 +61,7 @@ function truncateMarkdown(markdown: string, maxChars: number): string {
 export async function extractWebPage(
   input: Readonly<{ url: string; maxChars?: number | undefined }>,
 ): Promise<WebExtractResult> {
-  let url: URL;
-  try {
-    url = new URL(input.url);
-  } catch {
-    throw new AppError("bad_request", 400, "Invalid URL.");
-  }
-
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new AppError("bad_request", 400, "Unsupported URL protocol.");
-  }
+  const url = assertSafeExternalHttpUrl(input.url);
 
   const redis = getRedisOptional();
   const key = cacheKey({ url: url.toString() });
@@ -96,7 +88,7 @@ export async function extractWebPage(
   const doc = await client.scrape(url.toString(), {
     formats: ["markdown"],
     onlyMainContent: true,
-    timeout: 30_000,
+    timeout: budgets.webExtractTimeoutMs,
   });
 
   const markdownRaw = doc.markdown ?? "";

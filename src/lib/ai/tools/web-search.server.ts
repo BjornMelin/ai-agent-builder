@@ -1,14 +1,42 @@
 import "server-only";
 
-import Exa from "exa-js";
+import { z } from "zod";
 
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
 import { sha256Hex } from "@/lib/core/sha256";
 import { env } from "@/lib/env";
+import {
+  fetchWithTimeout,
+  isFetchTimeoutError,
+} from "@/lib/net/fetch-with-timeout.server";
 import { getRedis } from "@/lib/upstash/redis.server";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const EXA_SEARCH_ENDPOINT = "https://api.exa.ai/search";
+
+const exaSearchResponseSchema = z
+  .object({
+    requestId: z.string().min(1),
+    results: z
+      .array(
+        z
+          .object({
+            author: z.string().optional().nullable(),
+            highlights: z.array(z.string()).optional().nullable(),
+            id: z.string().min(1),
+            publishedDate: z.string().optional().nullable(),
+            score: z.number().optional().nullable(),
+            summary: z.string().optional().nullable(),
+            text: z.string().optional().nullable(),
+            title: z.string().optional().nullable(),
+            url: z.string().min(1),
+          })
+          .passthrough(),
+      )
+      .default([]),
+  })
+  .passthrough();
 
 /**
  * Minimal web search hit used by tool wrappers and research artifacts.
@@ -85,13 +113,6 @@ function cacheKey(
   return `cache:web-search:${sha256Hex(payload)}`;
 }
 
-let cachedExa: Exa | undefined;
-
-function getExaClient(): Exa {
-  cachedExa ??= new Exa(env.webResearch.exaApiKey);
-  return cachedExa;
-}
-
 /**
  * Execute a web search via Exa.
  *
@@ -107,6 +128,7 @@ export async function searchWeb(
     excludeDomains?: readonly string[] | undefined;
     startPublishedDate?: string | undefined;
     endPublishedDate?: string | undefined;
+    abortSignal?: AbortSignal | undefined;
   }>,
 ): Promise<WebSearchResponse> {
   const query = input.query.trim();
@@ -141,28 +163,70 @@ export async function searchWeb(
     if (cached) return cached;
   }
 
-  const exa = getExaClient();
-  const response = await exa.search(query, {
-    // Keep the search result payload small; deeper reads go through web.extract.
-    contents: {
-      highlights: { maxCharacters: 600, query },
-      summary: true,
-      text: { includeHtmlTags: false, maxCharacters: 1500 },
-    },
-    ...(includeDomains ? { includeDomains } : {}),
-    ...(excludeDomains ? { excludeDomains } : {}),
-    ...(startPublishedDate ? { startPublishedDate } : {}),
-    ...(endPublishedDate ? { endPublishedDate } : {}),
-    numResults,
-    type: "auto",
-    userLocation: "US",
-  });
+  let responseJson: z.infer<typeof exaSearchResponseSchema>;
+  try {
+    const response = await fetchWithTimeout(
+      EXA_SEARCH_ENDPOINT,
+      {
+        body: JSON.stringify({
+          // Keep the search result payload small; deeper reads go through web.extract.
+          contents: {
+            highlights: { maxCharacters: 600, query },
+            summary: true,
+            text: { includeHtmlTags: false, maxCharacters: 1500 },
+          },
+          ...(includeDomains ? { includeDomains } : {}),
+          ...(excludeDomains ? { excludeDomains } : {}),
+          ...(startPublishedDate ? { startPublishedDate } : {}),
+          ...(endPublishedDate ? { endPublishedDate } : {}),
+          numResults,
+          query,
+          type: "auto",
+          userLocation: "US",
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": env.webResearch.exaApiKey,
+        },
+        method: "POST",
+      },
+      { signal: input.abortSignal, timeoutMs: budgets.webSearchTimeoutMs },
+    );
+
+    if (!response.ok) {
+      throw new AppError(
+        "bad_gateway",
+        502,
+        `Web search failed (${response.status}).`,
+      );
+    }
+
+    const json = await response.json();
+    const parsed = exaSearchResponseSchema.safeParse(json);
+    if (!parsed.success) {
+      throw new AppError(
+        "bad_gateway",
+        502,
+        "Web search returned an unexpected response.",
+        parsed.error,
+      );
+    }
+    responseJson = parsed.data;
+  } catch (error) {
+    if (isFetchTimeoutError(error)) {
+      throw new AppError("upstream_timeout", 504, "Web search timed out.");
+    }
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError("bad_gateway", 502, "Web search failed.", error);
+  }
 
   const result: WebSearchResponse = {
-    requestId: response.requestId,
-    results: response.results.map((r) => ({
+    requestId: responseJson.requestId,
+    results: responseJson.results.map((r) => ({
       id: r.id,
-      title: r.title,
+      title: typeof r.title === "string" ? r.title : null,
       url: r.url,
       ...(typeof r.publishedDate === "string" && r.publishedDate.length > 0
         ? { publishedDate: r.publishedDate }

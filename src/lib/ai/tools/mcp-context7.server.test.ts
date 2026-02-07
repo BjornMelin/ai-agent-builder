@@ -114,4 +114,57 @@ describe("Context7 MCP wrapper", () => {
     expect(close).toHaveBeenCalledTimes(1);
     expect(redis.setex).not.toHaveBeenCalled();
   });
+
+  it("times out when the tool call exceeds the timeout budget", async () => {
+    vi.useFakeTimers();
+
+    const redis = {
+      get: vi.fn().mockResolvedValue(null),
+      setex: vi.fn().mockResolvedValue("OK"),
+    };
+    state.getRedis.mockReturnValue(redis);
+
+    const executeResolve = vi
+      .fn()
+      .mockImplementation(
+        async (_args: unknown, options?: { abortSignal?: AbortSignal }) => {
+          return await new Promise((_, reject) => {
+            const signal = options?.abortSignal;
+            if (!signal) return;
+            const onAbort = () => reject(new Error("aborted"));
+            if (signal.aborted) {
+              onAbort();
+              return;
+            }
+            signal.addEventListener("abort", onAbort, { once: true });
+          });
+        },
+      );
+    const close = vi.fn().mockResolvedValue(undefined);
+
+    state.createMCPClient.mockResolvedValue({
+      close,
+      tools: vi.fn().mockResolvedValue({
+        "resolve-library-id": { execute: executeResolve },
+      }),
+    });
+
+    const mod = await import("@/lib/ai/tools/mcp-context7.server");
+    const promise = mod.context7ResolveLibraryId({
+      libraryName: "react",
+      query: "useState",
+    });
+    const expectation = expect(promise).rejects.toMatchObject({
+      code: "upstream_timeout",
+      status: 504,
+    });
+
+    await vi.advanceTimersByTimeAsync(budgets.context7TimeoutMs);
+
+    await expectation;
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(redis.setex).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
 });

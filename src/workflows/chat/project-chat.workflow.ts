@@ -7,7 +7,7 @@ import {
 } from "ai";
 import { getWorkflowMetadata, getWritable } from "workflow";
 
-import { getAgentMode } from "@/lib/ai/agents/registry";
+import { getEnabledAgentMode } from "@/lib/ai/agents/registry.server";
 import { buildChatToolsForMode } from "@/lib/ai/tools/factory.server";
 import { getWorkflowChatModel } from "@/workflows/ai/gateway-models.step";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
@@ -43,7 +43,7 @@ export async function projectChat(
   let finishedStatus: "succeeded" | "failed" | "canceled" | null = null;
   let thrownError: unknown = null;
   const messages: ModelMessage[] = [];
-  const mode = getAgentMode(modeId);
+  const mode = getEnabledAgentMode(modeId);
   const tools = buildChatToolsForMode(modeId);
   const threadStateInput = {
     mode: mode.modeId,

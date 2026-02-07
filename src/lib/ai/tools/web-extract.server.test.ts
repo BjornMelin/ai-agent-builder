@@ -51,6 +51,26 @@ describe("extractWebPage", () => {
     } satisfies Partial<AppError>);
   });
 
+  it("rejects URLs that are unsafe for outbound fetches (SSRF defense-in-depth)", async () => {
+    const { extractWebPage } = await loadModule();
+
+    const unsafeUrls = [
+      "http://localhost",
+      "https://127.0.0.1",
+      "http://[::1]",
+      "https://example.com:8080/path",
+      "https://user:pass@example.com/",
+      "http://service.internal/path",
+    ];
+
+    for (const url of unsafeUrls) {
+      await expect(extractWebPage({ url })).rejects.toMatchObject({
+        code: "bad_request",
+        status: 400,
+      } satisfies Partial<AppError>);
+    }
+  });
+
   it("returns cached results without invoking Firecrawl", async () => {
     const cached = {
       description: null,
@@ -101,6 +121,7 @@ describe("extractWebPage", () => {
       expect.objectContaining({
         formats: ["markdown"],
         onlyMainContent: true,
+        timeout: budgets.webExtractTimeoutMs,
       }),
     );
 

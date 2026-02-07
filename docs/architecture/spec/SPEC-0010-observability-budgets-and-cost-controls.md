@@ -115,22 +115,28 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 - max extracted characters per URL (`budgets.maxWebExtractCharsPerUrl`)
 - max citations per artifact (`budgets.maxCitationsPerArtifact`)
 - cache TTLs for repeated queries (`budgets.webSearchCacheTtlSeconds`, `budgets.webExtractCacheTtlSeconds`)
+- upstream timeouts (`budgets.webSearchTimeoutMs`, `budgets.webExtractTimeoutMs`)
 
 Enforcement (project chat workflow):
 
 - `src/workflows/chat/steps/web-search.step.ts`
 - `src/workflows/chat/steps/web-extract.step.ts`
 - `src/workflows/chat/steps/research-report.step.ts`
+- `src/lib/ai/tools/web-search.server.ts` (AbortController + timeout budget)
+- `src/lib/ai/tools/web-extract.server.ts` (Firecrawl timeout budget)
+- `src/lib/net/fetch-with-timeout.server.ts` (shared timeout helper)
 
 ### Docs MCP budgets
 
 - max Context7 calls per agent turn (`budgets.maxContext7CallsPerTurn`)
 - max Context7 response size (`budgets.maxContext7ResponseBytes`)
 - cache TTL (`budgets.context7CacheTtlSeconds`)
+- upstream timeout (`budgets.context7TimeoutMs`)
 
 Enforcement (project chat workflow):
 
 - `src/workflows/chat/steps/context7.step.ts`
+- `src/lib/ai/tools/mcp-context7.server.ts` (AbortController + timeout budget)
 
 ### Sandbox budgets
 
@@ -222,3 +228,4 @@ Enforcement (project chat workflow):
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-01)**: Updated for implementation/deploy workflows and sandbox budgets.
 - **0.3.1 (2026-02-03)**: Updated file path references to match current repo structure.
+- **0.3.2 (2026-02-07)**: Documented upstream timeout budgets and enforcement points for web research and Context7 MCP.

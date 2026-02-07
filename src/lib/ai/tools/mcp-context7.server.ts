@@ -68,9 +68,25 @@ function cacheKey(toolName: Context7ToolName, args: unknown): string {
   return `cache:context7:${toolName}:${sha256Hex(payload)}`;
 }
 
+function addAbortListener(
+  signal: AbortSignal,
+  onAbort: () => void,
+): () => void {
+  if (signal.aborted) {
+    onAbort();
+    return () => undefined;
+  }
+
+  signal.addEventListener("abort", onAbort, { once: true });
+  return () => {
+    signal.removeEventListener("abort", onAbort);
+  };
+}
+
 async function callContext7Tool(
   toolName: Context7ToolName,
   args: unknown,
+  options: Readonly<{ abortSignal?: AbortSignal | undefined }> = {},
 ): Promise<unknown> {
   const redis = getRedisOptional();
   const key = cacheKey(toolName, args);
@@ -80,23 +96,57 @@ async function callContext7Tool(
     if (cached) return cached;
   }
 
-  const result = await withToolset(async (toolset) => {
-    const tool = toolset[toolName];
-    if (!tool) {
-      throw new AppError(
-        "bad_request",
-        400,
-        `Context7 tool not available: ${toolName}.`,
-      );
-    }
+  const controller = new AbortController();
+  let abortedByTimeout = false;
+  const cleanupFns: Array<() => void> = [];
 
-    const toolResult = await tool.execute(args, {
-      messages: [],
-      toolCallId: `context7:${toolName}`,
-    } satisfies ToolExecutionOptions);
-    assertMaxBytes(toolResult);
-    return toolResult;
-  });
+  if (options.abortSignal) {
+    cleanupFns.push(
+      addAbortListener(options.abortSignal, () => {
+        controller.abort(options.abortSignal?.reason);
+      }),
+    );
+  }
+
+  const timeoutId = setTimeout(() => {
+    abortedByTimeout = true;
+    controller.abort(new Error("Context7 request timed out."));
+  }, budgets.context7TimeoutMs);
+  cleanupFns.push(() => clearTimeout(timeoutId));
+
+  let result: unknown;
+  try {
+    result = await withToolset(async (toolset) => {
+      const tool = toolset[toolName];
+      if (!tool) {
+        throw new AppError(
+          "bad_request",
+          400,
+          `Context7 tool not available: ${toolName}.`,
+        );
+      }
+
+      const toolResult = await tool.execute(args, {
+        abortSignal: controller.signal,
+        messages: [],
+        toolCallId: `context7:${toolName}`,
+      } satisfies ToolExecutionOptions);
+      assertMaxBytes(toolResult);
+      return toolResult;
+    });
+  } catch (error) {
+    if (abortedByTimeout) {
+      throw new AppError("upstream_timeout", 504, "Context7 timed out.");
+    }
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError("bad_gateway", 502, "Context7 request failed.", error);
+  } finally {
+    for (const fn of cleanupFns) {
+      fn();
+    }
+  }
 
   if (redis) {
     await redis
@@ -113,22 +163,26 @@ async function callContext7Tool(
  * Resolve a human library name to a Context7 libraryId.
  *
  * @param input - Resolve input.
+ * @param options - Optional abort signal propagation.
  * @returns Context7 response payload (pass-through).
  */
 export async function context7ResolveLibraryId(
   input: Readonly<{ libraryName: string; query: string }>,
+  options: Readonly<{ abortSignal?: AbortSignal | undefined }> = {},
 ): Promise<unknown> {
-  return callContext7Tool("resolve-library-id", input);
+  return callContext7Tool("resolve-library-id", input, options);
 }
 
 /**
  * Query Context7 docs for a specific libraryId.
  *
  * @param input - Query input.
+ * @param options - Optional abort signal propagation.
  * @returns Context7 response payload (pass-through).
  */
 export async function context7QueryDocs(
   input: Readonly<{ libraryId: string; query: string }>,
+  options: Readonly<{ abortSignal?: AbortSignal | undefined }> = {},
 ): Promise<unknown> {
-  return callContext7Tool("query-docs", input);
+  return callContext7Tool("query-docs", input, options);
 }

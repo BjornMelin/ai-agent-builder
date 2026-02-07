@@ -69,7 +69,9 @@ export async function context7ResolveLibraryIdStep(
   }
 
   assertContext7Budget(options);
-  return context7ResolveLibraryId(parsed.data);
+  return context7ResolveLibraryId(parsed.data, {
+    abortSignal: options.abortSignal,
+  });
 }
 
 /**
@@ -96,5 +98,5 @@ export async function context7QueryDocsStep(
   }
 
   assertContext7Budget(options);
-  return context7QueryDocs(parsed.data);
+  return context7QueryDocs(parsed.data, { abortSignal: options.abortSignal });
 }

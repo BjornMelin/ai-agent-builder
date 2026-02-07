@@ -2,8 +2,8 @@
 ADR: 0013
 Title: Caching + cost controls: Next.js caching + Upstash Redis + budgets
 Status: Implemented
-Version: 0.5
-Date: 2026-02-06
+Version: 0.6
+Date: 2026-02-07
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0004, ADR-0005, ADR-0007]
@@ -108,6 +108,10 @@ flowchart LR
 
 - Define budgets in `src/lib/config/budgets.server.ts`.
 - Persist per-step usage, enforce max tokens and tool calls.
+- Enforce upstream timeouts for external providers to avoid hung requests:
+  - Exa search: `src/lib/ai/tools/web-search.server.ts` via `src/lib/net/fetch-with-timeout.server.ts` using `budgets.webSearchTimeoutMs`.
+  - Firecrawl extraction: `src/lib/ai/tools/web-extract.server.ts` using `budgets.webExtractTimeoutMs`.
+  - Context7 MCP: `src/lib/ai/tools/mcp-context7.server.ts` using `budgets.context7TimeoutMs`.
 - Standardize cache tags in `src/lib/cache/tags.ts` and apply to server loaders
   using `'use cache'` + `cacheTag`.
 - Apply server-side search rate limiting with Upstash Ratelimit in
@@ -161,3 +165,4 @@ flowchart LR
 - **0.3 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.
 - **0.4 (2026-02-06)**: Marked implemented; added Cache Components/tag invalidation implementation details and concrete file references.
 - **0.5 (2026-02-06)**: Added ownership-scoped search + Upstash Ratelimit implementation details for `/api/search`.
+- **0.6 (2026-02-07)**: Documented upstream timeouts as part of budgets and cost controls for external tool calls.

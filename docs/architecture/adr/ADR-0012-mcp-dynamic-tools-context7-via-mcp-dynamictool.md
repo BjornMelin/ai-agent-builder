@@ -2,7 +2,7 @@
 ADR: 0012
 Title: MCP + dynamic tools: Context7 via MCP + dynamicTool
 Status: Implemented
-Version: 0.3
+Version: 0.4
 Date: 2026-02-07
 Supersedes: []
 Superseded-by: []
@@ -97,6 +97,10 @@ flowchart LR
 ### Implementation Details
 
 - `src/lib/ai/tools/mcp-context7.server.ts` wraps Context7 MCP tools (cached + size-bounded).
+- Tool calls are time-bounded and abortable:
+  - Budget: `budgets.context7TimeoutMs` in `src/lib/config/budgets.server.ts`
+  - Enforcement: AbortController timeout in `src/lib/ai/tools/mcp-context7.server.ts`
+  - Propagation: `options.abortSignal` is passed from `ToolExecutionOptions.abortSignal` in `src/workflows/chat/steps/context7.step.ts`
 - `src/lib/ai/tools/factory.server.ts` injects Context7 tools only for allowlisted modes.
 - `src/workflows/chat/steps/context7.step.ts` enforces per-turn budgets for Context7 calls.
 
@@ -134,3 +138,4 @@ flowchart LR
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-07)**: Implemented with mode-scoped tool injection, Redis caching, and budgets.
+- **0.4 (2026-02-07)**: Documented abortable, time-bounded MCP calls (`context7TimeoutMs`) and the workflow abort propagation path.

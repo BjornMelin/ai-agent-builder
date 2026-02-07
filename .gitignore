@@ -29,6 +29,7 @@ build/
 
 # Coverage
 coverage/
+coverage_tmp_*/
 *.lcov
 
 # Logs

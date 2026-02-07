@@ -77,6 +77,7 @@ export async function webSearchStep(
   ctx.toolBudget.webSearchCalls += 1;
 
   return searchWeb({
+    abortSignal: options.abortSignal,
     endPublishedDate: parsed.data.endPublishedDate,
     excludeDomains: parsed.data.excludeDomains,
     includeDomains: parsed.data.includeDomains,

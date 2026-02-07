@@ -75,6 +75,21 @@ export type BudgetConfig = Readonly<{
    * TTL (seconds) for cached Context7 responses.
    */
   context7CacheTtlSeconds: number;
+
+  /**
+   * Timeout (milliseconds) for web search requests (Exa).
+   */
+  webSearchTimeoutMs: number;
+
+  /**
+   * Timeout (milliseconds) for web extraction requests (Firecrawl).
+   */
+  webExtractTimeoutMs: number;
+
+  /**
+   * Timeout (milliseconds) for Context7 MCP tool calls.
+   */
+  context7TimeoutMs: number;
 }>;
 
 /**
@@ -84,6 +99,7 @@ export type BudgetConfig = Readonly<{
  */
 export const budgets: BudgetConfig = {
   context7CacheTtlSeconds: 60 * 60 * 24,
+  context7TimeoutMs: 15_000,
   maxCitationsPerArtifact: 25,
   maxContext7CallsPerTurn: 2,
   maxContext7ResponseBytes: 250_000,
@@ -96,5 +112,7 @@ export const budgets: BudgetConfig = {
   maxWebSearchResults: 8,
   toolCacheTtlSeconds: 60 * 10,
   webExtractCacheTtlSeconds: 60 * 60,
+  webExtractTimeoutMs: 30_000,
   webSearchCacheTtlSeconds: 60 * 10,
+  webSearchTimeoutMs: 20_000,
 };

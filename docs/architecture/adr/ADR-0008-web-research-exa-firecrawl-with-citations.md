@@ -2,15 +2,16 @@
 ADR: 0008
 Title: Web research: Exa + Firecrawl with citations
 Status: Implemented
-Version: 0.3
+Version: 0.4
 Date: 2026-02-07
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0006, ADR-0013]
 Tags: [research, architecture]
 References:
-  - [Exa tool registry](https://ai-sdk.dev/tools-registry/exa)
-  - [Firecrawl tool registry](https://ai-sdk.dev/tools-registry/firecrawl)
+  - [Exa Search API](https://docs.exa.ai/reference/search)
+  - [Firecrawl Node SDK](https://docs.firecrawl.dev/sdks/node)
+  - [OWASP SSRF Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html)
 ---
 
 ## Status
@@ -19,7 +20,7 @@ Implemented — 2026-02-07.
 
 ## Description
 
-Use Exa for search and Firecrawl for page extraction, enforcing citation capture per claim.
+Use Exa for search and Firecrawl for page extraction, enforcing citation capture per claim with strict budgets, caching, and SSRF guardrails.
 
 ## Context
 
@@ -34,7 +35,7 @@ Market validation and competitive research require up-to-date web information. W
 
 ## Alternatives
 
-- A: Exa + Firecrawl — Pros: purpose-built; AI SDK tools. Cons: two vendors.
+- A: Exa + Firecrawl — Pros: purpose-built; thin, typed adapters. Cons: two vendors.
 - B: Only search (no extraction) — Pros: simpler. Cons: low quality grounding.
 - C: Scrape manually — Pros: control. Cons: high maintenance and fragility.
 
@@ -53,11 +54,15 @@ Market validation and competitive research require up-to-date web information. W
 
 We will adopt **Exa** for search and **Firecrawl** for content extraction, capturing source URLs and minimal excerpts for citations.
 
+Implementation detail: Exa calls use a small REST wrapper (AbortController + timeouts) rather than the Exa SDK to guarantee deterministic cancellation under load.[^exa-search]
+
 ## Constraints
 
 - Respect robots and provider terms.
 - Do not store full copyrighted articles; store snippets + summaries.
 - Enforce max URLs per step and cache results.
+- Enforce SSRF guardrails for outbound extraction URLs.[^owasp-ssrf]
+- SSRF validation is defense-in-depth and intentionally does not perform DNS resolution; hostnames that resolve to private IPs or DNS rebinding attacks are out of scope and must be mitigated via provider-side protections and/or egress controls.
 
 ## High-Level Architecture
 
@@ -94,6 +99,8 @@ flowchart LR
 
 - `src/lib/ai/tools/web-search.server.ts` wraps Exa queries.
 - `src/lib/ai/tools/web-extract.server.ts` wraps Firecrawl extraction.
+- `src/lib/net/fetch-with-timeout.server.ts` enforces AbortController timeouts for upstream requests.
+- `src/lib/security/url-safety.server.ts` blocks known-unsafe URLs (SSRF defense-in-depth).
 - Cache by `(tool, params)` in Upstash Redis.
 
 ### Implementation Details
@@ -132,10 +139,14 @@ flowchart LR
 
 ### Dependencies
 
-- **Added**: `exa-js`, `@mendable/firecrawl-js`
+- **Added**: `@mendable/firecrawl-js`
 
 ## Changelog
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-07)**: Implemented with server wrappers, caching, budgets, and artifact-linked citations.
+- **0.4 (2026-02-07)**: Hardened adapters with deterministic timeouts and SSRF guardrails; removed unused Exa SDK dependency.
+
+[^exa-search]: https://docs.exa.ai/reference/search
+[^owasp-ssrf]: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html

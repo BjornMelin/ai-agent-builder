@@ -16,6 +16,7 @@ export const webCitationPayloadSchema = z
     index: z.number().int().min(1),
     publishedDate: z.string().min(1).optional(),
     title: z.string().min(1).optional(),
+    tool: z.enum(["exa", "firecrawl"]).optional(),
     url: z.string().url(),
   })
   .passthrough();
@@ -36,6 +37,7 @@ export type WebCitationSource = Readonly<{
   excerpt?: string | undefined;
   author?: string | undefined;
   publishedDate?: string | undefined;
+  tool?: "exa" | "firecrawl" | undefined;
 }>;
 
 /**
@@ -74,6 +76,7 @@ export function normalizeWebCitations(
       index: i + 1,
       publishedDate: s.publishedDate,
       title: s.title ?? undefined,
+      tool: s.tool,
       url: s.url,
     });
 

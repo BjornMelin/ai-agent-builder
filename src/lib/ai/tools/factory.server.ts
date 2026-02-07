@@ -2,7 +2,7 @@ import "server-only";
 
 import type { ToolSet } from "ai";
 
-import { getAgentMode } from "@/lib/ai/agents/registry";
+import { getEnabledAgentMode } from "@/lib/ai/agents/registry.server";
 import type { ToolId } from "@/lib/ai/tools/tool-ids";
 import { AppError } from "@/lib/core/errors";
 import { chatTools } from "@/workflows/chat/tools";
@@ -33,6 +33,6 @@ function pickAllowedTools(
  * @returns Toolset filtered by mode allowlist.
  */
 export function buildChatToolsForMode(modeId: string): ToolSet {
-  const mode = getAgentMode(modeId);
+  const mode = getEnabledAgentMode(modeId);
   return pickAllowedTools(chatTools, mode.allowedTools);
 }

@@ -9,19 +9,8 @@ const state = vi.hoisted(() => ({
       firecrawlApiKey: "fc-test-key",
     },
   },
-  exaCtor: vi.fn(),
-  exaSearch: vi.fn(),
+  fetch: vi.fn(),
   getRedis: vi.fn(),
-}));
-
-vi.mock("exa-js", () => ({
-  default: class ExaMock {
-    search = state.exaSearch;
-
-    constructor(apiKey: string) {
-      state.exaCtor(apiKey);
-    }
-  },
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -35,6 +24,8 @@ vi.mock("@/lib/upstash/redis.server", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
+  vi.unstubAllGlobals();
+  vi.stubGlobal("fetch", state.fetch);
 });
 
 async function loadModule() {
@@ -64,7 +55,7 @@ describe("searchWeb", () => {
 
     expect(result).toEqual(cached);
     expect(redis.get).toHaveBeenCalledTimes(1);
-    expect(state.exaCtor).not.toHaveBeenCalled();
+    expect(state.fetch).not.toHaveBeenCalled();
   });
 
   it("invokes Exa on cache miss and caches the normalized response", async () => {
@@ -74,16 +65,24 @@ describe("searchWeb", () => {
     };
     state.getRedis.mockReturnValue(redis);
 
-    state.exaSearch.mockResolvedValue({
-      requestId: "req_1",
-      results: [
+    state.fetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          requestId: "req_1",
+          results: [
+            {
+              id: "hit_1",
+              title: "A",
+              url: "https://example.com/a",
+            },
+          ],
+        }),
         {
-          id: "hit_1",
-          title: "A",
-          url: "https://example.com/a",
+          headers: { "Content-Type": "application/json" },
+          status: 200,
         },
-      ],
-    });
+      ),
+    );
 
     const { searchWeb } = await loadModule();
     const result = await searchWeb({
@@ -97,17 +96,33 @@ describe("searchWeb", () => {
     expect(result.requestId).toBe("req_1");
     expect(result.results).toHaveLength(1);
 
-    expect(state.exaSearch).toHaveBeenCalledWith(
-      "Next.js cache components",
+    expect(state.fetch).toHaveBeenCalledTimes(1);
+    expect(state.fetch).toHaveBeenCalledWith(
+      "https://api.exa.ai/search",
       expect.objectContaining({
-        endPublishedDate: "2026-02-07",
-        includeDomains: ["example.com"],
-        numResults: budgets.maxWebSearchResults,
-        startPublishedDate: "2026-01-01",
-        type: "auto",
-        userLocation: "US",
+        headers: expect.objectContaining({
+          "x-api-key": "exa-test-key",
+        }),
+        method: "POST",
       }),
     );
+
+    const [, init] = state.fetch.mock.calls[0] ?? [];
+    const body =
+      init && typeof init === "object"
+        ? (init as Record<string, unknown>).body
+        : null;
+    expect(typeof body).toBe("string");
+    const payload = JSON.parse(body as string) as Record<string, unknown>;
+    expect(payload.query).toBe("Next.js cache components");
+    expect(payload).toMatchObject({
+      endPublishedDate: "2026-02-07",
+      includeDomains: ["example.com"],
+      numResults: budgets.maxWebSearchResults,
+      startPublishedDate: "2026-01-01",
+      type: "auto",
+      userLocation: "US",
+    });
 
     expect(redis.setex).toHaveBeenCalledWith(
       expect.stringMatching(/^cache:web-search:/),
@@ -116,6 +131,37 @@ describe("searchWeb", () => {
         requestId: "req_1",
       }),
     );
+  });
+
+  it("times out when the upstream request exceeds the timeout budget", async () => {
+    vi.useFakeTimers();
+
+    state.fetch.mockImplementation(
+      (_input: unknown, init?: { signal?: AbortSignal }) => {
+        return new Promise((_resolve, reject) => {
+          if (init?.signal) {
+            const onAbort = () => reject(new Error("aborted"));
+            if (init.signal.aborted) {
+              onAbort();
+              return;
+            }
+            init.signal.addEventListener("abort", onAbort, { once: true });
+          }
+        });
+      },
+    );
+
+    const { searchWeb } = await loadModule();
+    const promise = searchWeb({ query: "timeouts" });
+    const expectation = expect(promise).rejects.toMatchObject({
+      code: "upstream_timeout",
+      status: 504,
+    } satisfies Partial<AppError>);
+
+    await vi.advanceTimersByTimeAsync(budgets.webSearchTimeoutMs);
+
+    await expectation;
+    vi.useRealTimers();
   });
 
   it("rejects invalid date strings", async () => {

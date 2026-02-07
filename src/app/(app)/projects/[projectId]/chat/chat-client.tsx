@@ -549,7 +549,7 @@ export function ProjectChatClient(
   return (
     <div className="flex h-[calc(100dvh-4rem)] flex-col gap-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-2">
           <p className="text-muted-foreground text-sm">Project chat</p>
           <p className="truncate font-medium text-sm">
             {activeThread
@@ -565,48 +565,60 @@ export function ProjectChatClient(
               {modeOptionForDisplay.description}
             </p>
           ) : null}
+
+          <nav aria-label="Chat threads">
+            <ul className="flex items-center gap-2 overflow-x-auto pb-1">
+              <li>
+                <Button
+                  aria-current={activeThread ? undefined : "page"}
+                  disabled={threadSelectorDisabled}
+                  onClick={() => {
+                    if (hasActiveSession) return;
+                    setComposerError(null);
+                    setMessages([]);
+                    setRunId(null);
+                    setRunStatus(null);
+                    setActiveThread(null);
+                    setSelectedModeId(selectedModeFallback);
+                    replaceThreadIdInUrl(null);
+                  }}
+                  size="sm"
+                  type="button"
+                  variant={activeThread ? "outline" : "secondary"}
+                >
+                  New chat
+                </Button>
+              </li>
+              {threads.map((t) => {
+                const isActive = activeThread?.id === t.id;
+                return (
+                  <li key={t.id}>
+                    <Button
+                      aria-current={isActive ? "page" : undefined}
+                      aria-label={`${t.title} (${t.status})`}
+                      disabled={threadSelectorDisabled}
+                      onClick={() => {
+                        if (threadSelectorDisabled) return;
+                        void router.push(
+                          `/projects/${encodeURIComponent(
+                            props.projectId,
+                          )}/chat?threadId=${encodeURIComponent(t.id)}`,
+                        );
+                      }}
+                      size="sm"
+                      type="button"
+                      variant={isActive ? "secondary" : "outline"}
+                    >
+                      <span className="max-w-[12rem] truncate">{t.title}</span>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Select
-            onValueChange={(value) => {
-              if (value === "__new__") {
-                if (hasActiveSession) return;
-                setComposerError(null);
-                setMessages([]);
-                setRunId(null);
-                setRunStatus(null);
-                setActiveThread(null);
-                setSelectedModeId(selectedModeFallback);
-                replaceThreadIdInUrl(null);
-                return;
-              }
-              if (threadSelectorDisabled) return;
-              void router.push(
-                `/projects/${encodeURIComponent(props.projectId)}/chat?threadId=${encodeURIComponent(
-                  value,
-                )}`,
-              );
-            }}
-            value={activeThread?.id ?? "__new__"}
-          >
-            <SelectTrigger
-              aria-label="Select chat thread"
-              disabled={threadSelectorDisabled}
-              size="sm"
-            >
-              <SelectValue placeholder="New chat" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="__new__">New chat</SelectItem>
-              {threads.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  <span className="truncate">{t.title}</span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           <Select
             onValueChange={(value) => {
               setSelectedModeId(value);

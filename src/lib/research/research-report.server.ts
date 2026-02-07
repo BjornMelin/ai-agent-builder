@@ -100,6 +100,7 @@ export async function createResearchReportArtifact(
     description: e.description,
     excerpt: excerptForMarkdown(e.markdown),
     title: e.title,
+    tool: "firecrawl",
     url: e.url,
     ...(e.publishedTime ? { publishedDate: e.publishedTime } : {}),
   }));
