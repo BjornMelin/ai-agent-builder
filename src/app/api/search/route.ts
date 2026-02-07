@@ -102,6 +102,13 @@ function toTypeTokens(value: string | undefined): string[] | undefined {
   return tokens.length === 0 ? undefined : tokens;
 }
 
+function deriveScope(
+  scope: SearchScope | undefined,
+  projectId: string | undefined,
+): SearchScope {
+  return scope ?? (projectId ? "project" : "global");
+}
+
 const searchQuerySchema = z
   .strictObject({
     cursor: z.string().trim().max(128).optional(),
@@ -112,7 +119,7 @@ const searchQuerySchema = z
     types: z.array(z.enum(SEARCH_TYPE_FILTERS)).optional(),
   })
   .superRefine((value, ctx) => {
-    const scope = value.scope ?? (value.projectId ? "project" : "global");
+    const scope = deriveScope(value.scope, value.projectId);
     if (scope === "project" && !value.projectId) {
       ctx.addIssue({
         code: "custom",
@@ -141,8 +148,7 @@ const searchQuerySchema = z
     }
   })
   .transform((value) => {
-    const scope: SearchScope =
-      value.scope ?? (value.projectId ? "project" : "global");
+    const scope = deriveScope(value.scope, value.projectId);
     const defaults =
       scope === "project" ? PROJECT_DEFAULT_TYPES : GLOBAL_DEFAULT_TYPES;
     return {
@@ -155,22 +161,19 @@ const searchQuerySchema = z
     };
   });
 
-type SearchQueryInput = z.input<typeof searchQuerySchema>;
 type SearchQuery = z.output<typeof searchQuerySchema>;
 
 function parseSearchQuery(url: URL): SearchQuery {
   const scope = optionalParam(url.searchParams.get("scope"))?.toLowerCase();
   const types = toTypeTokens(optionalParam(url.searchParams.get("types")));
 
-  const input: SearchQueryInput = {
+  const input = {
     cursor: optionalParam(url.searchParams.get("cursor")),
     limit: optionalParam(url.searchParams.get("limit")),
     projectId: optionalParam(url.searchParams.get("projectId")),
     q: optionalParam(url.searchParams.get("q")) ?? "",
-    scope:
-      scope === undefined ? undefined : (scope as SearchQueryInput["scope"]),
-    types:
-      types === undefined ? undefined : (types as SearchQueryInput["types"]),
+    scope,
+    types,
   };
 
   const parsed = searchQuerySchema.safeParse(input);
@@ -314,30 +317,37 @@ async function searchGlobalArtifacts(
   const pattern = `%${escapeLikePattern(q)}%`;
   const result = await db.execute<GlobalArtifactRow>(sql`
     SELECT
-      id,
-      project_id AS "projectId",
-      kind,
-      logical_key AS "logicalKey",
-      version,
-      COALESCE(content->>'title', kind || ' ' || logical_key || ' v' || version::text) AS title,
-      SUBSTRING(content::text FROM 1 FOR 240) AS snippet
-    FROM artifacts
+      ${schema.artifactsTable.id} AS id,
+      ${schema.artifactsTable.projectId} AS "projectId",
+      ${schema.artifactsTable.kind} AS kind,
+      ${schema.artifactsTable.logicalKey} AS "logicalKey",
+      ${schema.artifactsTable.version} AS version,
+      COALESCE(
+        ${schema.artifactsTable.content}->>'title',
+        ${schema.artifactsTable.kind}
+          || ' '
+          || ${schema.artifactsTable.logicalKey}
+          || ' v'
+          || ${schema.artifactsTable.version}::text
+      ) AS title,
+      SUBSTRING(${schema.artifactsTable.content}::text FROM 1 FOR 240) AS snippet
+    FROM ${schema.artifactsTable}
     WHERE
       (
-        kind ILIKE ${pattern} ESCAPE '\\'
-        OR logical_key ILIKE ${pattern} ESCAPE '\\'
-        OR content::text ILIKE ${pattern} ESCAPE '\\'
+        ${schema.artifactsTable.kind} ILIKE ${pattern} ESCAPE '\\'
+        OR ${schema.artifactsTable.logicalKey} ILIKE ${pattern} ESCAPE '\\'
+        OR ${schema.artifactsTable.content}::text ILIKE ${pattern} ESCAPE '\\'
       )
       AND EXISTS (
         SELECT 1
-        FROM projects
-        WHERE projects.id = artifacts.project_id
+        FROM ${schema.projectsTable}
+        WHERE ${schema.projectsTable.id} = ${schema.artifactsTable.projectId}
           AND (
-            projects.owner_user_id = ${userId}
-            OR projects.owner_user_id = ${LEGACY_UNOWNED_PROJECT_OWNER_ID}
+            ${schema.projectsTable.ownerUserId} = ${userId}
+            OR ${schema.projectsTable.ownerUserId} = ${LEGACY_UNOWNED_PROJECT_OWNER_ID}
           )
       )
-    ORDER BY created_at DESC
+    ORDER BY ${schema.artifactsTable.createdAt} DESC
     LIMIT ${limit};
   `);
 
@@ -367,26 +377,26 @@ async function searchGlobalChunks(
   const pattern = `%${escapeLikePattern(q)}%`;
   const result = await db.execute<GlobalChunkRow>(sql`
     SELECT
-      id,
-      project_id AS "projectId",
-      file_id AS "fileId",
-      chunk_index AS "chunkIndex",
-      page_start AS "pageStart",
-      page_end AS "pageEnd",
-      SUBSTRING(content FROM 1 FOR 240) AS snippet
-    FROM file_chunks
+      ${schema.fileChunksTable.id} AS id,
+      ${schema.fileChunksTable.projectId} AS "projectId",
+      ${schema.fileChunksTable.fileId} AS "fileId",
+      ${schema.fileChunksTable.chunkIndex} AS "chunkIndex",
+      ${schema.fileChunksTable.pageStart} AS "pageStart",
+      ${schema.fileChunksTable.pageEnd} AS "pageEnd",
+      SUBSTRING(${schema.fileChunksTable.content} FROM 1 FOR 240) AS snippet
+    FROM ${schema.fileChunksTable}
     WHERE
-      content ILIKE ${pattern} ESCAPE '\\'
+      ${schema.fileChunksTable.content} ILIKE ${pattern} ESCAPE '\\'
       AND EXISTS (
         SELECT 1
-        FROM projects
-        WHERE projects.id = file_chunks.project_id
+        FROM ${schema.projectsTable}
+        WHERE ${schema.projectsTable.id} = ${schema.fileChunksTable.projectId}
           AND (
-            projects.owner_user_id = ${userId}
-            OR projects.owner_user_id = ${LEGACY_UNOWNED_PROJECT_OWNER_ID}
+            ${schema.projectsTable.ownerUserId} = ${userId}
+            OR ${schema.projectsTable.ownerUserId} = ${LEGACY_UNOWNED_PROJECT_OWNER_ID}
           )
       )
-    ORDER BY created_at DESC
+    ORDER BY ${schema.fileChunksTable.createdAt} DESC
     LIMIT ${limit};
   `);
 
@@ -408,11 +418,12 @@ async function searchGlobalChunks(
 }
 
 function toRunSnippet(row: RunRow): string {
-  const metadataText = JSON.stringify(row.metadata);
-  if (metadataText !== "{}") {
-    return metadataText.length > 180
-      ? `${metadataText.slice(0, 180)}…`
-      : metadataText;
+  const keys = Object.keys(row.metadata).sort();
+  if (keys.length > 0) {
+    const preview = keys.slice(0, 10).join(", ");
+    return keys.length > 10
+      ? `Meta: ${preview}, … (+${keys.length - 10})`
+      : `Meta: ${preview}`;
   }
 
   return `Status: ${row.status}`;
@@ -658,9 +669,7 @@ export async function GET(
 
     return jsonOk<SearchResponse>({
       meta: {
-        cursor: query.cursor,
         limit: query.limit,
-        nextCursor: null,
         scope: query.scope,
         types: query.types,
       },

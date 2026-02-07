@@ -32,6 +32,7 @@ describeDb("db (integration)", () => {
       from information_schema.columns
       where table_name = 'projects'
         and column_name = 'owner_user_id'
+        and table_schema = 'public'
     `);
     const ownerColumnRows = ownerColumnQuery.rows;
     const hasOwnerUserId = ownerColumnRows.length > 0;

@@ -9,6 +9,9 @@ const DEFAULT_EXPECTED_BRANCH = "vercel-dev";
 const DEFAULT_LOCAL_ORIGIN = "http://localhost:3000";
 const MAX_SIGNUP_RETRIES = 5;
 const DEFAULT_NEON_API_TIMEOUT = 15_000;
+const DEFAULT_PG_CONNECT_TIMEOUT = 7_500;
+const DEFAULT_PG_STATEMENT_TIMEOUT = 30_000;
+const DEFAULT_AUDIT_PROBE_CONCURRENCY = 5;
 
 type Action = "audit" | "create" | "info" | "lib" | "repair" | "smoke";
 
@@ -76,6 +79,7 @@ interface RepairArgs {
   emails: string[];
   expectedBranchName: string;
   password?: string;
+  printPasswords: boolean;
   projectId?: string;
 }
 
@@ -94,6 +98,7 @@ interface CreateArgs {
   expectedBranchName: string;
   name?: string;
   password?: string;
+  printPasswords: boolean;
   projectId?: string;
   verify: boolean;
 }
@@ -113,38 +118,40 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (action === "audit") {
-    const args = parseAuditArgs(argv);
-    await runAudit(args);
-    return;
+  switch (action) {
+    case "audit": {
+      const args = parseAuditArgs(argv);
+      await runAudit(args);
+      return;
+    }
+    case "create": {
+      const args = parseCreateArgs(argv);
+      await runCreate(args);
+      return;
+    }
+    case "repair": {
+      const args = parseRepairArgs(argv);
+      await runRepair(args);
+      return;
+    }
+    case "smoke": {
+      const args = parseSmokeArgs(argv);
+      await runSmoke(args);
+      return;
+    }
+    case "info":
+    case "lib": {
+      const args = parseInfoArgs(argv);
+      await runInfo(args);
+      return;
+    }
+    default: {
+      const _exhaustive: never = action;
+      void _exhaustive;
+      printHelp();
+      process.exitCode = 1;
+    }
   }
-
-  if (action === "create") {
-    const args = parseCreateArgs(argv);
-    await runCreate(args);
-    return;
-  }
-
-  if (action === "repair") {
-    const args = parseRepairArgs(argv);
-    await runRepair(args);
-    return;
-  }
-
-  if (action === "smoke") {
-    const args = parseSmokeArgs(argv);
-    await runSmoke(args);
-    return;
-  }
-
-  if (action === "info" || action === "lib") {
-    const args = parseInfoArgs(argv);
-    await runInfo(args);
-    return;
-  }
-
-  printHelp();
-  process.exitCode = 1;
 }
 
 function loadLocalEnv(): void {
@@ -162,12 +169,12 @@ function getRequiredEnv(key: string): string {
 
 function resolveProjectId(explicitProjectId?: string): string {
   if (explicitProjectId && explicitProjectId.trim().length > 0) {
-    return explicitProjectId.trim();
+    return assertSafeId("project id", explicitProjectId.trim());
   }
 
   const fromEnv = process.env.NEON_PROJECT_ID;
   if (fromEnv && fromEnv.trim().length > 0) {
-    return fromEnv.trim();
+    return assertSafeId("project id", fromEnv.trim());
   }
 
   const neonContextPath = resolve(".neon");
@@ -182,7 +189,7 @@ function resolveProjectId(explicitProjectId?: string): string {
     throw new Error("Unable to resolve project id from .neon.");
   }
 
-  return parsed.projectId;
+  return assertSafeId("project id", parsed.projectId);
 }
 
 function resolveLocalOrigin(): string {
@@ -210,33 +217,115 @@ function extractEndpointId(neonAuthBaseUrl: string): string {
   return hostPart;
 }
 
+function assertSafeId(label: string, value: string): string {
+  // Neon ids are expected to be URL-path-safe tokens, never full URLs/paths.
+  if (!/^[A-Za-z0-9_-]{1,96}$/.test(value)) {
+    throw new Error(`Invalid ${label}: ${value}`);
+  }
+  return value;
+}
+
+function assertSafeNeonConsolePath(path: string): string {
+  // Prevent path traversal / protocol injection in fetch() url construction.
+  if (!path.startsWith("/")) throw new Error(`Invalid Neon API path: ${path}`);
+  if (path.includes("..")) throw new Error(`Invalid Neon API path: ${path}`);
+  if (!/^\/[A-Za-z0-9/_-]+$/.test(path)) {
+    throw new Error(`Invalid Neon API path: ${path}`);
+  }
+  return path;
+}
+
+async function printEmailPasswordConfigSummary(
+  label: string,
+  projectId: string,
+  branchId: string,
+  neonApiKey: string,
+): Promise<void> {
+  try {
+    const emailPasswordConfig = await getEmailPasswordConfig(
+      projectId,
+      branchId,
+      neonApiKey,
+    );
+    const safeSummary =
+      emailPasswordConfig && typeof emailPasswordConfig === "object"
+        ? {
+            keys: Object.keys(
+              emailPasswordConfig as Record<string, unknown>,
+            ).sort(),
+          }
+        : { type: typeof emailPasswordConfig };
+    const configString = JSON.stringify(safeSummary);
+    printSummary(
+      label,
+      configString.length > 96
+        ? `${configString.slice(0, 96)}...`
+        : configString,
+    );
+  } catch (error) {
+    printSummary(label, `error (${formatError(error)})`);
+  }
+}
+
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  mapper: (item: T) => Promise<R>,
+): Promise<R[]> {
+  if (concurrency <= 0) {
+    throw new Error("Concurrency must be >= 1.");
+  }
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    async () => {
+      while (true) {
+        const current = nextIndex;
+        nextIndex += 1;
+        if (current >= items.length) return;
+        results[current] = await mapper(items[current] as T);
+      }
+    },
+  );
+
+  await Promise.all(workers);
+  return results;
+}
+
 async function resolveAuthBranchContext(
   projectId: string,
   neonApiKey: string,
   neonAuthBaseUrl: string,
 ): Promise<AuthBranchContext> {
+  const safeProjectId = assertSafeId("project id", projectId);
   const endpointId = extractEndpointId(neonAuthBaseUrl);
   const endpointsResponse = await neonApiRequest<NeonEndpointsResponse>(
     neonApiKey,
-    `/projects/${projectId}/endpoints`,
+    `/projects/${safeProjectId}/endpoints`,
   );
   const endpoints = endpointsResponse.data.endpoints ?? [];
   const endpoint = endpoints.find((item) => item.id === endpointId);
   if (!endpoint) {
     throw new Error(
-      `Endpoint ${endpointId} was not found in Neon project ${projectId}.`,
+      `Endpoint ${endpointId} was not found in Neon project ${safeProjectId}.`,
     );
   }
 
-  const branchId = endpoint.branch_id;
-  const branchName = await resolveBranchName(projectId, branchId, neonApiKey);
+  const branchId = assertSafeId("branch id", endpoint.branch_id);
+  const branchName = await resolveBranchName(
+    safeProjectId,
+    branchId,
+    neonApiKey,
+  );
 
   return {
     branchId,
     branchName,
     endpointId,
     neonAuthBaseUrl,
-    projectId,
+    projectId: safeProjectId,
   };
 }
 
@@ -293,9 +382,15 @@ function resolveBranchNameViaNeonCli(
 async function listCredentialUsers(
   databaseUrl: string,
 ): Promise<CredentialUserRow[]> {
-  const client = new Client({ connectionString: databaseUrl });
+  const client = new Client({
+    connectionString: databaseUrl,
+    connectionTimeoutMillis: DEFAULT_PG_CONNECT_TIMEOUT,
+  });
   await client.connect();
   try {
+    await client.query("set statement_timeout = $1", [
+      DEFAULT_PG_STATEMENT_TIMEOUT,
+    ]);
     const result = await client.query<{
       auth_user_id: string;
       email: string;
@@ -547,30 +642,12 @@ async function runInfo(args: { projectId?: string }): Promise<void> {
   );
   printSummary("Origin", origin);
 
-  try {
-    const emailPasswordConfig = await getEmailPasswordConfig(
-      context.projectId,
-      context.branchId,
-      neonApiKey,
-    );
-    const safeSummary =
-      emailPasswordConfig && typeof emailPasswordConfig === "object"
-        ? {
-            keys: Object.keys(
-              emailPasswordConfig as Record<string, unknown>,
-            ).sort(),
-          }
-        : { type: typeof emailPasswordConfig };
-    const configString = JSON.stringify(safeSummary);
-    printSummary(
-      "Email/Password Config",
-      configString.length > 96
-        ? `${configString.slice(0, 96)}...`
-        : configString,
-    );
-  } catch (error) {
-    printSummary("Email/Password Config", `error (${formatError(error)})`);
-  }
+  await printEmailPasswordConfigSummary(
+    "Email Auth Config",
+    context.projectId,
+    context.branchId,
+    neonApiKey,
+  );
 
   const users = await listCredentialUsers(databaseUrl);
   printSummary("Credential Users", `${users.length}`);
@@ -626,30 +703,12 @@ async function runAudit(args: AuditArgs): Promise<void> {
     printSummary("Vercel Dev Pull", "skipped");
   }
 
-  try {
-    const emailPasswordConfig = await getEmailPasswordConfig(
-      context.projectId,
-      context.branchId,
-      neonApiKey,
-    );
-    const safeSummary =
-      emailPasswordConfig && typeof emailPasswordConfig === "object"
-        ? {
-            keys: Object.keys(
-              emailPasswordConfig as Record<string, unknown>,
-            ).sort(),
-          }
-        : { type: typeof emailPasswordConfig };
-    const configString = JSON.stringify(safeSummary);
-    printSummary(
-      "Email/Password Config",
-      configString.length > 96
-        ? `${configString.slice(0, 96)}...`
-        : configString,
-    );
-  } catch (error) {
-    printSummary("Email/Password Config", `error (${formatError(error)})`);
-  }
+  await printEmailPasswordConfigSummary(
+    "Email Auth Config",
+    context.projectId,
+    context.branchId,
+    neonApiKey,
+  );
 
   const users = await listCredentialUsers(databaseUrl);
   printSummary("Credential Users", `${users.length}`);
@@ -664,23 +723,28 @@ async function runAudit(args: AuditArgs): Promise<void> {
     signIn500: boolean;
   }> = [];
 
-  for (const user of users) {
-    const probe = await probeSignInEmailPassword(
-      neonAuthBaseUrl,
-      origin,
-      user.email,
-      `__invalid__${crypto.randomUUID()}`,
-    );
-    probeRows.push({
-      authUserId: user.authUserId,
-      email: user.email,
-      hashLike: looksLikeCredentialHash(user.password),
-      passwordLength: user.passwordLength,
-      probeCode: probe.code ?? "",
-      probeStatus: probe.status,
-      signIn500: probe.status === 500,
-    });
-  }
+  const rows = await mapWithConcurrency(
+    users,
+    DEFAULT_AUDIT_PROBE_CONCURRENCY,
+    async (user) => {
+      const probe = await probeSignInEmailPassword(
+        neonAuthBaseUrl,
+        origin,
+        user.email,
+        `__invalid__${crypto.randomUUID()}`,
+      );
+      return {
+        authUserId: user.authUserId,
+        email: user.email,
+        hashLike: looksLikeCredentialHash(user.password),
+        passwordLength: user.passwordLength,
+        probeCode: probe.code ?? "",
+        probeStatus: probe.status,
+        signIn500: probe.status === 500,
+      };
+    },
+  );
+  probeRows.push(...rows);
 
   const suspiciousRows = probeRows.filter(
     (row) => row.signIn500 || !row.hashLike || (row.passwordLength ?? 0) < 20,
@@ -848,8 +912,13 @@ async function runRepair(args: RepairArgs): Promise<void> {
 
   if (successes.length > 0) {
     console.log("");
-    console.log("Repaired users (save temporary passwords securely)");
-    console.table(successes);
+    if (args.printPasswords) {
+      console.log("Repaired users (save temporary passwords securely)");
+      console.table(successes);
+    } else {
+      console.log("Repaired users (passwords hidden; pass --print-passwords)");
+      console.table(successes.map(({ password: _password, ...rest }) => rest));
+    }
   }
 
   if (failures.length > 0) {
@@ -867,7 +936,6 @@ async function runRepair(args: RepairArgs): Promise<void> {
 }
 
 async function runSmoke(args: SmokeArgs): Promise<void> {
-  const databaseUrl = getRequiredEnv("DATABASE_URL");
   const neonAuthBaseUrl = getRequiredEnv("NEON_AUTH_BASE_URL");
   const neonApiKey = getRequiredEnv("NEON_API_KEY");
   const projectId = resolveProjectId(args.projectId);
@@ -908,6 +976,7 @@ async function runSmoke(args: SmokeArgs): Promise<void> {
   }> = [];
 
   if (!args.skipWrongPasswordProbe) {
+    const databaseUrl = getRequiredEnv("DATABASE_URL");
     const users = await listCredentialUsers(databaseUrl);
     printSummary("Credential Users", `${users.length}`);
     for (const user of users) {
@@ -1053,8 +1122,13 @@ async function runCreate(args: CreateArgs): Promise<void> {
 
   if (successes.length > 0) {
     console.log("");
-    console.log("Created users (save passwords securely)");
-    console.table(successes);
+    if (args.printPasswords) {
+      console.log("Created users (save passwords securely)");
+      console.table(successes);
+    } else {
+      console.log("Created users (passwords hidden; pass --print-passwords)");
+      console.table(successes.map(({ password: _password, ...rest }) => rest));
+    }
   }
 
   if (failures.length > 0) {
@@ -1109,7 +1183,9 @@ async function signUpWithRetry(
 
   for (let attempt = 2; attempt <= MAX_SIGNUP_RETRIES; attempt += 1) {
     if (!(latest.status === 409 || latest.status >= 500)) return latest;
-    await sleep(attempt * 500);
+    const exponential = 500 * 2 ** (attempt - 1);
+    const jitter = Math.floor(Math.random() * 200);
+    await sleep(Math.min(exponential + jitter, 10_000));
     latest = await signUpEmailPassword(
       neonAuthBaseUrl,
       origin,
@@ -1131,6 +1207,7 @@ async function neonApiRequest<T>(
   body?: unknown,
   expectedStatuses: number[] = [200],
 ): Promise<{ data: T; status: number }> {
+  const safePath = assertSafeNeonConsolePath(path);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
@@ -1159,11 +1236,11 @@ async function neonApiRequest<T>(
 
   let response: Response;
   try {
-    response = await fetch(`${NEON_API_BASE_URL}${path}`, requestInit);
+    response = await fetch(`${NEON_API_BASE_URL}${safePath}`, requestInit);
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error(
-        `Neon API request timed out after ${DEFAULT_NEON_API_TIMEOUT}ms for ${path}.`,
+        `Neon API request timed out after ${DEFAULT_NEON_API_TIMEOUT}ms for ${safePath}.`,
       );
     }
     throw error;
@@ -1173,7 +1250,7 @@ async function neonApiRequest<T>(
   const responseText = await response.text();
   if (!expectedStatuses.includes(response.status)) {
     throw new Error(
-      `Neon API request failed (${response.status}) for ${path}: ${responseText}`,
+      `Neon API request failed (${response.status}) for ${safePath}: ${responseText}`,
     );
   }
 
@@ -1288,6 +1365,7 @@ function parseRepairArgs(argv: string[]): RepairArgs {
     dryRun: argv.includes("--dry-run"),
     emails: Array.from(new Set(emails)),
     expectedBranchName,
+    printPasswords: argv.includes("--print-passwords"),
   };
   if (projectId && projectId.length > 0) out.projectId = projectId;
   if (password && password.length > 0) out.password = password;
@@ -1352,6 +1430,7 @@ function parseCreateArgs(argv: string[]): CreateArgs {
     dryRun: argv.includes("--dry-run"),
     emails: Array.from(new Set(emails)),
     expectedBranchName,
+    printPasswords: argv.includes("--print-passwords"),
     verify: !argv.includes("--no-verify"),
   };
   if (projectId && projectId.length > 0) out.projectId = projectId;
@@ -1427,6 +1506,9 @@ function printHelp(action?: Action): void {
       "  --password <password>         Set explicit password (otherwise generated)",
     );
     console.log(
+      "  --print-passwords             Print generated passwords (hidden by default)",
+    );
+    console.log(
       "  --name <name>                 Optional display name (applied to all emails)",
     );
     console.log(
@@ -1444,6 +1526,9 @@ function printHelp(action?: Action): void {
     );
     console.log(
       "  --password <password>         Set explicit password (must meet Neon Auth policy)",
+    );
+    console.log(
+      "  --print-passwords             Print generated passwords (hidden by default)",
     );
     console.log("  --dry-run                     Print planned actions only");
     console.log(

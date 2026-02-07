@@ -1230,7 +1230,7 @@ export const PromptInputSubmit = (props: PromptInputSubmitProps) => {
   let Icon = <CornerDownLeftIcon aria-hidden="true" className="size-4" />;
 
   if (status === "submitted") {
-    Icon = <Spinner />;
+    Icon = <Spinner aria-hidden="true" />;
   } else if (status === "streaming") {
     Icon = <SquareIcon aria-hidden="true" className="size-4" />;
   } else if (status === "error") {

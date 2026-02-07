@@ -30,7 +30,8 @@ export type SearchScope = (typeof SEARCH_SCOPES)[number];
 export type SearchTypeFilter = (typeof SEARCH_TYPE_FILTERS)[number];
 
 /**
- * Project search result.
+ * A project matched by a global search query, containing only the fields needed
+ * for result rendering.
  */
 export type ProjectSearchResult = Readonly<{
   type: "project";
@@ -40,7 +41,8 @@ export type ProjectSearchResult = Readonly<{
 }>;
 
 /**
- * Upload search result.
+ * An upload match that includes a short snippet plus provenance metadata used to
+ * link back to the owning project.
  */
 export type UploadSearchResult = Readonly<{
   type: "upload";
@@ -56,7 +58,8 @@ export type UploadSearchResult = Readonly<{
 }>;
 
 /**
- * Chunk search result.
+ * A matched document chunk with an optional score and enough provenance to
+ * navigate to the parent upload and page range.
  */
 export type ChunkSearchResult = Readonly<{
   type: "chunk";
@@ -75,7 +78,8 @@ export type ChunkSearchResult = Readonly<{
 }>;
 
 /**
- * Artifact search result.
+ * A matched artifact, including its kind, logical key, and version for precise
+ * identification and linking within a project.
  */
 export type ArtifactSearchResult = Readonly<{
   type: "artifact";
@@ -135,8 +139,6 @@ export type SearchResponse = Readonly<{
     scope: SearchScope;
     types: readonly SearchTypeFilter[];
     limit: number;
-    cursor: string | null;
-    nextCursor: string | null;
   }>;
 }>;
 

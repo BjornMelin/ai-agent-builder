@@ -1,7 +1,9 @@
 import { useCallback, useRef } from "react";
 
+/** Options controlling whether the URL should be updated during sync. */
 export type UrlQuerySyncOptions = Readonly<{ syncUrl: boolean }>;
 
+/** Result of consuming a URL query change, indicating execution and input sync needs. */
 export type UrlQuerySyncChange = Readonly<{
   shouldExecute: boolean;
   syncInput: boolean;

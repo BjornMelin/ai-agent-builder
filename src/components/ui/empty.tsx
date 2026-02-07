@@ -38,7 +38,7 @@ const emptyMediaVariants = cva(
     variants: {
       variant: {
         default: "bg-transparent",
-        icon: "bg-muted text-foreground flex size-10 shrink-0 items-center justify-center rounded-lg [&_svg:not([class*='size-'])]:size-6",
+        icon: "bg-muted text-foreground size-10 rounded-lg [&_svg:not([class*='size-'])]:size-6",
       },
     },
   },
@@ -51,7 +51,7 @@ function EmptyMedia({
 }: React.ComponentProps<"div"> & VariantProps<typeof emptyMediaVariants>) {
   return (
     <div
-      data-slot="empty-icon"
+      data-slot="empty-media"
       data-variant={variant}
       className={cn(emptyMediaVariants({ className, variant }))}
       {...props}
@@ -59,9 +59,9 @@ function EmptyMedia({
   );
 }
 
-function EmptyTitle({ className, ...props }: React.ComponentProps<"div">) {
+function EmptyTitle({ className, ...props }: React.ComponentProps<"h3">) {
   return (
-    <div
+    <h3
       data-slot="empty-title"
       className={cn("text-lg font-medium tracking-tight", className)}
       {...props}
@@ -105,4 +105,5 @@ export {
   EmptyDescription,
   EmptyContent,
   EmptyMedia,
+  emptyMediaVariants,
 };

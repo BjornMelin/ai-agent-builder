@@ -40,6 +40,8 @@ export default async function AuthPage(
   }>,
 ) {
   const { path } = await props.params;
+  // `dynamicParams = false` is not compatible with Cache Components, so keep a
+  // runtime allowlist guard as defense-in-depth.
   if (!ALLOWED_AUTH_VIEW_PATH_SET.has(path)) {
     notFound();
   }

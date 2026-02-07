@@ -78,6 +78,7 @@ const runResultSchema = z.strictObject({
   type: z.literal("run"),
 });
 
+/** Discriminated union schema for a single search result across all resource types. */
 export const searchResultSchema = z.discriminatedUnion("type", [
   projectResultSchema,
   uploadResultSchema,
@@ -86,15 +87,15 @@ export const searchResultSchema = z.discriminatedUnion("type", [
   runResultSchema,
 ]);
 
+/** Top-level schema for the `/api/search` JSON response. */
 export const searchResponseSchema = z.strictObject({
   meta: z.strictObject({
-    cursor: z.nullable(z.string()),
     limit: z.number(),
-    nextCursor: z.nullable(z.string()),
     scope: searchScopeSchema,
     types: z.array(searchTypeFilterSchema),
   }),
   results: z.array(searchResultSchema),
 });
 
+/** Inferred TypeScript type for a validated search API response. */
 export type SearchResponseSchema = z.infer<typeof searchResponseSchema>;

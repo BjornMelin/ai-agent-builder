@@ -10,6 +10,8 @@ import {
   tagProject,
   tagUploadsIndex,
 } from "@/lib/cache/tags";
+import { AppError } from "@/lib/core/errors";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import type { RunDto } from "@/lib/data/runs.server";
 
 const RUN_STATUSES: ReadonlyArray<RunDto["status"]> = [
@@ -34,6 +36,13 @@ export type ProjectCorpusOverview = Readonly<{
   indexedTokens: number;
 }>;
 
+async function assertProjectAccess(projectId: string, userId: string) {
+  const project = await getProjectByIdForUser(projectId, userId);
+  if (!project) {
+    throw new AppError("not_found", 404, "Project not found.");
+  }
+}
+
 /**
  * Read upload + ingestion/indexing signals for a project.
  *
@@ -42,10 +51,12 @@ export type ProjectCorpusOverview = Readonly<{
  * It intentionally avoids returning sensitive data and only exposes aggregate totals.
  *
  * @param projectId - Project identifier.
+ * @param userId - Authenticated user ID (part of the cache key).
  * @returns Overview snapshot of uploads + indexed corpus.
  */
 export async function getProjectCorpusOverview(
   projectId: string,
+  userId: string,
 ): Promise<ProjectCorpusOverview> {
   "use cache";
 
@@ -54,11 +65,12 @@ export async function getProjectCorpusOverview(
   cacheTag(tagUploadsIndex(projectId));
 
   const db = getDb();
+  await assertProjectAccess(projectId, userId);
 
   const result = await db.execute<{
     total_bytes: unknown;
     total_files: unknown;
-    last_upload_at: Date | null;
+    last_upload_at: unknown;
     indexed_chunks: unknown;
     indexed_files: unknown;
     indexed_tokens: unknown;
@@ -73,12 +85,27 @@ export async function getProjectCorpusOverview(
   `);
 
   const row = result.rows[0];
+  const rawLastUploadAt = row?.last_upload_at;
+  const lastUploadDate = rawLastUploadAt
+    ? new Date(
+        typeof rawLastUploadAt === "string" ||
+          typeof rawLastUploadAt === "number"
+          ? rawLastUploadAt
+          : rawLastUploadAt instanceof Date
+            ? rawLastUploadAt
+            : String(rawLastUploadAt),
+      )
+    : null;
+  const lastUploadAt =
+    lastUploadDate && !Number.isNaN(lastUploadDate.getTime())
+      ? lastUploadDate.toISOString()
+      : null;
 
   return {
     indexedChunks: Number(row?.indexed_chunks ?? 0),
     indexedFiles: Number(row?.indexed_files ?? 0),
     indexedTokens: Number(row?.indexed_tokens ?? 0),
-    lastUploadAt: row?.last_upload_at ? row.last_upload_at.toISOString() : null,
+    lastUploadAt,
     totalBytes: Number(row?.total_bytes ?? 0),
     totalFiles: Number(row?.total_files ?? 0),
   };
@@ -103,10 +130,12 @@ export type ProjectRunOverview = Readonly<{
  * Read run health signals for a project (counts + latest run).
  *
  * @param projectId - Project identifier.
+ * @param userId - Authenticated user ID (part of the cache key).
  * @returns Overview snapshot of run activity.
  */
 export async function getProjectRunOverview(
   projectId: string,
+  userId: string,
 ): Promise<ProjectRunOverview> {
   "use cache";
 
@@ -114,16 +143,30 @@ export async function getProjectRunOverview(
   cacheTag(tagProject(projectId));
 
   const db = getDb();
+  await assertProjectAccess(projectId, userId);
 
-  const countResult = await db.execute<{
-    status: RunDto["status"];
-    count: unknown;
-  }>(sql`
-    SELECT status, COUNT(*) AS count
-    FROM runs
-    WHERE project_id = ${projectId}
-    GROUP BY status;
-  `);
+  const [countResult, lastRunRow] = await Promise.all([
+    db.execute<{
+      status: RunDto["status"];
+      count: unknown;
+    }>(sql`
+      SELECT status, COUNT(*) AS count
+      FROM runs
+      WHERE project_id = ${projectId}
+      GROUP BY status;
+    `),
+    db.query.runsTable.findFirst({
+      columns: {
+        createdAt: true,
+        id: true,
+        kind: true,
+        status: true,
+        updatedAt: true,
+      },
+      orderBy: (t, { desc }) => [desc(t.createdAt)],
+      where: eq(schema.runsTable.projectId, projectId),
+    }),
+  ]);
 
   const statusCounts = Object.fromEntries(
     RUN_STATUSES.map((status) => [status, 0]),
@@ -137,18 +180,6 @@ export async function getProjectRunOverview(
     (acc, status) => acc + statusCounts[status],
     0,
   );
-
-  const lastRunRow = await db.query.runsTable.findFirst({
-    columns: {
-      createdAt: true,
-      id: true,
-      kind: true,
-      status: true,
-      updatedAt: true,
-    },
-    orderBy: (t, { desc }) => [desc(t.createdAt)],
-    where: eq(schema.runsTable.projectId, projectId),
-  });
 
   return {
     lastRun: lastRunRow
@@ -183,10 +214,12 @@ export type ProjectArtifactOverview = Readonly<{
  * Read artifact signals for a project (latest artifact + latest-key count).
  *
  * @param projectId - Project identifier.
+ * @param userId - Authenticated user ID (part of the cache key).
  * @returns Overview snapshot of artifacts.
  */
 export async function getProjectArtifactOverview(
   projectId: string,
+  userId: string,
 ): Promise<ProjectArtifactOverview> {
   "use cache";
 
@@ -195,30 +228,32 @@ export async function getProjectArtifactOverview(
   cacheTag(tagArtifactsIndex(projectId));
 
   const db = getDb();
+  await assertProjectAccess(projectId, userId);
 
-  const keysResult = await db.execute<{ count: unknown }>(sql`
-    SELECT COUNT(*) AS count
-    FROM (
-      SELECT DISTINCT ON (kind, logical_key) id
-      FROM artifacts
-      WHERE project_id = ${projectId}
-      ORDER BY kind ASC, logical_key ASC, version DESC
-    ) latest;
-  `);
+  const [keysResult, lastArtifactRow] = await Promise.all([
+    db.execute<{ count: unknown }>(sql`
+      SELECT COUNT(*) AS count
+      FROM (
+        SELECT DISTINCT ON (kind, logical_key) id
+        FROM artifacts
+        WHERE project_id = ${projectId}
+        ORDER BY kind ASC, logical_key ASC, version DESC
+      ) latest;
+    `),
+    db.query.artifactsTable.findFirst({
+      columns: {
+        createdAt: true,
+        id: true,
+        kind: true,
+        logicalKey: true,
+        version: true,
+      },
+      orderBy: (t, { desc }) => [desc(t.createdAt)],
+      where: eq(schema.artifactsTable.projectId, projectId),
+    }),
+  ]);
 
   const latestKeys = Number(keysResult.rows[0]?.count ?? 0);
-
-  const lastArtifactRow = await db.query.artifactsTable.findFirst({
-    columns: {
-      createdAt: true,
-      id: true,
-      kind: true,
-      logicalKey: true,
-      version: true,
-    },
-    orderBy: (t, { desc }) => [desc(t.createdAt)],
-    where: eq(schema.artifactsTable.projectId, projectId),
-  });
 
   return {
     lastArtifact: lastArtifactRow

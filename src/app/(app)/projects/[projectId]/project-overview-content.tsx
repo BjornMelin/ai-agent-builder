@@ -72,9 +72,9 @@ export async function ProjectOverviewContent(
 
   const [project, corpus, runs, artifacts, latestThread] = await Promise.all([
     getProjectByIdForUser(projectId, user.id),
-    getProjectCorpusOverview(projectId),
-    getProjectRunOverview(projectId),
-    getProjectArtifactOverview(projectId),
+    getProjectCorpusOverview(projectId, user.id),
+    getProjectRunOverview(projectId, user.id),
+    getProjectArtifactOverview(projectId, user.id),
     getLatestChatThreadByProjectId(projectId),
   ]);
 

@@ -197,6 +197,8 @@ export async function getProjectBySlugForUser(
     throw err;
   }
   if (row) {
+    // Tag with project ID only when known; null results expire via
+    // the user's projects-index tag or the "minutes" cache lifetime.
     cacheTag(tagProject(row.id));
   }
 

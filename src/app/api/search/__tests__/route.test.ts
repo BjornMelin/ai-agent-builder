@@ -259,7 +259,7 @@ describe("GET /api/search", () => {
         href: "/projects/p1/runs/run_1",
         id: "run_1",
         provenance: { kind: "research", projectId: "p1", status: "running" },
-        snippet: '{"topic":"alpha"}',
+        snippet: "Meta: topic",
         title: "research run · running",
         type: "run",
       },

@@ -8,9 +8,7 @@ const MOBILE_BREAKPOINT = 768;
  * @returns `true` when the viewport is considered mobile.
  */
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(
-    undefined,
-  );
+  const [isMobile, setIsMobile] = React.useState(false);
 
   React.useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
@@ -26,5 +24,5 @@ export function useIsMobile() {
     };
   }, []);
 
-  return Boolean(isMobile);
+  return isMobile;
 }
