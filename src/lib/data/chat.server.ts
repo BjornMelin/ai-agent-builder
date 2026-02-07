@@ -254,13 +254,11 @@ export const getChatThreadById = cache(
   },
 );
 
-const uiMessageSchema = z
-  .object({
-    id: z.string().min(1),
-    parts: z.array(z.unknown()),
-    role: z.enum(["assistant", "system", "user"]),
-  })
-  .passthrough();
+const uiMessageSchema = z.looseObject({
+  id: z.string().min(1),
+  parts: z.array(z.unknown()),
+  role: z.enum(["assistant", "system", "user"]),
+});
 
 type PersistedUiMessage = z.infer<typeof uiMessageSchema>;
 

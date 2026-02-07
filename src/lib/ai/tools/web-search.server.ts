@@ -15,28 +15,22 @@ import { getRedis } from "@/lib/upstash/redis.server";
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const EXA_SEARCH_ENDPOINT = "https://api.exa.ai/search";
 
-const exaSearchResponseSchema = z
-  .object({
-    requestId: z.string().min(1),
-    results: z
-      .array(
-        z
-          .object({
-            author: z.string().optional().nullable(),
-            highlights: z.array(z.string()).optional().nullable(),
-            id: z.string().min(1),
-            publishedDate: z.string().optional().nullable(),
-            score: z.number().optional().nullable(),
-            summary: z.string().optional().nullable(),
-            text: z.string().optional().nullable(),
-            title: z.string().optional().nullable(),
-            url: z.string().min(1),
-          })
-          .passthrough(),
-      )
-      .default([]),
-  })
-  .passthrough();
+const exaSearchResultSchema = z.looseObject({
+  author: z.string().nullish(),
+  highlights: z.array(z.string()).nullish(),
+  id: z.string().min(1),
+  publishedDate: z.string().nullish(),
+  score: z.number().nullish(),
+  summary: z.string().nullish(),
+  text: z.string().nullish(),
+  title: z.string().nullish(),
+  url: z.string().min(1),
+});
+
+const exaSearchResponseSchema = z.looseObject({
+  requestId: z.string().min(1),
+  results: z.array(exaSearchResultSchema).default([]),
+});
 
 /**
  * Minimal web search hit used by tool wrappers and research artifacts.

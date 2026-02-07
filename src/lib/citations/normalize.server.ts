@@ -7,19 +7,17 @@ import { budgets } from "@/lib/config/budgets.server";
 /**
  * Canonical citation payload stored in `citations.payload`.
  */
-export const webCitationPayloadSchema = z
-  .object({
-    accessedAt: z.string().min(1),
-    author: z.string().min(1).optional(),
-    description: z.string().min(1).optional(),
-    excerpt: z.string().min(1).optional(),
-    index: z.number().int().min(1),
-    publishedDate: z.string().min(1).optional(),
-    title: z.string().min(1).optional(),
-    tool: z.enum(["exa", "firecrawl"]).optional(),
-    url: z.string().url(),
-  })
-  .passthrough();
+export const webCitationPayloadSchema = z.looseObject({
+  accessedAt: z.string().min(1),
+  author: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
+  excerpt: z.string().min(1).optional(),
+  index: z.number().int().min(1),
+  publishedDate: z.string().min(1).optional(),
+  title: z.string().min(1).optional(),
+  tool: z.enum(["exa", "firecrawl"]).optional(),
+  url: z.url(),
+});
 
 /**
  * Citation insertion input consumed by `createArtifactVersion`.

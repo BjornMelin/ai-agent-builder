@@ -59,6 +59,5 @@ export function getAgentMode(modeId: string): AgentMode {
 export const requestAgentModeIdSchema = z
   .string()
   .min(1)
-  .optional()
-  .transform((value) => value ?? DEFAULT_AGENT_MODE_ID)
+  .prefault(DEFAULT_AGENT_MODE_ID)
   .pipe(agentModeIdSchema);

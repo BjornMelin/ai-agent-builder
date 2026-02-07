@@ -13,7 +13,7 @@ export const artifactMarkdownContentSchema = z.strictObject({
     .array(
       z.strictObject({
         title: z.string().min(1).optional(),
-        url: z.string().url(),
+        url: z.url(),
       }),
     )
     .optional(),
