@@ -6,6 +6,10 @@ updates:
       interval: "weekly"
       day: "friday"
       time: "04:00"
+    ignore:
+      # Keep typings aligned with Node LTS (we target Node 24.x).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       dependencies:
         patterns:
