@@ -18,7 +18,16 @@ type BreadcrumbPageProps = React.ComponentProps<"span">;
 
 type BreadcrumbSeparatorProps = React.ComponentProps<"li">;
 
-type BreadcrumbEllipsisProps = React.ComponentProps<"span">;
+type BreadcrumbEllipsisProps = React.ComponentProps<"span"> & {
+  /**
+   * Optional screen-reader label for the ellipsis.
+   *
+   * @remarks
+   * Prefer labeling the interactive trigger (e.g., a button) that contains the
+   * ellipsis rather than relying on this span's text to name the control.
+   */
+  label?: string;
+};
 
 /**
  * Render an accessible breadcrumb navigation container.
@@ -128,11 +137,11 @@ export function BreadcrumbSeparator(props: BreadcrumbSeparatorProps) {
 /**
  * Render an ellipsis placeholder for collapsed breadcrumb segments.
  *
- * @param props - `<span>` props for the ellipsis wrapper.
+ * @param props - `<span>` props for the ellipsis wrapper and an optional screen-reader `label`.
  * @returns A `<span>` containing an icon and screen-reader-only label.
  */
 export function BreadcrumbEllipsis(props: BreadcrumbEllipsisProps) {
-  const { className, ...rest } = props;
+  const { className, label, ...rest } = props;
   return (
     <span
       data-slot="breadcrumb-ellipsis"
@@ -140,7 +149,7 @@ export function BreadcrumbEllipsis(props: BreadcrumbEllipsisProps) {
       {...rest}
     >
       <MoreHorizontal className="size-4" aria-hidden="true" />
-      <span className="sr-only">More</span>
+      {label ? <span className="sr-only">{label}</span> : null}
     </span>
   );
 }
