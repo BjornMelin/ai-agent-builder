@@ -24,6 +24,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
   const [error, setError] = useState<string | null>(null);
 
   const ingestToggleId = "uploads-async-ingest";
+  const fileHelpId = "uploads-file-help";
   const fileInputId = "uploads-file-input";
   const statusMessageId = "uploads-status-message";
   const errorMessageId = "uploads-error-message";
@@ -89,7 +90,9 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
         </label>
         <Input
           aria-describedby={
-            error ? `${statusMessageId} ${errorMessageId}` : statusMessageId
+            error
+              ? `${fileHelpId} ${statusMessageId} ${errorMessageId}`
+              : `${fileHelpId} ${statusMessageId}`
           }
           aria-invalid={status === "error"}
           id={fileInputId}
@@ -99,7 +102,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
           onChange={(e) => setFiles(e.currentTarget.files)}
           type="file"
         />
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-xs" id={fileHelpId}>
           Supported formats depend on ingestion pipelines configured on the
           server.
         </p>
@@ -129,13 +132,13 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
               className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
             />
           ) : null}
-          <span>{status === "uploading" ? "Uploading" : "Upload"}</span>
+          <span>Upload</span>
         </Button>
       </div>
 
       <output aria-live="polite" className="sr-only" id={statusMessageId}>
         {status === "uploading"
-          ? "Uploading selected files."
+          ? "Uploading selected files…"
           : status === "success"
             ? "Upload complete."
             : ""}

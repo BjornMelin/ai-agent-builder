@@ -102,23 +102,6 @@ function toTypeTokens(value: string | undefined): string[] | undefined {
   return tokens.length === 0 ? undefined : tokens;
 }
 
-function getClientIp(req: Request): string | null {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first && first.length > 0) {
-      return first;
-    }
-  }
-
-  const realIp = req.headers.get("x-real-ip");
-  if (realIp && realIp.trim().length > 0) {
-    return realIp.trim();
-  }
-
-  return null;
-}
-
 const searchQuerySchema = z
   .strictObject({
     cursor: z.string().trim().max(128).optional(),
@@ -413,9 +396,9 @@ async function searchGlobalChunks(
     provenance: {
       chunkIndex: row.chunkIndex,
       fileId: row.fileId,
-      pageEnd: row.pageEnd ?? undefined,
-      pageStart: row.pageStart ?? undefined,
       projectId: row.projectId,
+      ...(row.pageStart !== null ? { pageStart: row.pageStart } : {}),
+      ...(row.pageEnd !== null ? { pageEnd: row.pageEnd } : {}),
     },
     score: 0,
     snippet: row.snippet,
@@ -525,6 +508,7 @@ async function searchGlobalRuns(
  * @param req - HTTP request.
  * @returns Search response or JSON error.
  * @throws AppError - With status 400 when query parameters are invalid.
+ * @throws AppError - With status 404 (code "not_found") when a project is missing for the user.
  */
 export async function GET(
   req: Request,
@@ -534,8 +518,10 @@ export async function GET(
     const user = await requireAppUserApi();
     const query = parseSearchQuery(url);
 
-    const clientIp = getClientIp(req) ?? "unknown";
-    const rateLimit = await limitSearchRequest(`search:${user.id}:${clientIp}`);
+    // Rate limit is per-authenticated user.
+    // Do not use `x-forwarded-for`/`x-real-ip` here unless the app is deployed
+    // behind a proxy that overwrites those headers; clients can spoof them.
+    const rateLimit = await limitSearchRequest(`search:${user.id}`);
     if (!rateLimit.success) {
       return NextResponse.json(
         {
@@ -556,7 +542,7 @@ export async function GET(
       );
     }
 
-    const results: SearchResult[] = [];
+    let results: readonly SearchResult[] = [];
 
     if (query.scope === "project") {
       const projectId = query.projectId;
@@ -573,136 +559,99 @@ export async function GET(
         throw new AppError("not_found", 404, "Project not found.");
       }
 
+      const tasks: Array<Promise<readonly SearchResult[]>> = [];
+
       if (query.types.includes("uploads")) {
-        const uploadResults = await searchProjectUploads(
-          projectId,
-          query.q,
-          query.limit,
-        );
-        results.push(...uploadResults);
+        tasks.push(searchProjectUploads(projectId, query.q, query.limit));
       }
 
       if (query.types.includes("runs")) {
-        const runResults = await searchProjectRuns(
-          projectId,
-          query.q,
-          query.limit,
-        );
-        results.push(...runResults);
+        tasks.push(searchProjectRuns(projectId, query.q, query.limit));
       }
 
       const retrievalTopK = Math.min(query.limit, 20);
-      const retrievalTasks: Promise<void>[] = [];
 
       if (query.types.includes("chunks")) {
-        retrievalTasks.push(
+        tasks.push(
           retrieveProjectChunks({
             projectId,
             q: query.q,
             topK: retrievalTopK,
-          }).then((hits) => {
-            results.push(
-              ...hits.map((hit) => ({
-                href: `/projects/${hit.provenance.projectId}/uploads/${hit.provenance.fileId}`,
-                id: hit.id,
-                provenance: {
-                  chunkIndex: hit.provenance.chunkIndex,
-                  fileId: hit.provenance.fileId,
-                  pageEnd: hit.provenance.pageEnd,
-                  pageStart: hit.provenance.pageStart,
-                  projectId: hit.provenance.projectId,
-                },
-                score: hit.score,
-                snippet: hit.snippet,
-                title: `Upload chunk ${hit.provenance.chunkIndex}`,
-                type: "chunk" as const,
-              })),
-            );
-          }),
+          }).then((hits) =>
+            hits.map((hit) => ({
+              href: `/projects/${hit.provenance.projectId}/uploads/${hit.provenance.fileId}`,
+              id: hit.id,
+              provenance: {
+                chunkIndex: hit.provenance.chunkIndex,
+                fileId: hit.provenance.fileId,
+                projectId: hit.provenance.projectId,
+                ...(hit.provenance.pageStart !== undefined
+                  ? { pageStart: hit.provenance.pageStart }
+                  : {}),
+                ...(hit.provenance.pageEnd !== undefined
+                  ? { pageEnd: hit.provenance.pageEnd }
+                  : {}),
+              },
+              score: hit.score,
+              snippet: hit.snippet,
+              title: `Upload chunk ${hit.provenance.chunkIndex}`,
+              type: "chunk" as const,
+            })),
+          ),
         );
       }
 
       if (query.types.includes("artifacts")) {
-        retrievalTasks.push(
+        tasks.push(
           retrieveProjectArtifacts({
             projectId,
             q: query.q,
             topK: retrievalTopK,
-          }).then((hits) => {
-            results.push(
-              ...hits.map((hit) => ({
-                href: `/projects/${hit.provenance.projectId}/artifacts/${hit.provenance.artifactId}`,
-                id: hit.id,
-                provenance: {
-                  artifactId: hit.provenance.artifactId,
-                  kind: hit.provenance.kind,
-                  logicalKey: hit.provenance.logicalKey,
-                  projectId: hit.provenance.projectId,
-                  version: hit.provenance.version,
-                },
-                score: hit.score,
-                snippet: hit.snippet,
-                title: hit.title,
-                type: "artifact" as const,
-              })),
-            );
-          }),
+          }).then((hits) =>
+            hits.map((hit) => ({
+              href: `/projects/${hit.provenance.projectId}/artifacts/${hit.provenance.artifactId}`,
+              id: hit.id,
+              provenance: {
+                artifactId: hit.provenance.artifactId,
+                kind: hit.provenance.kind,
+                logicalKey: hit.provenance.logicalKey,
+                projectId: hit.provenance.projectId,
+                version: hit.provenance.version,
+              },
+              score: hit.score,
+              snippet: hit.snippet,
+              title: hit.title,
+              type: "artifact" as const,
+            })),
+          ),
         );
       }
 
-      await Promise.all(retrievalTasks);
+      results = (await Promise.all(tasks)).flat();
     } else {
-      const tasks: Promise<void>[] = [];
+      const tasks: Array<Promise<readonly SearchResult[]>> = [];
 
       if (query.types.includes("projects")) {
-        tasks.push(
-          searchProjects(user.id, query.q, query.limit).then(
-            (projectResults) => {
-              results.push(...projectResults);
-            },
-          ),
-        );
+        tasks.push(searchProjects(user.id, query.q, query.limit));
       }
 
       if (query.types.includes("uploads")) {
-        tasks.push(
-          searchGlobalUploads(user.id, query.q, query.limit).then(
-            (uploadResults) => {
-              results.push(...uploadResults);
-            },
-          ),
-        );
+        tasks.push(searchGlobalUploads(user.id, query.q, query.limit));
       }
 
       if (query.types.includes("artifacts")) {
-        tasks.push(
-          searchGlobalArtifacts(user.id, query.q, query.limit).then(
-            (artifactResults) => {
-              results.push(...artifactResults);
-            },
-          ),
-        );
+        tasks.push(searchGlobalArtifacts(user.id, query.q, query.limit));
       }
 
       if (query.types.includes("chunks")) {
-        tasks.push(
-          searchGlobalChunks(user.id, query.q, query.limit).then(
-            (chunkResults) => {
-              results.push(...chunkResults);
-            },
-          ),
-        );
+        tasks.push(searchGlobalChunks(user.id, query.q, query.limit));
       }
 
       if (query.types.includes("runs")) {
-        tasks.push(
-          searchGlobalRuns(user.id, query.q, query.limit).then((runResults) => {
-            results.push(...runResults);
-          }),
-        );
+        tasks.push(searchGlobalRuns(user.id, query.q, query.limit));
       }
 
-      await Promise.all(tasks);
+      results = (await Promise.all(tasks)).flat();
     }
 
     const merged = sortAndLimit(results, query.limit);

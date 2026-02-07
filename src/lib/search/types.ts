@@ -15,6 +15,11 @@ export const SEARCH_TYPE_FILTERS = [
 ] as const;
 
 /**
+ * Shared search UI status.
+ */
+export type SearchStatus = "idle" | "loading" | "error";
+
+/**
  * Search scope value.
  */
 export type SearchScope = (typeof SEARCH_SCOPES)[number];
@@ -64,8 +69,8 @@ export type ChunkSearchResult = Readonly<{
     projectId: string;
     fileId: string;
     chunkIndex: number;
-    pageStart: number | undefined;
-    pageEnd: number | undefined;
+    pageStart?: number;
+    pageEnd?: number;
   }>;
 }>;
 

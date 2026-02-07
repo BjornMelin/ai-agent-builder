@@ -7,9 +7,8 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { SearchResult } from "@/lib/search/types";
+import type { SearchResult, SearchStatus } from "@/lib/search/types";
 
-type SearchStatus = "idle" | "loading" | "error";
 const LOADING_ROW_IDS = [
   "loading-row-1",
   "loading-row-2",

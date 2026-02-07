@@ -278,6 +278,23 @@ describe("GET /api/search", () => {
     expect(state.retrieveProjectArtifacts).toHaveBeenCalledTimes(1);
   });
 
+  it("rejects legacy project-scoped requests when the user does not own the project", async () => {
+    const GET = await loadRoute();
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
+
+    const res = await GET(
+      new Request("http://localhost/api/search?q=test&projectId=p1"),
+    );
+
+    // Convention: do not leak project existence across users.
+    expect(res.status).toBe(404);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: "not_found" },
+    });
+    expect(state.retrieveProjectChunks).not.toHaveBeenCalled();
+    expect(state.retrieveProjectArtifacts).not.toHaveBeenCalled();
+  });
+
   it("returns 429 when search rate limit is exceeded", async () => {
     const GET = await loadRoute();
     state.limitSearchRequest.mockResolvedValueOnce({

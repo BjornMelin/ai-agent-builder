@@ -8,6 +8,7 @@ const NEON_API_BASE_URL = "https://console.neon.tech/api/v2";
 const DEFAULT_EXPECTED_BRANCH = "vercel-dev";
 const DEFAULT_LOCAL_ORIGIN = "http://localhost:3000";
 const MAX_SIGNUP_RETRIES = 5;
+const DEFAULT_NEON_API_TIMEOUT = 15_000;
 
 type Action = "audit" | "create" | "info" | "lib" | "repair" | "smoke";
 
@@ -352,14 +353,32 @@ async function probeSignInEmailPassword(
   email: string,
   password: string,
 ): Promise<SignInProbeResult> {
-  const response = await fetch(`${neonAuthBaseUrl}/sign-in/email`, {
-    body: JSON.stringify({ email, password }),
-    headers: {
-      "content-type": "application/json",
-      origin,
-    },
-    method: "POST",
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, DEFAULT_NEON_API_TIMEOUT);
+
+  let response: Response;
+  try {
+    response = await fetch(`${neonAuthBaseUrl}/sign-in/email`, {
+      body: JSON.stringify({ email, password }),
+      headers: {
+        "content-type": "application/json",
+        origin,
+      },
+      method: "POST",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(
+        `Neon Auth sign-in probe timed out after ${DEFAULT_NEON_API_TIMEOUT}ms.`,
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const responseBody = await response.text();
   const parsed = tryParseJson(responseBody);
@@ -386,19 +405,37 @@ async function signUpEmailPassword(
   password: string,
   name: string,
 ): Promise<SignUpResult> {
-  const response = await fetch(`${neonAuthBaseUrl}/sign-up/email`, {
-    body: JSON.stringify({
-      callbackURL: callbackUrl,
-      email,
-      name,
-      password,
-    }),
-    headers: {
-      "content-type": "application/json",
-      origin,
-    },
-    method: "POST",
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, DEFAULT_NEON_API_TIMEOUT);
+
+  let response: Response;
+  try {
+    response = await fetch(`${neonAuthBaseUrl}/sign-up/email`, {
+      body: JSON.stringify({
+        callbackURL: callbackUrl,
+        email,
+        name,
+        password,
+      }),
+      headers: {
+        "content-type": "application/json",
+        origin,
+      },
+      method: "POST",
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(
+        `Neon Auth sign-up timed out after ${DEFAULT_NEON_API_TIMEOUT}ms.`,
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const responseBody = await response.text();
   const parsed = tryParseJson(responseBody);
@@ -1094,6 +1131,11 @@ async function neonApiRequest<T>(
   body?: unknown,
   expectedStatuses: number[] = [200],
 ): Promise<{ data: T; status: number }> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, DEFAULT_NEON_API_TIMEOUT);
+
   const headers: HeadersInput = {
     Accept: "application/json",
     Authorization: `Bearer ${neonApiKey}`,
@@ -1103,9 +1145,11 @@ async function neonApiRequest<T>(
     body?: string;
     headers: HeadersInput;
     method: string;
+    signal?: AbortSignal;
   } = {
     headers,
     method,
+    signal: controller.signal,
   };
 
   if (body !== undefined) {
@@ -1113,7 +1157,19 @@ async function neonApiRequest<T>(
     requestInit.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${NEON_API_BASE_URL}${path}`, requestInit);
+  let response: Response;
+  try {
+    response = await fetch(`${NEON_API_BASE_URL}${path}`, requestInit);
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(
+        `Neon API request timed out after ${DEFAULT_NEON_API_TIMEOUT}ms for ${path}.`,
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
   const responseText = await response.text();
   if (!expectedStatuses.includes(response.status)) {
     throw new Error(
@@ -1135,7 +1191,7 @@ function tryParseJson(input: string): unknown {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function deriveDisplayName(email: string): string {
@@ -1158,9 +1214,16 @@ function parseAction(args: string[]): {
 
   const actionFromFlag = readStringFlag(args, "--action");
   if (actionFromFlag) {
-    const remaining = args.filter(
-      (v, idx) => !(v === "--action" && args[idx + 1] === actionFromFlag),
-    );
+    const remaining: string[] = [];
+    for (let i = 0; i < args.length; i += 1) {
+      if (args[i] === "--action") {
+        i += 1;
+        continue;
+      }
+      const token = args[i];
+      if (!token) continue;
+      remaining.push(token);
+    }
     return { action: normalizeAction(actionFromFlag), argv: remaining };
   }
 

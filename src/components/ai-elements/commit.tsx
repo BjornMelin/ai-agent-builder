@@ -12,8 +12,10 @@ import {
   type ComponentProps,
   type HTMLAttributes,
   useEffect,
+  useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -27,17 +29,72 @@ import { cn } from "@/lib/utils";
 function formatRelativeCommitTimestamp(date: Date, nowMs: number): string {
   const diffSeconds = Math.round((date.getTime() - nowMs) / 1000);
   const absSeconds = Math.abs(diffSeconds);
+  const second = 1;
+  const minute = 60 * second;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const week = 7 * day;
+  const month = 30 * day;
+  const year = 365 * day;
   const [value, unit] =
-    absSeconds < 60
+    absSeconds < minute
       ? [diffSeconds, "second"]
-      : absSeconds < 60 * 60
-        ? [Math.round(diffSeconds / 60), "minute"]
-        : absSeconds < 60 * 60 * 24
-          ? [Math.round(diffSeconds / (60 * 60)), "hour"]
-          : [Math.round(diffSeconds / (60 * 60 * 24)), "day"];
+      : absSeconds < hour
+        ? [Math.round(diffSeconds / minute), "minute"]
+        : absSeconds < day
+          ? [Math.round(diffSeconds / hour), "hour"]
+          : absSeconds < week
+            ? [Math.round(diffSeconds / day), "day"]
+            : absSeconds < month
+              ? [Math.round(diffSeconds / week), "week"]
+              : absSeconds < year
+                ? [Math.round(diffSeconds / month), "month"]
+                : [Math.round(diffSeconds / year), "year"];
   return new Intl.RelativeTimeFormat(undefined, {
     numeric: "auto",
   }).format(value, unit as Intl.RelativeTimeFormatUnit);
+}
+
+const NOW_TICK_MS = 30_000;
+let hasHydratedNowStore = false;
+const nowStoreListeners = new Set<() => void>();
+let nowStoreIntervalId: number | null = null;
+
+function emitNowStoreChange() {
+  for (const listener of nowStoreListeners) {
+    listener();
+  }
+}
+
+function ensureNowStoreStarted() {
+  if (typeof window === "undefined") return;
+
+  if (!hasHydratedNowStore) {
+    queueMicrotask(() => {
+      hasHydratedNowStore = true;
+      emitNowStoreChange();
+    });
+  }
+
+  if (nowStoreIntervalId !== null) return;
+  nowStoreIntervalId = window.setInterval(emitNowStoreChange, NOW_TICK_MS);
+}
+
+function subscribeNowStore(listener: () => void) {
+  ensureNowStoreStarted();
+  nowStoreListeners.add(listener);
+  return () => {
+    nowStoreListeners.delete(listener);
+
+    if (
+      nowStoreListeners.size === 0 &&
+      nowStoreIntervalId !== null &&
+      typeof window !== "undefined"
+    ) {
+      window.clearInterval(nowStoreIntervalId);
+      nowStoreIntervalId = null;
+    }
+  };
 }
 
 /**
@@ -257,13 +314,17 @@ export type CommitTimestampProps = HTMLAttributes<HTMLTimeElement> & {
  */
 export const CommitTimestamp = (props: CommitTimestampProps) => {
   const { date, className, children, ...rest } = props;
-  const [formatted, setFormatted] = useState(() =>
-    formatRelativeCommitTimestamp(date, date.getTime()),
+  const timestamp = date.getTime();
+  const nowMs = useSyncExternalStore(
+    subscribeNowStore,
+    () => (hasHydratedNowStore ? Date.now() : timestamp),
+    () => timestamp,
   );
 
-  useEffect(() => {
-    setFormatted(formatRelativeCommitTimestamp(date, Date.now()));
-  }, [date]);
+  const formatted = useMemo(
+    () => formatRelativeCommitTimestamp(new Date(timestamp), nowMs),
+    [nowMs, timestamp],
+  );
 
   return (
     <time

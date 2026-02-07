@@ -54,7 +54,7 @@ Goals:
 1. Ownership model: every project has exactly one `owner_user_id` (Neon Auth user id).
 2. Authorization policy: inaccessible project-bound resources resolve as not found or forbidden without cross-tenant leakage.
 3. Search contract: backward-compatible with existing `q` and `projectId` behavior while adding validated `scope`, `types`, `limit`, and `cursor`.
-4. Cache invalidation: tag-based invalidation (`revalidateTag("TAG_NAME", "max")`; see [Next.js `revalidateTag`](https://nextjs.org/docs/app/api-reference/functions/revalidateTag)) for mutation paths.
+4. Cache invalidation: tag-based invalidation via Next.js `revalidateTag(tag, profile)` (use `profile="max"` for stale-while-revalidate; see [Next.js `revalidateTag`](https://nextjs.org/docs/app/api-reference/functions/revalidateTag)) for mutation paths.
 5. Search abuse control: user/IP keyed Upstash rate limiting in route handler.
 
 ## Interfaces and Contracts

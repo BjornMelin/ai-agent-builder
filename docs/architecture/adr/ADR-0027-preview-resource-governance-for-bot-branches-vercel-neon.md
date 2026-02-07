@@ -127,21 +127,23 @@ Why this choice:
 
 ## Related Requirements
 
+Requirement IDs below link to the canonical catalog in `docs/specs/requirements.md`.
+
 ### Functional Requirements
 
-- **FR-028:** Manage deployments and environment variables via Vercel.
+- [**FR-028**](../../specs/requirements.md#L64): Create and configure a deployment target (Vercel project), set environment variables, and promote deployments to production.
 
 ### Non-Functional Requirements
 
-- **NFR-006:** cost controls.
-- **NFR-009:** supply chain dependency governance.
-- **NFR-010:** CI quality gates.
-- **NFR-015:** auditability for side-effectful actions.
+- [**NFR-006**](../../specs/requirements.md#L92): Cost controls (caching/guardrails limit usage).
+- [**NFR-009**](../../specs/requirements.md#L97): Supply chain dependency governance.
+- [**NFR-010**](../../specs/requirements.md#L99): Quality gates (CI enforces format/lint/typecheck/test/build).
+- [**NFR-015**](../../specs/requirements.md#L109): Auditability for side-effectful actions.
 
 ### Integration Requirements
 
-- **IR-012:** deployments and env var management via Vercel API/SDK.
-- **IR-013:** optional Neon API provisioning (where used for cleanup/governance).
+- [**IR-012**](../../specs/requirements.md#L143): Deployments and env var management via Vercel API/SDK.
+- [**IR-013**](../../specs/requirements.md#L144): Optional: Provision Neon resources via Neon API.
 
 ## Implementation
 

@@ -91,21 +91,27 @@ export async function upsertProjectFile(
  * Get a project file by ID.
  *
  * @param id - File ID.
+ * @param projectId - Project ID (when known) to tag `tagUploadsIndex(projectId)`
+ *   even when the file does not exist (so cached nulls can be invalidated).
  * @returns File DTO or null.
  */
 export async function getProjectFileById(
   id: string,
+  projectId?: string,
 ): Promise<ProjectFileDto | null> {
   "use cache";
 
   cacheLife("minutes");
+  if (projectId) {
+    cacheTag(tagUploadsIndex(projectId));
+  }
 
   const db = getDb();
   const row = await db.query.projectFilesTable.findFirst({
     where: eq(schema.projectFilesTable.id, id),
   });
 
-  if (row) {
+  if (row && row.projectId !== projectId) {
     cacheTag(tagUploadsIndex(row.projectId));
   }
 

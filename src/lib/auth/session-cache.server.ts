@@ -1,5 +1,6 @@
 import "server-only";
 
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { cache } from "react";
 
 import { getAuth } from "@/lib/auth/neon-auth.server";
@@ -9,7 +10,7 @@ type SessionResult = Awaited<
 >;
 
 const sessionParams =
-  process.env.NEXT_PHASE === "phase-production-build"
+  process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD
     ? ({ query: { disableCookieCache: "true" } } as const)
     : undefined;
 

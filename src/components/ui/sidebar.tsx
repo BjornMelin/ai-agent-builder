@@ -295,7 +295,7 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      <PanelLeftIcon aria-hidden="true" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
@@ -725,7 +725,16 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean;
 }) {
-  const width = `${Math.floor(Math.random() * 40) + 50}%`;
+  const skeletonId = React.useId();
+  const width = React.useMemo(() => {
+    // Deterministic per-instance "random" width without breaking render purity rules.
+    let hash = 0;
+    for (let i = 0; i < skeletonId.length; i += 1) {
+      hash = (hash * 31 + skeletonId.charCodeAt(i)) | 0;
+    }
+    const percent = (Math.abs(hash) % 41) + 50; // 50-90%
+    return `${percent}%`;
+  }, [skeletonId]);
 
   return (
     <div

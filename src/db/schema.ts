@@ -81,7 +81,7 @@ export const projectsTable = pgTable(
       t.ownerUserId,
       t.updatedAt,
     ),
-    uniqueIndex("projects_slug_unique").on(t.slug),
+    uniqueIndex("projects_slug_unique").on(t.ownerUserId, t.slug),
     index("projects_status_idx").on(t.status),
   ],
 );

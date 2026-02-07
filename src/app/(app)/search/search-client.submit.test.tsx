@@ -13,6 +13,8 @@ const navigationState = vi.hoisted(() => ({
   query: "",
 }));
 
+const originalFetch = globalThis.fetch;
+
 const replaceMock = vi.hoisted(() =>
   vi.fn((href: string) => {
     const nextUrl = new URL(href, "http://localhost");
@@ -43,8 +45,9 @@ function createSearchResponse(): Response {
   return new Response(
     JSON.stringify({
       meta: {
+        cursor: null,
         limit: 20,
-        q: "alpha",
+        nextCursor: null,
         scope: "global",
         types: ["projects"],
       },
@@ -132,6 +135,7 @@ describe("search clients submit behavior", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    globalThis.fetch = originalFetch;
     document.body.innerHTML = "";
   });
 

@@ -71,6 +71,14 @@ type GlobalDropHandler = (files: FileList) => void;
 const globalDropHandlers = new Set<GlobalDropHandler>();
 let globalDropListenersAttached = false;
 
+type ListenerOptions = globalThis.EventListenerOptions;
+// `passive: false` is required because we call `preventDefault()` to enable
+// browser drag-and-drop behavior. Some TS DOM lib versions don't include the
+// `passive` property on `EventListenerOptions`, so we cast explicitly.
+const nonPassiveListenerOptions = {
+  passive: false,
+} as unknown as ListenerOptions;
+
 const handleGlobalDragOver = (event: DragEvent) => {
   if (event.dataTransfer?.types?.includes("Files")) {
     event.preventDefault();
@@ -94,8 +102,16 @@ const subscribeToGlobalDrop = (handler: GlobalDropHandler) => {
   globalDropHandlers.add(handler);
 
   if (!globalDropListenersAttached && typeof document !== "undefined") {
-    document.addEventListener("dragover", handleGlobalDragOver);
-    document.addEventListener("drop", handleGlobalDrop);
+    document.addEventListener(
+      "dragover",
+      handleGlobalDragOver,
+      nonPassiveListenerOptions,
+    );
+    document.addEventListener(
+      "drop",
+      handleGlobalDrop,
+      nonPassiveListenerOptions,
+    );
     globalDropListenersAttached = true;
   }
 
@@ -106,8 +122,16 @@ const subscribeToGlobalDrop = (handler: GlobalDropHandler) => {
       globalDropHandlers.size === 0 &&
       typeof document !== "undefined"
     ) {
-      document.removeEventListener("dragover", handleGlobalDragOver);
-      document.removeEventListener("drop", handleGlobalDrop);
+      document.removeEventListener(
+        "dragover",
+        handleGlobalDragOver,
+        nonPassiveListenerOptions,
+      );
+      document.removeEventListener(
+        "drop",
+        handleGlobalDrop,
+        nonPassiveListenerOptions,
+      );
       globalDropListenersAttached = false;
     }
   };
@@ -414,7 +438,7 @@ export const PromptInputActionAddAttachments = (
         attachments.openFileDialog();
       }}
     >
-      <ImageIcon className="mr-2 size-4" /> {label}
+      <ImageIcon aria-hidden="true" className="mr-2 size-4" /> {label}
     </DropdownMenuItem>
   );
 };
@@ -1121,10 +1145,16 @@ export const PromptInputActionMenuTrigger = (
   props: PromptInputActionMenuTriggerProps,
 ) => {
   const { className, children, ...rest } = props;
+  const resolvedAriaLabel =
+    rest["aria-label"] ?? (children ? undefined : "Open prompt actions");
   return (
     <DropdownMenuTrigger asChild>
-      <PromptInputButton className={className} {...rest}>
-        {children ?? <PlusIcon className="size-4" />}
+      <PromptInputButton
+        aria-label={resolvedAriaLabel}
+        className={className}
+        {...rest}
+      >
+        {children ?? <PlusIcon aria-hidden="true" className="size-4" />}
       </PromptInputButton>
     </DropdownMenuTrigger>
   );
@@ -1195,16 +1225,16 @@ export const PromptInputSubmit = (props: PromptInputSubmitProps) => {
   } = props;
   const isGenerating = status === "submitted" || status === "streaming";
   const canStop = isGenerating && typeof onStop === "function";
-  const ariaLabel = canStop ? "Stop" : isGenerating ? "Generating" : "Submit";
+  const ariaLabel = canStop ? "Stop" : isGenerating ? "Generating…" : "Submit";
 
-  let Icon = <CornerDownLeftIcon className="size-4" />;
+  let Icon = <CornerDownLeftIcon aria-hidden="true" className="size-4" />;
 
   if (status === "submitted") {
     Icon = <Spinner />;
   } else if (status === "streaming") {
-    Icon = <SquareIcon className="size-4" />;
+    Icon = <SquareIcon aria-hidden="true" className="size-4" />;
   } else if (status === "error") {
-    Icon = <XIcon className="size-4" />;
+    Icon = <XIcon aria-hidden="true" className="size-4" />;
   }
 
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {

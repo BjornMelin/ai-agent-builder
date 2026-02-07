@@ -4,8 +4,7 @@ import { SearchIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-type SearchStatus = "idle" | "loading" | "error";
+import type { SearchStatus } from "@/lib/search/types";
 
 /**
  * Reusable search form control.
@@ -43,7 +42,10 @@ export function SearchBar(props: SearchBarProps) {
         {props.label}
       </label>
       <div className="relative flex-1">
-        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <SearchIcon
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        />
         <Input
           autoComplete="off"
           aria-describedby={
@@ -74,7 +76,7 @@ export function SearchBar(props: SearchBarProps) {
             className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
           />
         ) : null}
-        <span>{props.status === "loading" ? "Searching" : "Search"}</span>
+        <span>Search</span>
       </Button>
 
       <output aria-live="polite" className="sr-only" id={props.statusId}>

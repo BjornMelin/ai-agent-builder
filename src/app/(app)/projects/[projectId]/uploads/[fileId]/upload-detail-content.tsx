@@ -18,7 +18,7 @@ export async function UploadDetailContent(
   }>,
 ) {
   const { projectId, fileId } = props;
-  const file = await getProjectFileById(fileId);
+  const file = await getProjectFileById(fileId, projectId);
 
   if (!file || file.projectId !== projectId) notFound();
 

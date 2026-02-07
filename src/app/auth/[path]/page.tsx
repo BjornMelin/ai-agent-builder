@@ -3,10 +3,17 @@ import { notFound } from "next/navigation";
 import { NeonAuthUiProvider } from "@/app/_auth/neon-auth-ui-provider";
 import { AuthViewClient } from "./auth-view-client";
 
-const ALLOWED_AUTH_VIEW_PATHS = Object.values(authViewPaths).filter(
-  (path) =>
-    path !== authViewPaths.SIGN_UP && path !== authViewPaths.ACCEPT_INVITATION,
-);
+const ALLOWED_AUTH_VIEW_PATHS = [
+  authViewPaths.SIGN_IN,
+  authViewPaths.FORGOT_PASSWORD,
+  authViewPaths.MAGIC_LINK,
+  authViewPaths.EMAIL_OTP,
+  authViewPaths.TWO_FACTOR,
+  authViewPaths.RECOVER_ACCOUNT,
+  authViewPaths.RESET_PASSWORD,
+  authViewPaths.CALLBACK,
+  authViewPaths.SIGN_OUT,
+] as const;
 const ALLOWED_AUTH_VIEW_PATH_SET = new Set(ALLOWED_AUTH_VIEW_PATHS);
 
 /**

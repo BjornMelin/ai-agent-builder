@@ -76,21 +76,25 @@ describeDb("db (integration)", () => {
       expect(fetched.rows.at(0)?.id).toBe(createdId);
     } finally {
       if (createdId) {
-        await db.execute(sql`
-          delete from "projects"
-          where "id" = ${createdId}
-        `);
+        let deleteSucceeded = false;
+        try {
+          await db.execute(sql`
+            delete from "projects"
+            where "id" = ${createdId}
+          `);
+          deleteSucceeded = true;
+        } finally {
+          if (deleteSucceeded) {
+            const deleted = await db.execute<{ id: string }>(sql`
+              select "id"
+              from "projects"
+              where "id" = ${createdId}
+              limit 1
+            `);
+            expect(deleted.rows.length).toBe(0);
+          }
+        }
       }
-    }
-
-    if (createdId) {
-      const deleted = await db.execute<{ id: string }>(sql`
-        select "id"
-        from "projects"
-        where "id" = ${createdId}
-        limit 1
-      `);
-      expect(deleted.rows.length).toBe(0);
     }
   });
 

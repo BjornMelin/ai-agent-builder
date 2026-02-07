@@ -9,12 +9,22 @@ import {
   useState,
 } from "react";
 
+import { useUrlQuerySync } from "@/app/(app)/search/use-url-query-sync";
 import { SearchBar } from "@/components/search/search-bar";
 import { SearchResults } from "@/components/search/search-results";
 import { useHydrationSafeTextState } from "@/lib/react/use-hydration-safe-input-state";
-import type { SearchResponse, SearchResult } from "@/lib/search/types";
+import { parseSearchResponse } from "@/lib/search/parse-search-response";
+import type {
+  SearchResponse,
+  SearchResult,
+  SearchStatus,
+} from "@/lib/search/types";
 
-type SearchStatus = "idle" | "loading" | "error";
+function isAbortError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const name = (err as { name?: unknown }).name;
+  return name === "AbortError";
+}
 
 /**
  * Search client (project-scoped).
@@ -41,8 +51,7 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<readonly SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
-  const hasCompletedInitialSyncRef = useRef(false);
-  const skipNextUrlQueryRef = useRef<string | null>(null);
+  const activeSearchControllerRef = useRef<AbortController | null>(null);
 
   const syncQueryInUrl = useCallback(
     (query: string) => {
@@ -61,6 +70,18 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
     [pathname, router],
   );
 
+  const { consumeUrlQueryChange, maybeSkipAndSync } = useUrlQuerySync({
+    syncQueryInUrl,
+    urlQuery,
+  });
+
+  useEffect(() => {
+    return () => {
+      activeSearchControllerRef.current?.abort();
+      activeSearchControllerRef.current = null;
+    };
+  }, []);
+
   const executeSearch = useCallback(
     async (
       rawQuery: string,
@@ -70,19 +91,17 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
         setQ(rawQuery);
       }
       const query = rawQuery.trim();
+
+      // Cancel any in-flight search to prevent stale results overwriting newer ones.
+      activeSearchControllerRef.current?.abort();
+      activeSearchControllerRef.current = null;
+
       if (query.length < 2) {
         setResults([]);
         setStatus("idle");
         setError(null);
         setHasSearched(false);
-        if (options.syncUrl) {
-          if (query !== urlQuery.trim()) {
-            skipNextUrlQueryRef.current = query;
-          } else {
-            skipNextUrlQueryRef.current = null;
-          }
-          syncQueryInUrl(query);
-        }
+        maybeSkipAndSync(query, options);
         return;
       }
 
@@ -90,14 +109,10 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
       setStatus("loading");
       setError(null);
 
-      if (options.syncUrl) {
-        if (query !== urlQuery.trim()) {
-          skipNextUrlQueryRef.current = query;
-        } else {
-          skipNextUrlQueryRef.current = null;
-        }
-        syncQueryInUrl(query);
-      }
+      maybeSkipAndSync(query, options);
+
+      const controller = new AbortController();
+      activeSearchControllerRef.current = controller;
 
       try {
         const url = new URL("/api/search", window.location.origin);
@@ -106,7 +121,12 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
         url.searchParams.set("scope", "project");
         url.searchParams.set("limit", "20");
 
-        const res = await fetch(url.toString(), { method: "GET" });
+        const res = await fetch(url.toString(), {
+          method: "GET",
+          signal: controller.signal,
+        });
+        if (activeSearchControllerRef.current !== controller) return;
+
         if (!res.ok) {
           const payload = await res.json().catch(() => null);
           setError(payload?.error?.message ?? "Search failed.");
@@ -114,39 +134,54 @@ export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
           return;
         }
 
-        const payload = (await res.json()) as SearchResponse;
+        const json: unknown = await res.json();
+        let payload: SearchResponse;
+        try {
+          payload = parseSearchResponse(json);
+        } catch (err) {
+          void err;
+          setError("Search failed due to an unexpected server response.");
+          setResults([]);
+          setStatus("error");
+          return;
+        }
+        if (activeSearchControllerRef.current !== controller) return;
+
         startTransition(() => {
           setResults(payload.results);
+          setStatus("idle");
         });
-        setStatus("idle");
-      } catch {
+      } catch (err) {
+        if (activeSearchControllerRef.current !== controller) return;
+
+        if (isAbortError(err)) {
+          return;
+        }
         setError("Network error. Please try again.");
         setStatus("error");
+      } finally {
+        if (activeSearchControllerRef.current === controller) {
+          activeSearchControllerRef.current = null;
+        }
       }
     },
-    [props.projectId, setQ, syncQueryInUrl, urlQuery],
+    [maybeSkipAndSync, props.projectId, setQ],
   );
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      const normalizedUrlQuery = urlQuery.trim();
-      if (skipNextUrlQueryRef.current === normalizedUrlQuery) {
-        skipNextUrlQueryRef.current = null;
-        hasCompletedInitialSyncRef.current = true;
-        return;
-      }
-      const syncInput = hasCompletedInitialSyncRef.current;
-      hasCompletedInitialSyncRef.current = true;
+      const { shouldExecute, syncInput } = consumeUrlQueryChange(urlQuery);
+      if (!shouldExecute) return;
       void executeSearch(urlQuery, { syncInput, syncUrl: false });
     }, 0);
     return () => {
       window.clearTimeout(timeout);
     };
-  }, [executeSearch, urlQuery]);
+  }, [consumeUrlQueryChange, executeSearch, urlQuery]);
 
   const statusMessage =
     status === "loading"
-      ? "Searching project content."
+      ? "Searching project content…"
       : hasSearched
         ? `${results.length} result${results.length === 1 ? "" : "s"} loaded.`
         : "";

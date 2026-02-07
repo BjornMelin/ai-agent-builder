@@ -61,6 +61,26 @@ describe("POST /api/chat/:runId", () => {
     });
   });
 
+  it("rejects when the chat session project is not owned by the user", async () => {
+    const POST = await loadRoute();
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
+
+    const res = await POST(
+      new Request("http://localhost/api/chat/run_1", {
+        body: JSON.stringify({ message: "hello" }),
+        method: "POST",
+      }),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(403);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: "forbidden" },
+    });
+    expect(state.resume).not.toHaveBeenCalled();
+    expect(state.updateChatThreadByWorkflowRunId).not.toHaveBeenCalled();
+  });
+
   it("returns not found when the chat session is missing", async () => {
     const POST = await loadRoute();
     state.getChatThreadByWorkflowRunId.mockResolvedValueOnce(null);
