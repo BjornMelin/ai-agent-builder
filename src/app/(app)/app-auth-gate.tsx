@@ -20,8 +20,11 @@ export async function AppAuthGate(
 ) {
   const { children } = props;
 
-  // Mark the authenticated app as request-time rendered.
-  await Promise.all([connection(), requireAppUser()]);
+  // IMPORTANT: `connection()` must be awaited before any request-bound reads
+  // (cookies/headers/session/redirect) so Next.js excludes subsequent work
+  // from prerendering in Cache Components mode.
+  await connection();
+  await requireAppUser();
 
   return children;
 }

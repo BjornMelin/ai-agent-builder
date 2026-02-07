@@ -13,6 +13,9 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
 jobs:
   lint:
     name: Lint (Biome + ESLint)
@@ -21,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Setup
         uses: ./.github/actions/ci-setup
@@ -36,7 +39,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Setup
         uses: ./.github/actions/ci-setup
@@ -51,7 +54,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Setup
         uses: ./.github/actions/ci-setup
@@ -67,10 +70,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.2
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Setup
         uses: ./.github/actions/ci-setup
+
+      - name: Cache Next.js build cache
+        uses: actions/cache@v5.0.3
+        with:
+          path: |
+            ${{ github.workspace }}/.next/cache
+          key: nextcache-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('next.config.ts', 'src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx') }}
+          restore-keys: |
+            nextcache-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            nextcache-${{ runner.os }}-
 
       - name: Build
         run: bun run build

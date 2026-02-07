@@ -1,7 +1,7 @@
 "use client";
 
-import type { UIMessageChunk } from "ai";
 import { startTransition, useEffect, useState } from "react";
+import { z } from "zod/mini";
 
 import {
   Conversation,
@@ -22,6 +22,15 @@ import {
 
 type StreamStatus = "idle" | "streaming" | "done" | "error";
 const STREAM_EVENT_FLUSH_MS = 16;
+
+const streamErrorResponseSchema = z.looseObject({
+  error: z.optional(z.looseObject({ message: z.optional(z.string()) })),
+});
+
+const uiMessageChunkSchema = z.looseObject({
+  data: z.optional(z.unknown()),
+  type: z.string(),
+});
 
 function toMarkdown(event: RunStreamEvent): string {
   switch (event.type) {
@@ -155,10 +164,12 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
       if (!res.ok) {
         let message = `Failed to open stream (${res.status}).`;
         try {
-          const json = (await res.json()) as unknown;
-          const errorMessage = (json as { error?: { message?: unknown } })
-            ?.error?.message;
-          if (typeof errorMessage === "string" && errorMessage.length > 0) {
+          const jsonUnknown: unknown = await res.json();
+          const parsed = streamErrorResponseSchema.safeParse(jsonUnknown);
+          const errorMessage = parsed.success
+            ? parsed.data.error?.message
+            : null;
+          if (errorMessage && errorMessage.length > 0) {
             message = errorMessage;
           }
         } catch {
@@ -215,9 +226,10 @@ export function RunStreamClient(props: Readonly<{ runId: string }>) {
               startIndex += 1;
               persistStartIndex(storageKey, startIndex);
 
-              const chunk = chunkUnknown as UIMessageChunk;
+              const chunkParsed = uiMessageChunkSchema.safeParse(chunkUnknown);
+              if (!chunkParsed.success) continue;
+              const chunk = chunkParsed.data;
               if (chunk.type !== "data-workflow") continue;
-              if (!("data" in chunk)) continue;
 
               const parsed = runStreamEventSchema.safeParse(chunk.data);
               if (!parsed.success) continue;

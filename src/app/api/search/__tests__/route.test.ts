@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 
 const state = vi.hoisted(() => ({
   dbExecute: vi.fn(),
@@ -178,10 +179,21 @@ describe("GET /api/search", () => {
     );
 
     expect(res.status).toBe(200);
-    const payload = (await res.json()) as {
-      meta: { scope: string; types: string[] };
-      results: Array<{ id: string; type: string }>;
-    };
+    const payloadUnknown: unknown = await res.json();
+    const payload = z
+      .looseObject({
+        meta: z.looseObject({
+          scope: z.string(),
+          types: z.array(z.string()),
+        }),
+        results: z.array(
+          z.looseObject({
+            id: z.string(),
+            type: z.string(),
+          }),
+        ),
+      })
+      .parse(payloadUnknown);
 
     expect(payload.meta.scope).toBe("project");
     expect(payload.meta.types).toEqual(["uploads", "chunks", "artifacts"]);
@@ -209,10 +221,24 @@ describe("GET /api/search", () => {
     );
 
     expect(res.status).toBe(200);
-    const payload = (await res.json()) as {
-      meta: { limit: number; scope: string; types: string[] };
-      results: Array<{ id: string; type: string }>;
-    };
+    const payloadUnknown: unknown = await res.json();
+    const payload = z
+      .looseObject({
+        meta: z.looseObject({
+          limit: z.number(),
+          scope: z.string(),
+          types: z.array(z.string()),
+        }),
+        results: z.array(
+          z.looseObject({
+            href: z.string(),
+            id: z.string(),
+            title: z.string(),
+            type: z.string(),
+          }),
+        ),
+      })
+      .parse(payloadUnknown);
 
     expect(payload.meta.scope).toBe("global");
     expect(payload.meta.limit).toBe(1);
@@ -251,9 +277,25 @@ describe("GET /api/search", () => {
     );
 
     expect(res.status).toBe(200);
-    const payload = (await res.json()) as {
-      results: Array<{ id: string; type: string; href: string }>;
-    };
+    const payloadUnknown: unknown = await res.json();
+    const payload = z
+      .looseObject({
+        results: z.array(
+          z.looseObject({
+            href: z.string(),
+            id: z.string(),
+            provenance: z.looseObject({
+              kind: z.string(),
+              projectId: z.string(),
+              status: z.string(),
+            }),
+            snippet: z.string(),
+            title: z.string(),
+            type: z.string(),
+          }),
+        ),
+      })
+      .parse(payloadUnknown);
     expect(payload.results).toEqual([
       {
         href: "/projects/p1/runs/run_1",
