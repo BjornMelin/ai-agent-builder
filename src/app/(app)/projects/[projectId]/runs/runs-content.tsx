@@ -16,6 +16,7 @@ import { listRunsByProject } from "@/lib/data/runs.server";
 function formatUtcMinute(isoString: string): string {
   // createdAt is serialized from Date.toISOString() in the DAL.
   // Use a stable, locale-free format to avoid client hydration work.
+  if (!isoString || typeof isoString !== "string") return "";
   if (isoString.length >= 16) {
     const raw = isoString.slice(0, 16); // YYYY-MM-DDTHH:mm
     return `${raw.replace("T", " ")} UTC`;
@@ -26,7 +27,8 @@ function formatUtcMinute(isoString: string): string {
 /**
  * Runs tab content (suspends for request-time data).
  *
- * @param props - Route params.
+ * @param props - Route params containing `projectId`, identifying the project
+ *   whose runs to display.
  * @returns Runs page content.
  */
 export async function RunsContent(
@@ -41,7 +43,7 @@ export async function RunsContent(
     notFound();
   }
 
-  const runs = await listRunsByProject(projectId, { limit: 50 });
+  const runs = await listRunsByProject(project.id, { limit: 50 });
 
   return (
     <Card>
@@ -49,7 +51,7 @@ export async function RunsContent(
         <CardTitle>Runs</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <RunControlsClient projectId={projectId} />
+        <RunControlsClient projectId={project.id} />
 
         {runs.length === 0 ? (
           <Empty className="min-h-[180px] rounded-xl border">
@@ -73,7 +75,7 @@ export async function RunsContent(
               <li key={run.id}>
                 <Link
                   className="group flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:bg-muted/60"
-                  href={`/projects/${projectId}/runs/${run.id}`}
+                  href={`/projects/${project.id}/runs/${run.id}`}
                   prefetch={false}
                 >
                   <div className="min-w-0">

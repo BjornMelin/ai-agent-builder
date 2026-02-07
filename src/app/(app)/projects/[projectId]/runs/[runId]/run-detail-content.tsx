@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { RunCancelClient } from "@/app/(app)/projects/[projectId]/runs/[runId]/run-cancel-client";
+import { RunStepsListClient } from "@/app/(app)/projects/[projectId]/runs/[runId]/run-steps-list-client";
 import { RunStreamClient } from "@/app/(app)/projects/[projectId]/runs/[runId]/run-stream-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAppUser } from "@/lib/auth/require-app-user";
@@ -24,6 +25,9 @@ export async function RunDetailContent(
 
   const runPromise = getRunById(runId);
   const stepsPromise = listRunSteps(runId);
+  // Prevent unhandled rejections if auth redirects before Promise.all settles.
+  void runPromise.catch(() => {});
+  void stepsPromise.catch(() => {});
   const user = await requireAppUser();
 
   const projectPromise = getProjectByIdForUser(projectId, user.id);
@@ -95,29 +99,7 @@ export async function RunDetailContent(
               No steps recorded yet.
             </p>
           ) : (
-            <ul
-              className="grid gap-2"
-              style={{
-                containIntrinsicSize: "auto 200px",
-                contentVisibility: "auto",
-              }}
-            >
-              {steps.map((step) => (
-                <li
-                  className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2"
-                  key={step.id}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{step.stepName}</p>
-                    <p className="truncate text-muted-foreground text-sm">
-                      {step.status} · {step.stepKind} ·{" "}
-                      <span className="font-mono text-xs">{step.stepId}</span>
-                    </p>
-                  </div>
-                  <span className="text-muted-foreground text-sm">Step</span>
-                </li>
-              ))}
-            </ul>
+            <RunStepsListClient steps={steps} />
           )}
         </CardContent>
       </Card>

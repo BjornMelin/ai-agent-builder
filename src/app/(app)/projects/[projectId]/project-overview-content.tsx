@@ -27,7 +27,7 @@ function formatBytes(bytes: number): string {
     idx += 1;
   }
   const digits = idx === 0 ? 0 : value >= 10 ? 1 : 2;
-  return `${value.toFixed(digits)} ${units[idx]}`;
+  return `${value.toFixed(digits)}\u00A0${units[idx]}`;
 }
 
 function formatRelativeTime(iso: string): string {
@@ -292,7 +292,9 @@ export async function ProjectOverviewContent(
         <CardContent className="grid gap-3">
           <div className="grid gap-1">
             <p className="font-semibold text-lg">
-              {latestThread ? latestThread.title : "Start a new thread"}
+              {latestThread?.title?.trim()
+                ? latestThread.title
+                : "Start a new thread"}
             </p>
             <p className="text-muted-foreground text-sm">
               {latestThread

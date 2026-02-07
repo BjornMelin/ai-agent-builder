@@ -12,7 +12,7 @@ import { listLatestArtifacts } from "@/lib/data/artifacts.server";
 /**
  * Artifacts tab content (suspends for request-time data).
  *
- * @param props - Route params.
+ * @param props - Component props containing the target project identifier.
  * @returns Artifacts page content.
  */
 export async function ArtifactsContent(
@@ -42,7 +42,7 @@ export async function ArtifactsContent(
         <CardTitle>Artifacts</CardTitle>
         <a
           className="text-sm underline-offset-4 hover:underline"
-          download
+          download="artifacts.zip"
           href={`/api/export/${encodeURIComponent(projectId)}`}
         >
           Export ZIP

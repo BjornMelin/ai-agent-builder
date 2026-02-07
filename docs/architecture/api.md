@@ -40,7 +40,7 @@ See:
 - `GET /api/search`
   - Query params:
     - required: `q` (2-256 chars)
-    - optional: `projectId`, `scope=global|project`, `types`, `limit`, `cursor`
+    - optional: `projectId`, `scope=global|project`, `types`, `limit`
     - `types` supports: `projects|uploads|chunks|artifacts|runs`
     - `limit` max: `20`
   - Scope behavior:

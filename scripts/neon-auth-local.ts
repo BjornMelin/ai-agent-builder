@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve, sep } from "node:path";
 import { config as loadDotenv, parse as parseDotenv } from "dotenv";
 import { Client } from "pg";
 
@@ -233,6 +233,21 @@ function assertSafeNeonConsolePath(path: string): string {
     throw new Error(`Invalid Neon API path: ${path}`);
   }
   return path;
+}
+
+function assertTmpFilePath(targetPath: string): string {
+  // Prevent unexpected file reads/writes if this helper is reused elsewhere.
+  if (targetPath.includes("..")) {
+    throw new Error(`Invalid target path: ${targetPath}`);
+  }
+  const resolved = resolve(targetPath);
+  const tmpRoot = resolve(".tmp") + sep;
+  if (!resolved.startsWith(tmpRoot)) {
+    throw new Error(
+      `Refusing to access non-.tmp file path (got: ${targetPath}).`,
+    );
+  }
+  return resolved;
 }
 
 async function printEmailPasswordConfigSummary(
@@ -562,9 +577,10 @@ async function deleteAuthUser(
   neonApiKey: string,
   authUserId: string,
 ): Promise<number> {
+  const safeAuthUserId = assertSafeId("auth user id", authUserId);
   const response = await neonApiRequest<unknown>(
     neonApiKey,
-    `/projects/${projectId}/branches/${branchId}/auth/users/${authUserId}`,
+    `/projects/${projectId}/branches/${branchId}/auth/users/${safeAuthUserId}`,
     "DELETE",
     undefined,
     [204, 404],
@@ -573,16 +589,17 @@ async function deleteAuthUser(
 }
 
 function pullVercelDevelopmentEnv(targetPath: string): Record<string, string> {
-  const parentDir = dirname(resolve(targetPath));
+  const resolvedTargetPath = assertTmpFilePath(targetPath);
+  const parentDir = dirname(resolvedTargetPath);
   mkdirSync(parentDir, { recursive: true });
 
   execFileSync(
     "vercel",
-    ["env", "pull", "--yes", "--environment=development", targetPath],
+    ["env", "pull", "--yes", "--environment=development", resolvedTargetPath],
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
   );
 
-  const content = readFileSync(targetPath, "utf8");
+  const content = readFileSync(resolvedTargetPath, "utf8");
   return parseDotenv(content);
 }
 

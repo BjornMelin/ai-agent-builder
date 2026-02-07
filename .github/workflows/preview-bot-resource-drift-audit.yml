@@ -336,7 +336,9 @@ jobs:
             unresolved_env="${env_failed}"
             unresolved_neon="${neon_failed}"
           fi
-          unresolved_total=$((unresolved_env + unresolved_neon + deploy_found))
+          # Deployments are audit-only (no reliable deletion API), so they should not
+          # force a permanent failure once any bot deployment has existed.
+          unresolved_total=$((unresolved_env + unresolved_neon))
 
           echo "Summary:"
           echo "  Vercel bot APP_BASE_URL env vars: found=${env_found}, deleted=${env_deleted}, failed=${env_failed}"

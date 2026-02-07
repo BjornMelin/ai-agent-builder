@@ -35,7 +35,6 @@ const PROJECT_DEFAULT_TYPES: readonly SearchTypeFilter[] = [
   "runs",
 ];
 const PROJECT_TYPE_SET = new Set<SearchTypeFilter>(PROJECT_DEFAULT_TYPES);
-const CURSOR_PATTERN = /^[A-Za-z0-9:_=-]{1,128}$/;
 const GLOBAL_DEFAULT_TYPES: readonly SearchTypeFilter[] = [
   "projects",
   "uploads",
@@ -111,7 +110,6 @@ function deriveScope(
 
 const searchQuerySchema = z
   .strictObject({
-    cursor: z.string().trim().max(128).optional(),
     limit: z.coerce.number().int().min(1).max(MAX_LIMIT).default(DEFAULT_LIMIT),
     projectId: z.string().trim().min(1).optional(),
     q: z.string().trim().min(MIN_QUERY_LENGTH).max(MAX_QUERY_LENGTH),
@@ -139,20 +137,12 @@ const searchQuerySchema = z
         });
       }
     }
-    if (value.cursor && !CURSOR_PATTERN.test(value.cursor)) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Invalid cursor.",
-        path: ["cursor"],
-      });
-    }
   })
   .transform((value) => {
     const scope = deriveScope(value.scope, value.projectId);
     const defaults =
       scope === "project" ? PROJECT_DEFAULT_TYPES : GLOBAL_DEFAULT_TYPES;
     return {
-      cursor: value.cursor ?? null,
       limit: value.limit,
       projectId: value.projectId ?? null,
       q: value.q,
@@ -168,7 +158,6 @@ function parseSearchQuery(url: URL): SearchQuery {
   const types = toTypeTokens(optionalParam(url.searchParams.get("types")));
 
   const input = {
-    cursor: optionalParam(url.searchParams.get("cursor")),
     limit: optionalParam(url.searchParams.get("limit")),
     projectId: optionalParam(url.searchParams.get("projectId")),
     q: optionalParam(url.searchParams.get("q")) ?? "",
@@ -264,6 +253,7 @@ async function searchProjectUploads(
       projectId: file.projectId,
       sizeBytes: file.sizeBytes,
     },
+    // `sizeBytes` is non-null by schema (db + TypeScript), so `toFixed` is safe.
     snippet: `${file.mimeType} · ${(file.sizeBytes / 1024).toFixed(1)} KB`,
     title: file.name,
     type: "upload" as const,

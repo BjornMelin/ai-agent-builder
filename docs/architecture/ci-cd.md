@@ -68,7 +68,8 @@ deployment host for each branch. This repo includes:
   - Behavior:
     - Detects bot-scoped preview `APP_BASE_URL` env vars and Neon preview branches.
     - Auto-cleans env vars/Neon branches in `audit-and-cleanup` mode.
-    - Fails if unresolved bot preview deployments/resources remain.
+    - Warns when bot preview deployments exist (audit-only; no reliable deletion API).
+    - Fails when unresolved env var / Neon branch drift remains.
 
 ### Neon API access (shared)
 
@@ -83,6 +84,8 @@ Required repo configuration:
   - `NEON_API_KEY`
 - GitHub Actions variables:
   - `NEON_PROJECT_ID`
+
+### Vercel API access (shared)
 
 Required repo configuration:
 

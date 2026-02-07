@@ -125,6 +125,9 @@ flowchart LR
 ## Implementation Notes
 
 - Cache invalidation is project-scoped: on new upload or artifact update, invalidate relevant keys.
+- Next.js cache constraints:
+  - Cached scopes (`'use cache'`) must not call runtime APIs like `cookies()`, `headers()`, or `searchParams()`; read runtime data outside the cached scope and pass it in.
+  - Cache tag limits: each tag string must be <= 256 characters; each cache entry may have at most 128 tags.
 
 ## Consequences
 

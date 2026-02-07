@@ -104,7 +104,7 @@ Weights:
 | Option | Leverage | Value | Maintenance | Adaptability | Weighted total |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | A. Vercel-only branch suppression | 9.5 | 9.1 | 9.6 | 8.6 | **9.29** |
-| B. Workflow-only gating | 7.6 | 8.1 | 8.0 | 8.4 | 7.96 |
+| B. Workflow-only gating | 7.6 | 8.1 | 8.0 | 8.4 | 7.93 |
 | C. Constrained defense-in-depth | 9.3 | 9.4 | 8.8 | 9.1 | **9.17** |
 | D. Disable all previews globally | 9.0 | 3.2 | 9.7 | 4.8 | 6.99 |
 

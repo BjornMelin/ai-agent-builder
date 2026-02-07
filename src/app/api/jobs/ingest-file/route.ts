@@ -55,8 +55,7 @@ function extractRawPathname(urlString: string): string {
 }
 
 function assertNoPathTraversal(rawPathname: string): void {
-  const decoded = decodePathSegment(rawPathname);
-  const segments = decoded.split("/");
+  const segments = rawPathname.split("/").map(decodePathSegment);
 
   for (const segment of segments) {
     if (segment === "." || segment === "..") {

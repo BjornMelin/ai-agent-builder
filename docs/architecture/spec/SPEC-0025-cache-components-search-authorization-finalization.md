@@ -27,9 +27,11 @@ contract, and documentation gaps that remained after initial implementation.
 Goals:
 
 - Enforce per-user project ownership for all project-bound reads/writes.
-- Keep Next.js 16 Cache Components enabled with correct tag invalidation behavior.
+- Keep Next.js Cache Components enabled with correct tag invalidation behavior
+  (see [Next.js Cache Components](https://nextjs.org/docs/app/getting-started/cache-components)).
 - Finalize global and project search UX plus API hardening.
-- Apply server-side search abuse guardrails using Upstash Ratelimit.
+- Apply server-side search abuse guardrails using Upstash Ratelimit
+  (see [Upstash Ratelimit](https://upstash.com/docs/oss/sdks/ts/ratelimit/overview)).
 - Remove implementation/doc drift across specs, ADRs, README, PRD, and AGENTS.
 
 ## Scope
@@ -53,8 +55,8 @@ Goals:
 
 1. Ownership model: every project has exactly one `owner_user_id` (Neon Auth user id).
 2. Authorization policy: inaccessible project-bound resources resolve as not found or forbidden without cross-tenant leakage.
-3. Search contract: backward-compatible with existing `q` and `projectId` behavior while adding validated `scope`, `types`, `limit`, and `cursor`.
-4. Cache invalidation: tag-based invalidation via Next.js `revalidateTag(tag, profile)` (use `profile="max"` for stale-while-revalidate; see [Next.js `revalidateTag`](https://nextjs.org/docs/app/api-reference/functions/revalidateTag)) for mutation paths.
+3. Search contract: backward-compatible with existing `q` and `projectId` behavior while adding validated `scope`, `types`, and `limit`.
+4. Cache invalidation: tag-based invalidation via Next.js `revalidateTag(tag, "max")` for mutation paths (see [Next.js `revalidateTag`](https://nextjs.org/docs/app/api-reference/functions/revalidateTag)).
 5. Search abuse control: user/IP keyed Upstash rate limiting in route handler.
 
 ## Interfaces and Contracts
@@ -81,7 +83,6 @@ Goals:
   - `projectId` (required when `scope=project`)
   - `types` (subset of allowed domains)
   - `limit` (bounded)
-  - `cursor` (optional, validated shape)
 - Response remains compatible with existing shape and includes `meta`.
 
 ## Implementation Plan
@@ -127,9 +128,9 @@ Goals:
 
 ### Phase 6: Docs and status alignment
 
-- Update SPEC-0020/SPEC-0021 completion sections.
-- Update ADR-0013/ADR-0020 implementation truth.
-- Update README/PRD/AGENTS/docs architecture and ops env references to remove “planned/spec’d” drift.
+- Revise SPEC-0020/SPEC-0021 completion sections.
+- Align ADR-0013/ADR-0020 with implementation truth.
+- Clarify README/PRD/AGENTS/docs architecture and ops env references to remove “planned/spec’d” drift.
 - Set implemented statuses where complete.
 
 ## Tests and Acceptance

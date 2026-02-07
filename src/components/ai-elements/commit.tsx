@@ -26,11 +26,14 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
+const relativeTimeFormatter = new Intl.RelativeTimeFormat(undefined, {
+  numeric: "auto",
+});
+
 function formatRelativeCommitTimestamp(date: Date, nowMs: number): string {
   const diffSeconds = Math.round((date.getTime() - nowMs) / 1000);
   const absSeconds = Math.abs(diffSeconds);
-  const second = 1;
-  const minute = 60 * second;
+  const minute = 60;
   const hour = 60 * minute;
   const day = 24 * hour;
   const week = 7 * day;
@@ -50,17 +53,20 @@ function formatRelativeCommitTimestamp(date: Date, nowMs: number): string {
               : absSeconds < year
                 ? [Math.round(diffSeconds / month), "month"]
                 : [Math.round(diffSeconds / year), "year"];
-  return new Intl.RelativeTimeFormat(undefined, {
-    numeric: "auto",
-  }).format(value, unit as Intl.RelativeTimeFormatUnit);
+  return relativeTimeFormatter.format(
+    value,
+    unit as Intl.RelativeTimeFormatUnit,
+  );
 }
 
 const NOW_TICK_MS = 30_000;
 let hasHydratedNowStore = false;
 const nowStoreListeners = new Set<() => void>();
 let nowStoreIntervalId: number | null = null;
+let cachedNowMs = 0;
 
 function emitNowStoreChange() {
+  cachedNowMs = Date.now();
   for (const listener of nowStoreListeners) {
     listener();
   }
@@ -72,6 +78,7 @@ function ensureNowStoreStarted() {
   if (!hasHydratedNowStore) {
     queueMicrotask(() => {
       hasHydratedNowStore = true;
+      cachedNowMs = Date.now();
       emitNowStoreChange();
     });
   }
@@ -317,7 +324,7 @@ export const CommitTimestamp = (props: CommitTimestampProps) => {
   const timestamp = date.getTime();
   const nowMs = useSyncExternalStore(
     subscribeNowStore,
-    () => (hasHydratedNowStore ? Date.now() : timestamp),
+    () => (hasHydratedNowStore ? cachedNowMs : timestamp),
     () => timestamp,
   );
 
