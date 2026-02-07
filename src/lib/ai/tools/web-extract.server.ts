@@ -16,6 +16,7 @@ export type WebExtractResult = Readonly<{
   title: string | null;
   description: string | null;
   publishedTime: string | null;
+  extractedAt: string;
   markdown: string;
 }>;
 
@@ -30,7 +31,7 @@ function getRedisOptional() {
 function cacheKey(input: Readonly<{ url: string }>): string {
   const payload = JSON.stringify({
     url: input.url,
-    v: 1,
+    v: 2,
   });
   return `cache:web-extract:${sha256Hex(payload)}`;
 }
@@ -44,9 +45,9 @@ function getFirecrawlClient(): FirecrawlClient {
   return cachedClient;
 }
 
-function truncateMarkdown(markdown: string): string {
-  if (markdown.length <= budgets.maxWebExtractCharsPerUrl) return markdown;
-  return `${markdown.slice(0, budgets.maxWebExtractCharsPerUrl)}\n\n… [truncated]`;
+function truncateMarkdown(markdown: string, maxChars: number): string {
+  if (markdown.length <= maxChars) return markdown;
+  return `${markdown.slice(0, maxChars)}\n\n… [truncated]`;
 }
 
 /**
@@ -57,7 +58,7 @@ function truncateMarkdown(markdown: string): string {
  * @throws AppError - When the URL is invalid or extraction fails.
  */
 export async function extractWebPage(
-  input: Readonly<{ url: string }>,
+  input: Readonly<{ url: string; maxChars?: number | undefined }>,
 ): Promise<WebExtractResult> {
   let url: URL;
   try {
@@ -75,7 +76,20 @@ export async function extractWebPage(
 
   if (redis) {
     const cached = await redis.get<WebExtractResult>(key);
-    if (cached) return cached;
+    if (cached) {
+      const maxChars =
+        input.maxChars === undefined
+          ? budgets.maxWebExtractCharsPerUrl
+          : Math.min(
+              Math.max(input.maxChars, 1),
+              budgets.maxWebExtractCharsPerUrl,
+            );
+      if (maxChars >= budgets.maxWebExtractCharsPerUrl) return cached;
+      return {
+        ...cached,
+        markdown: truncateMarkdown(cached.markdown, maxChars),
+      };
+    }
   }
 
   const client = getFirecrawlClient();
@@ -90,12 +104,18 @@ export async function extractWebPage(
     throw new AppError("bad_request", 400, "Failed to extract page content.");
   }
 
+  const extractedAt = new Date().toISOString();
+  const fullMarkdown = truncateMarkdown(
+    markdownRaw,
+    budgets.maxWebExtractCharsPerUrl,
+  );
   const result: WebExtractResult = {
     description:
       typeof doc.metadata?.description === "string"
         ? doc.metadata.description
         : null,
-    markdown: truncateMarkdown(markdownRaw),
+    extractedAt,
+    markdown: fullMarkdown,
     publishedTime:
       typeof doc.metadata?.publishedTime === "string"
         ? doc.metadata.publishedTime
@@ -112,5 +132,11 @@ export async function extractWebPage(
       });
   }
 
-  return result;
+  const maxChars =
+    input.maxChars === undefined
+      ? budgets.maxWebExtractCharsPerUrl
+      : Math.min(Math.max(input.maxChars, 1), budgets.maxWebExtractCharsPerUrl);
+  if (maxChars >= budgets.maxWebExtractCharsPerUrl) return result;
+
+  return { ...result, markdown: truncateMarkdown(result.markdown, maxChars) };
 }

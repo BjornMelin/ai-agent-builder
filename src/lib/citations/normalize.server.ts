@@ -12,6 +12,7 @@ export const webCitationPayloadSchema = z
     accessedAt: z.string().min(1),
     author: z.string().min(1).optional(),
     description: z.string().min(1).optional(),
+    excerpt: z.string().min(1).optional(),
     index: z.number().int().min(1),
     publishedDate: z.string().min(1).optional(),
     title: z.string().min(1).optional(),
@@ -32,6 +33,7 @@ export type WebCitationSource = Readonly<{
   url: string;
   title: string | null;
   description: string | null;
+  excerpt?: string | undefined;
   author?: string | undefined;
   publishedDate?: string | undefined;
 }>;
@@ -68,6 +70,7 @@ export function normalizeWebCitations(
       accessedAt,
       author: s.author,
       description: s.description ?? undefined,
+      excerpt: s.excerpt,
       index: i + 1,
       publishedDate: s.publishedDate,
       title: s.title ?? undefined,

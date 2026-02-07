@@ -1,5 +1,5 @@
 import type { ToolExecutionOptions } from "ai";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { budgets } from "@/lib/config/budgets.server";
 import type { AppError } from "@/lib/core/errors";
@@ -9,6 +9,8 @@ import { createChatToolContext } from "@/workflows/chat/tool-context";
 const state = vi.hoisted(() => ({
   createResearchReportArtifact: vi.fn(),
 }));
+
+let previousAiGatewayApiKey: string | undefined;
 
 vi.mock("@/lib/research/research-report.server", () => ({
   createResearchReportArtifact: state.createResearchReportArtifact,
@@ -24,6 +26,8 @@ function makeToolOptions(experimental_context: unknown): ToolExecutionOptions {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  previousAiGatewayApiKey = process.env.AI_GATEWAY_API_KEY;
+  process.env.AI_GATEWAY_API_KEY ??= "test-key";
   state.createResearchReportArtifact.mockResolvedValue({
     artifactId: "artifact_1",
     kind: "RESEARCH_REPORT",
@@ -33,9 +37,17 @@ beforeEach(() => {
   });
 });
 
+afterEach(() => {
+  if (previousAiGatewayApiKey === undefined) {
+    delete process.env.AI_GATEWAY_API_KEY;
+  } else {
+    process.env.AI_GATEWAY_API_KEY = previousAiGatewayApiKey;
+  }
+});
+
 describe("createResearchReportStep", () => {
   it("enforces the web search call budget", async () => {
-    const ctx = createChatToolContext("proj_1");
+    const ctx = createChatToolContext("proj_1", "researcher");
     ctx.toolBudget.webSearchCalls = budgets.maxWebSearchCallsPerTurn;
 
     await expect(
@@ -47,7 +59,7 @@ describe("createResearchReportStep", () => {
   });
 
   it("enforces the web extract call budget", async () => {
-    const ctx = createChatToolContext("proj_1");
+    const ctx = createChatToolContext("proj_1", "researcher");
     ctx.toolBudget.webExtractCalls = budgets.maxWebExtractCallsPerTurn;
 
     await expect(
@@ -59,7 +71,7 @@ describe("createResearchReportStep", () => {
   });
 
   it("reserves remaining extract budget and forwards maxExtractUrls to artifact creation", async () => {
-    const ctx = createChatToolContext("proj_1");
+    const ctx = createChatToolContext("proj_1", "researcher");
     ctx.toolBudget.webExtractCalls = budgets.maxWebExtractCallsPerTurn - 1;
 
     await createResearchReportStep({ query: "test" }, makeToolOptions(ctx));
@@ -67,6 +79,7 @@ describe("createResearchReportStep", () => {
     expect(state.createResearchReportArtifact).toHaveBeenCalledWith(
       expect.objectContaining({
         maxExtractUrls: 1,
+        modelId: expect.any(String),
         projectId: "proj_1",
         query: "test",
       }),

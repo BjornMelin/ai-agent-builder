@@ -7,7 +7,7 @@ const state = vi.hoisted(() => ({
   createArtifactVersion: vi.fn(),
   extractWebPage: vi.fn(),
   generateText: vi.fn(),
-  getDefaultChatModel: vi.fn(),
+  getChatModelById: vi.fn(),
   searchWeb: vi.fn(),
 }));
 
@@ -16,7 +16,7 @@ vi.mock("ai", () => ({
 }));
 
 vi.mock("@/lib/ai/gateway.server", () => ({
-  getDefaultChatModel: state.getDefaultChatModel,
+  getChatModelById: state.getChatModelById,
 }));
 
 vi.mock("@/lib/ai/tools/web-search.server", () => ({
@@ -34,7 +34,7 @@ vi.mock("@/lib/data/artifacts.server", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
 
-  state.getDefaultChatModel.mockReturnValue({});
+  state.getChatModelById.mockReturnValue({});
   state.generateText.mockResolvedValue({
     text: "# Research report\n\nHello [[1]](citation:1)",
   });
@@ -71,7 +71,11 @@ beforeEach(() => {
 describe("createResearchReportArtifact", () => {
   it("rejects empty queries", async () => {
     await expect(
-      createResearchReportArtifact({ projectId: "proj_1", query: " " }),
+      createResearchReportArtifact({
+        modelId: "openai/gpt-4.1",
+        projectId: "proj_1",
+        query: " ",
+      }),
     ).rejects.toMatchObject({
       code: "bad_request",
       status: 400,
@@ -81,6 +85,7 @@ describe("createResearchReportArtifact", () => {
   it("creates a markdown artifact with normalized citations", async () => {
     const result = await createResearchReportArtifact({
       maxExtractUrls: 2,
+      modelId: "openai/gpt-4.1",
       projectId: "proj_1",
       query: "Next.js cache components",
       runId: "run_1",
@@ -120,8 +125,22 @@ describe("createResearchReportArtifact", () => {
             sourceType: "web",
           }),
         ],
+        content: expect.objectContaining({
+          format: "markdown",
+          query: "Next.js cache components",
+          sources: [
+            expect.objectContaining({
+              title: "A",
+              url: "https://example.com/a",
+            }),
+            expect.objectContaining({
+              title: "B",
+              url: "https://example.com/b",
+            }),
+          ],
+        }),
         kind: "RESEARCH_REPORT",
-        logicalKey: expect.stringMatching(/^research-[0-9a-f]{12}$/),
+        logicalKey: expect.stringMatching(/^research-report:[0-9a-f]{64}$/),
         projectId: "proj_1",
         runId: "run_1",
       }),
@@ -131,6 +150,7 @@ describe("createResearchReportArtifact", () => {
   it("respects maxExtractUrls", async () => {
     await createResearchReportArtifact({
       maxExtractUrls: 1,
+      modelId: "openai/gpt-4.1",
       projectId: "proj_1",
       query: "test",
     });

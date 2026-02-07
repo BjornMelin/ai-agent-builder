@@ -1,4 +1,5 @@
 import type { AgentMode } from "@/lib/ai/agents/agent-mode";
+import { env } from "@/lib/env";
 
 /**
  * Web research + report generation mode.
@@ -11,7 +12,9 @@ export const researcherMode: AgentMode = {
     "research.create-report",
   ],
   budgets: { maxStepsPerTurn: 18 },
-  defaultModel: "ai-gateway-default",
+  get defaultModel() {
+    return env.aiGateway.chatModel;
+  },
   description: "Web research with citation-backed report artifacts.",
   displayName: "Researcher",
   modeId: "researcher",

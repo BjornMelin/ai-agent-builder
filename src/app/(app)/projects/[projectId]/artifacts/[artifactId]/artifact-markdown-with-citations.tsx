@@ -7,6 +7,7 @@ import {
   InlineCitation,
   InlineCitationCard,
   InlineCitationCardBody,
+  InlineCitationQuote,
   InlineCitationSource,
 } from "@/components/ai-elements/inline-citation";
 import { MessageResponse } from "@/components/ai-elements/message";
@@ -23,6 +24,7 @@ type CitationDto = Readonly<{
 const webCitationPayloadSchema = z
   .object({
     description: z.string().min(1).optional(),
+    excerpt: z.string().min(1).optional(),
     index: z.number().int().min(1),
     title: z.string().min(1).optional(),
     url: z.string().url(),
@@ -36,7 +38,12 @@ type AnchorProps = ComponentProps<"a"> & { node?: unknown };
 function buildCitationIndex(citations: readonly CitationDto[]) {
   const byIndex = new Map<
     number,
-    Readonly<{ url: string; title?: string; description?: string }>
+    Readonly<{
+      url: string;
+      title?: string;
+      description?: string;
+      excerpt?: string;
+    }>
   >();
 
   for (const citation of citations) {
@@ -52,6 +59,10 @@ function buildCitationIndex(citations: readonly CitationDto[]) {
       parsed.data.description.length > 0
         ? { description: parsed.data.description }
         : {}),
+      ...(typeof parsed.data.excerpt === "string" &&
+      parsed.data.excerpt.length > 0
+        ? { excerpt: parsed.data.excerpt }
+        : {}),
     });
   }
 
@@ -63,7 +74,12 @@ function CitationLink(
     AnchorProps & {
       citations: Map<
         number,
-        Readonly<{ url: string; title?: string; description?: string }>
+        Readonly<{
+          url: string;
+          title?: string;
+          description?: string;
+          excerpt?: string;
+        }>
       >;
     }
   >,
@@ -113,6 +129,9 @@ function CitationLink(
                 ? { description: source.description }
                 : {})}
             />
+            {source.excerpt ? (
+              <InlineCitationQuote>{source.excerpt}</InlineCitationQuote>
+            ) : null}
             <div>
               <a
                 className="text-sm underline-offset-4 hover:underline"

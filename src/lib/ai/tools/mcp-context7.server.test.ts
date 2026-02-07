@@ -76,4 +76,36 @@ describe("Context7 MCP wrapper", () => {
       { data: ["ok"] },
     );
   });
+
+  it("rejects oversized responses (defense-in-depth)", async () => {
+    const redis = {
+      get: vi.fn().mockResolvedValue(null),
+      setex: vi.fn().mockResolvedValue("OK"),
+    };
+    state.getRedis.mockReturnValue(redis);
+
+    const executeResolve = vi.fn().mockResolvedValue({
+      // Exceeds maxContext7ResponseBytes once JSON stringified.
+      data: "x".repeat(budgets.maxContext7ResponseBytes + 10_000),
+    });
+
+    state.createMCPClient.mockResolvedValue({
+      tools: vi.fn().mockResolvedValue({
+        "resolve-library-id": { execute: executeResolve },
+      }),
+    });
+
+    const mod = await import("@/lib/ai/tools/mcp-context7.server");
+    await expect(
+      mod.context7ResolveLibraryId({
+        libraryName: "react",
+        query: "useState",
+      }),
+    ).rejects.toMatchObject({
+      code: "bad_request",
+      status: 400,
+    });
+
+    expect(redis.setex).not.toHaveBeenCalled();
+  });
 });

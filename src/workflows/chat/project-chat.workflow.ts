@@ -9,7 +9,7 @@ import { getWorkflowMetadata, getWritable } from "workflow";
 
 import { getAgentMode } from "@/lib/ai/agents/registry";
 import { buildChatToolsForMode } from "@/lib/ai/tools/factory.server";
-import { getWorkflowDefaultChatModel } from "@/workflows/ai/gateway-models.step";
+import { getWorkflowChatModel } from "@/workflows/ai/gateway-models.step";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
 import { persistChatMessagesForWorkflowRun } from "@/workflows/chat/steps/chat-messages.step";
 import { touchChatThreadState } from "@/workflows/chat/steps/chat-thread-state.step";
@@ -77,7 +77,7 @@ export async function projectChat(
     }
 
     const agent = new DurableAgent({
-      model: getWorkflowDefaultChatModel,
+      model: () => getWorkflowChatModel(mode.defaultModel),
       system: mode.systemPrompt,
       tools,
     });
@@ -91,8 +91,9 @@ export async function projectChat(
       await touchChatThreadState({ ...threadStateInput, status: "running" });
 
       const result = await agent.stream({
+        activeTools: [...mode.allowedTools],
         collectUIMessages: true,
-        experimental_context: createChatToolContext(projectId),
+        experimental_context: createChatToolContext(projectId, modeId),
         maxSteps: mode.budgets.maxStepsPerTurn,
         messages,
         preventClose: true,

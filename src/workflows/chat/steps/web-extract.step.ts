@@ -10,6 +10,12 @@ import { AppError } from "@/lib/core/errors";
 import { parseChatToolContext } from "@/workflows/chat/tool-context";
 
 const inputSchema = z.object({
+  maxChars: z
+    .number()
+    .int()
+    .min(1)
+    .max(budgets.maxWebExtractCharsPerUrl)
+    .optional(),
   url: z.string().min(1),
 });
 
@@ -21,7 +27,7 @@ const inputSchema = z.object({
  * @returns Extracted page content.
  */
 export async function webExtractStep(
-  input: Readonly<{ url: string }>,
+  input: Readonly<{ url: string; maxChars?: number | undefined }>,
   options: ToolExecutionOptions,
 ): Promise<WebExtractResult> {
   "use step";
@@ -57,5 +63,8 @@ export async function webExtractStep(
   }
   ctx.toolBudget.webExtractCalls += 1;
 
-  return extractWebPage({ url: parsed.data.url });
+  return extractWebPage({
+    maxChars: parsed.data.maxChars,
+    url: parsed.data.url,
+  });
 }

@@ -2,7 +2,7 @@ import "server-only";
 
 import { generateText } from "ai";
 
-import { getDefaultChatModel } from "@/lib/ai/gateway.server";
+import { getChatModelById } from "@/lib/ai/gateway.server";
 import { extractWebPage } from "@/lib/ai/tools/web-extract.server";
 import { searchWeb } from "@/lib/ai/tools/web-search.server";
 import {
@@ -18,7 +18,7 @@ const MAX_SOURCE_CONTEXT_CHARS = 6_000;
 
 function logicalKeyForQuery(query: string): string {
   const normalized = query.trim().toLowerCase();
-  return `research-${sha256Hex(normalized).slice(0, 12)}`;
+  return `research-report:${sha256Hex(normalized)}`;
 }
 
 function titleForQuery(query: string): string {
@@ -30,6 +30,20 @@ function titleForQuery(query: string): string {
 function truncateForContext(markdown: string): string {
   if (markdown.length <= MAX_SOURCE_CONTEXT_CHARS) return markdown;
   return `${markdown.slice(0, MAX_SOURCE_CONTEXT_CHARS)}\n\n… [truncated for context]`;
+}
+
+function excerptForMarkdown(markdown: string): string | undefined {
+  const cleaned = markdown
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (cleaned.length === 0) return undefined;
+
+  const maxChars = 280;
+  return cleaned.length > maxChars ? `${cleaned.slice(0, maxChars)}…` : cleaned;
 }
 
 export type ResearchReportResult = Readonly<{
@@ -50,6 +64,7 @@ export async function createResearchReportArtifact(
   input: Readonly<{
     projectId: string;
     query: string;
+    modelId: string;
     runId?: string | null;
     maxExtractUrls?: number | undefined;
   }>,
@@ -74,8 +89,16 @@ export async function createResearchReportArtifact(
     urls.map(async (url) => await extractWebPage({ url })),
   );
 
+  const sources = extracted.map((e) => ({
+    url: e.url,
+    ...(typeof e.title === "string" && e.title.trim().length > 0
+      ? { title: e.title }
+      : {}),
+  }));
+
   const webSources: WebCitationSource[] = extracted.map((e) => ({
     description: e.description,
+    excerpt: excerptForMarkdown(e.markdown),
     title: e.title,
     url: e.url,
     ...(e.publishedTime ? { publishedDate: e.publishedTime } : {}),
@@ -114,7 +137,7 @@ export async function createResearchReportArtifact(
     sourceContext,
   ].join("\n");
 
-  const model = getDefaultChatModel();
+  const model = getChatModelById(input.modelId);
   const { text } = await generateText({
     model,
     prompt,
@@ -126,7 +149,7 @@ export async function createResearchReportArtifact(
 
   const artifact = await createArtifactVersion({
     citations,
-    content: { format: "markdown", markdown: text, title },
+    content: { format: "markdown", markdown: text, query, sources, title },
     kind: "RESEARCH_REPORT",
     logicalKey,
     projectId: input.projectId,

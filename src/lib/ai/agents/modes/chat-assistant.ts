@@ -1,4 +1,5 @@
 import type { AgentMode } from "@/lib/ai/agents/agent-mode";
+import { env } from "@/lib/env";
 
 /**
  * Default project chat assistant mode.
@@ -6,7 +7,9 @@ import type { AgentMode } from "@/lib/ai/agents/agent-mode";
 export const chatAssistantMode: AgentMode = {
   allowedTools: ["retrieveProjectChunks"],
   budgets: { maxStepsPerTurn: 12 },
-  defaultModel: "ai-gateway-default",
+  get defaultModel() {
+    return env.aiGateway.chatModel;
+  },
   description: "Grounded help using your uploaded project sources.",
   displayName: "Chat assistant",
   modeId: "chat-assistant",

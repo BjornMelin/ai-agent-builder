@@ -9,7 +9,12 @@ import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
 import { parseChatToolContext } from "@/workflows/chat/tool-context";
 
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
 const inputSchema = z.object({
+  endPublishedDate: z.string().regex(ISO_DATE_PATTERN).optional(),
+  excludeDomains: z.array(z.string().min(1)).max(20).optional(),
+  includeDomains: z.array(z.string().min(1)).max(20).optional(),
   numResults: z
     .number()
     .int()
@@ -17,6 +22,7 @@ const inputSchema = z.object({
     .max(budgets.maxWebSearchResults)
     .optional(),
   query: z.string().min(1),
+  startPublishedDate: z.string().regex(ISO_DATE_PATTERN).optional(),
 });
 
 /**
@@ -27,7 +33,14 @@ const inputSchema = z.object({
  * @returns Web search response.
  */
 export async function webSearchStep(
-  input: Readonly<{ query: string; numResults?: number | undefined }>,
+  input: Readonly<{
+    query: string;
+    numResults?: number | undefined;
+    includeDomains?: readonly string[] | undefined;
+    excludeDomains?: readonly string[] | undefined;
+    startPublishedDate?: string | undefined;
+    endPublishedDate?: string | undefined;
+  }>,
   options: ToolExecutionOptions,
 ): Promise<WebSearchResponse> {
   "use step";
@@ -64,7 +77,11 @@ export async function webSearchStep(
   ctx.toolBudget.webSearchCalls += 1;
 
   return searchWeb({
+    endPublishedDate: parsed.data.endPublishedDate,
+    excludeDomains: parsed.data.excludeDomains,
+    includeDomains: parsed.data.includeDomains,
     numResults: parsed.data.numResults,
     query: parsed.data.query,
+    startPublishedDate: parsed.data.startPublishedDate,
   });
 }

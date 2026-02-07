@@ -11,6 +11,8 @@ import { retrieveProjectChunksStep } from "@/workflows/chat/steps/retrieve-proje
 import { webExtractStep } from "@/workflows/chat/steps/web-extract.step";
 import { webSearchStep } from "@/workflows/chat/steps/web-search.step";
 
+const ISO_DATE_PATTERN = "^\\\\d{4}-\\\\d{2}-\\\\d{2}$";
+
 const retrieveProjectChunksInput = z.strictObject({
   query: z.string().min(1),
   topK: z.number().int().min(1).max(budgets.maxVectorTopK).optional(),
@@ -51,6 +53,12 @@ const retrieveProjectChunksTool = tool({
 });
 
 const webSearchInput = z.strictObject({
+  endPublishedDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  excludeDomains: z.array(z.string().min(1)).max(20).optional(),
+  includeDomains: z.array(z.string().min(1)).max(20).optional(),
   numResults: z
     .number()
     .int()
@@ -58,11 +66,19 @@ const webSearchInput = z.strictObject({
     .max(budgets.maxWebSearchResults)
     .optional(),
   query: z.string().min(1),
+  startPublishedDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 type WebSearchToolInput = Readonly<{
   query: string;
   numResults?: number | undefined;
+  includeDomains?: readonly string[] | undefined;
+  excludeDomains?: readonly string[] | undefined;
+  startPublishedDate?: string | undefined;
+  endPublishedDate?: string | undefined;
 }>;
 
 const webSearchTool = tool({
@@ -73,12 +89,30 @@ const webSearchTool = tool({
     {
       additionalProperties: false,
       properties: {
+        endPublishedDate: {
+          pattern: ISO_DATE_PATTERN,
+          type: "string",
+        },
+        excludeDomains: {
+          items: { minLength: 1, type: "string" },
+          maxItems: 20,
+          type: "array",
+        },
+        includeDomains: {
+          items: { minLength: 1, type: "string" },
+          maxItems: 20,
+          type: "array",
+        },
         numResults: {
           maximum: budgets.maxWebSearchResults,
           minimum: 1,
           type: "integer",
         },
         query: { minLength: 1, type: "string" },
+        startPublishedDate: {
+          pattern: ISO_DATE_PATTERN,
+          type: "string",
+        },
       },
       required: ["query"],
       type: "object",
@@ -95,11 +129,18 @@ const webSearchTool = tool({
 });
 
 const webExtractInput = z.strictObject({
+  maxChars: z
+    .number()
+    .int()
+    .min(1)
+    .max(budgets.maxWebExtractCharsPerUrl)
+    .optional(),
   url: z.string().min(1),
 });
 
 type WebExtractToolInput = Readonly<{
   url: string;
+  maxChars?: number | undefined;
 }>;
 
 const webExtractTool = tool({
@@ -110,6 +151,11 @@ const webExtractTool = tool({
     {
       additionalProperties: false,
       properties: {
+        maxChars: {
+          maximum: budgets.maxWebExtractCharsPerUrl,
+          minimum: 1,
+          type: "integer",
+        },
         url: { minLength: 1, type: "string" },
       },
       required: ["url"],

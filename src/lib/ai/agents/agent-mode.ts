@@ -48,10 +48,10 @@ export type AgentMode = Readonly<{
    * Default model selection for the mode.
    *
    * @remarks
-   * This repo uses AI Gateway as the single model routing surface; modes can
-   * override later, but today we keep one canonical default.
+   * The value must be a Vercel AI Gateway model ID (e.g. `openai/gpt-4.1`,
+   * `anthropic/claude-sonnet-4.5`).
    */
-  defaultModel: "ai-gateway-default";
+  defaultModel: string;
   budgets: AgentModeBudgets;
   allowedTools: readonly ToolId[];
   requirements: AgentModeRequirements;

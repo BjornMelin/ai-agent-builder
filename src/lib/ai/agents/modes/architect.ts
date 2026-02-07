@@ -1,4 +1,5 @@
 import type { AgentMode } from "@/lib/ai/agents/agent-mode";
+import { env } from "@/lib/env";
 
 /**
  * Architecture and library-doc mode (Context7-enabled).
@@ -10,7 +11,9 @@ export const architectMode: AgentMode = {
     "context7.query-docs",
   ],
   budgets: { maxStepsPerTurn: 18 },
-  defaultModel: "ai-gateway-default",
+  get defaultModel() {
+    return env.aiGateway.chatModel;
+  },
   description: "Architecture guidance with library-doc lookups (Context7).",
   displayName: "Architect",
   modeId: "architect",

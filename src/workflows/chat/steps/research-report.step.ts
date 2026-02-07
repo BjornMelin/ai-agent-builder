@@ -1,5 +1,6 @@
 import type { ToolExecutionOptions } from "ai";
 import { z } from "zod";
+import { getAgentMode } from "@/lib/ai/agents/registry";
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
 import {
@@ -68,8 +69,11 @@ export async function createResearchReportStep(
   const maxExtractUrls = Math.min(3, remainingExtracts);
   ctx.toolBudget.webExtractCalls += maxExtractUrls;
 
+  const mode = getAgentMode(ctx.modeId);
+
   return createResearchReportArtifact({
     maxExtractUrls,
+    modelId: mode.defaultModel,
     projectId: ctx.projectId,
     query: parsed.data.query,
   });
