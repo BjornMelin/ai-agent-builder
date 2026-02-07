@@ -1020,13 +1020,21 @@ async function runSmoke(args: SmokeArgs): Promise<void> {
     const databaseUrl = getRequiredEnv("DATABASE_URL");
     const users = await listCredentialUsers(databaseUrl);
     printSummary("Credential Users", `${users.length}`);
-    for (const user of users) {
-      const probe = await probeSignInEmailPassword(
-        neonAuthBaseUrl,
-        origin,
-        user.email,
-        `__invalid__${crypto.randomUUID()}`,
-      );
+    const probeResults = await mapWithConcurrency(
+      users,
+      DEFAULT_AUDIT_PROBE_CONCURRENCY,
+      async (user) => {
+        const probe = await probeSignInEmailPassword(
+          neonAuthBaseUrl,
+          origin,
+          user.email,
+          `__invalid__${crypto.randomUUID()}`,
+        );
+        return { probe, user };
+      },
+    );
+
+    for (const { probe, user } of probeResults) {
       if (probe.status !== 401) {
         failures.push({
           detail: probe.code ?? probe.message ?? "unexpected response",

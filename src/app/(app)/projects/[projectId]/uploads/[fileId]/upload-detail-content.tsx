@@ -24,6 +24,7 @@ export async function UploadDetailContent(
 
   if (!file || file.projectId !== projectId) notFound();
 
+  const fileName = file.name.trim() || "Untitled";
   const mimeType = file.mimeType.trim() || "—";
   const sha256 = file.sha256.trim() || "—";
 
@@ -31,7 +32,7 @@ export async function UploadDetailContent(
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>{file.name}</CardTitle>
+          <CardTitle>{fileName}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <div className="text-sm">

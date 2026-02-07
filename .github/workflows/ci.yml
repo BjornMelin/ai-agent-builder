@@ -80,9 +80,9 @@ jobs:
         with:
           path: |
             ${{ github.workspace }}/.next/cache
-          key: nextcache-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('next.config.ts', 'src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx') }}
+          key: nextcache-${{ runner.os }}-${{ hashFiles('bun.lock', 'package.json', 'tsconfig.json', 'postcss.config.mjs', 'next.config.ts', 'src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx') }}
           restore-keys: |
-            nextcache-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            nextcache-${{ runner.os }}-${{ hashFiles('bun.lock', 'package.json', 'tsconfig.json', 'postcss.config.mjs', 'next.config.ts') }}-
             nextcache-${{ runner.os }}-
 
       - name: Build

@@ -27,9 +27,4 @@ const nextConfig: NextConfig = {
 };
 
 /** Next.js config enhanced with Workflow route/build integration. */
-export default withWorkflow(nextConfig, {
-  workflows: {
-    // Reduce build memory/time by scanning only our workflow definitions.
-    dirs: ["src/workflows"],
-  },
-});
+export default withWorkflow(nextConfig);
