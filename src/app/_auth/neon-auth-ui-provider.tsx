@@ -12,7 +12,9 @@ const socialProviders = parseAuthSocialProviders(
   process.env.NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS,
 );
 const socialProps =
-  socialProviders.length > 0 ? { social: { providers: socialProviders } } : {};
+  socialProviders.length > 0
+    ? { social: { providers: [...socialProviders] } }
+    : {};
 
 /**
  * Neon Auth UI provider wrapper.

@@ -102,7 +102,7 @@ flowchart LR
 - `use cache` for stable DB reads and model catalog reads.
 - Redis for web fetch caching, MCP caching, and tool rate limiting.
 - Tag-based invalidation via `revalidateTag(..., "max")` for project creation,
-  uploads/ingestion completion, and artifact creation.
+  uploads/ingestion completion, and artifact creation.[^next-revalidatetag-max]
 
 ### Implementation Details
 
@@ -126,8 +126,12 @@ flowchart LR
 
 - Cache invalidation is project-scoped: on new upload or artifact update, invalidate relevant keys.
 - Next.js cache constraints:
-  - Cached scopes (`'use cache'`) must not call runtime APIs like `cookies()`, `headers()`, or `searchParams()`; read runtime data outside the cached scope and pass it in.
-  - Cache tag limits: each tag string must be <= 256 characters; each cache entry may have at most 128 tags.
+  - Cached scopes (`'use cache'`) must not call runtime APIs like `cookies()`, `headers()`, or `searchParams()`; read runtime data outside the cached scope and pass it in.[^next-use-cache-restrictions]
+  - Cache tag limits: each tag string must be <= 256 characters; each cache entry may have at most 128 tags.[^next-cachetag-limits]
+
+[^next-cachetag-limits]: https://nextjs.org/docs/app/api-reference/functions/cacheTag
+[^next-use-cache-restrictions]: https://nextjs.org/docs/app/guides/caching#use-cache
+[^next-revalidatetag-max]: https://nextjs.org/docs/app/api-reference/functions/revalidateTag
 
 ## Consequences
 

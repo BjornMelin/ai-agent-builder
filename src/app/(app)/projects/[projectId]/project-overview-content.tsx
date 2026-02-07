@@ -75,7 +75,7 @@ export async function ProjectOverviewContent(
     getProjectCorpusOverview(projectId, user.id),
     getProjectRunOverview(projectId, user.id),
     getProjectArtifactOverview(projectId, user.id),
-    getLatestChatThreadByProjectId(projectId),
+    getLatestChatThreadByProjectId(projectId, user.id),
   ]);
 
   if (!project) {

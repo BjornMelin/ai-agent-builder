@@ -8,12 +8,48 @@ import * as schema from "@/db/schema";
 // Integration tests depend on local DB credentials, so we load it explicitly.
 loadDotenv({ override: false, path: ".env.local", quiet: true });
 
+function normalizeDatabaseUrlSslMode(databaseUrl: string): string {
+  try {
+    const url = new URL(databaseUrl);
+    const isLocal =
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname === "::1";
+    if (isLocal) return databaseUrl;
+
+    const sslModeRaw = url.searchParams.get("sslmode");
+    const sslMode = sslModeRaw ? sslModeRaw.toLowerCase() : null;
+    if (!sslMode) return databaseUrl;
+
+    // pg-connection-string warns that these values are currently aliases of `verify-full`,
+    // and may adopt weaker libpq semantics in a future major. Use the explicit secure mode.
+    if (
+      sslMode === "prefer" ||
+      sslMode === "require" ||
+      sslMode === "verify-ca"
+    ) {
+      url.searchParams.set("sslmode", "verify-full");
+      return url.toString();
+    }
+
+    return databaseUrl;
+  } catch {
+    return databaseUrl;
+  }
+}
+
 if (
   (!process.env.DATABASE_URL || process.env.DATABASE_URL.length === 0) &&
   process.env.DATABASE_URL_UNPOOLED &&
   process.env.DATABASE_URL_UNPOOLED.length > 0
 ) {
   process.env.DATABASE_URL = process.env.DATABASE_URL_UNPOOLED;
+}
+
+if (process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = normalizeDatabaseUrlSslMode(
+    process.env.DATABASE_URL,
+  );
 }
 
 const describeDb = process.env.DATABASE_URL ? describe : describe.skip;

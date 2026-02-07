@@ -24,7 +24,10 @@ export async function ChatContent(
     notFound();
   }
 
-  const latestThread = await getLatestChatThreadByProjectId(project.id);
+  const latestThread = await getLatestChatThreadByProjectId(
+    project.id,
+    user.id,
+  );
 
   return (
     <ProjectChatClient

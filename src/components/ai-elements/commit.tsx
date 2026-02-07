@@ -83,8 +83,15 @@ function ensureNowStoreStarted() {
     });
   }
 
-  if (nowStoreIntervalId !== null) return;
+  const wasStopped = nowStoreIntervalId === null;
+  if (!wasStopped) return;
   nowStoreIntervalId = window.setInterval(emitNowStoreChange, NOW_TICK_MS);
+
+  // If we previously hydrated and the ticker was stopped, refresh immediately so
+  // new subscribers don't read a stale cached value until the next tick.
+  if (hasHydratedNowStore) {
+    emitNowStoreChange();
+  }
 }
 
 function subscribeNowStore(listener: () => void) {

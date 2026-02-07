@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  unlinkSync,
+} from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import { config as loadDotenv, parse as parseDotenv } from "dotenv";
 import { Client } from "pg";
@@ -605,7 +611,18 @@ function pullVercelDevelopmentEnv(targetPath: string): Record<string, string> {
   }
 
   const content = readFileSync(resolvedTargetPath, "utf8");
-  return parseDotenv(content);
+  const parsed = parseDotenv(content);
+
+  // Best-effort: remove secrets from disk after parsing.
+  try {
+    unlinkSync(resolvedTargetPath);
+  } catch (error) {
+    console.warn(
+      `Failed to remove temporary Vercel env file at ${resolvedTargetPath}: ${formatError(error)}`,
+    );
+  }
+
+  return parsed;
 }
 
 function generateTemporaryPassword(): string {
@@ -1368,6 +1385,7 @@ function parseAction(args: string[]): {
       }
       const token = args[i];
       if (!token) continue;
+      if (token.startsWith("--action=")) continue;
       remaining.push(token);
     }
     return { action: normalizeAction(actionFromFlag), argv: remaining };

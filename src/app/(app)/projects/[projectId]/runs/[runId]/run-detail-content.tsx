@@ -12,16 +12,18 @@ import { getRunById, listRunSteps } from "@/lib/data/runs.server";
 /**
  * Run detail content (suspends for request-time data).
  *
- * @param props - Route params.
+ * @param props - `{ params: { projectId: string; runId: string } }` route params (both strings; expected to be non-empty and URL-safe), sourced from Next.js dynamic route segments.
  * @returns Run detail UI.
  */
 export async function RunDetailContent(
   props: Readonly<{
-    projectId: string;
-    runId: string;
+    params: Readonly<{
+      projectId: string;
+      runId: string;
+    }>;
   }>,
 ) {
-  const { projectId, runId } = props;
+  const { projectId, runId } = props.params;
 
   const runPromise = getRunById(runId);
   const stepsPromise = listRunSteps(runId);

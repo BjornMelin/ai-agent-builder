@@ -109,8 +109,14 @@ jobs:
             fi
 
             rm -f "${stderr_file}"
-            printf '%s\n' "${resp%$'\n'*}"
-            printf '%s\n' "${resp##*$'\n'}"
+            # Split resp into body + http code safely even when body contains newlines.
+            # curl appends the HTTP code as the last line via `-w '\n%{http_code}'`.
+            local body=""
+            local http_code=""
+            body="$(printf '%s' "${resp}" | head -n -1 || true)"
+            http_code="$(printf '%s' "${resp}" | tail -n 1)"
+            printf '%s\n' "${body}"
+            printf '%s\n' "${http_code}"
           }
 
           vercel_api() {

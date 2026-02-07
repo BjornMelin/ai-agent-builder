@@ -49,7 +49,7 @@ export default async function RunDetailPage(
         </div>
       }
     >
-      <RunDetailContent projectId={projectId} runId={runId} />
+      <RunDetailContent params={{ projectId, runId }} />
     </Suspense>
   );
 }

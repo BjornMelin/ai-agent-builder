@@ -7,6 +7,7 @@ import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import type { ChatThreadStatus } from "@/lib/chat/thread-status";
 import { AppError } from "@/lib/core/errors";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { isUndefinedTableError } from "@/lib/db/postgres-errors";
 
 /** Chat thread status values shared with chat data DTOs and update helpers. */
@@ -41,6 +42,13 @@ function toChatThreadDto(row: ChatThreadRow): ChatThreadDto {
     updatedAt: row.updatedAt.toISOString(),
     workflowRunId: row.workflowRunId ?? null,
   };
+}
+
+async function assertProjectAccess(projectId: string, userId: string) {
+  const project = await getProjectByIdForUser(projectId, userId);
+  if (!project) {
+    throw new AppError("not_found", 404, "Project not found.");
+  }
 }
 
 /**
@@ -146,7 +154,8 @@ export const getChatThreadByWorkflowRunId = cache(
  * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
  */
 export const getLatestChatThreadByProjectId = cache(
-  async (projectId: string): Promise<ChatThreadDto | null> => {
+  async (projectId: string, userId: string): Promise<ChatThreadDto | null> => {
+    await assertProjectAccess(projectId, userId);
     const db = getDb();
     try {
       const row = await db.query.chatThreadsTable.findFirst({
