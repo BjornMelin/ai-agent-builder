@@ -8,6 +8,12 @@ import type { ReactNode } from "react";
 import { authClient } from "@/lib/auth/neon-auth.client";
 import { parseAuthSocialProviders } from "@/lib/auth/social-providers";
 
+const socialProviders = parseAuthSocialProviders(
+  process.env.NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS,
+);
+const socialProps =
+  socialProviders.length > 0 ? { social: { providers: socialProviders } } : {};
+
 /**
  * Neon Auth UI provider wrapper.
  *
@@ -25,15 +31,6 @@ export function NeonAuthUiProvider(
 ) {
   const { children } = props;
   const router = useRouter();
-
-  const socialProviders = [
-    ...parseAuthSocialProviders(process.env.NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS),
-  ];
-
-  const socialProps =
-    socialProviders.length > 0
-      ? { social: { providers: socialProviders } }
-      : {};
 
   return (
     <NeonAuthUIProvider

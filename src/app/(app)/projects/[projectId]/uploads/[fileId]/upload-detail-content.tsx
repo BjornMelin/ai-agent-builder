@@ -22,6 +22,9 @@ export async function UploadDetailContent(
 
   if (!file || file.projectId !== projectId) notFound();
 
+  const mimeType = file.mimeType.trim().length > 0 ? file.mimeType : "unknown";
+  const sha256 = file.sha256.trim().length > 0 ? file.sha256 : "unavailable";
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
@@ -31,7 +34,7 @@ export async function UploadDetailContent(
         <CardContent className="flex flex-col gap-3">
           <div className="text-sm">
             <p className="text-muted-foreground">MIME type</p>
-            <p className="font-medium">{file.mimeType}</p>
+            <p className="font-medium">{mimeType}</p>
           </div>
           <Separator />
           <div className="text-sm">
@@ -48,7 +51,7 @@ export async function UploadDetailContent(
           <Separator />
           <div className="text-sm">
             <p className="text-muted-foreground">SHA-256</p>
-            <p className="break-all font-mono text-xs">{file.sha256}</p>
+            <p className="break-all font-mono text-xs">{sha256}</p>
           </div>
         </CardContent>
       </Card>
@@ -56,7 +59,7 @@ export async function UploadDetailContent(
       <Link
         aria-label="Back to uploads"
         className="text-sm underline-offset-4 hover:underline"
-        href={`/projects/${projectId}/uploads`}
+        href={`/projects/${encodeURIComponent(projectId)}/uploads`}
       >
         ← Back to uploads
       </Link>

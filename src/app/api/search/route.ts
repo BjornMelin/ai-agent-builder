@@ -78,6 +78,10 @@ type RunRow = Readonly<{
   metadata: Record<string, unknown>;
 }>;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function escapeLikePattern(value: string): string {
   return value.replace(/[%_\\]/g, (match) => `\\${match}`);
 }
@@ -408,7 +412,8 @@ async function searchGlobalChunks(
 }
 
 function toRunSnippet(row: RunRow): string {
-  const keys = Object.keys(row.metadata).sort();
+  const metadata = isRecord(row.metadata) ? row.metadata : {};
+  const keys = Object.keys(metadata).sort();
   if (keys.length > 0) {
     const preview = keys.slice(0, 10).join(", ");
     return keys.length > 10

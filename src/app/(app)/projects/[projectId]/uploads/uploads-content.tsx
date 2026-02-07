@@ -10,6 +10,23 @@ import {
 } from "@/components/ui/empty";
 import { listProjectFiles } from "@/lib/data/files.server";
 
+function formatBytes(
+  bytes: number,
+  formatter: Intl.NumberFormat,
+): `${string}\u00A0${string}` {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return `0\u00A0B`;
+  }
+
+  const units = ["B", "KB", "MB", "GB", "TB"] as const;
+  const exponent = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+  );
+  const value = bytes / 1024 ** exponent;
+  return `${formatter.format(value)}\u00A0${units[exponent]}`;
+}
+
 /**
  * Uploads tab content (suspends for request-time data).
  *
@@ -66,15 +83,16 @@ export async function UploadsContent(
                 <li key={file.id}>
                   <Link
                     className="group flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:bg-muted/60"
-                    href={`/projects/${projectId}/uploads/${file.id}`}
+                    href={`/projects/${encodeURIComponent(
+                      projectId,
+                    )}/uploads/${encodeURIComponent(file.id)}`}
                     prefetch={false}
                   >
                     <div className="min-w-0">
                       <p className="truncate font-medium">{file.name}</p>
                       <p className="truncate text-muted-foreground text-sm">
                         {file.mimeType} ·{" "}
-                        {fileSizeFormatter.format(file.sizeBytes / 1024)}
-                        {"\u00A0"}KB
+                        {formatBytes(file.sizeBytes, fileSizeFormatter)}
                       </p>
                     </div>
                     <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">

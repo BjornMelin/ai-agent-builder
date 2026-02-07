@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import { config as loadDotenv, parse as parseDotenv } from "dotenv";
 import { Client } from "pg";
@@ -145,13 +145,11 @@ async function main(): Promise<void> {
       await runInfo(args);
       return;
     }
-    default: {
-      const _exhaustive: never = action;
-      void _exhaustive;
-      printHelp();
-      process.exitCode = 1;
-    }
   }
+
+  // Fallback for unexpected runtime values (should be unreachable in normal usage).
+  printHelp();
+  process.exitCode = 1;
 }
 
 function loadLocalEnv(): void {
@@ -599,6 +597,13 @@ function pullVercelDevelopmentEnv(targetPath: string): Record<string, string> {
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
   );
 
+  // Best-effort: restrict the pulled env file to the current user.
+  try {
+    chmodSync(resolvedTargetPath, 0o600);
+  } catch {
+    // Ignore on platforms/filesystems where chmod isn't supported.
+  }
+
   const content = readFileSync(resolvedTargetPath, "utf8");
   return parseDotenv(content);
 }
@@ -615,12 +620,51 @@ async function sleep(ms: number): Promise<void> {
 function normalizeEmail(value: string): string {
   // Intentional duplication of `normalizeEmail` from `src/lib/env.ts` to keep this
   // CLI script isolated from app-only env parsing dependencies.
-  // TODO(normalizeEmail): centralize and import from `src/lib/env.ts` (or a shared module).
   return value.trim().toLowerCase();
 }
 
 function printSummary(label: string, value: string): void {
   console.log(`${label.padEnd(30, " ")} ${value}`);
+}
+
+function truncateForLog(value: string, maxChars: number): string {
+  const normalized = value
+    .replaceAll("\r\n", "\n")
+    .replaceAll("\r", "\n")
+    .trim();
+  if (normalized.length <= maxChars) return normalized;
+  return `${normalized.slice(0, maxChars)}… [truncated]`;
+}
+
+function describeAuthResponse(result: {
+  code?: string;
+  message?: string;
+  responseBody: string;
+}): string {
+  return (
+    result.code ?? result.message ?? truncateForLog(result.responseBody, 400)
+  );
+}
+
+function warnIfDatabaseUrlLooksInsecure(databaseUrl: string): void {
+  try {
+    const url = new URL(databaseUrl);
+    const isLocal =
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname === "::1";
+    if (isLocal) return;
+
+    // For non-local databases, encourage TLS (Neon and most hosted Postgres require it).
+    const sslMode = url.searchParams.get("sslmode");
+    if (sslMode !== "require" && sslMode !== "verify-full") {
+      console.warn(
+        "::warning::DATABASE_URL does not include sslmode=require (or verify-full). For hosted Postgres, prefer TLS.",
+      );
+    }
+  } catch {
+    // Best-effort warning only; pg will validate the URL on connect.
+  }
 }
 
 async function getEmailPasswordConfig(
@@ -696,6 +740,7 @@ async function runAudit(args: AuditArgs): Promise<void> {
   printSummary("Expected Branch", args.expectedBranchName);
   printSummary("Branch Match", branchMatches ? "yes" : "no");
   printSummary("Origin", origin);
+  warnIfDatabaseUrlLooksInsecure(databaseUrl);
 
   let vercelEnvMatch = true;
   if (!args.skipVercelPull) {
@@ -897,7 +942,7 @@ async function runRepair(args: RepairArgs): Promise<void> {
 
       if (signUpResult.status !== 200 || !signUpResult.userId) {
         throw new Error(
-          `Sign-up failed (${signUpResult.status}): ${signUpResult.responseBody}`,
+          `Sign-up failed (${signUpResult.status}): ${describeAuthResponse(signUpResult)}`,
         );
       }
 
@@ -909,7 +954,7 @@ async function runRepair(args: RepairArgs): Promise<void> {
       );
       if (verifySignIn.status !== 200) {
         throw new Error(
-          `Sign-in verification failed (${verifySignIn.status}): ${verifySignIn.responseBody}`,
+          `Sign-in verification failed (${verifySignIn.status}): ${describeAuthResponse(verifySignIn)}`,
         );
       }
 
@@ -1109,7 +1154,7 @@ async function runCreate(args: CreateArgs): Promise<void> {
 
       if (signUpResult.status !== 200 || !signUpResult.userId) {
         throw new Error(
-          `Sign-up failed (${signUpResult.status}): ${signUpResult.responseBody}`,
+          `Sign-up failed (${signUpResult.status}): ${describeAuthResponse(signUpResult)}`,
         );
       }
 
@@ -1122,7 +1167,7 @@ async function runCreate(args: CreateArgs): Promise<void> {
         );
         if (verifySignIn.status !== 200) {
           throw new Error(
-            `Sign-in verification failed (${verifySignIn.status}): ${verifySignIn.responseBody}`,
+            `Sign-in verification failed (${verifySignIn.status}): ${describeAuthResponse(verifySignIn)}`,
           );
         }
       }
@@ -1167,17 +1212,24 @@ async function detectBrokenEmails(
   neonAuthBaseUrl: string,
   origin: string,
 ): Promise<string[]> {
-  const broken: string[] = [];
-  for (const user of users) {
-    const probe = await probeSignInEmailPassword(
-      neonAuthBaseUrl,
-      origin,
-      user.email,
-      `__invalid__${crypto.randomUUID()}`,
-    );
-    if (probe.status === 500) broken.push(user.email);
-  }
-  return Array.from(new Set(broken.map((email) => normalizeEmail(email))));
+  const probes = await mapWithConcurrency(
+    users,
+    DEFAULT_AUDIT_PROBE_CONCURRENCY,
+    async (user) => {
+      const probe = await probeSignInEmailPassword(
+        neonAuthBaseUrl,
+        origin,
+        user.email,
+        `__invalid__${crypto.randomUUID()}`,
+      );
+      return probe.status === 500 ? user.email : null;
+    },
+  );
+
+  const broken = probes
+    .filter((email): email is string => typeof email === "string")
+    .map((email) => normalizeEmail(email));
+  return Array.from(new Set(broken));
 }
 
 async function signUpWithRetry(

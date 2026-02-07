@@ -21,6 +21,70 @@ import {
 import { listCitationsByArtifactId } from "@/lib/data/citations.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 
+const ARTIFACT_JSON_PREVIEW_MAX_DEPTH = 6;
+const ARTIFACT_JSON_PREVIEW_MAX_ARRAY_ITEMS = 100;
+const ARTIFACT_JSON_PREVIEW_MAX_STRING_LENGTH = 4_000;
+const ARTIFACT_JSON_PREVIEW_MAX_CHARS = 20_000;
+
+function toJsonPreviewValue(
+  value: unknown,
+  depth: number,
+  seen: WeakSet<object>,
+): unknown {
+  if (depth >= ARTIFACT_JSON_PREVIEW_MAX_DEPTH) {
+    return "[MaxDepth]";
+  }
+
+  if (
+    value === null ||
+    value === undefined ||
+    typeof value === "boolean" ||
+    typeof value === "number"
+  ) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    if (value.length <= ARTIFACT_JSON_PREVIEW_MAX_STRING_LENGTH) return value;
+    return `${value.slice(0, ARTIFACT_JSON_PREVIEW_MAX_STRING_LENGTH)}… [truncated]`;
+  }
+
+  if (typeof value !== "object") {
+    return String(value);
+  }
+
+  if (seen.has(value)) {
+    return "[Circular]";
+  }
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    const items = value.slice(0, ARTIFACT_JSON_PREVIEW_MAX_ARRAY_ITEMS);
+    const mapped = items.map((item) =>
+      toJsonPreviewValue(item, depth + 1, seen),
+    );
+    return value.length > items.length
+      ? [...mapped, `[+${value.length - items.length} more items]`]
+      : mapped;
+  }
+
+  const record = value as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const key of Object.keys(record).sort()) {
+    out[key] = toJsonPreviewValue(record[key], depth + 1, seen);
+  }
+  return out;
+}
+
+function formatArtifactJsonFallback(value: unknown): string {
+  const previewValue = toJsonPreviewValue(value, 0, new WeakSet());
+  let json = JSON.stringify(previewValue, null, 2);
+  if (json.length > ARTIFACT_JSON_PREVIEW_MAX_CHARS) {
+    json = `${json.slice(0, ARTIFACT_JSON_PREVIEW_MAX_CHARS)}\n… [truncated]`;
+  }
+  return `\`\`\`json\n${json}\n\`\`\``;
+}
+
 /**
  * Artifact detail content (suspends for request-time data).
  *
@@ -97,9 +161,11 @@ export async function ArtifactDetailContent(
           {markdown ? (
             <MessageResponse>{markdown.markdown}</MessageResponse>
           ) : (
-            <MessageResponse>
-              {`\`\`\`json\n${JSON.stringify(artifact.content, null, 2)}\n\`\`\``}
-            </MessageResponse>
+            <div className="max-h-[70vh] overflow-auto rounded-md border bg-muted/20 p-4">
+              <MessageResponse>
+                {formatArtifactJsonFallback(artifact.content)}
+              </MessageResponse>
+            </div>
           )}
         </ArtifactContent>
       </Artifact>

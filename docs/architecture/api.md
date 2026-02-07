@@ -50,7 +50,7 @@ See:
     - global scope is ownership-filtered (`projects.owner_user_id = current user`)
     - project scope requires project ownership
   - Rate limiting:
-    - server-side user/IP keyed limit (429 + `Retry-After`, `X-RateLimit-*` headers)
+    - server-side user keyed limit (429 + `Retry-After`, `X-RateLimit-*` headers)
   - Returns merged, ranked results with deep links for:
     - projects
     - uploads

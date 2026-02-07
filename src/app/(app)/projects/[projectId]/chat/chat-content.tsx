@@ -1,5 +1,9 @@
+import { notFound } from "next/navigation";
+
 import { ProjectChatClient } from "@/app/(app)/projects/[projectId]/chat/chat-client";
+import { requireAppUser } from "@/lib/auth/require-app-user";
 import { getLatestChatThreadByProjectId } from "@/lib/data/chat.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 
 /**
  * Chat tab content (suspends for request-time data).
@@ -13,7 +17,14 @@ export async function ChatContent(
   }>,
 ) {
   const { projectId } = props;
-  const latestThread = await getLatestChatThreadByProjectId(projectId);
+
+  const user = await requireAppUser();
+  const project = await getProjectByIdForUser(projectId, user.id);
+  if (!project) {
+    notFound();
+  }
+
+  const latestThread = await getLatestChatThreadByProjectId(project.id);
 
   return (
     <ProjectChatClient
@@ -25,7 +36,7 @@ export async function ChatContent(
             }
           : null
       }
-      projectId={projectId}
+      projectId={project.id}
     />
   );
 }
