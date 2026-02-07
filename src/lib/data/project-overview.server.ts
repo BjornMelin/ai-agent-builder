@@ -46,7 +46,7 @@ export type ProjectCorpusOverview = Readonly<{
  *
  * @param projectId - Project identifier.
  * @param userId - Authenticated user ID.
- * @throws AppError - With code "not_found" (404) when the project is not accessible.
+ * @throws AppError - With code 'not_found' (404) when the project is not accessible.
  */
 async function assertProjectAccess(projectId: string, userId: string) {
   const project = await getProjectByIdForUser(projectId, userId);
@@ -65,7 +65,7 @@ async function assertProjectAccess(projectId: string, userId: string) {
  * @param projectId - Project identifier.
  * @param userId - Authenticated user ID (part of the cache key).
  * @returns Overview snapshot of uploads + indexed corpus.
- * @throws AppError - With status 404 when the project is missing for the user.
+ * @throws AppError - With code 'not_found' (404) when the project is missing for the user.
  */
 export async function getProjectCorpusOverview(
   projectId: string,
@@ -145,7 +145,7 @@ export type ProjectRunOverview = Readonly<{
  * @param projectId - Project identifier.
  * @param userId - Authenticated user ID (part of the cache key).
  * @returns Overview snapshot of run activity.
- * @throws AppError - With status 404 when the project is missing for the user.
+ * @throws AppError - With code 'not_found' (404) when the project is missing for the user.
  */
 export async function getProjectRunOverview(
   projectId: string,
@@ -230,7 +230,7 @@ export type ProjectArtifactOverview = Readonly<{
  * @param projectId - Project identifier.
  * @param userId - Authenticated user ID (part of the cache key).
  * @returns Overview snapshot of artifacts.
- * @throws AppError - With status 404 when the project is missing for the user.
+ * @throws AppError - With code 'not_found' (404) when the project is missing for the user.
  */
 export async function getProjectArtifactOverview(
   projectId: string,

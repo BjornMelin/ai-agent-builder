@@ -98,7 +98,10 @@ export type ArtifactSearchResult = Readonly<{
 }>;
 
 /**
- * Run search result.
+ * A matched workflow run returned by the search API, including its id, title,
+ * snippet, and href, plus provenance details (projectId, kind:
+ * "research"|"implementation", and status values: "pending", "running",
+ * "waiting", "blocked", "succeeded", "failed", "canceled").
  */
 export type RunSearchResult = Readonly<{
   type: "run";

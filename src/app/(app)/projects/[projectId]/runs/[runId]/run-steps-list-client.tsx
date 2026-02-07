@@ -3,13 +3,33 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef } from "react";
 
-import type { RunStepDto } from "@/lib/data/runs.server";
 import { cn } from "@/lib/utils";
 
+export type RunStepsListStepKind =
+  | "llm"
+  | "tool"
+  | "sandbox"
+  | "wait"
+  | "approval"
+  | "external_poll";
+
+export type RunStepsListStepStatus =
+  | "pending"
+  | "running"
+  | "waiting"
+  | "blocked"
+  | "succeeded"
+  | "failed"
+  | "canceled";
+
 /** Minimal step shape allowed over the RSC to client boundary for step lists. */
-export type RunStepsListStep = Readonly<
-  Pick<RunStepDto, "id" | "stepId" | "stepName" | "stepKind" | "status">
->;
+export type RunStepsListStep = Readonly<{
+  id: string;
+  stepId: string;
+  stepName: string;
+  stepKind: RunStepsListStepKind;
+  status: RunStepsListStepStatus;
+}>;
 
 /** Props for {@link RunStepsListClient}. */
 export type RunStepsListClientProps = Readonly<{

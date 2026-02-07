@@ -44,9 +44,6 @@ function projectOwnerAccessFilter(userId: string) {
     eq(schema.projectsTable.ownerUserId, userId),
     eq(schema.projectsTable.ownerUserId, LEGACY_UNOWNED_PROJECT_OWNER_ID),
   );
-  if (!filter) {
-    throw new Error("Expected project owner access filter.");
-  }
   return filter;
 }
 

@@ -10,13 +10,13 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAppUser } from "@/lib/auth/require-app-user";
+import { isAppError } from "@/lib/core/errors";
 import { getLatestChatThreadByProjectId } from "@/lib/data/chat.server";
 import {
   getProjectArtifactOverview,
   getProjectCorpusOverview,
   getProjectRunOverview,
 } from "@/lib/data/project-overview.server";
-import { getProjectByIdForUser } from "@/lib/data/projects.server";
 
 function formatBytes(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"] as const;
@@ -68,17 +68,21 @@ export async function ProjectOverviewContent(
   const { projectId } = props;
   const user = await requireAppUser();
 
-  const [project, corpus, runs, artifacts, latestThread] = await Promise.all([
-    getProjectByIdForUser(projectId, user.id),
-    getProjectCorpusOverview(projectId, user.id),
-    getProjectRunOverview(projectId, user.id),
-    getProjectArtifactOverview(projectId, user.id),
-    getLatestChatThreadByProjectId(projectId, user.id),
-  ]);
-
-  if (!project) {
-    // Layout handles notFound; keep this as a defensive fallback.
-    return null;
+  let corpus: Awaited<ReturnType<typeof getProjectCorpusOverview>>;
+  let runs: Awaited<ReturnType<typeof getProjectRunOverview>>;
+  let artifacts: Awaited<ReturnType<typeof getProjectArtifactOverview>>;
+  let latestThread: Awaited<ReturnType<typeof getLatestChatThreadByProjectId>>;
+  try {
+    [corpus, runs, artifacts, latestThread] = await Promise.all([
+      getProjectCorpusOverview(projectId, user.id),
+      getProjectRunOverview(projectId, user.id),
+      getProjectArtifactOverview(projectId, user.id),
+      getLatestChatThreadByProjectId(projectId, user.id),
+    ]);
+  } catch (err) {
+    // Overview readers assert access and will throw not_found when the project is missing or not accessible.
+    if (isAppError(err) && err.code === "not_found") return null;
+    throw err;
   }
 
   const indexedCoverage =
