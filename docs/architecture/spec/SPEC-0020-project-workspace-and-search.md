@@ -1,12 +1,12 @@
 ---
 spec: SPEC-0020
 title: Project workspace and search UX
-version: 0.1.1
-date: 2026-02-03
+version: 0.2.1
+date: 2026-02-06
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements: ["FR-002", "FR-019", "FR-020", "NFR-008", "IR-002", "IR-005"]
-related_adrs: ["ADR-0011", "ADR-0004"]
+related_adrs: ["ADR-0011", "ADR-0004", "ADR-0013", "ADR-0020"]
 notes:
   "Defines the user-facing workspace information architecture and search behavior."
 ---
@@ -104,23 +104,38 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 Per project, provide consistent tabs:
 
 1. **Overview**
+
    - project summary
    - quick actions (new run, upload, export)
    - latest artifacts snapshot
+
 2. **Uploads**
+
    - list originals, extraction status, metadata
+
 3. **Chat**
+
    - project-scoped threads with agent mode selection
+
 4. **Runs**
+
    - research runs and implementation runs timelines
    - step details, logs, approvals
+
 5. **Artifacts**
+
    - versioned artifacts list (PRD, ADRs, SPECS, audit bundles)
    - diff between versions (optional)
    - deterministic export button
-6. **Implementation**
-   - repo connection status
-   - implementation runs launcher and configuration
+
+6. **Search**
+
+   - project-scoped search (`/projects/[projectId]/search`)
+   - filters/types via `/api/search`
+
+7. **Settings**
+
+   - project settings and guardrail controls
 
 Search must support:
 
@@ -132,8 +147,8 @@ Result types:
 - projects (name, tags)
 - files/uploads (filename, extracted text hits)
 - artifacts (title/headings, content hits)
-- run steps (errors, tool outputs)
-- repo code (path + snippet) for connected repos
+- chunks (retrieval snippets + provenance)
+- runs (kind/status + deep links)
 
 Query strategy:
 
@@ -154,8 +169,8 @@ Merge results into a single ranked list with type-aware scoring.
 Accessibility and UX:
 
 - keyboard navigation for results
-- filters by type (uploads/artifacts/runs/code)
-- show provenance (project, artifact version, file page/slide, repo path)
+- filters by type (projects/uploads/chunks/artifacts/runs)
+- show provenance (project, artifact version, file page/slide, run id)
 - support deep links to the exact location
 
 ### Data contracts (if applicable)
@@ -167,7 +182,7 @@ Accessibility and UX:
   - `limit`: number
   - `cursor`: optional string for pagination
 - Search result item (conceptual):
-  - `type`: `"project" | "upload" | "artifact" | "runStep" | "repoCode"`
+  - `type`: `"project" | "upload" | "chunk" | "artifact" | "run"`
   - `title`: string
   - `snippet`: string (highlighted excerpt)
   - `href`: string (deep link)
@@ -175,8 +190,7 @@ Accessibility and UX:
     - `projectId`
     - optional: `artifactId` + `artifactVersionId`
     - optional: `uploadId` + `pageOrSlide`
-    - optional: `runId` + `runStepId`
-    - optional: `repoId` + `path` + `commitSha`
+    - optional: `runId` + `runStatus`
 
 ### File-level contracts
 
@@ -188,7 +202,10 @@ Accessibility and UX:
 - `src/app/(app)/projects/[projectId]/artifacts/page.tsx`: list latest artifacts.
 - `src/app/(app)/projects/[projectId]/artifacts/[artifactId]/page.tsx`: artifact
   detail page (render markdown + citations + version links).
-- *(Planned)* `src/app/(app)/search/page.tsx`: global search results (not yet implemented).
+- `src/app/(app)/search/page.tsx`: global search results.
+- `src/app/(app)/search/search-client.tsx`: global search client.
+- `src/components/search/search-bar.tsx`: shared search form UI.
+- `src/components/search/search-results.tsx`: shared search results UI.
 - `src/app/api/search/route.ts`: optional JSON search endpoint for typeahead; must
   enforce access control and scoping.
 - `src/app/api/export/[projectId]/route.ts`: deterministic export ZIP for the
@@ -257,3 +274,5 @@ Accessibility and UX:
 
 - **0.1 (2026-02-01)**: Initial draft.
 - **0.1.1 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.
+- **0.2.0 (2026-02-06)**: Implemented global search page, shared search UI patterns, and expanded `/api/search` contract (`scope/types/limit/cursor`) covering projects/uploads/chunks/artifacts/runs.
+- **0.2.1 (2026-02-06)**: Implemented ownership-scoped search enforcement, strict Zod query validation bounds, and server-side Upstash rate limiting for `/api/search`.

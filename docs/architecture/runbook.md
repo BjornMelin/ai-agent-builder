@@ -24,15 +24,78 @@ preview env vars for that branch:
 
 - `vercel env pull --environment=preview --git-branch=<branch>`
 
+### Fix Neon Auth email/password 500s in local development
+
+Use this when `POST <NEON_AUTH_BASE_URL>/sign-in/email` returns `500` for valid
+credential users in the local development setup.
+
+Full instructions (prereqs, setup, and CLI reference):
+
+- [docs/ops/neon-auth-local.md](../ops/neon-auth-local.md)
+
+1. Refresh local env from Vercel Development:
+   - `vercel env pull --yes --environment=development .env.local`
+2. Audit current local Neon Auth wiring and credential health:
+   - `bun run auth:audit:local`
+3. Repair broken credential users:
+   - Auto-detect and repair users that return `500` on a wrong-password probe:
+     - `bun run auth:repair:local`
+   - Or repair specific users:
+     - `bun run auth:repair:local --email agent@example.com --email user@example.com`
+   - Dry-run mode:
+     - `bun run auth:repair:local --dry-run`
+4. Create new users (create-only; no delete/recreate):
+   - `bun run auth:create:local --email you@example.com --password 'StrongPass!2026'`
+   - Optional: skip sign-in verification:
+     - `bun run auth:create:local --email you@example.com --password 'StrongPass!2026' --no-verify`
+5. Verify post-repair auth behavior:
+   - `bun run auth:smoke:local`
+   - Optional success checks with known credentials:
+     - `bun run auth:smoke:local --check 'agent@example.com:temporary-password'`
+
+CLI reference:
+
+- All three commands above are wrappers around one unified script:
+  - `bun scripts/neon-auth-local.ts --help`
+  - `bun scripts/neon-auth-local.ts audit --help`
+  - `bun scripts/neon-auth-local.ts create --help`
+  - `bun scripts/neon-auth-local.ts repair --help`
+  - `bun scripts/neon-auth-local.ts smoke --help`
+
+Important notes:
+
+- These scripts are intended for local development against the Neon
+  `vercel-dev` branch by default.
+- Repair deletes and recreates affected Neon Auth users (via this repo’s local
+  repair script), so user IDs are expected to change.[^aab-neon-auth-local-script]
+- Required env: `NEON_AUTH_BASE_URL`, `DATABASE_URL`, `NEON_API_KEY`, and a Neon
+  project id via `.neon` or `NEON_PROJECT_ID`.[^aab-neon-auth-local-ops][^neon-auth-overview][^neon-cli-auth]
+  Citations follow the repo policy in [SPEC-0007](./spec/SPEC-0007-web-research-citations-framework.md).
+
 ### Preview branch env automation
 
 Preview branch env vars are managed by:
 
 - `.github/workflows/vercel-preview-env-sync.yml` (upserts branch-scoped `APP_BASE_URL`)
 - `.github/workflows/vercel-preview-env-cleanup.yml` (best-effort cleanup on PR close)
+- `.github/workflows/preview-bot-resource-drift-audit.yml` (scheduled/manual bot drift detection + remediation)
 
 Fork PRs skip this automation because GitHub Actions secrets are unavailable for
 untrusted forks.
+
+### Bot branch suppression checks
+
+Dependabot/Renovate preview suppression is enforced at three layers:
+
+1. `vercel.json` (`git.deploymentEnabled` branch patterns + `ignoreCommand`)
+2. Preview-related GitHub workflows (job-level + in-script bot guards)
+3. Scheduled drift audit (`preview-bot-resource-drift-audit.yml`)
+
+Manual verification commands:
+
+- `vercel env list preview dependabot/npm_and_yarn/example`
+- `vercel env list preview renovate/example`
+- `neon branches list --project-id <project-id> --output json | jq -r '.branches[]?.name' | rg '^preview/(dependabot|renovate)/'`
 
 ### Validate preview env resolution (CLI)
 
@@ -49,6 +112,17 @@ For full cross-environment validation (env completeness, AI Gateway, Upstash,
 database, deployment behavior, and logs), use:
 
 - [docs/ops/env.md](../ops/env.md) → **Validation checklist**
+
+### Run drift audit manually
+
+Use GitHub Actions `workflow_dispatch` for
+`.github/workflows/preview-bot-resource-drift-audit.yml`:
+
+1. `mode: audit-only` to inspect without mutation.
+2. `mode: audit-and-cleanup` to remove bot-scoped preview env vars and Neon
+   preview branches.
+3. Investigate/remove any reported bot preview deployments if the workflow fails
+   with unresolved deployment drift.
 
 ## Database migrations
 
@@ -155,3 +229,8 @@ If OAuth is disabled on Preview, use **email OTP** or **magic link** auth flows:
 - Rotate `NEON_AUTH_COOKIE_SECRET` to invalidate all active user sessions (requiring users to sign in again).
 - Rotate provider tokens (GitHub/Vercel/Neon/Upstash) if compromised.
 - Update Vercel environment variables accordingly.
+
+[^aab-neon-auth-local-script]: ../../scripts/neon-auth-local.ts
+[^aab-neon-auth-local-ops]: ../ops/neon-auth-local.md
+[^neon-auth-overview]: https://neon.com/docs/auth/overview
+[^neon-cli-auth]: https://neon.com/docs/reference/cli-auth

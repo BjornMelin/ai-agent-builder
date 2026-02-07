@@ -1,10 +1,20 @@
 import { authViewPaths } from "@neondatabase/auth/react/ui/server";
+import { notFound } from "next/navigation";
+import { NeonAuthUiProvider } from "@/app/_auth/neon-auth-ui-provider";
 import { AuthViewClient } from "./auth-view-client";
 
-/**
- * Disables dynamic route params for auth views.
- */
-export const dynamicParams = false;
+const ALLOWED_AUTH_VIEW_PATHS = [
+  authViewPaths.SIGN_IN,
+  authViewPaths.FORGOT_PASSWORD,
+  authViewPaths.MAGIC_LINK,
+  authViewPaths.EMAIL_OTP,
+  authViewPaths.TWO_FACTOR,
+  authViewPaths.RECOVER_ACCOUNT,
+  authViewPaths.RESET_PASSWORD,
+  authViewPaths.CALLBACK,
+  authViewPaths.SIGN_OUT,
+] as const;
+const ALLOWED_AUTH_VIEW_PATH_SET = new Set(ALLOWED_AUTH_VIEW_PATHS);
 
 /**
  * Statically enumerate supported Neon Auth views.
@@ -15,15 +25,7 @@ export const dynamicParams = false;
  * @returns Route params for `/auth/[path]`.
  */
 export function generateStaticParams() {
-  // We intentionally do not expose sign-up or invitation flows yet.
-  // Access remains admin-provisioned + allowlisted.
-  const allowed = Object.values(authViewPaths).filter(
-    (path) =>
-      path !== authViewPaths.SIGN_UP &&
-      path !== authViewPaths.ACCEPT_INVITATION,
-  );
-
-  return allowed.map((path) => ({ path }));
+  return ALLOWED_AUTH_VIEW_PATHS.map((path) => ({ path }));
 }
 
 /**
@@ -38,14 +40,21 @@ export default async function AuthPage(
   }>,
 ) {
   const { path } = await props.params;
+  // Cache Components mode does not support `dynamicParams = false`, so keep a
+  // runtime allowlist guard as defense-in-depth.
+  if (!ALLOWED_AUTH_VIEW_PATH_SET.has(path)) {
+    notFound();
+  }
 
   return (
-    <main
-      className="container mx-auto flex grow flex-col items-center justify-center p-4 md:p-6"
-      id="main"
-      tabIndex={-1}
-    >
-      <AuthViewClient path={path} />
-    </main>
+    <NeonAuthUiProvider>
+      <main
+        className="container mx-auto flex grow flex-col items-center justify-center p-4 md:p-6"
+        id="main"
+        tabIndex={-1}
+      >
+        <AuthViewClient path={path} />
+      </main>
+    </NeonAuthUiProvider>
   );
 }

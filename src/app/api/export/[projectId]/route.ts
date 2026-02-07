@@ -3,7 +3,7 @@ import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { listLatestArtifacts } from "@/lib/data/artifacts.server";
 import { listCitationsByArtifactIds } from "@/lib/data/citations.server";
-import { getProjectById } from "@/lib/data/projects.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import {
   artifactExportBasePath,
   buildExportZipStream,
@@ -29,10 +29,10 @@ export async function GET(
   try {
     const paramsPromise = context.params;
     const authPromise = requireAppUserApi();
-    const [params] = await Promise.all([paramsPromise, authPromise]);
+    const [params, user] = await Promise.all([paramsPromise, authPromise]);
     const { projectId } = params;
 
-    const project = await getProjectById(projectId);
+    const project = await getProjectByIdForUser(projectId, user.id);
     if (!project) {
       throw new AppError("not_found", 404, "Project not found.");
     }

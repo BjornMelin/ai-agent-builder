@@ -7,7 +7,7 @@ import {
   getChatThreadByWorkflowRunId,
   updateChatThreadByWorkflowRunId,
 } from "@/lib/data/chat.server";
-import { getProjectById } from "@/lib/data/projects.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
@@ -36,7 +36,7 @@ export async function POST(
     const paramsPromise = context.params;
     const bodyPromise = parseJsonBody(req, bodySchema);
 
-    const [params, parsed, _authenticatedUser] = await Promise.all([
+    const [params, parsed, user] = await Promise.all([
       paramsPromise,
       bodyPromise,
       authPromise,
@@ -55,7 +55,7 @@ export async function POST(
       throw new AppError("conflict", 409, "Chat session is not active.");
     }
 
-    const project = await getProjectById(thread.projectId);
+    const project = await getProjectByIdForUser(thread.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }

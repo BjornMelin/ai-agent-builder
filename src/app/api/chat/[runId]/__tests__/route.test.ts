@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   getChatThreadByWorkflowRunId: vi.fn(),
-  getProjectById: vi.fn(),
+  getProjectByIdForUser: vi.fn(),
   requireAppUserApi: vi.fn(),
   resume: vi.fn(),
   updateChatThreadByWorkflowRunId: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock("@/lib/data/chat.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
-  getProjectById: state.getProjectById,
+  getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
 vi.mock("@/workflows/chat/hooks/chat-message", () => ({
@@ -39,7 +39,7 @@ beforeEach(() => {
     projectId: "proj_1",
     status: "running",
   });
-  state.getProjectById.mockResolvedValue({ id: "proj_1" });
+  state.getProjectByIdForUser.mockResolvedValue({ id: "proj_1" });
   state.updateChatThreadByWorkflowRunId.mockResolvedValue(undefined);
 });
 
@@ -59,6 +59,26 @@ describe("POST /api/chat/:runId", () => {
     await expect(res.json()).resolves.toMatchObject({
       error: { code: "bad_request" },
     });
+  });
+
+  it("rejects when the chat session project is not owned by the user", async () => {
+    const POST = await loadRoute();
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
+
+    const res = await POST(
+      new Request("http://localhost/api/chat/run_1", {
+        body: JSON.stringify({ message: "hello" }),
+        method: "POST",
+      }),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(403);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: "forbidden" },
+    });
+    expect(state.resume).not.toHaveBeenCalled();
+    expect(state.updateChatThreadByWorkflowRunId).not.toHaveBeenCalled();
   });
 
   it("returns not found when the chat session is missing", async () => {

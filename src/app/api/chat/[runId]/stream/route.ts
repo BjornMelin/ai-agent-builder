@@ -3,7 +3,7 @@ import { getRun } from "workflow/api";
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { getChatThreadByWorkflowRunId } from "@/lib/data/chat.server";
-import { getProjectById } from "@/lib/data/projects.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { jsonError } from "@/lib/next/responses";
 
 const START_INDEX_PATTERN = /^\d+$/;
@@ -45,7 +45,7 @@ export async function GET(
   try {
     const authPromise = requireAppUserApi();
     const paramsPromise = context.params;
-    const [, params] = await Promise.all([authPromise, paramsPromise]);
+    const [user, params] = await Promise.all([authPromise, paramsPromise]);
     const { searchParams } = new URL(req.url);
     const startIndex = parseStartIndex(searchParams.get("startIndex"));
     const { runId } = params;
@@ -55,7 +55,7 @@ export async function GET(
       throw new AppError("not_found", 404, "Chat session not found.");
     }
 
-    const project = await getProjectById(thread.projectId);
+    const project = await getProjectByIdForUser(thread.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }

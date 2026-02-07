@@ -1,10 +1,7 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
 import { type ReactNode, Suspense } from "react";
 
-import { ProjectNavClient } from "@/app/(app)/projects/[projectId]/project-nav-client";
-import { Separator } from "@/components/ui/separator";
-import { getProjectById } from "@/lib/data/projects.server";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ProjectLayoutInner } from "./project-layout-inner";
 
 /**
  * Project-scoped layout: header + tabs.
@@ -21,41 +18,27 @@ export default async function ProjectLayout(
   const { children } = props;
   const { projectId } = await props.params;
 
-  const project = await getProjectById(projectId);
-  if (!project) notFound();
-
   return (
-    <div className="flex flex-1 flex-col gap-6 pt-6">
-      <header className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-muted-foreground text-sm">Project</p>
-          <h1 className="font-semibold text-2xl tracking-tight">
-            {project.name}
-          </h1>
-          <p className="text-muted-foreground text-sm">{project.slug}</p>
-        </div>
-        <Link
-          className="text-sm underline-offset-4 hover:underline"
-          href="/projects"
-        >
-          All projects
-        </Link>
-      </header>
-
-      <Suspense
-        fallback={
-          <div className="flex flex-wrap gap-2">
-            <div className="h-9 w-24 rounded-md bg-muted" />
-            <div className="h-9 w-24 rounded-md bg-muted" />
-            <div className="h-9 w-24 rounded-md bg-muted" />
+    <Suspense
+      fallback={
+        <div className="flex flex-1 flex-col gap-5">
+          <div className="rounded-2xl border bg-card p-4 md:p-6">
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-9 w-72" />
+              <Skeleton className="h-4 w-44" />
+            </div>
           </div>
-        }
-      >
-        <ProjectNavClient projectId={project.id} />
-      </Suspense>
-      <Separator />
-
-      {children}
-    </div>
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-8 w-20 rounded-full" />
+            <Skeleton className="h-8 w-20 rounded-full" />
+            <Skeleton className="h-8 w-20 rounded-full" />
+          </div>
+          <Skeleton className="h-40 w-full" />
+        </div>
+      }
+    >
+      <ProjectLayoutInner projectId={projectId}>{children}</ProjectLayoutInner>
+    </Suspense>
   );
 }

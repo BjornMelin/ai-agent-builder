@@ -53,6 +53,17 @@ Drizzle is configured for:
 
 ## Entity details (minimum fields)
 
+### `projects`
+
+Project workspace root. Ownership is per authenticated app user.
+
+- `id`
+- `owner_user_id` (Neon Auth user id; required)
+- `name`
+- `slug`
+- `status`
+- `created_at`, `updated_at`
+
 ### `repos`
 
 Represents a target repository connected to a project.
@@ -153,6 +164,7 @@ rules (see
 ## Required indexes (minimum)
 
 - `project_files(project_id)`
+- `projects(owner_user_id, updated_at)`
 - `file_chunks(project_id, file_id)`
 - `runs(project_id)`
 - `run_steps(run_id, step_name)`

@@ -64,6 +64,13 @@ This project centralizes environment access in `src/lib/env.ts`.
   - Cookie domain for sharing session cookies across subdomains (e.g.
     `.example.com`).
 
+Local Neon Auth diagnostics (optional helpers):
+
+- `NEON_AUTH_LOCAL_AGENT_USER_EMAIL` (optional)
+  - Convenience value for local smoke tests and scripted auth checks.
+- `NEON_AUTH_LOCAL_AGENT_USER_PASS` (optional)
+  - Convenience value for local smoke tests and scripted auth checks.
+
 Auth UI / OAuth providers:
 
 - `NEXT_PUBLIC_AUTH_SOCIAL_PROVIDERS` (optional)
@@ -96,6 +103,8 @@ App-level access control (cost control):
 
 - `DATABASE_URL` (required for `env.db`)
   - Postgres connection string.
+  - Security recommendation: prefer Neon URLs that include
+    `sslmode=verify-full` ([Neon: Connect to Neon securely](https://neon.com/docs/connect/connect-securely), see [SPEC-0007](../architecture/spec/SPEC-0007-web-research-citations-framework.md)).
   - Used by: Drizzle DB client (`src/db/client.ts`) and server-only DAL modules
     (`src/lib/data/*.server.ts`).
   - On Vercel Fluid compute, DB connections are pooled with `pg` and integrated
@@ -107,6 +116,8 @@ App-level access control (cost control):
     ([Neon Vercel integration](https://neon.com/docs/guides/vercel))
 - `DATABASE_URL_UNPOOLED` (optional; recommended for migrations/DDL)
   - Unpooled Postgres connection string (Neon provides this alongside pooled URLs).
+  - Security recommendation: prefer Neon URLs that include
+    `sslmode=verify-full` ([Neon: Connect to Neon securely](https://neon.com/docs/connect/connect-securely), see [SPEC-0007](../architecture/spec/SPEC-0007-web-research-citations-framework.md)).
   - Used by: Drizzle tooling (`drizzle-kit migrate`) and build-time migrations.
 
 ### Upstash (Redis + Vector)
@@ -120,7 +131,7 @@ App-level access control (cost control):
   ([Upstash Vector REST API](https://upstash.com/docs/vector/features/metadata))
 - `UPSTASH_VECTOR_REST_TOKEN` (required for `env.upstash`)
   ([Upstash Vector REST API](https://upstash.com/docs/vector/features/metadata))
-  - Used by: semantic search index (planned).
+  - Used by: semantic search index (uploads + artifacts).
 
 #### Redis client usage
 

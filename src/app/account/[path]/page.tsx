@@ -1,27 +1,8 @@
 import { AccountView } from "@neondatabase/auth/react";
-import { accountViewPaths } from "@neondatabase/auth/react/ui/server";
+import { notFound } from "next/navigation";
 
-import { requireAppUser } from "@/lib/auth/require-app-user";
-
-/**
- * Forces dynamic rendering for the account route.
- */
-export const dynamic = "force-dynamic";
-/**
- * Disables dynamic route params for this page.
- */
-export const dynamicParams = false;
-
-/**
- * Statically enumerate supported Neon Auth account views.
- *
- * @returns Route params for `/account/[path]`.
- */
-export function generateStaticParams() {
-  // Only expose the minimal account views we need right now.
-  const allowed = [accountViewPaths.SETTINGS, accountViewPaths.SECURITY];
-  return allowed.map((path) => ({ path }));
-}
+import { NeonAuthUiProvider } from "@/app/_auth/neon-auth-ui-provider";
+import { getAccountRoute } from "@/lib/navigation/account-routes";
 
 /**
  * Neon Auth account management route (e.g. /account/settings).
@@ -34,11 +15,17 @@ export default async function AccountPage(
     params: Promise<{ path: string }>;
   }>,
 ) {
-  const [{ path }] = await Promise.all([props.params, requireAppUser()]);
+  const { path } = await props.params;
+  const accountRoute = getAccountRoute(path);
+  if (!accountRoute) {
+    notFound();
+  }
 
   return (
-    <main className="container mx-auto p-4 md:p-6" id="main" tabIndex={-1}>
-      <AccountView path={path} />
-    </main>
+    <NeonAuthUiProvider>
+      <div className="mx-auto w-full max-w-4xl rounded-2xl border bg-card/60 p-4 md:p-6">
+        <AccountView path={accountRoute.segment} />
+      </div>
+    </NeonAuthUiProvider>
   );
 }

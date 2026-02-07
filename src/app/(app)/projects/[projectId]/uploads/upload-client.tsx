@@ -24,6 +24,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
   const [error, setError] = useState<string | null>(null);
 
   const ingestToggleId = "uploads-async-ingest";
+  const fileHelpId = "uploads-file-help";
   const fileInputId = "uploads-file-input";
   const statusMessageId = "uploads-status-message";
   const errorMessageId = "uploads-error-message";
@@ -70,7 +71,6 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
       return;
     }
 
-    // Best-effort parse (useful for debugging); UI refresh is the real update.
     await res.json().catch(() => null);
 
     setStatus("success");
@@ -83,14 +83,16 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
   }
 
   return (
-    <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <label className="sr-only" htmlFor={fileInputId}>
-          Select files to upload
+    <form className="space-y-4" onSubmit={handleSubmit}>
+      <div className="space-y-1.5">
+        <label className="font-medium text-sm" htmlFor={fileInputId}>
+          Files
         </label>
         <Input
           aria-describedby={
-            error ? `${statusMessageId} ${errorMessageId}` : statusMessageId
+            error
+              ? `${fileHelpId} ${statusMessageId} ${errorMessageId}`
+              : `${fileHelpId} ${statusMessageId}`
           }
           aria-invalid={status === "error"}
           id={fileInputId}
@@ -100,9 +102,27 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
           onChange={(e) => setFiles(e.currentTarget.files)}
           type="file"
         />
+        <p className="text-muted-foreground text-xs" id={fileHelpId}>
+          Supported formats depend on ingestion pipelines configured on the
+          server.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={asyncIngest}
+            id={ingestToggleId}
+            onCheckedChange={setAsyncIngest}
+          />
+          <label className="text-sm" htmlFor={ingestToggleId}>
+            Async ingest
+          </label>
+        </div>
 
         <Button
           aria-busy={status === "uploading"}
+          className="min-w-24"
           disabled={status === "uploading"}
           type="submit"
         >
@@ -116,20 +136,9 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
         </Button>
       </div>
 
-      <div className="flex items-center gap-3 text-sm">
-        <Switch
-          checked={asyncIngest}
-          id={ingestToggleId}
-          onCheckedChange={setAsyncIngest}
-        />
-        <label className="text-muted-foreground" htmlFor={ingestToggleId}>
-          Async ingest (QStash) {asyncIngest ? "enabled" : "disabled"}
-        </label>
-      </div>
-
       <output aria-live="polite" className="sr-only" id={statusMessageId}>
         {status === "uploading"
-          ? "Uploading selected files."
+          ? "Uploading selected files…"
           : status === "success"
             ? "Upload complete."
             : ""}

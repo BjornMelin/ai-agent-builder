@@ -6,6 +6,7 @@ This repo is optimized for agent-driven development (Codex + local automation).
 
 - **Bun only** for installs and scripts.
 - **Next.js App Router** patterns only.
+- **Cache Components** are enabled (`cacheComponents: true`); use `'use cache'` with `cacheTag`/`revalidateTag` for stable server reads.
 - **Memoization policy**: Follow $vercel-react-best-practices. Use memoization (`useMemo`, `useCallback`, `React.memo`) only for expensive computations or to prevent costly re-renders (`rerender-memo`). Avoid memo for simple primitives/cheap work (`rerender-simple-expression-in-memo`). Hoist stable non-primitive defaults (`rerender-memo-with-default-value`).
 - **Strict TypeScript** (no `any`).
 - **Docs required** for exported APIs (TSDoc syntax enforced).
@@ -75,6 +76,7 @@ bun run fetch:models           # Update AI model catalog (requires AI_GATEWAY_AP
 - Specs: add/extend `docs/architecture/spec/SPEC-*.md` for implementable designs; update `docs/architecture/spec/index.md`.
 - ADRs: add `docs/architecture/adr/ADR-*.md` for durable decisions; update `docs/architecture/adr/index.md`.
 - Requirement IDs: reference `FR-*`, `NFR-*`, `PR-*`, `IR-*` from `docs/specs/requirements.md` in specs/ADRs.
+- Keep search/cache completion docs in sync across `SPEC-0020`, `SPEC-0021`, `SPEC-0025`, `ADR-0013`, and `ADR-0020`.
 - Web claims: any externally sourced factual claim in generated artifacts must include citations (see `docs/architecture/spec/SPEC-0007-*`).
 - **Env var contract**: ADRs/specs are the source of truth. If an ADR/spec/docs mention an env var used by the app, implement it in `src/lib/env.ts` (feature-gated), list it in `docs/ops/env.md`, and include it in `.env.example` (and update tests when applicable).
 

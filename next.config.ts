@@ -4,6 +4,7 @@ import { withWorkflow } from "workflow/next";
 
 /** Base Next.js configuration for app runtime, images, and build behavior. */
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   experimental: {
     optimizePackageImports: ["radix-ui", "lucide-react"],
   },
@@ -26,9 +27,4 @@ const nextConfig: NextConfig = {
 };
 
 /** Next.js config enhanced with Workflow route/build integration. */
-export default withWorkflow(nextConfig, {
-  workflows: {
-    // Reduce build memory/time by scanning only our workflow definitions.
-    dirs: ["src/workflows"],
-  },
-});
+export default withWorkflow(nextConfig);

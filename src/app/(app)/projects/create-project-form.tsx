@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+
 import {
   createProjectAction,
   createProjectInitialState,
@@ -25,7 +26,7 @@ export function CreateProjectForm() {
     <form
       action={formAction}
       aria-describedby={state.status === "error" ? errorId : undefined}
-      className="flex flex-col gap-3"
+      className="space-y-4"
       onSubmit={(e) => {
         const submitter = (e.nativeEvent as SubmitEvent)
           .submitter as HTMLButtonElement | null;
@@ -34,8 +35,8 @@ export function CreateProjectForm() {
         );
       }}
     >
-      <div className="grid gap-2 md:grid-cols-2">
-        <div className="grid gap-1">
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="space-y-1.5">
           <label className="font-medium text-sm" htmlFor="create-project-name">
             Project name
           </label>
@@ -43,11 +44,14 @@ export function CreateProjectForm() {
             autoComplete="off"
             id="create-project-name"
             name="name"
-            placeholder="My project…"
+            placeholder="Customer knowledge base…"
             required
           />
+          <p className="text-muted-foreground text-xs">
+            Human-friendly name shown throughout your workspace.
+          </p>
         </div>
-        <div className="grid gap-1">
+        <div className="space-y-1.5">
           <label className="font-medium text-sm" htmlFor="create-project-slug">
             Slug (optional)
           </label>
@@ -57,9 +61,12 @@ export function CreateProjectForm() {
             autoCorrect="off"
             id="create-project-slug"
             name="slug"
-            placeholder="my-project…"
+            placeholder="customer-kb…"
             spellCheck={false}
           />
+          <p className="text-muted-foreground text-xs">
+            URL-safe identifier. Leave blank to auto-generate.
+          </p>
         </div>
       </div>
 
@@ -69,7 +76,7 @@ export function CreateProjectForm() {
         </p>
       ) : null}
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2.5">
         <Button
           aria-busy={isPending && submittedAction === "create"}
           disabled={isPending}
@@ -104,7 +111,7 @@ export function CreateProjectForm() {
           </span>
         </Button>
         <p className="text-muted-foreground text-sm">
-          Projects scope uploads, retrieval, runs, and chat.
+          Projects scope uploads, search, runs, and chat threads.
         </p>
       </div>
     </form>

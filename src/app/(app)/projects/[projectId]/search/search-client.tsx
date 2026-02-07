@@ -1,37 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { startTransition, useEffect, useState } from "react";
+import { useCallback } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-
-type SearchResult =
-  | Readonly<{
-      type: "project";
-      id: string;
-      title: string;
-      href: string;
-    }>
-  | Readonly<{
-      type: "chunk";
-      id: string;
-      score: number;
-      title: string;
-      snippet: string;
-      href: string;
-    }>
-  | Readonly<{
-      type: "artifact";
-      id: string;
-      score: number;
-      title: string;
-      snippet: string;
-      href: string;
-    }>;
-
-type SearchResponse = Readonly<{ results: readonly SearchResult[] }>;
+import { SearchBar } from "@/components/search/search-bar";
+import { SearchResults } from "@/components/search/search-results";
+import { useSearchClient } from "@/lib/search/use-search-client";
 
 /**
  * Search client (project-scoped).
@@ -42,175 +15,59 @@ type SearchResponse = Readonly<{ results: readonly SearchResult[] }>;
  * @returns The search UI for the project.
  */
 export function ProjectSearchClient(props: Readonly<{ projectId: string }>) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const urlQuery = searchParams.get("q") ?? "";
-  const [q, setQ] = useState(urlQuery);
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<readonly SearchResult[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
   const searchInputId = `project-search-${props.projectId}`;
   const searchStatusId = `project-search-status-${props.projectId}`;
   const searchErrorId = `project-search-error-${props.projectId}`;
+  const buildSearchParams = useCallback(
+    (_query: string) => {
+      const params = new URLSearchParams();
+      params.set("projectId", props.projectId);
+      params.set("scope", "project");
+      params.set("limit", "20");
+      return params;
+    },
+    [props.projectId],
+  );
 
-  useEffect(() => {
-    setQ(urlQuery);
-  }, [urlQuery]);
+  const { error, executeSearch, hasSearched, q, results, setQ, status } =
+    useSearchClient({ buildSearchParams, inputId: searchInputId });
 
-  const syncQueryInUrl = (query: string) => {
-    const nextParams = new URLSearchParams(searchParams.toString());
-    if (query.length > 0) {
-      nextParams.set("q", query);
-    } else {
-      nextParams.delete("q");
-    }
-    const nextQueryString = nextParams.toString();
-    router.replace(
-      nextQueryString ? `${pathname}?${nextQueryString}` : pathname,
-      {
-        scroll: false,
-      },
-    );
-  };
-
-  async function runSearch() {
-    const query = q.trim();
-    if (query.length === 0) {
-      setResults([]);
-      setStatus("idle");
-      setError(null);
-      syncQueryInUrl(query);
-      return;
-    }
-
-    setHasSearched(true);
-    setStatus("loading");
-    setError(null);
-    syncQueryInUrl(query);
-
-    try {
-      const url = new URL("/api/search", window.location.origin);
-      url.searchParams.set("q", query);
-      url.searchParams.set("projectId", props.projectId);
-
-      const res = await fetch(url.toString(), { method: "GET" });
-      if (!res.ok) {
-        const payload = await res.json().catch(() => null);
-        setError(payload?.error?.message ?? "Search failed.");
-        setStatus("error");
-        return;
-      }
-
-      const payload = (await res.json()) as SearchResponse;
-      startTransition(() => {
-        setResults(payload.results);
-      });
-      setStatus("idle");
-    } catch {
-      setError("Network error. Please try again.");
-      setStatus("error");
-    }
-  }
+  const statusMessage =
+    status === "loading"
+      ? "Searching project content…"
+      : hasSearched
+        ? `${results.length} result${results.length === 1 ? "" : "s"} loaded.`
+        : "";
 
   return (
     <div className="flex flex-col gap-4">
-      <form
-        className="flex flex-col gap-3 md:flex-row md:items-center"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void runSearch();
+      <SearchBar
+        error={error}
+        errorId={searchErrorId}
+        inputId={searchInputId}
+        label="Search this project"
+        onQueryChange={setQ}
+        onSubmit={() => {
+          // Fire-and-forget: executeSearch owns error state and will surface failures via setError.
+          void executeSearch(q, { syncInput: false, syncUrl: true });
         }}
-      >
-        <label className="sr-only" htmlFor={searchInputId}>
-          Search this project
-        </label>
-        <Input
-          autoComplete="off"
-          aria-describedby={
-            error ? `${searchStatusId} ${searchErrorId}` : searchStatusId
-          }
-          aria-invalid={status === "error"}
-          id={searchInputId}
-          inputMode="search"
-          name="q"
-          onChange={(e) => setQ(e.currentTarget.value)}
-          placeholder="Search this project…"
-          type="search"
-          value={q}
-        />
-        <Button
-          aria-busy={status === "loading"}
-          disabled={status === "loading"}
-          type="submit"
-        >
-          {status === "loading" ? (
-            <span
-              aria-hidden="true"
-              className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
-            />
-          ) : null}
-          <span>Search</span>
-        </Button>
-      </form>
+        placeholder="Search this project…"
+        query={q}
+        status={status}
+        statusId={searchStatusId}
+        statusMessage={statusMessage}
+      />
 
-      <output aria-live="polite" className="sr-only" id={searchStatusId}>
-        {status === "loading"
-          ? "Searching project content."
-          : q.trim().length > 0
-            ? `${results.length} result${results.length === 1 ? "" : "s"} loaded.`
-            : ""}
-      </output>
-
-      {error ? (
-        <p className="text-destructive text-sm" id={searchErrorId} role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {results.length === 0 ? (
-        q.trim().length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Enter a query to search.
-          </p>
-        ) : status === "loading" ? (
-          <p className="text-muted-foreground text-sm">Searching…</p>
-        ) : hasSearched ? (
-          <p className="text-muted-foreground text-sm">No results found.</p>
-        ) : null
-      ) : (
-        <ul
-          className="grid gap-2"
-          style={{
-            containIntrinsicSize: "auto 200px",
-            contentVisibility: "auto",
-          }}
-        >
-          {results.map((r) => (
-            <li
-              className="flex flex-col gap-1 rounded-md border bg-card px-3 py-2"
-              key={`${r.type}-${r.id}`}
-            >
-              <Link
-                className="font-medium underline-offset-4 hover:underline"
-                href={r.href}
-              >
-                {r.title}
-              </Link>
-              {r.type === "chunk" ? (
-                <p className="text-muted-foreground text-sm">
-                  {r.snippet || "(no snippet)"}
-                </p>
-              ) : r.type === "artifact" ? (
-                <p className="text-muted-foreground text-sm">
-                  {r.snippet || "(no snippet)"}
-                </p>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+      <SearchResults
+        emptyMessage="No results found."
+        error={error}
+        errorId={searchErrorId}
+        hasSearched={hasSearched}
+        idleMessage="Enter at least 2 characters to search."
+        query={hasSearched ? q : ""}
+        results={results}
+        status={status}
+      />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,90 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-const moduleNow = Date.now();
+const relativeTimeFormatter = new Intl.RelativeTimeFormat(undefined, {
+  numeric: "auto",
+});
+
+function formatRelativeCommitTimestamp(date: Date, nowMs: number): string {
+  const diffSeconds = Math.round((date.getTime() - nowMs) / 1000);
+  const absSeconds = Math.abs(diffSeconds);
+  const minute = 60;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const week = 7 * day;
+  const month = 30 * day;
+  const year = 365 * day;
+  const [value, unit] =
+    absSeconds < minute
+      ? [diffSeconds, "second"]
+      : absSeconds < hour
+        ? [Math.round(diffSeconds / minute), "minute"]
+        : absSeconds < day
+          ? [Math.round(diffSeconds / hour), "hour"]
+          : absSeconds < week
+            ? [Math.round(diffSeconds / day), "day"]
+            : absSeconds < month
+              ? [Math.round(diffSeconds / week), "week"]
+              : absSeconds < year
+                ? [Math.round(diffSeconds / month), "month"]
+                : [Math.round(diffSeconds / year), "year"];
+  return relativeTimeFormatter.format(
+    value,
+    unit as Intl.RelativeTimeFormatUnit,
+  );
+}
+
+const NOW_TICK_MS = 30_000;
+let hasHydratedNowStore = false;
+const nowStoreListeners = new Set<() => void>();
+let nowStoreIntervalId: number | null = null;
+let cachedNowMs = 0;
+
+function emitNowStoreChange() {
+  cachedNowMs = Date.now();
+  for (const listener of nowStoreListeners) {
+    listener();
+  }
+}
+
+function ensureNowStoreStarted() {
+  if (typeof window === "undefined") return;
+
+  if (!hasHydratedNowStore) {
+    queueMicrotask(() => {
+      hasHydratedNowStore = true;
+      cachedNowMs = Date.now();
+      emitNowStoreChange();
+    });
+  }
+
+  const wasStopped = nowStoreIntervalId === null;
+  if (!wasStopped) return;
+  nowStoreIntervalId = window.setInterval(emitNowStoreChange, NOW_TICK_MS);
+
+  // If we previously hydrated and the ticker was stopped, refresh immediately so
+  // new subscribers don't read a stale cached value until the next tick.
+  if (hasHydratedNowStore) {
+    emitNowStoreChange();
+  }
+}
+
+function subscribeNowStore(listener: () => void) {
+  ensureNowStoreStarted();
+  nowStoreListeners.add(listener);
+  return () => {
+    nowStoreListeners.delete(listener);
+
+    if (
+      nowStoreListeners.size === 0 &&
+      nowStoreIntervalId !== null &&
+      typeof window !== "undefined"
+    ) {
+      window.clearInterval(nowStoreIntervalId);
+      nowStoreIntervalId = null;
+    }
+  };
+}
 
 /**
  * Props for the Commit component.
@@ -243,26 +327,19 @@ export type CommitTimestampProps = HTMLAttributes<HTMLTimeElement> & {
  */
 export const CommitTimestamp = (props: CommitTimestampProps) => {
   const { date, className, children, ...rest } = props;
-  const now = moduleNow;
-  const diffSeconds = Math.round((date.getTime() - now) / 1000);
-  const absSeconds = Math.abs(diffSeconds);
-  const [value, unit] =
-    absSeconds < 60
-      ? [diffSeconds, "second"]
-      : absSeconds < 60 * 60
-        ? [Math.round(diffSeconds / 60), "minute"]
-        : absSeconds < 60 * 60 * 24
-          ? [Math.round(diffSeconds / (60 * 60)), "hour"]
-          : [Math.round(diffSeconds / (60 * 60 * 24)), "day"];
-  const formatted = new Intl.RelativeTimeFormat(undefined, {
-    numeric: "auto",
-  }).format(value, unit as Intl.RelativeTimeFormatUnit);
+  const timestamp = date.getTime();
+  const nowMs = useSyncExternalStore(
+    subscribeNowStore,
+    () => (hasHydratedNowStore ? cachedNowMs : timestamp),
+    () => timestamp,
+  );
+
+  const formatted = formatRelativeCommitTimestamp(new Date(timestamp), nowMs);
 
   return (
     <time
       className={cn("text-xs", className)}
       dateTime={date.toISOString()}
-      suppressHydrationWarning
       {...rest}
     >
       {children ?? formatted}

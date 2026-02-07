@@ -27,6 +27,8 @@ See:
   - may enqueue async ingestion jobs via Upstash QStash (`async=true`)
 - `POST /api/jobs/ingest-file` (QStash-signed)
   - executes extract → chunk → embed → index asynchronously
+  - validates `storageKey` is an HTTPS Vercel Blob URL under
+    `/projects/:projectId/uploads/*` before fetching
 
 See:
 
@@ -35,9 +37,33 @@ See:
 
 ## Search
 
-- `GET /api/search?q=...&projectId=... (optional)`
-  - When `projectId` is present, performs project-scoped retrieval against the
-    indexed upload chunks.
+- `GET /api/search`
+  - Query params:
+    - required: `q` (2-256 chars)
+    - optional: `projectId`, `scope=global|project`, `types`, `limit`
+    - `types` supports: `projects|uploads|chunks|artifacts|runs`
+    - `limit` max: `20`
+  - Scope behavior:
+    - default scope is `project` when `projectId` is present
+    - default scope is `global` when `projectId` is absent
+  - Authorization/scoping:
+    - global scope is ownership-filtered (`projects.owner_user_id = current user`)
+    - project scope requires project ownership
+  - Rate limiting:
+    - server-side user keyed limit (429 + `Retry-After`, `X-RateLimit-*` headers)
+  - Returns merged, ranked results with deep links for:
+    - projects
+    - uploads
+    - chunks
+    - artifacts
+    - runs
+
+See:
+
+- [SPEC-0020](./spec/SPEC-0020-project-workspace-and-search.md)
+- [SPEC-0021](./spec/SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+- [SPEC-0025](./spec/SPEC-0025-cache-components-search-authorization-finalization.md)
+- [ADR-0013](./adr/ADR-0013-caching-cost-controls-next-js-caching-upstash-redis-budgets.md)
 
 ## Export (deterministic artifacts ZIP)
 

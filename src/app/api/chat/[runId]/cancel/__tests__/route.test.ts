@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   getChatThreadByWorkflowRunId: vi.fn(),
-  getProjectById: vi.fn(),
+  getProjectByIdForUser: vi.fn(),
   getRun: vi.fn(),
   requireAppUserApi: vi.fn(),
   updateChatThreadByWorkflowRunId: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock("@/lib/data/chat.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
-  getProjectById: state.getProjectById,
+  getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
 vi.mock("workflow/api", () => ({
@@ -38,7 +38,7 @@ beforeEach(() => {
     projectId: "proj_1",
     status: "running",
   });
-  state.getProjectById.mockResolvedValue({ id: "proj_1" });
+  state.getProjectByIdForUser.mockResolvedValue({ id: "proj_1" });
   state.getRun.mockReturnValue({ cancel: vi.fn() });
   state.updateChatThreadByWorkflowRunId.mockResolvedValue(undefined);
 });
@@ -72,7 +72,7 @@ describe("POST /api/chat/:runId/cancel", () => {
 
   it("returns forbidden when the session's project is not accessible", async () => {
     const POST = await loadRoute();
-    state.getProjectById.mockResolvedValueOnce(null);
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
 
     const res = await POST(
       new Request("http://localhost/api/chat/run_1/cancel", { method: "POST" }),

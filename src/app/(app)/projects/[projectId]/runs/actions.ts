@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { requireAppUser } from "@/lib/auth/require-app-user";
 import { AppError, normalizeError } from "@/lib/core/errors";
-import { getProjectById } from "@/lib/data/projects.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { getRunById } from "@/lib/data/runs.server";
 import {
   cancelProjectRun,
@@ -54,19 +54,14 @@ export async function startRunAction(
   }
 
   try {
-    const project = await getProjectById(parsed.data.projectId);
+    const project = await getProjectByIdForUser(parsed.data.projectId, user.id);
     if (!project) {
-      throw new AppError("forbidden", 403, "Forbidden.");
-    }
-
-    const projectOwnerId = (project as { ownerId?: unknown }).ownerId;
-    if (typeof projectOwnerId === "string" && projectOwnerId !== user.id) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }
 
     const run = await startProjectRun({
       ...parsed.data,
-      metadata: { ownerId: user.id },
+      userId: user.id,
     });
     redirect(`/projects/${parsed.data.projectId}/runs/${run.id}`);
   } catch (err) {
@@ -101,7 +96,7 @@ const cancelRunSchema = z.strictObject({
  * @param _prevState - Previous action state (unused).
  * @param formData - Form payload.
  * @returns Next action state.
- * @throws Error Re-throws Next.js redirect control-flow errors.
+ * @throws Error - Re-throws Next.js redirect control-flow errors.
  */
 export async function cancelRunAction(
   _prevState: CancelRunActionState,
@@ -128,35 +123,12 @@ export async function cancelRunAction(
       throw new AppError("forbidden", 403, "Forbidden.");
     }
 
-    const runOwnerId = (run as { ownerId?: unknown }).ownerId;
-    if (typeof runOwnerId === "string" && runOwnerId !== user.id) {
-      throw new AppError("forbidden", 403, "Forbidden.");
-    }
-
-    const runOwnerInMetadata =
-      run.metadata &&
-      typeof run.metadata === "object" &&
-      "ownerId" in run.metadata
-        ? (run.metadata.ownerId as unknown)
-        : undefined;
-    if (
-      typeof runOwnerInMetadata === "string" &&
-      runOwnerInMetadata !== user.id
-    ) {
-      throw new AppError("forbidden", 403, "Forbidden.");
-    }
-
-    const project = await getProjectById(parsed.data.projectId);
+    const project = await getProjectByIdForUser(parsed.data.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }
 
-    const projectOwnerId = (project as { ownerId?: unknown }).ownerId;
-    if (typeof projectOwnerId === "string" && projectOwnerId !== user.id) {
-      throw new AppError("forbidden", 403, "Forbidden.");
-    }
-
-    await cancelProjectRun(parsed.data.runId);
+    await cancelProjectRun(parsed.data.runId, user.id);
     redirect(`/projects/${parsed.data.projectId}/runs/${parsed.data.runId}`);
   } catch (err) {
     if (isRedirectError(err)) {

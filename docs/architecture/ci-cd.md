@@ -27,6 +27,24 @@ Branching. When enabled, Neon will automatically provision:
 This avoids duplicating branch/env provisioning logic in GitHub Actions and
 prevents races between push and pull_request workflows.
 
+### Bot branch suppression policy (implemented)
+
+Dependabot/Renovate branches are explicitly prevented from creating preview
+resources:
+
+- `vercel.json`
+  - `git.deploymentEnabled` disables deploys for:
+    - `dependabot/**`
+    - `renovate/**`
+  - `ignoreCommand` calls `scripts/vercel-ignore-build.sh` as a fallback guard.
+- Preview workflows skip bot actors/branches:
+  - `.github/workflows/vercel-preview-env-sync.yml`
+  - `.github/workflows/vercel-preview-env-cleanup.yml`
+  - `.github/workflows/neon-auth-trusted-domains.yml`
+
+This keeps preview behavior for human branches while suppressing bot preview
+resource creation.
+
 ### Branch-scoped `APP_BASE_URL` sync (optional, recommended)
 
 `APP_BASE_URL` is required by `env.app` and must resolve to the active Preview
@@ -44,6 +62,30 @@ deployment host for each branch. This repo includes:
   - Trigger: pull request `closed`
   - Behavior: removes branch-scoped `APP_BASE_URL` entries for the closed branch
     (best-effort cleanup).
+- `.github/workflows/preview-bot-resource-drift-audit.yml`
+  (requires Neon API access; see **Neon API access (shared)** below)
+  - Trigger: weekly schedule + manual dispatch.
+  - Behavior:
+    - Detects bot-scoped preview `APP_BASE_URL` env vars and Neon preview branches.
+    - Auto-cleans env vars/Neon branches in `audit-and-cleanup` mode.
+    - Warns when bot preview deployments exist (audit-only; no reliable deletion API).
+    - Fails when unresolved env var / Neon branch drift remains.
+
+### Neon API access (shared)
+
+The following repo configuration is required by both:
+
+- `.github/workflows/preview-bot-resource-drift-audit.yml`
+- `.github/workflows/neon-auth-trusted-domains.yml` (Neon Auth trusted domains)
+
+Required repo configuration:
+
+- GitHub Actions secrets:
+  - `NEON_API_KEY`
+- GitHub Actions variables:
+  - `NEON_PROJECT_ID`
+
+### Vercel API access (shared)
 
 Required repo configuration:
 
@@ -51,6 +93,9 @@ Required repo configuration:
   - `VERCEL_PROJECT_ID`
   - `VERCEL_TOKEN`
   - `VERCEL_TEAM_ID` (optional; required for team-scoped projects)
+  - (see **Neon API access (shared)** for `NEON_API_KEY`)
+- GitHub Actions variables:
+  - (see **Neon API access (shared)** for `NEON_PROJECT_ID`)
 
 ## Database connection method (Vercel)
 
@@ -81,14 +126,14 @@ added manually in the Neon Console, or automated via a lightweight workflow.
 Required repo configuration:
 
 - GitHub Actions variables:
-  - `NEON_PROJECT_ID`
+  - (see **Neon API access (shared)** for `NEON_PROJECT_ID`)
 - Optional GitHub Actions variable:
   - `ACTIONS_RUNNER_LABELS` (JSON array; defaults to `["ubuntu-latest"]`)
     - Use this only as an operational escape hatch if GitHub-hosted runners are
       unavailable (e.g. GitHub Actions outage) and you have a self-hosted runner.
     - Example: `["self-hosted","linux","x64"]`
 - GitHub Actions secrets:
-  - `NEON_API_KEY`
+  - (see **Neon API access (shared)** for `NEON_API_KEY`)
   - `VERCEL_TOKEN`
   - `VERCEL_PROJECT_ID`
   - `VERCEL_TEAM_ID` (optional)

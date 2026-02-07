@@ -199,7 +199,11 @@ export async function buildExportZipStream(
     streamFiles: true,
   });
 
-  const webStream = Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>;
+  // JSZip types expose `NodeJS.ReadableStream`, but the runtime value is a
+  // `stream.Readable` which `Readable.toWeb()` requires.
+  const webStream = Readable.toWeb(
+    nodeStream as unknown as Readable,
+  ) as unknown as ReadableStream<Uint8Array>;
   return { manifest, stream: webStream };
 }
 

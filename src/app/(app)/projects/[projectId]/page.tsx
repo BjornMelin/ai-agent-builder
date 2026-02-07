@@ -1,7 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { listProjectFiles } from "@/lib/data/files.server";
-import { getProjectById } from "@/lib/data/projects.server";
-import { listRunsByProject } from "@/lib/data/runs.server";
+import { Suspense } from "react";
+import { ProjectOverviewContent } from "@/app/(app)/projects/[projectId]/project-overview-content";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Project overview page.
@@ -14,51 +13,34 @@ export default async function ProjectOverviewPage(
 ) {
   const { projectId } = await props.params;
 
-  const [project, files, runs] = await Promise.all([
-    getProjectById(projectId),
-    listProjectFiles(projectId, { limit: 1 }),
-    listRunsByProject(projectId, { limit: 1 }),
-  ]);
-
-  if (!project) {
-    // Layout handles notFound; keep this as a defensive fallback.
-    return null;
-  }
-
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      <Card>
-        <CardHeader>
-          <CardTitle>Uploads</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-2xl font-semibold">{files.length}</p>
-          <p className="text-muted-foreground text-sm">
-            Showing the most recent upload only.
-          </p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Runs</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-2xl font-semibold">{runs.length}</p>
-          <p className="text-muted-foreground text-sm">
-            Showing the most recent run only.
-          </p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Chat</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">
-            Use Chat to ask questions grounded in your uploads.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <Suspense
+      fallback={
+        <div className="grid gap-4 lg:grid-cols-2">
+          {["a", "b", "c", "d"].map((key) => (
+            <div className="rounded-xl border bg-card p-6" key={key}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="size-8 rounded-md" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-4 w-44" />
+                  </div>
+                </div>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="mt-4 h-8 w-40" />
+              <Skeleton className="mt-2 h-4 w-56" />
+              <div className="mt-4 flex items-center justify-between gap-2">
+                <Skeleton className="h-4 w-56" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+          ))}
+        </div>
+      }
+    >
+      <ProjectOverviewContent projectId={projectId} />
+    </Suspense>
   );
 }

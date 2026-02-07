@@ -25,11 +25,12 @@ export async function POST(req: Request) {
   try {
     const authPromise = requireAppUserApi();
     const bodyPromise = parseJsonBody(req, createRunSchema);
-    const [, parsed] = await Promise.all([authPromise, bodyPromise]);
+    const [user, parsed] = await Promise.all([authPromise, bodyPromise]);
 
     const run = await startProjectRun({
       kind: parsed.kind,
       projectId: parsed.projectId,
+      userId: user.id,
       ...(parsed.metadata === undefined ? {} : { metadata: parsed.metadata }),
     });
 

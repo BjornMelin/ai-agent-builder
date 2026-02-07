@@ -25,6 +25,7 @@ import {
   type RefObject,
   useContext,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -62,12 +63,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { useHydrationSafeTextState } from "@/lib/react/use-hydration-safe-input-state";
 import { cn } from "@/lib/utils";
 
 type GlobalDropHandler = (files: FileList) => void;
 
 const globalDropHandlers = new Set<GlobalDropHandler>();
 let globalDropListenersAttached = false;
+
+type ListenerOptions = globalThis.AddEventListenerOptions;
+// `passive: false` is required because we call `preventDefault()` to enable
+// browser drag-and-drop behavior.
+const nonPassiveListenerOptions: ListenerOptions = {
+  passive: false,
+};
 
 const handleGlobalDragOver = (event: DragEvent) => {
   if (event.dataTransfer?.types?.includes("Files")) {
@@ -92,8 +101,16 @@ const subscribeToGlobalDrop = (handler: GlobalDropHandler) => {
   globalDropHandlers.add(handler);
 
   if (!globalDropListenersAttached && typeof document !== "undefined") {
-    document.addEventListener("dragover", handleGlobalDragOver);
-    document.addEventListener("drop", handleGlobalDrop);
+    document.addEventListener(
+      "dragover",
+      handleGlobalDragOver,
+      nonPassiveListenerOptions,
+    );
+    document.addEventListener(
+      "drop",
+      handleGlobalDrop,
+      nonPassiveListenerOptions,
+    );
     globalDropListenersAttached = true;
   }
 
@@ -104,8 +121,16 @@ const subscribeToGlobalDrop = (handler: GlobalDropHandler) => {
       globalDropHandlers.size === 0 &&
       typeof document !== "undefined"
     ) {
-      document.removeEventListener("dragover", handleGlobalDragOver);
-      document.removeEventListener("drop", handleGlobalDrop);
+      document.removeEventListener(
+        "dragover",
+        handleGlobalDragOver,
+        nonPassiveListenerOptions,
+      );
+      document.removeEventListener(
+        "drop",
+        handleGlobalDrop,
+        nonPassiveListenerOptions,
+      );
       globalDropListenersAttached = false;
     }
   };
@@ -127,6 +152,7 @@ export interface AttachmentsContext {
 
 /** Context for managing text input state. */
 export interface TextInputContext {
+  inputId: string;
   value: string;
   setInput: (v: string) => void;
   clear: () => void;
@@ -197,6 +223,7 @@ const useOptionalProviderAttachments = () =>
 /** Props for PromptInputProvider. */
 export type PromptInputProviderProps = PropsWithChildren<{
   initialInput?: string;
+  inputId?: string;
 }>;
 
 /**
@@ -209,9 +236,15 @@ export type PromptInputProviderProps = PropsWithChildren<{
  * @returns A React element wrapping children with prompt input context.
  */
 export function PromptInputProvider(props: PromptInputProviderProps) {
-  const { initialInput: initialTextInput = "", children } = props;
+  const { initialInput: initialTextInput = "", inputId, children } = props;
+  const generatedInputId = useId();
+  const resolvedInputId = inputId ?? `prompt-input-${generatedInputId}`;
   // ----- textInput state
-  const [textInput, setTextInput] = useState(initialTextInput);
+  const [textInput, setTextInput] = useHydrationSafeTextState({
+    element: "textarea",
+    elementId: resolvedInputId,
+    fallback: initialTextInput,
+  });
   const clearInput = () => setTextInput("");
 
   // ----- attachments state (global when wrapped)
@@ -305,6 +338,7 @@ export function PromptInputProvider(props: PromptInputProviderProps) {
     attachments,
     textInput: {
       clear: clearInput,
+      inputId: resolvedInputId,
       setInput: setTextInput,
       value: textInput,
     },
@@ -403,7 +437,7 @@ export const PromptInputActionAddAttachments = (
         attachments.openFileDialog();
       }}
     >
-      <ImageIcon className="mr-2 size-4" /> {label}
+      <ImageIcon aria-hidden="true" className="mr-2 size-4" /> {label}
     </DropdownMenuItem>
   );
 };
@@ -872,7 +906,13 @@ export const PromptInputBody = (props: PromptInputBodyProps) => {
   return <div className={cn("contents", className)} {...rest} />;
 };
 
-/** Props for the `PromptInputTextareaProps` type. */
+/**
+ * Props for the `PromptInputTextareaProps` type.
+ *
+ * Note: When `PromptInputTextarea` is rendered under a `PromptInputProvider`,
+ * the `id` prop is ignored and the textarea `id` is controlled by the provider
+ * (`inputId`). Pass `inputId` to `PromptInputProvider` instead.
+ */
 export type PromptInputTextareaProps = ComponentProps<
   typeof InputGroupTextarea
 > & {
@@ -890,6 +930,7 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
     onChange,
     onKeyDown,
     className,
+    id,
     labelId,
     "aria-labelledby": ariaLabelledBy,
     placeholder = "What would you like to know… e.g., summarize the attached article",
@@ -968,6 +1009,7 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
 
   const controlledProps = controller
     ? {
+        id: controller.textInput.inputId,
         onChange: (e: ChangeEvent<HTMLTextAreaElement>) => {
           controller.textInput.setInput(e.currentTarget.value);
           onChange?.(e);
@@ -975,6 +1017,7 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
         value: controller.textInput.value,
       }
     : {
+        id,
         onChange,
       };
 
@@ -1107,10 +1150,17 @@ export const PromptInputActionMenuTrigger = (
   props: PromptInputActionMenuTriggerProps,
 ) => {
   const { className, children, ...rest } = props;
+  const resolvedAriaLabel =
+    rest["aria-label"] ??
+    (typeof children === "string" ? undefined : "Open prompt actions");
   return (
     <DropdownMenuTrigger asChild>
-      <PromptInputButton className={className} {...rest}>
-        {children ?? <PlusIcon className="size-4" />}
+      <PromptInputButton
+        aria-label={resolvedAriaLabel}
+        className={className}
+        {...rest}
+      >
+        {children ?? <PlusIcon aria-hidden="true" className="size-4" />}
       </PromptInputButton>
     </DropdownMenuTrigger>
   );
@@ -1181,16 +1231,16 @@ export const PromptInputSubmit = (props: PromptInputSubmitProps) => {
   } = props;
   const isGenerating = status === "submitted" || status === "streaming";
   const canStop = isGenerating && typeof onStop === "function";
-  const ariaLabel = canStop ? "Stop" : isGenerating ? "Generating" : "Submit";
+  const ariaLabel = canStop ? "Stop" : isGenerating ? "Generating…" : "Submit";
 
-  let Icon = <CornerDownLeftIcon className="size-4" />;
+  let Icon = <CornerDownLeftIcon aria-hidden="true" className="size-4" />;
 
   if (status === "submitted") {
-    Icon = <Spinner />;
+    Icon = <Spinner aria-hidden="true" />;
   } else if (status === "streaming") {
-    Icon = <SquareIcon className="size-4" />;
+    Icon = <SquareIcon aria-hidden="true" className="size-4" />;
   } else if (status === "error") {
-    Icon = <XIcon className="size-4" />;
+    Icon = <XIcon aria-hidden="true" className="size-4" />;
   }
 
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {

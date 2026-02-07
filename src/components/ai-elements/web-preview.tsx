@@ -11,6 +11,8 @@ import {
   createContext,
   useContext,
   useEffect,
+  useId,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -27,6 +29,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useHydrationSafeTextState } from "@/lib/react/use-hydration-safe-input-state";
 import { cn } from "@/lib/utils";
 
 const sanitizeUrl = (rawUrl: string) => {
@@ -196,18 +199,34 @@ export type WebPreviewUrlProps = ComponentProps<typeof Input>;
  * @returns The URL input component.
  */
 export const WebPreviewUrl = (props: WebPreviewUrlProps) => {
-  const { value, onChange, onKeyDown, ...rest } = props;
+  const { id, value, onChange, onKeyDown, ...rest } = props;
   const { url, setUrl } = useWebPreview();
-  const [inputValue, setInputValue] = useState(url);
+  const generatedId = useId();
+  const resolvedId = id ?? `web-preview-url-${generatedId}`;
   const isControlled = value !== undefined;
+  const [inputValue, setInputValue] = useHydrationSafeTextState({
+    element: "input",
+    elementId: resolvedId,
+    fallback: url,
+  });
+  const hasCompletedInitialSyncRef = useRef(false);
 
   // Sync input value with context URL when it changes externally
   useEffect(() => {
+    if (isControlled) {
+      return;
+    }
+    if (!hasCompletedInitialSyncRef.current) {
+      hasCompletedInitialSyncRef.current = true;
+      return;
+    }
     setInputValue(url);
-  }, [url]);
+  }, [isControlled, setInputValue, url]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setInputValue(event.target.value);
+    if (!isControlled) {
+      setInputValue(event.target.value);
+    }
     onChange?.(event);
   };
 
@@ -227,6 +246,7 @@ export const WebPreviewUrl = (props: WebPreviewUrlProps) => {
       autoComplete="off"
       aria-label={rest["aria-label"] ?? "Preview URL"}
       className="h-8 flex-1 text-sm"
+      id={resolvedId}
       inputMode="url"
       name="preview-url"
       onChange={handleChange}

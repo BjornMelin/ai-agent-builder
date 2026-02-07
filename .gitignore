@@ -63,6 +63,7 @@ desktop.ini
 .vite/
 .biome_cache/
 .cache/
+.tmp/
 
 # Editors
 .vscode/*

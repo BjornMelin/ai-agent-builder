@@ -12,7 +12,7 @@ import { toChatTitle } from "@/lib/chat/title";
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
 import { ensureChatThreadForWorkflowRun } from "@/lib/data/chat.server";
-import { getProjectById } from "@/lib/data/projects.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError } from "@/lib/next/responses";
 import { projectChat } from "@/workflows/chat/project-chat.workflow";
@@ -44,9 +44,9 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const authPromise = requireAppUserApi();
     const bodyPromise = parseJsonBody(req, bodySchema);
-    const [, parsed] = await Promise.all([authPromise, bodyPromise]);
+    const [user, parsed] = await Promise.all([authPromise, bodyPromise]);
 
-    const project = await getProjectById(parsed.projectId);
+    const project = await getProjectByIdForUser(parsed.projectId, user.id);
     if (!project) {
       throw new AppError("not_found", 404, "Project not found.");
     }

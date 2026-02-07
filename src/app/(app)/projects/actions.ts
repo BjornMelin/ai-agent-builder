@@ -1,8 +1,10 @@
 "use server";
 
+import { revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireAppUser } from "@/lib/auth/require-app-user";
+import { tagProjectsIndex } from "@/lib/cache/tags";
 import { normalizeError } from "@/lib/core/errors";
 import { createProject } from "@/lib/data/projects.server";
 
@@ -49,7 +51,7 @@ export async function createProjectAction(
   _prevState: CreateProjectActionState,
   formData: FormData,
 ): Promise<CreateProjectActionState> {
-  await requireAppUser();
+  const user = await requireAppUser();
 
   const isDemo = String(formData.get("demo") ?? "") === "true";
 
@@ -77,7 +79,8 @@ export async function createProjectAction(
     const slug = `${baseSlug}${suffix}`.slice(0, 128);
 
     try {
-      const project = await createProject({ name, slug });
+      const project = await createProject({ name, ownerUserId: user.id, slug });
+      revalidateTag(tagProjectsIndex(user.id), "max");
       redirect(`/projects/${project.id}`);
     } catch (err) {
       if (isRedirectError(err)) {

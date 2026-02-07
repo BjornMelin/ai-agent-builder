@@ -1,0 +1,365 @@
+name: Preview bot resource drift audit
+
+"on":
+  schedule:
+    - cron: "17 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Audit mode"
+        required: true
+        default: audit-and-cleanup
+        type: choice
+        options:
+          - audit-only
+          - audit-and-cleanup
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Detect and remediate preview bot drift
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Audit preview resources for bot branches
+        env:
+          AUDIT_MODE_INPUT: ${{ inputs.mode }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::jq is required but not available on this runner."
+            exit 1
+          fi
+
+          missing=0
+          for var_name in NEON_API_KEY NEON_PROJECT_ID VERCEL_PROJECT_ID VERCEL_TOKEN; do
+            if [ -z "${!var_name:-}" ]; then
+              echo "::warning::Missing ${var_name}; skipping preview bot drift audit."
+              missing=1
+            fi
+          done
+          if [ "${missing}" -eq 1 ]; then
+            exit 0
+          fi
+
+          AUDIT_MODE="audit-and-cleanup"
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ -n "${AUDIT_MODE_INPUT:-}" ]; then
+            AUDIT_MODE="${AUDIT_MODE_INPUT}"
+          fi
+          echo "Audit mode: ${AUDIT_MODE}"
+
+          VERCEL_API_BASE="https://api.vercel.com"
+          NEON_API_BASE="https://console.neon.tech/api/v2"
+          TEAM_QUERY=""
+          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
+            TEAM_QUERY="teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          api_call() {
+            local method="$1"
+            local base_url="$2"
+            local token="$3"
+            local path="$4"
+            local data="${5:-}"
+            local CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-10}"
+            local MAX_TIME="${MAX_TIME:-60}"
+            local resp=""
+            local stderr_file=""
+            local curl_status=0
+            stderr_file="$(mktemp)"
+
+            if [ -n "${data}" ]; then
+              set +e
+              resp="$(curl -sS -X "${method}" "${base_url}${path}" \
+                --connect-timeout "${CONNECT_TIMEOUT}" \
+                --max-time "${MAX_TIME}" \
+                -H "Authorization: Bearer ${token}" \
+                -H "Accept: application/json" \
+                -H "Content-Type: application/json" \
+                -d "${data}" \
+                -w '\n%{http_code}' 2>"${stderr_file}")"
+              curl_status=$?
+              set -e
+            else
+              set +e
+              resp="$(curl -sS -X "${method}" "${base_url}${path}" \
+                --connect-timeout "${CONNECT_TIMEOUT}" \
+                --max-time "${MAX_TIME}" \
+                -H "Authorization: Bearer ${token}" \
+                -H "Accept: application/json" \
+                -w '\n%{http_code}' 2>"${stderr_file}")"
+              curl_status=$?
+              set -e
+            fi
+
+            if [ "${curl_status}" -ne 0 ]; then
+              if [ -s "${stderr_file}" ]; then
+                cat "${stderr_file}" >&2
+              fi
+              rm -f "${stderr_file}"
+              printf '\n'
+              printf '%s\n' "000"
+              return 0
+            fi
+
+            rm -f "${stderr_file}"
+            # Split resp into body + http code safely even when body contains newlines.
+            # curl appends the HTTP code as the last line via `-w '\n%{http_code}'`.
+            local body=""
+            local http_code=""
+            body="$(printf '%s' "${resp}" | head -n -1 || true)"
+            http_code="$(printf '%s' "${resp}" | tail -n 1)"
+            printf '%s\n' "${body}"
+            printf '%s\n' "${http_code}"
+          }
+
+          vercel_api() {
+            local method="$1"
+            local path="$2"
+            local data="${3:-}"
+            api_call "${method}" "${VERCEL_API_BASE}" "${VERCEL_TOKEN}" "${path}" "${data}"
+          }
+
+          neon_api() {
+            local method="$1"
+            local path="$2"
+            local data="${3:-}"
+            api_call "${method}" "${NEON_API_BASE}" "${NEON_API_KEY}" "${path}" "${data}"
+          }
+
+          #
+          # Vercel branch-scoped preview env vars (APP_BASE_URL) for bot branches
+          #
+          ENV_PATH="/v10/projects/${VERCEL_PROJECT_ID}/env?decrypt=false"
+          if [ -n "${TEAM_QUERY:-}" ]; then
+            ENV_PATH="${ENV_PATH}&${TEAM_QUERY}"
+          fi
+          ENV_RESP="$(vercel_api GET "${ENV_PATH}")"
+          ENV_HTTP_CODE="$(printf '%s' "${ENV_RESP}" | tail -n 1)"
+          ENV_JSON="$(printf '%s' "${ENV_RESP}" | sed '$d')"
+          if [ "${ENV_HTTP_CODE}" != "200" ]; then
+            echo "::error::Failed to list Vercel env vars (HTTP ${ENV_HTTP_CODE})."
+            exit 1
+          fi
+
+          BOT_ENV_IDS="$(printf '%s' "${ENV_JSON}" | jq -r '
+            (.envs // [])[]
+            | select(.key == "APP_BASE_URL")
+            | select((.target // []) | index("preview"))
+            | select((.gitBranch // "") | test("^(dependabot/|renovate/)"))
+            | .id
+          ')"
+          env_found=0
+          env_deleted=0
+          env_failed=0
+          if [ -n "${BOT_ENV_IDS}" ]; then
+            env_found="$(printf '%s\n' "${BOT_ENV_IDS}" | sed '/^$/d' | wc -l | tr -d ' ')"
+          fi
+
+          if [ "${AUDIT_MODE}" = "audit-and-cleanup" ] && [ "${env_found}" -gt 0 ]; then
+            while IFS= read -r env_id; do
+              if [ -z "${env_id}" ] || [ "${env_id}" = "null" ]; then
+                continue
+              fi
+              DELETE_PATH="/v9/projects/${VERCEL_PROJECT_ID}/env/${env_id}"
+              if [ -n "${TEAM_QUERY:-}" ]; then
+                DELETE_PATH="${DELETE_PATH}?${TEAM_QUERY}"
+              fi
+              DELETE_RESP="$(vercel_api DELETE "${DELETE_PATH}")"
+              DELETE_HTTP_CODE="$(printf '%s' "${DELETE_RESP}" | tail -n 1)"
+              if [ "${DELETE_HTTP_CODE}" = "200" ] || [ "${DELETE_HTTP_CODE}" = "204" ]; then
+                env_deleted=$((env_deleted + 1))
+              else
+                env_failed=$((env_failed + 1))
+                echo "::warning::Failed deleting Vercel env id ${env_id} (HTTP ${DELETE_HTTP_CODE})."
+              fi
+            done < <(printf '%s\n' "${BOT_ENV_IDS}")
+          fi
+
+          #
+          # Vercel preview deployments for bot branches/authors (audit only)
+          #
+          BOT_DEPLOYMENTS="[]"
+          DEPLOY_UNTIL=""
+          NEXT_DEPLOY_UNTIL=""
+            MAX_DEPLOY_PAGES=50
+            deploy_page=1
+            while :; do
+              if [ "${deploy_page}" -gt "${MAX_DEPLOY_PAGES}" ]; then
+                echo "::warning::Vercel deployments pagination hit page cap (deploy_page=${deploy_page} >= MAX_DEPLOY_PAGES=${MAX_DEPLOY_PAGES}). Stopping pagination with DEPLOY_UNTIL='${DEPLOY_UNTIL}' NEXT_DEPLOY_UNTIL='${NEXT_DEPLOY_UNTIL}' and BOT_DEPLOYMENTS length $(printf '%s' "${BOT_DEPLOYMENTS}" | jq 'length')."
+                break
+              fi
+
+            DEPLOY_PATH="/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=preview&limit=100"
+            if [ -n "${DEPLOY_UNTIL}" ]; then
+              ENCODED_DEPLOY_UNTIL="$(printf '%s' "${DEPLOY_UNTIL}" | jq -sRr @uri)"
+              DEPLOY_PATH="${DEPLOY_PATH}&until=${ENCODED_DEPLOY_UNTIL}"
+            fi
+            if [ -n "${TEAM_QUERY:-}" ]; then
+              DEPLOY_PATH="${DEPLOY_PATH}&${TEAM_QUERY}"
+            fi
+
+            DEPLOY_RESP="$(vercel_api GET "${DEPLOY_PATH}")"
+            DEPLOY_HTTP_CODE="$(printf '%s' "${DEPLOY_RESP}" | tail -n 1)"
+            DEPLOY_JSON="$(printf '%s' "${DEPLOY_RESP}" | sed '$d')"
+            if [ "${DEPLOY_HTTP_CODE}" != "200" ]; then
+              echo "::error::Failed to list Vercel preview deployments (page ${deploy_page}, HTTP ${DEPLOY_HTTP_CODE})."
+              exit 1
+            fi
+
+            PAGE_BOT_DEPLOYMENTS="$(printf '%s' "${DEPLOY_JSON}" | jq -r '
+              [(.deployments // [])[] as $d
+                | ($d.meta.githubCommitRef // "") as $ref
+                | ($d.meta.githubCommitAuthorLogin // "") as $author
+                | ($d.creator.username // "") as $creator
+                | select(
+                    ($ref | test("^(refs/heads/)?(dependabot/|renovate/)"))
+                    or ($author == "dependabot[bot]" or $author == "renovate[bot]")
+                    or ($creator == "dependabot[bot]" or $creator == "renovate[bot]")
+                  )
+                | {
+                    id: ($d.uid // $d.id // ""),
+                    ref: $ref,
+                    author: $author,
+                    creator: $creator,
+                    url: ($d.url // "")
+                  }
+              ]
+            ')"
+            BOT_DEPLOYMENTS="$(jq -cn \
+              --argjson all "${BOT_DEPLOYMENTS}" \
+              --argjson page "${PAGE_BOT_DEPLOYMENTS}" \
+              '$all + $page')"
+
+            NEXT_DEPLOY_UNTIL="$(printf '%s' "${DEPLOY_JSON}" | jq -r '.pagination.next // empty')"
+            if [ -z "${NEXT_DEPLOY_UNTIL}" ] || [ "${NEXT_DEPLOY_UNTIL}" = "null" ]; then
+              break
+            fi
+            if [ "${NEXT_DEPLOY_UNTIL}" = "${DEPLOY_UNTIL}" ]; then
+              echo "::warning::Vercel deployments pagination cursor did not advance (deploy_page=${deploy_page}, MAX_DEPLOY_PAGES=${MAX_DEPLOY_PAGES}, DEPLOY_UNTIL='${DEPLOY_UNTIL}', NEXT_DEPLOY_UNTIL='${NEXT_DEPLOY_UNTIL}'). Stopping pagination with BOT_DEPLOYMENTS length $(printf '%s' "${BOT_DEPLOYMENTS}" | jq 'length')."
+              break
+            fi
+
+            DEPLOY_UNTIL="${NEXT_DEPLOY_UNTIL}"
+            deploy_page=$((deploy_page + 1))
+          done
+          BOT_DEPLOYMENTS="$(printf '%s' "${BOT_DEPLOYMENTS}" | jq '
+            unique_by((.id // "") + "|" + (.ref // "") + "|" + (.url // ""))
+          ')"
+          deploy_found="$(printf '%s' "${BOT_DEPLOYMENTS}" | jq 'length')"
+          if [ "${deploy_found}" -gt 0 ]; then
+            echo "::warning::Detected bot preview deployments. Manual cleanup may be required."
+            printf '%s' "${BOT_DEPLOYMENTS}" | jq -r '.[] | "- id=\(.id) ref=\(.ref) author=\(.author) creator=\(.creator) url=\(.url)"'
+          fi
+
+          #
+          # Neon preview branches for bot branches
+          #
+          BOT_NEON_BRANCHES=""
+          NEON_CURSOR=""
+            MAX_NEON_BRANCH_PAGES=50
+            neon_page=1
+            while :; do
+              if [ "${neon_page}" -gt "${MAX_NEON_BRANCH_PAGES}" ]; then
+                echo "::warning::Neon branches pagination hit page cap (neon_page=${neon_page} >= MAX_NEON_BRANCH_PAGES=${MAX_NEON_BRANCH_PAGES}). Stopping pagination with NEON_CURSOR='${NEON_CURSOR}'."
+                break
+              fi
+
+            BRANCHES_PATH="/projects/${NEON_PROJECT_ID}/branches?limit=100"
+            if [ -n "${NEON_CURSOR}" ]; then
+              ENCODED_NEON_CURSOR="$(printf '%s' "${NEON_CURSOR}" | jq -sRr @uri)"
+              BRANCHES_PATH="${BRANCHES_PATH}&cursor=${ENCODED_NEON_CURSOR}"
+            fi
+
+            BRANCHES_RESP="$(neon_api GET "${BRANCHES_PATH}")"
+            BRANCHES_HTTP_CODE="$(printf '%s' "${BRANCHES_RESP}" | tail -n 1)"
+            BRANCHES_JSON="$(printf '%s' "${BRANCHES_RESP}" | sed '$d')"
+            if [ "${BRANCHES_HTTP_CODE}" != "200" ]; then
+              echo "::error::Failed to list Neon branches (page ${neon_page}, HTTP ${BRANCHES_HTTP_CODE})."
+              exit 1
+            fi
+
+            PAGE_BOT_NEON_BRANCHES="$(printf '%s' "${BRANCHES_JSON}" | jq -r '
+              (.branches // [])[]
+              | select((.name // "") | test("^preview/(dependabot/|renovate/)"))
+              | "\(.id)\t\(.name)"
+            ')"
+            if [ -n "${PAGE_BOT_NEON_BRANCHES}" ]; then
+              if [ -n "${BOT_NEON_BRANCHES}" ]; then
+                BOT_NEON_BRANCHES="${BOT_NEON_BRANCHES}"$'\n'"${PAGE_BOT_NEON_BRANCHES}"
+              else
+                BOT_NEON_BRANCHES="${PAGE_BOT_NEON_BRANCHES}"
+              fi
+            fi
+
+            NEXT_NEON_CURSOR="$(printf '%s' "${BRANCHES_JSON}" | jq -r '.pagination.next // empty')"
+            if [ -z "${NEXT_NEON_CURSOR}" ] || [ "${NEXT_NEON_CURSOR}" = "null" ]; then
+              break
+            fi
+            if [ "${NEXT_NEON_CURSOR}" = "${NEON_CURSOR}" ]; then
+              echo "::warning::Neon branches pagination cursor did not advance (neon_page=${neon_page}, MAX_NEON_BRANCH_PAGES=${MAX_NEON_BRANCH_PAGES}, NEON_CURSOR='${NEON_CURSOR}', NEXT_NEON_CURSOR='${NEXT_NEON_CURSOR}'); stopping pagination."
+              break
+            fi
+
+            NEON_CURSOR="${NEXT_NEON_CURSOR}"
+            neon_page=$((neon_page + 1))
+          done
+          if [ -n "${BOT_NEON_BRANCHES}" ]; then
+            BOT_NEON_BRANCHES="$(printf '%s\n' "${BOT_NEON_BRANCHES}" | sed '/^$/d' | sort -u)"
+          fi
+          neon_found=0
+          neon_deleted=0
+          neon_failed=0
+          if [ -n "${BOT_NEON_BRANCHES}" ]; then
+            neon_found="$(printf '%s\n' "${BOT_NEON_BRANCHES}" | sed '/^$/d' | wc -l | tr -d ' ')"
+          fi
+
+          if [ "${AUDIT_MODE}" = "audit-and-cleanup" ] && [ "${neon_found}" -gt 0 ]; then
+            while IFS=$'\t' read -r branch_id branch_name; do
+              if [ -z "${branch_id}" ] || [ "${branch_id}" = "null" ]; then
+                continue
+              fi
+              DELETE_RESP="$(neon_api DELETE "/projects/${NEON_PROJECT_ID}/branches/${branch_id}")"
+              DELETE_HTTP_CODE="$(printf '%s' "${DELETE_RESP}" | tail -n 1)"
+              if [ "${DELETE_HTTP_CODE}" = "200" ] || [ "${DELETE_HTTP_CODE}" = "202" ] || [ "${DELETE_HTTP_CODE}" = "204" ]; then
+                neon_deleted=$((neon_deleted + 1))
+              else
+                neon_failed=$((neon_failed + 1))
+                echo "::warning::Failed deleting Neon branch ${branch_name} (${branch_id}) (HTTP ${DELETE_HTTP_CODE})."
+              fi
+            done < <(printf '%s\n' "${BOT_NEON_BRANCHES}")
+          fi
+
+          unresolved_env="${env_found}"
+          unresolved_neon="${neon_found}"
+          if [ "${AUDIT_MODE}" = "audit-and-cleanup" ]; then
+            unresolved_env="${env_failed}"
+            unresolved_neon="${neon_failed}"
+          fi
+          # Deployments are audit-only (no reliable deletion API), so they should not
+          # force a permanent failure once any bot deployment has existed.
+          unresolved_total=$((unresolved_env + unresolved_neon))
+
+          echo "Summary:"
+          echo "  Vercel bot APP_BASE_URL env vars: found=${env_found}, deleted=${env_deleted}, failed=${env_failed}"
+          echo "  Vercel bot preview deployments: found=${deploy_found} (audit-only)"
+          echo "  Neon bot preview branches: found=${neon_found}, deleted=${neon_deleted}, failed=${neon_failed}"
+
+          if [ "${unresolved_total}" -gt 0 ]; then
+            echo "::error::Preview resource drift remains (unresolved=${unresolved_total})."
+            exit 1
+          fi
+
+          echo "No unresolved bot preview resource drift detected."

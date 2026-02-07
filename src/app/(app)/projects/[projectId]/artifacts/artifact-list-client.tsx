@@ -70,6 +70,7 @@ export function ArtifactListClient(
               href={`/projects/${encodeURIComponent(projectId)}/artifacts/${encodeURIComponent(
                 a.id,
               )}`}
+              prefetch={false}
             >
               Open
             </Link>
@@ -108,6 +109,7 @@ export function ArtifactListClient(
                 href={`/projects/${encodeURIComponent(
                   projectId,
                 )}/artifacts/${encodeURIComponent(artifact.id)}`}
+                prefetch={false}
               >
                 Open
               </Link>

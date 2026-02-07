@@ -26,7 +26,7 @@ export function RunControlsClient(props: Readonly<{ projectId: string }>) {
     <form
       action={formAction}
       aria-describedby={state.status === "error" ? errorId : undefined}
-      className="flex flex-col gap-3"
+      className="space-y-3"
       onSubmit={(e) => {
         const submitter = (e.nativeEvent as SubmitEvent)
           .submitter as HTMLButtonElement | null;
@@ -41,7 +41,7 @@ export function RunControlsClient(props: Readonly<{ projectId: string }>) {
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2.5">
         <Button
           aria-busy={isPending && submittedKind === "research"}
           disabled={isPending}

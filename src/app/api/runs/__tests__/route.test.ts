@@ -99,5 +99,10 @@ describe("POST /api/runs", () => {
       workflowRunId: "wf_1",
     });
     expect(state.startProjectRun).toHaveBeenCalledTimes(1);
+    expect(state.startProjectRun).toHaveBeenCalledWith({
+      kind: "research",
+      projectId: "proj_1",
+      userId: "user",
+    });
   });
 });

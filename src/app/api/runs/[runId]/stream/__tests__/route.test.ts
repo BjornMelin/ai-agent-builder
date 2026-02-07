@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   createUIMessageStreamResponse: vi.fn(),
-  getProjectById: vi.fn(),
+  getProjectByIdForUser: vi.fn(),
   getReadable: vi.fn(),
   getRun: vi.fn(),
   getRunById: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock("@/lib/data/runs.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
-  getProjectById: state.getProjectById,
+  getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
 vi.mock("@/lib/auth/require-app-user-api.server", () => ({
@@ -39,7 +39,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
-  state.getProjectById.mockResolvedValue({ id: "proj_1" });
+  state.getProjectByIdForUser.mockResolvedValue({ id: "proj_1" });
   state.getRunById.mockResolvedValue({
     projectId: "proj_1",
     workflowRunId: "wf_1",
@@ -104,7 +104,7 @@ describe("GET /api/runs/:runId/stream", () => {
 
   it("returns forbidden when the run's project is not accessible", async () => {
     const GET = await loadRoute();
-    state.getProjectById.mockResolvedValueOnce(null);
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
 
     const res = await GET(
       new Request("http://localhost/api/runs/run_1/stream?startIndex=2"),

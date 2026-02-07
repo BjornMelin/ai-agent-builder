@@ -1,27 +1,27 @@
 import type { ReactNode } from "react";
-import { requireAppUser } from "@/lib/auth/require-app-user";
+import { Suspense } from "react";
+import { AppAuthGate } from "@/app/(app)/app-auth-gate";
+import { AppShell } from "@/components/shell/app-shell";
+import { AppShellSkeleton } from "@/components/shell/app-shell-skeleton";
 
 /**
  * Authenticated application layout.
  *
  * @param props - Layout props containing child routes.
- * @returns Application shell for authenticated routes.
+ * @returns Unified application shell for authenticated routes.
  */
-export default async function AppLayout(
+export default function AppLayout(
   props: Readonly<{
     children: ReactNode;
   }>,
 ) {
   const { children } = props;
-  await requireAppUser();
 
   return (
-    <main
-      className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-12 md:px-6"
-      id="main"
-      tabIndex={-1}
-    >
-      {children}
-    </main>
+    <Suspense fallback={<AppShellSkeleton />}>
+      <AppAuthGate>
+        <AppShell>{children}</AppShell>
+      </AppAuthGate>
+    </Suspense>
   );
 }

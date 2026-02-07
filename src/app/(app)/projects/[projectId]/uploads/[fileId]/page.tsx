@@ -1,9 +1,6 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { getProjectFileById } from "@/lib/data/files.server";
+import { Suspense } from "react";
+import { UploadDetailContent } from "@/app/(app)/projects/[projectId]/uploads/[fileId]/upload-detail-content";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Single upload details page (P0).
@@ -15,47 +12,26 @@ export default async function UploadDetailPage(
   props: Readonly<{ params: Promise<{ fileId: string; projectId: string }> }>,
 ) {
   const { projectId, fileId } = await props.params;
-  const file = await getProjectFileById(fileId);
-
-  if (!file || file.projectId !== projectId) notFound();
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{file.name}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <div className="text-sm">
-            <p className="text-muted-foreground">MIME type</p>
-            <p className="font-medium">{file.mimeType}</p>
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <div className="rounded-xl border bg-card p-6">
+            <Skeleton className="h-7 w-72" />
+            <div className="mt-5 space-y-3">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-5 w-44" />
+              <Skeleton className="h-px w-full" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-5 w-full" />
+            </div>
           </div>
-          <Separator />
-          <div className="text-sm">
-            <p className="text-muted-foreground">Storage</p>
-            <a
-              className="break-all underline-offset-4 hover:underline"
-              href={file.storageKey}
-              rel="noreferrer"
-              target="_blank"
-            >
-              {file.storageKey}
-            </a>
-          </div>
-          <Separator />
-          <div className="text-sm">
-            <p className="text-muted-foreground">SHA-256</p>
-            <p className="break-all font-mono text-xs">{file.sha256}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Link
-        className="text-sm underline-offset-4 hover:underline"
-        href={`/projects/${projectId}/uploads`}
-      >
-        Back to uploads
-      </Link>
-    </div>
+          <Skeleton className="h-4 w-28" />
+        </div>
+      }
+    >
+      <UploadDetailContent fileId={fileId} projectId={projectId} />
+    </Suspense>
   );
 }

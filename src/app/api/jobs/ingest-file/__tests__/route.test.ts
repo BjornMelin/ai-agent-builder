@@ -6,9 +6,14 @@ import type { IngestFileResult } from "@/lib/ingest/ingest-file.server";
 const state = vi.hoisted(() => ({
   getProjectFileById: vi.fn(),
   ingestFile: vi.fn(),
+  revalidateTag: vi.fn(),
   verifyQstashSignatureAppRouter: vi.fn(
     (handler: (req: Request) => Promise<Response> | Response) => handler,
   ),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidateTag: state.revalidateTag,
 }));
 
 vi.mock("@/lib/upstash/qstash.server", () => ({
@@ -35,7 +40,8 @@ const baseFile = {
   projectId,
   sha256: "sha",
   sizeBytes: 5,
-  storageKey: "https://blob.test/file",
+  storageKey:
+    "https://store.public.blob.vercel-storage.com/projects/proj_123/uploads/sha-alpha.txt",
 } satisfies ProjectFileDto;
 
 const originalFetch = globalThis.fetch;
@@ -143,6 +149,130 @@ describe("POST /api/jobs/ingest-file", () => {
     });
   });
 
+  it("rejects untrusted blob storage hosts", async () => {
+    const POST = await loadRoute();
+    state.getProjectFileById.mockResolvedValueOnce({
+      ...baseFile,
+      storageKey: "https://blob.test/projects/proj_123/uploads/file",
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/jobs/ingest-file", {
+        body: JSON.stringify({ fileId, projectId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(502);
+    await expect(res.json()).resolves.toMatchObject({
+      error: {
+        code: "blob_fetch_failed",
+        message: "Untrusted blob storage host.",
+      },
+    });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects blob paths that do not match the project", async () => {
+    const POST = await loadRoute();
+    state.getProjectFileById.mockResolvedValueOnce({
+      ...baseFile,
+      storageKey:
+        "https://store.public.blob.vercel-storage.com/projects/other/uploads/sha-alpha.txt",
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/jobs/ingest-file", {
+        body: JSON.stringify({ fileId, projectId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(502);
+    await expect(res.json()).resolves.toMatchObject({
+      error: {
+        code: "blob_fetch_failed",
+        message: "Blob path/project mismatch.",
+      },
+    });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects blob paths that do not match the file sha256 prefix", async () => {
+    const POST = await loadRoute();
+    state.getProjectFileById.mockResolvedValueOnce({
+      ...baseFile,
+      storageKey:
+        "https://store.public.blob.vercel-storage.com/projects/proj_123/uploads/other-alpha.txt",
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/jobs/ingest-file", {
+        body: JSON.stringify({ fileId, projectId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(502);
+    await expect(res.json()).resolves.toMatchObject({
+      error: {
+        code: "blob_fetch_failed",
+        message: "Blob path/file mismatch.",
+      },
+    });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects blob paths that contain dot-dot traversal segments", async () => {
+    const POST = await loadRoute();
+    state.getProjectFileById.mockResolvedValueOnce({
+      ...baseFile,
+      storageKey:
+        "https://store.public.blob.vercel-storage.com/projects/proj_123/uploads/../secrets.txt",
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/jobs/ingest-file", {
+        body: JSON.stringify({ fileId, projectId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(502);
+    await expect(res.json()).resolves.toMatchObject({
+      error: {
+        code: "blob_fetch_failed",
+        message: "Invalid blob storage path.",
+      },
+    });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects blob paths that contain percent-encoded dot-dot traversal segments", async () => {
+    const POST = await loadRoute();
+    state.getProjectFileById.mockResolvedValueOnce({
+      ...baseFile,
+      storageKey:
+        "https://store.public.blob.vercel-storage.com/projects/proj_123/uploads/%2e%2e/secrets.txt",
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/jobs/ingest-file", {
+        body: JSON.stringify({ fileId, projectId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(502);
+    await expect(res.json()).resolves.toMatchObject({
+      error: {
+        code: "blob_fetch_failed",
+        message: "Invalid blob storage path.",
+      },
+    });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
   it("returns a timeout error when the blob fetch times out", async () => {
     const POST = await loadRoute();
 
@@ -184,5 +314,10 @@ describe("POST /api/jobs/ingest-file", () => {
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ chunksIndexed: 2, fileId });
     expect(state.ingestFile).toHaveBeenCalledTimes(1);
+    expect(state.revalidateTag).toHaveBeenCalledTimes(1);
+    expect(state.revalidateTag).toHaveBeenCalledWith(
+      expect.stringContaining(":uploads:index:"),
+      "max",
+    );
   });
 });

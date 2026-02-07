@@ -16,9 +16,11 @@ trail).
 ## What it does
 
 - Ingests source material: PDFs, slides, docs, markdown, spreadsheets.
-- Supports deep research and validation (spec’d; web research integrations are not yet implemented).
-- Maintains a formal architecture pack (PRD, ADRs, specs, security) in-repo (export is spec’d).
-- Supports an implementation/deployment phase (spec’d) to:
+- Supports project and global search across projects, uploads, chunks, artifacts, and runs.
+- Enforces per-user project ownership for all project-scoped reads/writes.
+- Applies server-side search guardrails (strict query validation + rate limiting).
+- Maintains a formal architecture pack (PRD, ADRs, specs, security) in-repo with deterministic export.
+- Supports an implementation/deployment phase (partially implemented) to:
   - connect a target GitHub repo
   - plan changes traceable to artifacts
   - apply patches + open PRs

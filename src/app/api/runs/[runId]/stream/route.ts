@@ -3,7 +3,7 @@ import { getRun } from "workflow/api";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
-import { getProjectById } from "@/lib/data/projects.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { getRunById } from "@/lib/data/runs.server";
 import { jsonError } from "@/lib/next/responses";
 
@@ -50,7 +50,7 @@ export async function GET(
   try {
     const authPromise = requireAppUserApi();
     const paramsPromise = context.params;
-    const [, params] = await Promise.all([authPromise, paramsPromise]);
+    const [user, params] = await Promise.all([authPromise, paramsPromise]);
 
     const { searchParams } = new URL(req.url);
     const startIndex = parseStartIndex(searchParams.get("startIndex"));
@@ -61,7 +61,10 @@ export async function GET(
       throw new AppError("not_found", 404, "Run not found.");
     }
 
-    const project = await getProjectById(persistedRun.projectId);
+    const project = await getProjectByIdForUser(
+      persistedRun.projectId,
+      user.id,
+    );
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }

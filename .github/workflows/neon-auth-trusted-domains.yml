@@ -24,7 +24,15 @@ jobs:
     name: Ensure Neon Auth trusted domains
     runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
     # Secrets are not available on forked PRs.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    if: |
+      github.event_name != 'pull_request' ||
+      (
+        github.event.pull_request.head.repo.fork == false &&
+        github.event.pull_request.user.login != 'dependabot[bot]' &&
+        github.event.pull_request.user.login != 'renovate[bot]' &&
+        !startsWith(github.event.pull_request.head.ref, 'dependabot/') &&
+        !startsWith(github.event.pull_request.head.ref, 'renovate/')
+      )
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -59,6 +67,11 @@ jobs:
           fi
           if [ -z "${GIT_BRANCH}" ]; then
             GIT_BRANCH="${GITHUB_REF_NAME}"
+          fi
+
+          if printf '%s' "${GIT_BRANCH}" | grep -Eq '^(dependabot/|renovate/)'; then
+            echo "::warning::Bot branch detected (${GIT_BRANCH}). Skipping trusted-domain allowlisting."
+            exit 0
           fi
 
           # When using the Neon <-> Vercel integration with Preview Branching,

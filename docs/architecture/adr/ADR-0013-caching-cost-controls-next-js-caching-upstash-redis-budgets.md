@@ -1,9 +1,9 @@
 ---
 ADR: 0013
 Title: Caching + cost controls: Next.js caching + Upstash Redis + budgets
-Status: Accepted
-Version: 0.3
-Date: 2026-02-03
+Status: Implemented
+Version: 0.5
+Date: 2026-02-06
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0004, ADR-0005, ADR-0007]
@@ -17,7 +17,7 @@ References:
 
 ## Status
 
-Accepted — 2026-01-30.
+Implemented — 2026-02-06.
 
 ## Description
 
@@ -101,12 +101,20 @@ flowchart LR
 
 - `use cache` for stable DB reads and model catalog reads.
 - Redis for web fetch caching, MCP caching, and tool rate limiting.
+- Tag-based invalidation via `revalidateTag(..., "max")` for project creation,
+  uploads/ingestion completion, and artifact creation.[^next-revalidatetag-max]
 
 ### Implementation Details
 
 - Define budgets in `src/lib/config/budgets.server.ts`.
 - Persist per-step usage, enforce max tokens and tool calls.
-- Add admin UI to adjust budgets if needed.
+- Standardize cache tags in `src/lib/cache/tags.ts` and apply to server loaders
+  using `'use cache'` + `cacheTag`.
+- Apply server-side search rate limiting with Upstash Ratelimit in
+  `src/lib/upstash/ratelimit.server.ts` and enforce from
+  `src/app/api/search/route.ts`.
+- Enforce ownership-scoped search queries (`projects.owner_user_id`) to avoid
+  cross-project/cross-user leakage.
 
 ## Testing
 
@@ -117,6 +125,13 @@ flowchart LR
 ## Implementation Notes
 
 - Cache invalidation is project-scoped: on new upload or artifact update, invalidate relevant keys.
+- Next.js cache constraints:
+  - Cached scopes (`'use cache'`) must not call runtime APIs like `cookies()`, `headers()`, or `searchParams()`; read runtime data outside the cached scope and pass it in.[^next-use-cache-restrictions]
+  - Cache tag limits: each tag string must be <= 256 characters; each cache entry may have at most 128 tags.[^next-cachetag-limits]
+
+[^next-cachetag-limits]: https://nextjs.org/docs/app/api-reference/functions/cacheTag
+[^next-use-cache-restrictions]: https://nextjs.org/docs/app/guides/caching#use-cache
+[^next-revalidatetag-max]: https://nextjs.org/docs/app/api-reference/functions/revalidateTag
 
 ## Consequences
 
@@ -144,3 +159,5 @@ flowchart LR
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.
+- **0.4 (2026-02-06)**: Marked implemented; added Cache Components/tag invalidation implementation details and concrete file references.
+- **0.5 (2026-02-06)**: Added ownership-scoped search + Upstash Ratelimit implementation details for `/api/search`.

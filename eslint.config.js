@@ -5,6 +5,7 @@ const tsdoc = require("eslint-plugin-tsdoc");
 const tseslint = require("@typescript-eslint/eslint-plugin");
 const tsParser = require("@typescript-eslint/parser");
 const nextCoreWebVitals = require("eslint-config-next/core-web-vitals");
+const drizzle = require("eslint-plugin-drizzle");
 
 const REGISTRY_COMPONENT_FILES = [
   // shadcn/ui (common locations)
@@ -52,6 +53,7 @@ module.exports = [
     },
     plugins: {
       "@typescript-eslint": tseslint,
+      drizzle,
       jsdoc,
       tsdoc,
     },
@@ -60,6 +62,14 @@ module.exports = [
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+      "drizzle/enforce-delete-with-where": [
+        "error",
+        { drizzleObjectName: ["db", "tx"] },
+      ],
+      "drizzle/enforce-update-with-where": [
+        "error",
+        { drizzleObjectName: ["db", "tx"] },
       ],
       "jsdoc/check-alignment": "error",
       "jsdoc/check-param-names": "error",

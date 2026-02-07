@@ -7,7 +7,7 @@ import {
   getChatThreadByWorkflowRunId,
   updateChatThreadByWorkflowRunId,
 } from "@/lib/data/chat.server";
-import { getProjectById } from "@/lib/data/projects.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 
 /**
@@ -28,10 +28,7 @@ export async function POST(
   try {
     const authPromise = requireAppUserApi();
     const paramsPromise = context.params;
-    const [_authenticatedUser, params] = await Promise.all([
-      authPromise,
-      paramsPromise,
-    ]);
+    const [user, params] = await Promise.all([authPromise, paramsPromise]);
 
     const thread = await getChatThreadByWorkflowRunId(params.runId);
     if (!thread) {
@@ -46,7 +43,7 @@ export async function POST(
       throw new AppError("conflict", 409, "Chat session is no longer active.");
     }
 
-    const project = await getProjectById(thread.projectId);
+    const project = await getProjectByIdForUser(thread.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }

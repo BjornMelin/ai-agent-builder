@@ -2,7 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 
-import { getAuth } from "@/lib/auth/neon-auth.server";
+import { getSessionCached } from "@/lib/auth/session-cache.server";
 import { env, normalizeEmail } from "@/lib/env";
 
 /**
@@ -15,7 +15,7 @@ import { env, normalizeEmail } from "@/lib/env";
  * @returns Session user object from Neon Auth.
  */
 export async function requireAppUser() {
-  const { data: session } = await getAuth().getSession();
+  const { data: session } = await getSessionCached();
 
   if (!session?.user) {
     redirect("/auth/sign-in");
