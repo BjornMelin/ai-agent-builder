@@ -377,6 +377,11 @@ export function ProjectChatClient(
   const hasActiveSession = Boolean(runId) && !isTerminalStatus(runStatus);
   const modeSelectorDisabled = hasActiveSession;
   const threadSelectorDisabled = hasActiveSession;
+  const modeForDisplay =
+    hasActiveSession && activeThread ? activeThread.mode : selectedModeId;
+  const modeOptionForDisplay = props.enabledModes.find(
+    (m) => m.modeId === modeForDisplay,
+  );
 
   async function sendFollowUp(text: string): Promise<boolean> {
     if (!runId) return false;
@@ -552,9 +557,14 @@ export function ProjectChatClient(
               : "New chat"}
           </p>
           <p className="truncate text-muted-foreground text-xs">
-            Mode: {activeThread?.mode ?? selectedModeId}
+            Mode: {modeOptionForDisplay?.displayName ?? modeForDisplay}
             {runId ? ` · Run: ${runId}` : ""}
           </p>
+          {modeOptionForDisplay?.description ? (
+            <p className="text-muted-foreground text-pretty text-xs">
+              {modeOptionForDisplay.description}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

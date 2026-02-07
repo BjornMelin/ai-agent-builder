@@ -54,8 +54,10 @@ describe("Context7 MCP wrapper", () => {
     state.getRedis.mockReturnValue(redis);
 
     const executeResolve = vi.fn().mockResolvedValue({ data: ["ok"] });
+    const close = vi.fn().mockResolvedValue(undefined);
 
     state.createMCPClient.mockResolvedValue({
+      close,
       tools: vi.fn().mockResolvedValue({
         "query-docs": { execute: vi.fn() },
         "resolve-library-id": { execute: executeResolve },
@@ -70,6 +72,7 @@ describe("Context7 MCP wrapper", () => {
 
     expect(result).toEqual({ data: ["ok"] });
     expect(executeResolve).toHaveBeenCalledTimes(1);
+    expect(close).toHaveBeenCalledTimes(1);
     expect(redis.setex).toHaveBeenCalledWith(
       expect.stringMatching(/^cache:context7:resolve-library-id:/),
       budgets.context7CacheTtlSeconds,
@@ -88,8 +91,10 @@ describe("Context7 MCP wrapper", () => {
       // Exceeds maxContext7ResponseBytes once JSON stringified.
       data: "x".repeat(budgets.maxContext7ResponseBytes + 10_000),
     });
+    const close = vi.fn().mockResolvedValue(undefined);
 
     state.createMCPClient.mockResolvedValue({
+      close,
       tools: vi.fn().mockResolvedValue({
         "resolve-library-id": { execute: executeResolve },
       }),
@@ -106,6 +111,7 @@ describe("Context7 MCP wrapper", () => {
       status: 400,
     });
 
+    expect(close).toHaveBeenCalledTimes(1);
     expect(redis.setex).not.toHaveBeenCalled();
   });
 });

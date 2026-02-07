@@ -23,15 +23,7 @@ function getRedisOptional() {
   }
 }
 
-let cachedClientPromise: Promise<MCPClient> | undefined;
 type Context7Toolset = Awaited<ReturnType<MCPClient["tools"]>>;
-
-let cachedToolsetPromise: Promise<Context7Toolset> | undefined;
-
-async function getClient(): Promise<MCPClient> {
-  cachedClientPromise ??= createMCPClient(getClientConfig());
-  return cachedClientPromise;
-}
 
 function getClientConfig(): MCPClientConfig {
   const apiKey = env.context7.apiKey;
@@ -46,15 +38,18 @@ function getClientConfig(): MCPClientConfig {
   };
 }
 
-async function getToolset(): Promise<Context7Toolset> {
-  if (!cachedToolsetPromise) {
-    cachedToolsetPromise = (async () => {
-      const client = await getClient();
-      return client.tools();
-    })();
+async function withToolset<T>(
+  fn: (toolset: Context7Toolset) => Promise<T>,
+): Promise<T> {
+  const client = await createMCPClient(getClientConfig());
+  try {
+    const toolset = await client.tools();
+    return await fn(toolset);
+  } finally {
+    await client.close().catch(() => {
+      // Best-effort cleanup.
+    });
   }
-
-  return cachedToolsetPromise;
 }
 
 function assertMaxBytes(value: unknown) {
@@ -85,21 +80,23 @@ async function callContext7Tool(
     if (cached) return cached;
   }
 
-  const toolset = await getToolset();
-  const tool = toolset[toolName];
-  if (!tool) {
-    throw new AppError(
-      "bad_request",
-      400,
-      `Context7 tool not available: ${toolName}.`,
-    );
-  }
+  const result = await withToolset(async (toolset) => {
+    const tool = toolset[toolName];
+    if (!tool) {
+      throw new AppError(
+        "bad_request",
+        400,
+        `Context7 tool not available: ${toolName}.`,
+      );
+    }
 
-  const result = await tool.execute(args, {
-    messages: [],
-    toolCallId: `context7:${toolName}`,
-  } satisfies ToolExecutionOptions);
-  assertMaxBytes(result);
+    const toolResult = await tool.execute(args, {
+      messages: [],
+      toolCallId: `context7:${toolName}`,
+    } satisfies ToolExecutionOptions);
+    assertMaxBytes(toolResult);
+    return toolResult;
+  });
 
   if (redis) {
     await redis
