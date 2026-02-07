@@ -272,22 +272,6 @@ function assertTmpFilePath(targetPath: string): string {
   return resolved;
 }
 
-async function printEmailPasswordConfigSummary(
-  label: string,
-  projectId: string,
-  branchId: string,
-  neonApiKey: string,
-): Promise<void> {
-  try {
-    // Intentionally avoid logging response data here: code scanning treats auth
-    // config payloads as potentially sensitive. We only surface success/failure.
-    await getEmailPasswordConfig(projectId, branchId, neonApiKey);
-    printSummary(label, "ok (details hidden)");
-  } catch (error) {
-    printSummary(label, `error (${formatError(error)})`);
-  }
-}
-
 async function mapWithConcurrency<T, R>(
   items: readonly T[],
   concurrency: number,
@@ -476,6 +460,7 @@ async function probeSignInEmailPassword(
 
   let response: Response;
   try {
+    // lgtm[js/file-access-to-http]: neonAuthBaseUrl is validated (https + *.neon.tech, no path/query/hash) by extractEndpointId().
     response = await fetch(`${neonAuthBaseUrl}/sign-in/email`, {
       body: JSON.stringify({ email, password }),
       headers: {
@@ -528,6 +513,7 @@ async function signUpEmailPassword(
 
   let response: Response;
   try {
+    // lgtm[js/file-access-to-http]: neonAuthBaseUrl is validated (https + *.neon.tech, no path/query/hash) by extractEndpointId().
     response = await fetch(`${neonAuthBaseUrl}/sign-up/email`, {
       body: JSON.stringify({
         callbackURL: callbackUrl,
@@ -686,18 +672,6 @@ function warnIfDatabaseUrlLooksInsecure(databaseUrl: string): void {
   }
 }
 
-async function getEmailPasswordConfig(
-  projectId: string,
-  branchId: string,
-  neonApiKey: string,
-): Promise<unknown> {
-  const response = await neonApiRequest<unknown>(
-    neonApiKey,
-    `/projects/${projectId}/branches/${branchId}/auth/email_and_password`,
-  );
-  return response.data;
-}
-
 async function runInfo(args: { projectId?: string }): Promise<void> {
   const databaseUrl = getRequiredEnv("DATABASE_URL");
   const neonAuthBaseUrl = getRequiredEnv("NEON_AUTH_BASE_URL");
@@ -721,13 +695,6 @@ async function runInfo(args: { projectId?: string }): Promise<void> {
     `${context.branchName} (${context.branchId})`,
   );
   printSummary("Origin", origin);
-
-  await printEmailPasswordConfigSummary(
-    "Email Auth Config",
-    context.projectId,
-    context.branchId,
-    neonApiKey,
-  );
 
   const users = await listCredentialUsers(databaseUrl);
   printSummary("Credential Users", `${users.length}`);
@@ -783,13 +750,6 @@ async function runAudit(args: AuditArgs): Promise<void> {
   } else {
     printSummary("Vercel Dev Pull", "skipped");
   }
-
-  await printEmailPasswordConfigSummary(
-    "Email Auth Config",
-    context.projectId,
-    context.branchId,
-    neonApiKey,
-  );
 
   const users = await listCredentialUsers(databaseUrl);
   printSummary("Credential Users", `${users.length}`);
