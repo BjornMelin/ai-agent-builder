@@ -1151,7 +1151,8 @@ export const PromptInputActionMenuTrigger = (
 ) => {
   const { className, children, ...rest } = props;
   const resolvedAriaLabel =
-    rest["aria-label"] ?? (children ? undefined : "Open prompt actions");
+    rest["aria-label"] ??
+    (typeof children === "string" ? undefined : "Open prompt actions");
   return (
     <DropdownMenuTrigger asChild>
       <PromptInputButton

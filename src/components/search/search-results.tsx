@@ -68,7 +68,10 @@ function LoadingRows() {
 /**
  * Search results renderer.
  *
- * @param props - Results list and state props.
+ * @param props - {@link SearchResultsProps} for the current query and UI state.
+ * Provide `query`, `status`, `hasSearched`, `errorId`, `idleMessage`,
+ * `emptyMessage`, and a readonly `results` array. `error` is nullable; when
+ * present it is rendered as an alert and other states are skipped.
  * @returns Results list UI.
  */
 export function SearchResults(props: SearchResultsProps) {
