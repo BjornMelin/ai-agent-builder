@@ -59,13 +59,11 @@ function formatRunStatus(status: string): string {
 /**
  * Project overview content (suspends for request-time data).
  *
- * @param props - Route params.
- * @returns The project overview UI.
+ * @param props - Component props containing `projectId`, a required project identifier string (expected to be non-empty and URL-safe), sourced from the route params and used to load the project and related overview cards.
+ * @returns The project overview UI, or `null` when the project is not found or access is denied (layout handles the not-found UI).
  */
 export async function ProjectOverviewContent(
-  props: Readonly<{
-    projectId: string;
-  }>,
+  props: Readonly<{ projectId: string }>,
 ) {
   const { projectId } = props;
   const user = await requireAppUser();

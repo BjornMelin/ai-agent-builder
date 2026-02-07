@@ -28,24 +28,29 @@ export function useUrlQuerySync(params: UrlQuerySyncParams) {
   const hasCompletedInitialSyncRef = useRef(false);
   const skipNextUrlQueryRef = useRef<string | null>(null);
 
+  const normalizeQuery = useCallback((query: string) => query.trim(), []);
+
   const maybeSkipAndSync = useCallback(
     (query: string, options: UrlQuerySyncOptions) => {
       if (!options.syncUrl) return;
 
-      if (query !== urlQuery.trim()) {
-        skipNextUrlQueryRef.current = query;
+      const normalizedQuery = normalizeQuery(query);
+      const normalizedUrlQuery = normalizeQuery(urlQuery);
+
+      if (normalizedQuery !== normalizedUrlQuery) {
+        skipNextUrlQueryRef.current = normalizedQuery;
       } else {
         skipNextUrlQueryRef.current = null;
       }
 
-      syncQueryInUrl(query);
+      syncQueryInUrl(normalizedQuery);
     },
-    [syncQueryInUrl, urlQuery],
+    [normalizeQuery, syncQueryInUrl, urlQuery],
   );
 
   const consumeUrlQueryChange = useCallback(
     (nextUrlQuery: string): UrlQuerySyncChange => {
-      const normalizedUrlQuery = nextUrlQuery.trim();
+      const normalizedUrlQuery = normalizeQuery(nextUrlQuery);
 
       if (skipNextUrlQueryRef.current === normalizedUrlQuery) {
         skipNextUrlQueryRef.current = null;
@@ -57,7 +62,7 @@ export function useUrlQuerySync(params: UrlQuerySyncParams) {
       hasCompletedInitialSyncRef.current = true;
       return { shouldExecute: true, syncInput };
     },
-    [],
+    [normalizeQuery],
   );
 
   return { consumeUrlQueryChange, maybeSkipAndSync };

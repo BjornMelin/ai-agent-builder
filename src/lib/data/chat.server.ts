@@ -150,7 +150,9 @@ export const getChatThreadByWorkflowRunId = cache(
  * Get the most recently active chat thread for a project (cached per request).
  *
  * @param projectId - Project id.
+ * @param userId - Authenticated user id used to validate project access.
  * @returns Latest chat thread DTO or null.
+ * @throws AppError - With code "not_found" (404) when the project is not accessible.
  * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
  */
 export const getLatestChatThreadByProjectId = cache(

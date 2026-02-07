@@ -101,7 +101,15 @@ export async function RunDetailContent(
               No steps recorded yet.
             </p>
           ) : (
-            <RunStepsListClient steps={steps} />
+            <RunStepsListClient
+              steps={steps.map((step) => ({
+                id: step.id,
+                status: step.status,
+                stepId: step.stepId,
+                stepKind: step.stepKind,
+                stepName: step.stepName,
+              }))}
+            />
           )}
         </CardContent>
       </Card>

@@ -12,7 +12,6 @@ import {
   type ComponentProps,
   type HTMLAttributes,
   useEffect,
-  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -335,10 +334,7 @@ export const CommitTimestamp = (props: CommitTimestampProps) => {
     () => timestamp,
   );
 
-  const formatted = useMemo(
-    () => formatRelativeCommitTimestamp(new Date(timestamp), nowMs),
-    [nowMs, timestamp],
-  );
+  const formatted = formatRelativeCommitTimestamp(new Date(timestamp), nowMs);
 
   return (
     <time

@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /**
  * Run detail page (stream + persisted step timeline).
  *
- * @param props - Route params.
+ * @param props - Route params containing a `params` promise that resolves to `{ projectId, runId }` from the URL segments (non-empty, URL-safe strings).
  * @returns Run detail page.
  */
 export default async function RunDetailPage(

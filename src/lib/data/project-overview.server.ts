@@ -37,11 +37,16 @@ export type ProjectCorpusOverview = Readonly<{
 }>;
 
 /**
- * Assert that the authenticated user can access the given project.
+ * Verify that a project exists and that the given user has access to it.
+ *
+ * @remarks
+ * Private helper used by the exported project overview readers in this module:
+ * `getProjectCorpusOverview`, `getProjectRunOverview`, and
+ * `getProjectArtifactOverview`.
  *
  * @param projectId - Project identifier.
  * @param userId - Authenticated user ID.
- * @throws AppError - With status 404 when the project is missing for the user.
+ * @throws AppError - With code "not_found" (404) when the project is not accessible.
  */
 async function assertProjectAccess(projectId: string, userId: string) {
   const project = await getProjectByIdForUser(projectId, userId);

@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6
 
       - name: Audit preview resources for bot branches
         env:
@@ -73,6 +73,8 @@ jobs:
             local token="$3"
             local path="$4"
             local data="${5:-}"
+            local CONNECT_TIMEOUT="${CONNECT_TIMEOUT:-10}"
+            local MAX_TIME="${MAX_TIME:-60}"
             local resp=""
             local stderr_file=""
             local curl_status=0
@@ -81,6 +83,8 @@ jobs:
             if [ -n "${data}" ]; then
               set +e
               resp="$(curl -sS -X "${method}" "${base_url}${path}" \
+                --connect-timeout "${CONNECT_TIMEOUT}" \
+                --max-time "${MAX_TIME}" \
                 -H "Authorization: Bearer ${token}" \
                 -H "Accept: application/json" \
                 -H "Content-Type: application/json" \
@@ -91,6 +95,8 @@ jobs:
             else
               set +e
               resp="$(curl -sS -X "${method}" "${base_url}${path}" \
+                --connect-timeout "${CONNECT_TIMEOUT}" \
+                --max-time "${MAX_TIME}" \
                 -H "Authorization: Bearer ${token}" \
                 -H "Accept: application/json" \
                 -w '\n%{http_code}' 2>"${stderr_file}")"

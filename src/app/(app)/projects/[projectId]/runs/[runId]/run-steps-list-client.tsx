@@ -6,9 +6,14 @@ import { useRef } from "react";
 import type { RunStepDto } from "@/lib/data/runs.server";
 import { cn } from "@/lib/utils";
 
+/** Minimal step shape allowed over the RSC to client boundary for step lists. */
+export type RunStepsListStep = Readonly<
+  Pick<RunStepDto, "id" | "stepId" | "stepName" | "stepKind" | "status">
+>;
+
 /** Props for {@link RunStepsListClient}. */
 export type RunStepsListClientProps = Readonly<{
-  steps: readonly RunStepDto[];
+  steps: readonly RunStepsListStep[];
   className?: string;
 }>;
 
