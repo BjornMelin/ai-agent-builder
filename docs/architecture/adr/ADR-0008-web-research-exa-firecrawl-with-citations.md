@@ -1,9 +1,9 @@
 ---
 ADR: 0008
 Title: Web research: Exa + Firecrawl with citations
-Status: Accepted
-Version: 0.2
-Date: 2026-01-30
+Status: Implemented
+Version: 0.3
+Date: 2026-02-07
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0006, ADR-0013]
@@ -15,7 +15,7 @@ References:
 
 ## Status
 
-Accepted — 2026-01-30.
+Implemented — 2026-02-07.
 
 ## Description
 
@@ -23,14 +23,14 @@ Use Exa for search and Firecrawl for page extraction, enforcing citation capture
 
 ## Context
 
-Market validation and competitive research require up-to-date web information. We need reliable search results plus robust extraction to get clean content for summarization. Both Exa and Firecrawl have AI SDK tools, reducing custom integration code.
+Market validation and competitive research require up-to-date web information. We need reliable search results plus robust extraction to get clean content for summarization.
 
 ## Decision Drivers
 
 - High-quality search
 - Reliable extraction
 - Citation enforcement
-- AI SDK tool ecosystem
+- Low maintenance surface area (thin wrappers + caching)
 
 ## Alternatives
 
@@ -92,14 +92,15 @@ flowchart LR
 
 ### Architecture Overview
 
-- `src/lib/ai/tools/web-search.ts` wraps Exa queries.
-- `src/lib/ai/tools/firecrawl.ts` wraps Firecrawl extract.
-- Cache by `(url, extractProfile)` in Upstash Redis.
+- `src/lib/ai/tools/web-search.server.ts` wraps Exa queries.
+- `src/lib/ai/tools/web-extract.server.ts` wraps Firecrawl extraction.
+- Cache by `(tool, params)` in Upstash Redis.
 
 ### Implementation Details
 
 - Store citations as `{url, title, publishedAt?, accessedAt, excerpt}`.
-- Render citations in UI as footnotes per message/section.
+- Link citations to artifacts (not chat messages) for auditing/export.
+- Render citations in artifact markdown via `citation:n` links.
 
 ## Testing
 
@@ -131,9 +132,10 @@ flowchart LR
 
 ### Dependencies
 
-- **Added**: @exa/ai-sdk, firecrawl-aisdk (or official package)
+- **Added**: `exa-js`, `@mendable/firecrawl-js`
 
 ## Changelog
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-07)**: Implemented with server wrappers, caching, budgets, and artifact-linked citations.

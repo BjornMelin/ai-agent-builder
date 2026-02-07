@@ -20,6 +20,7 @@ import {
 } from "@/lib/data/artifacts.server";
 import { listCitationsByArtifactId } from "@/lib/data/citations.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import { ArtifactMarkdownWithCitations } from "./artifact-markdown-with-citations";
 
 const ARTIFACT_JSON_PREVIEW_MAX_DEPTH = 6;
 const ARTIFACT_JSON_PREVIEW_MAX_ARRAY_ITEMS = 100;
@@ -160,7 +161,10 @@ export async function ArtifactDetailContent(
         </ArtifactHeader>
         <ArtifactContent>
           {markdown ? (
-            <MessageResponse>{markdown.markdown}</MessageResponse>
+            <ArtifactMarkdownWithCitations
+              citations={citations}
+              markdown={markdown.markdown}
+            />
           ) : (
             <div className="max-h-[70vh] overflow-auto rounded-md border bg-muted/20 p-4">
               <MessageResponse>

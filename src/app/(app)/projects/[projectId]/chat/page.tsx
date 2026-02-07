@@ -10,9 +10,15 @@ import { Skeleton } from "@/components/ui/skeleton";
  * @returns The chat page.
  */
 export default async function ChatPage(
-  props: Readonly<{ params: Promise<{ projectId: string }> }>,
+  props: Readonly<{
+    params: Promise<{ projectId: string }>;
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }>,
 ) {
   const { projectId } = await props.params;
+  const searchParams = await props.searchParams;
+  const threadIdRaw = searchParams.threadId;
+  const threadId = typeof threadIdRaw === "string" ? threadIdRaw : undefined;
 
   return (
     <Suspense
@@ -24,7 +30,7 @@ export default async function ChatPage(
         </div>
       }
     >
-      <ChatContent projectId={projectId} />
+      <ChatContent projectId={projectId} threadId={threadId} />
     </Suspense>
   );
 }

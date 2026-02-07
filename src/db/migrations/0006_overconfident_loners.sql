@@ -1,0 +1,1 @@
+ALTER TABLE "chat_threads" ADD COLUMN "mode" varchar(64) DEFAULT 'chat-assistant' NOT NULL;

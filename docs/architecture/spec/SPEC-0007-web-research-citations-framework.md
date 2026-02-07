@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0007
 title: Web research + citations framework
-version: 0.2.0
-date: 2026-01-30
+version: 0.3.0
+date: 2026-02-07
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements: ["FR-012", "NFR-004", "NFR-006", "PR-001", "IR-007"]
 related_adrs: ["ADR-0008", "ADR-0013"]
 notes: "Defines web research tool usage, caching, and citation requirements."
@@ -83,13 +83,16 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ### Data contracts
 
-- `Citation`: `{url, title, publishedAt?, accessedAt, excerpt}`
+- `Citation` (minimal, auditable): `{url, title, publishedAt?, accessedAt, excerpt}`
+- Research report artifacts reference citations using `citation:n` links.
 
 ### File-level contracts
 
-- `src/lib/ai/tools/web-search.ts`: search wrapper; enforces per-step query/result bounds.
-- `src/lib/ai/tools/firecrawl.ts`: extraction wrapper; normalizes response payloads.
-- `src/lib/citations/normalize.ts`: canonical citation schema normalization.
+- `src/lib/ai/tools/web-search.server.ts`: Exa search wrapper; enforces query/result bounds and caches results.
+- `src/lib/ai/tools/web-extract.server.ts`: Firecrawl extraction wrapper; truncates + caches extracted markdown.
+- `src/lib/citations/normalize.server.ts`: canonical citation schema normalization.
+- `src/lib/research/research-report.server.ts`: builds research report artifacts and persists citations linked to the artifact version.
+- `src/app/(app)/projects/[projectId]/artifacts/[artifactId]/artifact-markdown-with-citations.tsx`: renders citation links in artifact markdown.
 
 ### Configuration
 
@@ -99,8 +102,8 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ## Acceptance criteria
 
-- Every research section lists citations
-- Cache reduces repeat extractions for same URL
+- Every research report section lists citations
+- Cache reduces repeat searches/extractions for identical inputs
 
 ## Testing
 

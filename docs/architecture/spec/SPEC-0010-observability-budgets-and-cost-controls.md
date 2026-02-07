@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0010
 title: Observability, budgets, and cost controls
-version: 0.3.1
-date: 2026-02-03
+version: 0.3.2
+date: 2026-02-07
 owners: ["Bjorn Melin"]
 status: Proposed
 related_requirements: ["FR-011", "NFR-004", "NFR-006", "NFR-015", "PR-007"]
@@ -109,9 +109,28 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ### Web research budgets
 
-- max Exa searches per run
-- max Firecrawl extracts per run
-- cache TTLs for repeated queries
+- max Exa searches per agent turn (`budgets.maxWebSearchCallsPerTurn`)
+- max Firecrawl extracts per agent turn (`budgets.maxWebExtractCallsPerTurn`)
+- max web search results per call (`budgets.maxWebSearchResults`)
+- max extracted characters per URL (`budgets.maxWebExtractCharsPerUrl`)
+- max citations per artifact (`budgets.maxCitationsPerArtifact`)
+- cache TTLs for repeated queries (`budgets.webSearchCacheTtlSeconds`, `budgets.webExtractCacheTtlSeconds`)
+
+Enforcement (project chat workflow):
+
+- `src/workflows/chat/steps/web-search.step.ts`
+- `src/workflows/chat/steps/web-extract.step.ts`
+- `src/workflows/chat/steps/research-report.step.ts`
+
+### Docs MCP budgets
+
+- max Context7 calls per agent turn (`budgets.maxContext7CallsPerTurn`)
+- max Context7 response size (`budgets.maxContext7ResponseBytes`)
+- cache TTL (`budgets.context7CacheTtlSeconds`)
+
+Enforcement (project chat workflow):
+
+- `src/workflows/chat/steps/context7.step.ts`
 
 ### Sandbox budgets
 

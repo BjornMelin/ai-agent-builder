@@ -4,7 +4,8 @@ import { useChat } from "@ai-sdk/react";
 import { WorkflowChatTransport } from "@workflow/ai";
 import type { ChatTransport, UIDataTypes, UIMessage, UITools } from "ai";
 import { getToolName, isToolUIPart } from "ai";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   Conversation,
@@ -39,6 +40,14 @@ import {
 } from "@/components/ai-elements/tool";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toChatTitle } from "@/lib/chat/title";
+import {
   type ChatThreadStatus,
   resolveRunStatusAfterChatEnd,
 } from "./run-status";
@@ -52,43 +61,43 @@ type UserMessageMarker = Readonly<{
 
 type AppUIMessage = UIMessage<unknown, UIDataTypes, UITools>;
 type AppUIMessagePart = AppUIMessage["parts"][number];
-
-const STORAGE_LOG_THROTTLE_MS = 10_000;
-const storageLogTimestamps = new Map<string, number>();
-
-type ChatStorageErrorFields = Readonly<{
-  error: unknown;
-  storageKey: string;
-  workflowRunId: string | null;
+type PersistedUiMessage = Readonly<{
+  id: string;
+  parts: unknown[];
+  role: "assistant" | "system" | "user";
+}> &
+  Record<string, unknown>;
+type EnabledAgentModeOption = Readonly<{
+  modeId: string;
+  displayName: string;
+  description: string;
 }>;
 
-function reportChatStorageError(
-  message: string,
-  fields: ChatStorageErrorFields,
-) {
-  const dedupeKey = `${message}:${fields.storageKey}`;
-  const now = Date.now();
-  const previousTimestamp = storageLogTimestamps.get(dedupeKey);
-  if (
-    previousTimestamp !== undefined &&
-    now - previousTimestamp < STORAGE_LOG_THROTTLE_MS
-  ) {
-    return;
-  }
-  storageLogTimestamps.set(dedupeKey, now);
+type ChatThreadSummary = Readonly<{
+  id: string;
+  projectId: string;
+  title: string;
+  mode: string;
+  status: ChatThreadStatus;
+  workflowRunId: string | null;
+  lastActivityAt: string;
+  endedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}>;
 
-  const telemetryError = new Error(message, { cause: fields });
-  if (
-    typeof window !== "undefined" &&
-    typeof window.reportError === "function"
-  ) {
-    window.reportError(telemetryError);
-    return;
-  }
+const isTerminalStatus = (status: ChatThreadStatus | null): boolean =>
+  status === "succeeded" || status === "failed" || status === "canceled";
 
-  if (process.env.NODE_ENV !== "production") {
-    console.error(message, fields);
+function replaceThreadIdInUrl(threadId: string | null) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (threadId) {
+    url.searchParams.set("threadId", threadId);
+  } else {
+    url.searchParams.delete("threadId");
   }
+  window.history.replaceState(window.history.state, "", url);
 }
 
 function isUserMessageMarker(data: unknown): data is UserMessageMarker {
@@ -171,81 +180,164 @@ function reconstructMessages(
 /**
  * Streaming multi-turn chat client for a project.
  *
- * @param props - Props object requiring `projectId` (non-empty string for storage keys and API routing) and optional `initialThread` (existing thread to resume, with `workflowRunId` and `status`).
+ * @param props - Props for rendering a chat thread transcript and starting new sessions.
  * @returns The chat UI for the project.
  */
 export function ProjectChatClient(
   props: Readonly<{
     projectId: string;
-    initialThread: Readonly<{
-      workflowRunId: string;
-      status: ChatThreadStatus;
-    }> | null;
+    threads: readonly ChatThreadSummary[];
+    initialThread: ChatThreadSummary | null;
+    initialMessages: readonly PersistedUiMessage[];
+    enabledModes: readonly EnabledAgentModeOption[];
+    defaultModeId: string;
   }>,
 ) {
-  const legacyStorageKey = `workflow:chat:${props.projectId}:runId`;
-  const storageKey = `workflow:chat:v1:${props.projectId}:runId`;
-  const [runId, setRunId] = useState<string | null>(
-    props.initialThread?.workflowRunId ?? null,
+  const router = useRouter();
+  const projectIdRef = useRef(props.projectId);
+  useEffect(() => {
+    projectIdRef.current = props.projectId;
+  }, [props.projectId]);
+
+  const [threads, setThreads] = useState<readonly ChatThreadSummary[]>(
+    () => props.threads,
   );
+  const [activeThread, setActiveThread] = useState<ChatThreadSummary | null>(
+    () => props.initialThread,
+  );
+  const activeThreadIdRef = useRef<string | null>(
+    props.initialThread?.id ?? null,
+  );
+  useEffect(() => {
+    activeThreadIdRef.current = activeThread?.id ?? null;
+  }, [activeThread?.id]);
+
+  const initialThreadStatus = props.initialThread?.status ?? null;
+  const initialWorkflowRunIdRaw = props.initialThread?.workflowRunId ?? null;
+  const initialWorkflowRunId =
+    initialWorkflowRunIdRaw && !isTerminalStatus(initialThreadStatus)
+      ? initialWorkflowRunIdRaw
+      : null;
+
+  const [runId, setRunId] = useState<string | null>(() => initialWorkflowRunId);
   const [runStatus, setRunStatus] = useState<ChatThreadStatus | null>(
-    props.initialThread?.status ?? null,
+    initialThreadStatus,
   );
   const [chatId] = useState(
-    () =>
-      props.initialThread?.workflowRunId ?? `project-chat:${props.projectId}`,
+    () => initialWorkflowRunId ?? `project-chat:${props.projectId}`,
   );
-  const [shouldResume] = useState(() => props.initialThread !== null);
+  const [shouldResume] = useState(() => initialWorkflowRunId !== null);
 
+  const selectedModeFallback =
+    props.enabledModes.find((m) => m.modeId === props.defaultModeId)?.modeId ??
+    props.enabledModes.at(0)?.modeId ??
+    props.defaultModeId;
+  const [selectedModeId, setSelectedModeId] = useState<string>(() => {
+    const fromThread = props.initialThread?.mode;
+    if (!fromThread) return selectedModeFallback;
+    return props.enabledModes.some((m) => m.modeId === fromThread)
+      ? fromThread
+      : selectedModeFallback;
+  });
+
+  const selectedModeIdRef = useRef(selectedModeId);
+  useEffect(() => {
+    selectedModeIdRef.current = selectedModeId;
+  }, [selectedModeId]);
+
+  const handleChatEnd = useCallback(() => {
+    setRunStatus((previousStatus) => {
+      const next = resolveRunStatusAfterChatEnd(previousStatus);
+      setActiveThread((prev) =>
+        prev && next
+          ? {
+              ...prev,
+              endedAt: new Date().toISOString(),
+              status: next,
+              updatedAt: new Date().toISOString(),
+            }
+          : prev,
+      );
+      setThreads((prev) => {
+        const activeId = activeThreadIdRef.current;
+        if (!activeId || !next) return prev;
+
+        const now = new Date().toISOString();
+        return prev.map((t) =>
+          t.id === activeId
+            ? { ...t, endedAt: now, status: next, updatedAt: now }
+            : t,
+        );
+      });
+      return next;
+    });
+    setRunId(null);
+  }, []);
+
+  const handleChatSendMessage = useCallback(
+    (response: Response, options: { messages: AppUIMessage[] }) => {
+      const workflowRunId = response.headers.get("x-workflow-run-id");
+      if (!workflowRunId) return;
+      const threadId = response.headers.get("x-chat-thread-id");
+      setRunStatus("running");
+      setRunId(workflowRunId);
+
+      if (!threadId) return;
+
+      const now = new Date().toISOString();
+      const lastUserMessage = options.messages
+        .slice()
+        .reverse()
+        .find((msg) => msg.role === "user");
+      const title = lastUserMessage ? toChatTitle(lastUserMessage) : "New chat";
+      const mode = selectedModeIdRef.current;
+      const nextThread: ChatThreadSummary = {
+        createdAt: now,
+        endedAt: null,
+        id: threadId,
+        lastActivityAt: now,
+        mode,
+        projectId: projectIdRef.current,
+        status: "running",
+        title,
+        updatedAt: now,
+        workflowRunId,
+      };
+
+      setActiveThread(nextThread);
+      setThreads((prev) => {
+        const existingIdx = prev.findIndex((t) => t.id === threadId);
+        if (existingIdx >= 0) {
+          return prev.map((t) => (t.id === threadId ? nextThread : t));
+        }
+        return [nextThread, ...prev];
+      });
+
+      replaceThreadIdInUrl(threadId);
+    },
+    [],
+  );
+
+  const prepareSendMessagesRequest = useCallback(
+    async (config: { messages: AppUIMessage[] }) => {
+      return {
+        body: {
+          messages: reconstructMessages(config.messages),
+          modeId: selectedModeIdRef.current,
+          projectId: projectIdRef.current,
+        },
+      };
+    },
+    [],
+  );
+
+  // eslint-disable-next-line react-hooks/refs -- The transport constructor stores callbacks; it does not read ref values during render.
   const [transport] = useState(() => {
     const workflowTransport = new WorkflowChatTransport<AppUIMessage>({
       api: "/api/chat",
-      onChatEnd: () => {
-        setRunStatus((previousStatus) =>
-          resolveRunStatusAfterChatEnd(previousStatus),
-        );
-        setRunId(null);
-        try {
-          window.localStorage.removeItem(storageKey);
-          window.localStorage.removeItem(legacyStorageKey);
-        } catch (error) {
-          reportChatStorageError(
-            "[ChatClient] Failed to clear runId from storage",
-            {
-              error,
-              storageKey,
-              workflowRunId: null,
-            },
-          );
-        }
-      },
-      onChatSendMessage: (response) => {
-        const workflowRunId = response.headers.get("x-workflow-run-id");
-        if (!workflowRunId) return;
-        setRunStatus("running");
-        setRunId(workflowRunId);
-        try {
-          window.localStorage.setItem(storageKey, workflowRunId);
-        } catch (error) {
-          reportChatStorageError(
-            "[ChatClient] Failed to persist runId to storage",
-            {
-              error,
-              storageKey,
-              workflowRunId,
-            },
-          );
-        }
-      },
-      prepareSendMessagesRequest: async (config) => {
-        // The server expects a strict body: { projectId, messages }.
-        return {
-          body: {
-            messages: reconstructMessages(config.messages),
-            projectId: props.projectId,
-          },
-        };
-      },
+      onChatEnd: handleChatEnd,
+      onChatSendMessage: handleChatSendMessage,
+      prepareSendMessagesRequest,
     });
 
     const adapter: ChatTransport<AppUIMessage> = {
@@ -271,6 +363,7 @@ export function ProjectChatClient(
     status,
   } = useChat({
     id: chatId,
+    messages: props.initialMessages as unknown as AppUIMessage[],
     resume: shouldResume,
     transport,
   });
@@ -281,16 +374,18 @@ export function ProjectChatClient(
   const composerLabelId = `${composerInputId}-label`;
   const messages = reconstructMessages(rawMessages);
   const hasMessages = messages.length > 0;
-  const isTerminalStatus =
-    runStatus === "succeeded" ||
-    runStatus === "failed" ||
-    runStatus === "canceled";
-  const hasActiveSession = Boolean(runId) && !isTerminalStatus;
+  const hasActiveSession = Boolean(runId) && !isTerminalStatus(runStatus);
+  const modeSelectorDisabled = hasActiveSession;
+  const threadSelectorDisabled = hasActiveSession;
 
   async function sendFollowUp(text: string): Promise<boolean> {
     if (!runId) return false;
 
-    const optimisticId = `user-${Date.now()}`;
+    const messageId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `user-${Date.now()}`;
+    const optimisticId = messageId;
     setMessages((prev) =>
       prev.concat([
         {
@@ -303,7 +398,7 @@ export function ProjectChatClient(
 
     try {
       const response = await fetch(`/api/chat/${runId}`, {
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, messageId }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
@@ -321,11 +416,6 @@ export function ProjectChatClient(
         if (response.status === 404 || response.status === 409) {
           setRunStatus(null);
           setRunId(null);
-          try {
-            window.localStorage.removeItem(storageKey);
-          } catch {
-            // Ignore.
-          }
         }
         return false;
       }
@@ -392,23 +482,26 @@ export function ProjectChatClient(
   async function endSession() {
     if (!runId) {
       setMessages([]);
+      setActiveThread(null);
+      replaceThreadIdInUrl(null);
       return;
     }
 
     if (!hasActiveSession) {
       setRunId(null);
       setRunStatus(null);
-      try {
-        window.localStorage.removeItem(storageKey);
-      } catch {
-        // Ignore.
-      }
       return;
     }
 
     try {
       const response = await fetch(`/api/chat/${runId}`, {
-        body: JSON.stringify({ message: "/done" }),
+        body: JSON.stringify({
+          message: "/done",
+          messageId:
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+              ? crypto.randomUUID()
+              : `done-${Date.now()}`,
+        }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
@@ -420,12 +513,6 @@ export function ProjectChatClient(
       setComposerError(null);
       setRunStatus("succeeded");
       setRunId(null);
-      try {
-        window.localStorage.removeItem(storageKey);
-        window.localStorage.removeItem(legacyStorageKey);
-      } catch {
-        // Ignore.
-      }
     } catch (error) {
       setComposerError(
         error instanceof Error ? error.message : "Failed to end session.",
@@ -447,12 +534,6 @@ export function ProjectChatClient(
       setComposerError(null);
       setRunStatus("canceled");
       setRunId(null);
-      try {
-        window.localStorage.removeItem(storageKey);
-        window.localStorage.removeItem(legacyStorageKey);
-      } catch {
-        // Ignore.
-      }
     } catch (error) {
       setComposerError(
         error instanceof Error ? error.message : "Failed to cancel session.",
@@ -462,16 +543,82 @@ export function ProjectChatClient(
 
   return (
     <div className="flex h-[calc(100dvh-4rem)] flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
           <p className="text-muted-foreground text-sm">Project chat</p>
-          <p className="text-muted-foreground text-xs">
-            {runId
-              ? `Session: ${runId}${runStatus ? ` · ${runStatus}` : ""}`
-              : "Start a new session"}
+          <p className="truncate font-medium text-sm">
+            {activeThread
+              ? `${activeThread.title} · ${activeThread.status}`
+              : "New chat"}
+          </p>
+          <p className="truncate text-muted-foreground text-xs">
+            Mode: {activeThread?.mode ?? selectedModeId}
+            {runId ? ` · Run: ${runId}` : ""}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            onValueChange={(value) => {
+              if (value === "__new__") {
+                if (hasActiveSession) return;
+                setComposerError(null);
+                setMessages([]);
+                setRunId(null);
+                setRunStatus(null);
+                setActiveThread(null);
+                setSelectedModeId(selectedModeFallback);
+                replaceThreadIdInUrl(null);
+                return;
+              }
+              if (threadSelectorDisabled) return;
+              void router.push(
+                `/projects/${encodeURIComponent(props.projectId)}/chat?threadId=${encodeURIComponent(
+                  value,
+                )}`,
+              );
+            }}
+            value={activeThread?.id ?? "__new__"}
+          >
+            <SelectTrigger
+              aria-label="Select chat thread"
+              disabled={threadSelectorDisabled}
+              size="sm"
+            >
+              <SelectValue placeholder="New chat" />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="__new__">New chat</SelectItem>
+              {threads.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  <span className="truncate">{t.title}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            onValueChange={(value) => {
+              setSelectedModeId(value);
+            }}
+            value={selectedModeId}
+          >
+            <SelectTrigger
+              aria-label="Select agent mode"
+              disabled={modeSelectorDisabled}
+              size="sm"
+            >
+              <SelectValue placeholder="Mode" />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {props.enabledModes.map((m) => (
+                <SelectItem key={m.modeId} value={m.modeId}>
+                  <span className="truncate">{m.displayName}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Button
             disabled={!hasActiveSession && !hasMessages}
             onClick={async () => {

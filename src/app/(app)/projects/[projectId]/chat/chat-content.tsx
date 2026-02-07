@@ -1,8 +1,17 @@
 import { notFound } from "next/navigation";
 
 import { ProjectChatClient } from "@/app/(app)/projects/[projectId]/chat/chat-client";
+import {
+  DEFAULT_AGENT_MODE_ID,
+  listEnabledAgentModes,
+} from "@/lib/ai/agents/registry.server";
 import { requireAppUser } from "@/lib/auth/require-app-user";
-import { getLatestChatThreadByProjectId } from "@/lib/data/chat.server";
+import {
+  getChatThreadById,
+  getLatestChatThreadByProjectId,
+  listChatMessagesByThreadId,
+  listChatThreadsByProjectId,
+} from "@/lib/data/chat.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 
 /**
@@ -14,9 +23,10 @@ import { getProjectByIdForUser } from "@/lib/data/projects.server";
 export async function ChatContent(
   props: Readonly<{
     projectId: string;
+    threadId?: string | undefined;
   }>,
 ) {
-  const { projectId } = props;
+  const { projectId, threadId } = props;
 
   const user = await requireAppUser();
   const project = await getProjectByIdForUser(projectId, user.id);
@@ -24,22 +34,55 @@ export async function ChatContent(
     notFound();
   }
 
-  const latestThread = await getLatestChatThreadByProjectId(
+  const threadsPromise = listChatThreadsByProjectId(project.id, user.id);
+  const latestThreadPromise = getLatestChatThreadByProjectId(
     project.id,
     user.id,
   );
+  const modesPromise = Promise.resolve(listEnabledAgentModes());
+
+  const [threads, latestThread, enabledModes] = await Promise.all([
+    threadsPromise,
+    latestThreadPromise,
+    modesPromise,
+  ]);
+
+  const activeThread = threadId
+    ? await getChatThreadById(threadId, user.id)
+    : latestThread;
+
+  if (threadId && !activeThread) {
+    notFound();
+  }
+
+  const isTerminal =
+    activeThread?.status === "succeeded" ||
+    activeThread?.status === "failed" ||
+    activeThread?.status === "canceled";
+
+  const initialMessages =
+    activeThread && isTerminal
+      ? await listChatMessagesByThreadId(activeThread.id, user.id).then(
+          (rows) =>
+            rows
+              .map((m) => m.uiMessage)
+              .filter((m): m is NonNullable<typeof m> => m !== null),
+        )
+      : [];
 
   return (
     <ProjectChatClient
-      initialThread={
-        latestThread?.workflowRunId
-          ? {
-              status: latestThread.status,
-              workflowRunId: latestThread.workflowRunId,
-            }
-          : null
-      }
+      key={activeThread?.id ?? "new-thread"}
+      defaultModeId={DEFAULT_AGENT_MODE_ID}
+      enabledModes={enabledModes.map((m) => ({
+        description: m.description,
+        displayName: m.displayName,
+        modeId: m.modeId,
+      }))}
+      initialMessages={initialMessages}
+      initialThread={activeThread}
       projectId={project.id}
+      threads={threads}
     />
   );
 }
