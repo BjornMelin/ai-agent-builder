@@ -8,7 +8,8 @@ import { cn } from "@/lib/utils";
  * @param props - Div props used to size and position the skeleton.
  * @returns Animated skeleton element.
  */
-export function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
+export function Skeleton(props: React.ComponentProps<"div">) {
+  const { className, ...rest } = props;
   return (
     <div
       data-slot="skeleton"
@@ -16,7 +17,7 @@ export function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
         "bg-accent rounded-md motion-safe:animate-pulse motion-reduce:animate-none",
         className,
       )}
-      {...props}
+      {...rest}
     />
   );
 }
