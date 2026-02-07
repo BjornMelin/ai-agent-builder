@@ -42,7 +42,7 @@ function resultSnippet(result: SearchResult): string | null {
   }
 
   if (result.type === "upload") {
-    return result.snippet;
+    return result.snippet || "(no snippet)";
   }
 
   return null;
@@ -98,13 +98,7 @@ export function SearchResults(props: SearchResultsProps) {
   }
 
   return (
-    <ul
-      className="grid gap-2"
-      style={{
-        containIntrinsicSize: "auto 220px",
-        contentVisibility: "auto",
-      }}
-    >
+    <ul className="grid gap-2">
       {props.results.map((result) => {
         const snippet = resultSnippet(result);
         return (

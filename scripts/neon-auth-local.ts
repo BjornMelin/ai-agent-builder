@@ -212,13 +212,31 @@ function resolveLocalOrigin(): string {
 
 function extractEndpointId(neonAuthBaseUrl: string): string {
   const url = new URL(neonAuthBaseUrl);
+  if (url.protocol !== "https:") {
+    throw new Error(
+      `NEON_AUTH_BASE_URL must use https (got: ${url.protocol.replaceAll(":", "")}).`,
+    );
+  }
+  if (!url.hostname.endsWith(".neon.tech")) {
+    throw new Error(
+      `NEON_AUTH_BASE_URL host must end with .neon.tech (got: ${url.hostname}).`,
+    );
+  }
+  if (url.pathname !== "" && url.pathname !== "/") {
+    throw new Error(
+      `NEON_AUTH_BASE_URL must not include a path (got: ${url.pathname}).`,
+    );
+  }
+  if (url.search.length > 0 || url.hash.length > 0) {
+    throw new Error("NEON_AUTH_BASE_URL must not include query or hash.");
+  }
   const hostPart = url.hostname.split(".")[0];
   if (!hostPart || !hostPart.startsWith("ep-")) {
     throw new Error(
       `Unable to parse endpoint id from NEON_AUTH_BASE_URL host: ${url.hostname}`,
     );
   }
-  return hostPart;
+  return assertSafeId("endpoint id", hostPart);
 }
 
 function assertSafeId(label: string, value: string): string {
@@ -261,26 +279,10 @@ async function printEmailPasswordConfigSummary(
   neonApiKey: string,
 ): Promise<void> {
   try {
-    const emailPasswordConfig = await getEmailPasswordConfig(
-      projectId,
-      branchId,
-      neonApiKey,
-    );
-    const safeSummary =
-      emailPasswordConfig && typeof emailPasswordConfig === "object"
-        ? {
-            keys: Object.keys(
-              emailPasswordConfig as Record<string, unknown>,
-            ).sort(),
-          }
-        : { type: typeof emailPasswordConfig };
-    const configString = JSON.stringify(safeSummary);
-    printSummary(
-      label,
-      configString.length > 96
-        ? `${configString.slice(0, 96)}...`
-        : configString,
-    );
+    // Intentionally avoid logging response data here: code scanning treats auth
+    // config payloads as potentially sensitive. We only surface success/failure.
+    await getEmailPasswordConfig(projectId, branchId, neonApiKey);
+    printSummary(label, "ok (details hidden)");
   } catch (error) {
     printSummary(label, `error (${formatError(error)})`);
   }
@@ -1336,7 +1338,7 @@ async function neonApiRequest<T>(
   const responseText = await response.text();
   if (!expectedStatuses.includes(response.status)) {
     throw new Error(
-      `Neon API request failed (${response.status}) for ${safePath}: ${responseText}`,
+      `Neon API request failed (${response.status}) for ${safePath}: ${truncateForLog(responseText, 256)}`,
     );
   }
 

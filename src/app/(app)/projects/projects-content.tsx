@@ -73,13 +73,7 @@ export async function ProjectsContent(
             </Empty>
           ) : (
             <div className="grid gap-3">
-              <ul
-                className="grid gap-2"
-                style={{
-                  containIntrinsicSize: "auto 220px",
-                  contentVisibility: "auto",
-                }}
-              >
+              <ul className="grid gap-2">
                 {projects.map((project) => (
                   <li key={project.id}>
                     <Link

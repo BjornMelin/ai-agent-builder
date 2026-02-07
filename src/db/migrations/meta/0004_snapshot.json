@@ -1256,7 +1256,7 @@
               "nulls": "last"
             },
             {
-              "asc": true,
+              "asc": false,
               "expression": "updated_at",
               "isExpression": false,
               "nulls": "last"

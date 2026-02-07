@@ -71,13 +71,12 @@ type GlobalDropHandler = (files: FileList) => void;
 const globalDropHandlers = new Set<GlobalDropHandler>();
 let globalDropListenersAttached = false;
 
-type ListenerOptions = globalThis.EventListenerOptions;
+type ListenerOptions = globalThis.AddEventListenerOptions;
 // `passive: false` is required because we call `preventDefault()` to enable
-// browser drag-and-drop behavior. Some TS DOM lib versions don't include the
-// `passive` property on `EventListenerOptions`, so we cast explicitly.
-const nonPassiveListenerOptions = {
+// browser drag-and-drop behavior.
+const nonPassiveListenerOptions: ListenerOptions = {
   passive: false,
-} as unknown as ListenerOptions;
+};
 
 const handleGlobalDragOver = (event: DragEvent) => {
   if (event.dataTransfer?.types?.includes("Files")) {

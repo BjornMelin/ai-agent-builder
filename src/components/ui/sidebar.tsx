@@ -47,7 +47,7 @@ const SidebarContext = React.createContext<SidebarContextProps | null>(null);
  * Reads sidebar state and controls from context.
  *
  * @returns Sidebar state and control functions.
- * @throws {Error} Thrown when `useSidebar` is called outside a `SidebarProvider`.
+ * @throws Error - Thrown when `useSidebar` is called outside a `SidebarProvider`.
  */
 function useSidebar() {
   const context = React.useContext(SidebarContext);
@@ -93,7 +93,7 @@ function SidebarProvider({
       }
 
       // biome-ignore lint/suspicious/noDocumentCookie: shadcn sidebar state persistence relies on cookie fallback.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}; SameSite=Lax`;
     },
     [open, setOpenProp],
   );

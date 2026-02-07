@@ -5,6 +5,7 @@ import { useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
+/** Allowed step kinds rendered in the run steps list. */
 export type RunStepsListStepKind =
   | "llm"
   | "tool"
@@ -13,6 +14,7 @@ export type RunStepsListStepKind =
   | "approval"
   | "external_poll";
 
+/** Allowed step execution statuses rendered in the run steps list. */
 export type RunStepsListStepStatus =
   | "pending"
   | "running"

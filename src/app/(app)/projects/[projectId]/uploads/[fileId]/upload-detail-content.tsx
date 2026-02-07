@@ -22,8 +22,8 @@ export async function UploadDetailContent(
 
   if (!file || file.projectId !== projectId) notFound();
 
-  const mimeType = file.mimeType.trim().length > 0 ? file.mimeType : "unknown";
-  const sha256 = file.sha256.trim().length > 0 ? file.sha256 : "unavailable";
+  const mimeType = file.mimeType.trim() || "—";
+  const sha256 = file.sha256.trim() || "—";
 
   return (
     <div className="flex flex-col gap-6">

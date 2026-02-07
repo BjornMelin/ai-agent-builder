@@ -61,6 +61,7 @@ function formatRunStatus(status: string): string {
  *
  * @param props - Component props containing `projectId`, a required project identifier string (expected to be non-empty and URL-safe), sourced from the route params and used to load the project and related overview cards.
  * @returns The project overview UI, or `null` when the project is not found or access is denied (layout handles the not-found UI).
+ * @throws Error - When overview data loaders fail for reasons other than not_found.
  */
 export async function ProjectOverviewContent(
   props: Readonly<{ projectId: string }>,

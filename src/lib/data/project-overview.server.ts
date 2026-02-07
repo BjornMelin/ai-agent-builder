@@ -273,7 +273,7 @@ export async function getProjectArtifactOverview(
   return {
     lastArtifact: lastArtifactRow
       ? {
-          createdAt: lastArtifactRow.createdAt.toISOString(),
+          createdAt: new Date(lastArtifactRow.createdAt).toISOString(),
           id: lastArtifactRow.id,
           kind: lastArtifactRow.kind,
           logicalKey: lastArtifactRow.logicalKey,

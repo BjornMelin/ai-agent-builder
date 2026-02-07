@@ -29,17 +29,17 @@ Use these scripts when:
 2. Vercel CLI installed and authenticated:
    - `vercel login`
    - The repo must be linked to the right Vercel project (typically `vercel link`).
-   - Vercel CLI docs: https://vercel.com/docs/cli
+   - Vercel CLI docs.[^vercel-cli]
 3. Neon CLI installed and authenticated:
    - `neon auth`
-   - Neon CLI docs: https://neon.com/docs/reference/neon-cli
+   - Neon CLI docs.[^neon-cli]
 4. Environment variables available locally:
    - `NEON_AUTH_BASE_URL`
    - `DATABASE_URL`
    - `NEON_API_KEY`
    - Neon project id via either:
      - `NEON_PROJECT_ID`, or
-     - a `.neon` file created by `neon init` (recommended)
+     - a `.neon` file (repo root) containing `projectId` (recommended)
 
 ## Setup (Local Development)
 
@@ -49,7 +49,7 @@ Use these scripts when:
 vercel env pull --yes --environment=development .env.local
 ```
 
-`vercel env pull` docs: https://vercel.com/docs/cli/env#exporting-development-environment-variables
+`vercel env pull` docs.[^vercel-env-pull]
 
 2. Confirm the script can resolve the Neon Auth branch and endpoint:
 
@@ -205,5 +205,9 @@ Check:
 - The Neon Auth URL is correct for the project/branch.
 - Email/password auth is enabled for the Neon branch (see Neon Console Auth configuration).
 
-Neon Auth docs: https://neon.com/docs/guides/neon-auth
+Neon Auth docs.[^neon-auth]
 
+[^vercel-cli]: https://vercel.com/docs/cli
+[^vercel-env-pull]: https://vercel.com/docs/cli/env#exporting-development-environment-variables
+[^neon-cli]: https://neon.com/docs/reference/neon-cli
+[^neon-auth]: https://neon.com/docs/auth/overview

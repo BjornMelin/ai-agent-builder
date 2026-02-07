@@ -66,10 +66,11 @@ Important notes:
 
 - These scripts are intended for local development against the Neon
   `vercel-dev` branch by default.
-- Repair deletes and recreates affected Neon Auth users via supported APIs, so
-  user IDs are expected to change.
-- Required env: `NEON_AUTH_BASE_URL`, `DATABASE_URL`, `NEON_API_KEY`, and a
-  Neon project id via `.neon` or `NEON_PROJECT_ID`.
+- Repair deletes and recreates affected Neon Auth users (via this repo’s local
+  repair script), so user IDs are expected to change.[^aab-neon-auth-local-script]
+- Required env: `NEON_AUTH_BASE_URL`, `DATABASE_URL`, `NEON_API_KEY`, and a Neon
+  project id via `.neon` or `NEON_PROJECT_ID`.[^aab-neon-auth-local-ops][^neon-auth-overview][^neon-cli-auth]
+  Citations follow the repo policy in [SPEC-0007](./spec/SPEC-0007-web-research-citations-framework.md).
 
 ### Preview branch env automation
 
@@ -228,3 +229,8 @@ If OAuth is disabled on Preview, use **email OTP** or **magic link** auth flows:
 - Rotate `NEON_AUTH_COOKIE_SECRET` to invalidate all active user sessions (requiring users to sign in again).
 - Rotate provider tokens (GitHub/Vercel/Neon/Upstash) if compromised.
 - Update Vercel environment variables accordingly.
+
+[^aab-neon-auth-local-script]: ../../scripts/neon-auth-local.ts
+[^aab-neon-auth-local-ops]: ../ops/neon-auth-local.md
+[^neon-auth-overview]: https://neon.com/docs/auth/overview
+[^neon-cli-auth]: https://neon.com/docs/reference/cli-auth

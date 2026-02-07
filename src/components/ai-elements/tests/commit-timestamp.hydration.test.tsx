@@ -41,7 +41,7 @@ describe("CommitTimestamp hydration behavior", () => {
     let root: Root | null = null;
     await act(async () => {
       root = hydrateRoot(container, ui);
-      await Promise.resolve();
+      await vi.runAllTimersAsync();
     });
 
     const afterHydrationText = container.textContent;

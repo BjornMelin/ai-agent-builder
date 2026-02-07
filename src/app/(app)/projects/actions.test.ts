@@ -1,26 +1,12 @@
-import {
-  getRedirectError,
-  getRedirectStatusCodeFromError,
-  getURLFromRedirectError,
-} from "next/dist/client/components/redirect";
-import {
-  isRedirectError,
-  RedirectType,
-} from "next/dist/client/components/redirect-error";
-import { RedirectStatusCode } from "next/dist/client/components/redirect-status-code";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const REDIRECT_TYPE_PUSH = RedirectType.push;
-const REDIRECT_STATUS_TEMPORARY_REDIRECT = RedirectStatusCode.TemporaryRedirect;
 
 const state = vi.hoisted(() => ({
   createProject: vi.fn(),
-  redirect: vi.fn((path: string) => {
-    throw getRedirectError(
-      path,
-      REDIRECT_TYPE_PUSH,
-      REDIRECT_STATUS_TEMPORARY_REDIRECT,
-    );
+  redirect: vi.fn((_path: string) => {
+    // Next.js redirect terminates control flow by throwing.
+    const err = new Error("NEXT_REDIRECT") as Error & { digest?: string };
+    err.digest = "NEXT_REDIRECT";
+    throw err;
   }),
   requireAppUser: vi.fn(),
   revalidateTag: vi.fn(),
@@ -61,18 +47,10 @@ describe("createProjectAction", () => {
     formData.set("name", "Alpha");
     formData.set("slug", "alpha");
 
-    let thrown: unknown = null;
-    try {
-      await createProjectAction({ status: "idle" }, formData);
-    } catch (err) {
-      thrown = err;
-    }
-
-    expect(isRedirectError(thrown)).toBe(true);
-    if (isRedirectError(thrown)) {
-      expect(getURLFromRedirectError(thrown)).toBe("/projects/proj_1");
-      expect(getRedirectStatusCodeFromError(thrown)).toBe(307);
-    }
+    await expect(
+      createProjectAction({ status: "idle" }, formData),
+    ).rejects.toThrow();
+    expect(state.redirect).toHaveBeenCalledWith("/projects/proj_1");
 
     expect(state.createProject).toHaveBeenCalledWith({
       name: "Alpha",

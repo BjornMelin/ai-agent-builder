@@ -21,8 +21,7 @@ export async function AppAuthGate(
   const { children } = props;
 
   // Mark the authenticated app as request-time rendered.
-  await connection();
-  await requireAppUser();
+  await Promise.all([connection(), requireAppUser()]);
 
   return children;
 }
