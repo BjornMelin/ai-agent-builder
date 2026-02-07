@@ -46,7 +46,7 @@
     "@upstash/redis": "~1.36.2",
     "@upstash/vector": "~1.2.2",
     "@vercel/analytics": "^1.6.1",
-    "@vercel/blob": "~2.0.1",
+    "@vercel/blob": "~2.2.0",
     "@vercel/functions": "^3.4.1",
     "@workflow/ai": "^4.0.1-beta.52",
     "@xyflow/react": "^12.10.0",
