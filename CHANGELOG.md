@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.8](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.7...ai-agent-builder-v0.1.8) (2026-02-07)
+
+
+### Features
+
+* **app:** finalize cache-components search hardening ([cabcafe](https://github.com/BjornMelin/ai-agent-builder/commit/cabcafe3f14054a0d026b9cbafcb91bc319c85a9))
+* **app:** finalize cache-components search UX and bot preview resource governance ([2530c36](https://github.com/BjornMelin/ai-agent-builder/commit/2530c36b75ebeaa28360c2df799004b8da21e216))
+* **auth:** add session parameters for production build to getSessionCached ([b549841](https://github.com/BjornMelin/ai-agent-builder/commit/b549841686ebf3bf3f7446acb2b48f0b52f7d407))
+* **ui:** overhaul app shell and account settings navigation ([ce26c14](https://github.com/BjornMelin/ai-agent-builder/commit/ce26c14a95c519625a13d8b0c8a0c99b4a57b54f))
+
+
+### Bug Fixes
+
+* **a11y:** label prompt action trigger by default ([4cb4024](https://github.com/BjornMelin/ai-agent-builder/commit/4cb40248a6236e474db3e0ba9eee606f7351df9b))
+* **auth:** unblock cache-components builds and add local user create ([e03b381](https://github.com/BjornMelin/ai-agent-builder/commit/e03b381d06a08d3fcf1d82d11b922bd242121acb))
+* **pr:** address review feedback ([47dfdee](https://github.com/BjornMelin/ai-agent-builder/commit/47dfdee98ef1e8623febbe7fd152a9297c9b223a))
+* **review:** address PR 23 feedback ([845fd1e](https://github.com/BjornMelin/ai-agent-builder/commit/845fd1e0bece08af7ed9275761a3d4f28f2b583f))
+* **security:** address neon-auth-local code scanning ([55bac59](https://github.com/BjornMelin/ai-agent-builder/commit/55bac595d344242632cd9d3ab2bfbb234795e2fd))
+
 ## [0.1.7](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.6...ai-agent-builder-v0.1.7) (2026-02-06)
 
 
