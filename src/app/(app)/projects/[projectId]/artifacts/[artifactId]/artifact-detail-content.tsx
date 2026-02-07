@@ -78,7 +78,7 @@ function toJsonPreviewValue(
 
 function formatArtifactJsonFallback(value: unknown): string {
   const previewValue = toJsonPreviewValue(value, 0, new WeakSet());
-  let json = JSON.stringify(previewValue, null, 2);
+  let json = JSON.stringify(previewValue, null, 2) ?? "null";
   if (json.length > ARTIFACT_JSON_PREVIEW_MAX_CHARS) {
     json = `${json.slice(0, ARTIFACT_JSON_PREVIEW_MAX_CHARS)}\n… [truncated]`;
   }
@@ -100,12 +100,13 @@ export async function ArtifactDetailContent(
   const { projectId, artifactId } = props;
 
   const user = await requireAppUser();
-  const project = await getProjectByIdForUser(projectId, user.id);
+  const [project, artifact] = await Promise.all([
+    getProjectByIdForUser(projectId, user.id),
+    getArtifactById(artifactId),
+  ]);
   if (!project) {
     notFound();
   }
-
-  const artifact = await getArtifactById(artifactId);
   if (!artifact || artifact.projectId !== project.id) {
     notFound();
   }

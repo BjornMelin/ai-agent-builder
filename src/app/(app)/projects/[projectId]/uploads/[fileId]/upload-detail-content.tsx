@@ -8,7 +8,7 @@ import { getProjectFileById } from "@/lib/data/files.server";
 /**
  * Upload detail content (suspends for request-time data).
  *
- * @param props - Route params.
+ * @param props - `{ params: { projectId: string; fileId: string } }` route parameters where `projectId` and `fileId` are non-empty, URL-safe string identifiers used to load the upload detail.
  * @returns The upload detail UI.
  */
 export async function UploadDetailContent(

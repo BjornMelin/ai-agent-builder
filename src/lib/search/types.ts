@@ -64,7 +64,7 @@ export type UploadSearchResult = Readonly<{
 export type ChunkSearchResult = Readonly<{
   type: "chunk";
   id: string;
-  score: number;
+  score?: number;
   title: string;
   snippet: string;
   href: string;
@@ -84,7 +84,7 @@ export type ChunkSearchResult = Readonly<{
 export type ArtifactSearchResult = Readonly<{
   type: "artifact";
   id: string;
-  score: number;
+  score?: number;
   title: string;
   snippet: string;
   href: string;

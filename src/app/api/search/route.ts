@@ -193,8 +193,10 @@ function sortAndLimit(
   ];
 
   deduped.sort((left, right) => {
-    const leftScore = "score" in left ? left.score : null;
-    const rightScore = "score" in right ? right.score : null;
+    const leftScore =
+      "score" in left && typeof left.score === "number" ? left.score : null;
+    const rightScore =
+      "score" in right && typeof right.score === "number" ? right.score : null;
     if (leftScore !== null && rightScore !== null) {
       return rightScore - leftScore;
     }
@@ -355,7 +357,6 @@ async function searchGlobalArtifacts(
       projectId: row.projectId,
       version: row.version,
     },
-    score: 0,
     snippet: row.snippet,
     title: row.title,
     type: "artifact" as const,
@@ -404,7 +405,6 @@ async function searchGlobalChunks(
       ...(row.pageStart !== null ? { pageStart: row.pageStart } : {}),
       ...(row.pageEnd !== null ? { pageEnd: row.pageEnd } : {}),
     },
-    score: 0,
     snippet: row.snippet,
     title: `Upload chunk ${row.chunkIndex}`,
     type: "chunk" as const,
