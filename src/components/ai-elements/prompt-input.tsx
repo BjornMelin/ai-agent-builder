@@ -906,7 +906,13 @@ export const PromptInputBody = (props: PromptInputBodyProps) => {
   return <div className={cn("contents", className)} {...rest} />;
 };
 
-/** Props for the `PromptInputTextareaProps` type. */
+/**
+ * Props for the `PromptInputTextareaProps` type.
+ *
+ * Note: When `PromptInputTextarea` is rendered under a `PromptInputProvider`,
+ * the `id` prop is ignored and the textarea `id` is controlled by the provider
+ * (`inputId`). Pass `inputId` to `PromptInputProvider` instead.
+ */
 export type PromptInputTextareaProps = ComponentProps<
   typeof InputGroupTextarea
 > & {

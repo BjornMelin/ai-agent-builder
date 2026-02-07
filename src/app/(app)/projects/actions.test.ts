@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { tagProjectsIndex } from "@/lib/cache/tags";
+
 const state = vi.hoisted(() => ({
   createProject: vi.fn(),
   redirect: vi.fn((_path: string) => {
@@ -58,7 +60,7 @@ describe("createProjectAction", () => {
       slug: "alpha",
     });
     expect(state.revalidateTag).toHaveBeenCalledWith(
-      "aab:projects:index:user_1",
+      tagProjectsIndex("user_1"),
       "max",
     );
   });

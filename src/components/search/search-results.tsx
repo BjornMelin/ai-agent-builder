@@ -19,7 +19,11 @@ const LOADING_ROW_IDS = [
 ] as const;
 
 /**
- * Reusable search results list with shared empty/error states.
+ * Props that configure {@link SearchResults} rendering and state.
+ *
+ * Includes the current `query`, `status`, and `hasSearched` flag; optional
+ * `error` (nullable) with associated `errorId`; a readonly `results` array; and
+ * customizable `idleMessage`/`emptyMessage` copy.
  */
 export type SearchResultsProps = Readonly<{
   query: string;
