@@ -27,9 +27,21 @@ export default defineConfig({
     // Keep tests blazing fast by avoiding duplicate typechecking work.
     // CI runs `bun run typecheck` separately.
     coverage: {
+      exclude: [
+        ...configDefaults.exclude,
+        "**/__tests__/**",
+        "**/*.{test,spec}.{ts,tsx}",
+      ],
+      include: ["src/lib/**/*.{ts,tsx}", "src/workflows/**/*.{ts,tsx}"],
       provider: "v8",
       reporter: ["text", "lcov"],
       reportsDirectory: "./coverage",
+      thresholds: {
+        branches: 70,
+        functions: 75,
+        lines: 80,
+        statements: 80,
+      },
     },
     environment: "node",
     exclude: [...configDefaults.exclude, "opensrc/**", ".next-docs/**"],
