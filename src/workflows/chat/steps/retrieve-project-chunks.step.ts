@@ -7,7 +7,7 @@ import {
 } from "@/lib/ai/tools/retrieval.server";
 import { AppError } from "@/lib/core/errors";
 
-const contextSchema = z.strictObject({
+const contextSchema = z.object({
   projectId: z.string().min(1),
 });
 

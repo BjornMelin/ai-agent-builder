@@ -6,6 +6,7 @@ import { z } from "zod";
  */
 const chatMessageSchema = z.object({
   message: z.string().min(1),
+  messageId: z.string().min(1),
 });
 
 /**

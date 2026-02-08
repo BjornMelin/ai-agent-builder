@@ -41,21 +41,23 @@ type MountedClient = Readonly<{
   root: Root;
 }>;
 
-function createSearchResponse(): Response {
+function createSearchResponse(
+  input?: Readonly<{ body?: unknown; status?: number }>,
+): Response {
   return new Response(
-    JSON.stringify({
-      meta: {
-        cursor: null,
-        limit: 20,
-        nextCursor: null,
-        scope: "global",
-        types: ["projects"],
+    JSON.stringify(
+      input?.body ?? {
+        meta: {
+          limit: 20,
+          scope: "global",
+          types: ["projects"],
+        },
+        results: [],
       },
-      results: [],
-    }),
+    ),
     {
       headers: { "content-type": "application/json" },
-      status: 200,
+      status: input?.status ?? 200,
     },
   );
 }
@@ -122,6 +124,17 @@ async function submitSearch(
   });
 }
 
+async function unmountClient(mounted: MountedClient): Promise<void> {
+  await act(async () => {
+    mounted.root.unmount();
+  });
+}
+
+function getAlertText(container: HTMLElement, id: string): string | null {
+  const el = container.querySelector<HTMLElement>(`#${id}[role="alert"]`);
+  return el?.textContent ?? null;
+}
+
 describe("search clients submit behavior", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -149,9 +162,7 @@ describe("search clients submit behavior", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(replaceMock).toHaveBeenCalledTimes(1);
 
-    await act(async () => {
-      mounted.root.unmount();
-    });
+    await unmountClient(mounted);
   });
 
   it("does not issue duplicate fetches for project search submits", async () => {
@@ -167,8 +178,162 @@ describe("search clients submit behavior", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(replaceMock).toHaveBeenCalledTimes(1);
 
-    await act(async () => {
-      mounted.root.unmount();
+    await unmountClient(mounted);
+  });
+
+  it("does not call fetch for short queries (<2 chars) and keeps the idle message", async () => {
+    const fetchMock = vi.fn(async () => createSearchResponse());
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const mounted = await mountClient(<GlobalSearchClient />);
+    await submitSearch(mounted, "global-search", "a");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(replaceMock).toHaveBeenCalledTimes(1);
+    expect(navigationState.query).toBe("a");
+    expect(mounted.container.textContent).toContain(
+      "Enter at least 2 characters to search all projects.",
+    );
+    expect(getAlertText(mounted.container, "global-search-error")).toBeNull();
+
+    await unmountClient(mounted);
+  });
+
+  it("renders an error alert when the server responds with a non-OK status", async () => {
+    const fetchMock = vi.fn(async () =>
+      createSearchResponse({
+        body: { error: { message: "Nope" } },
+        status: 500,
+      }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const mounted = await mountClient(<GlobalSearchClient />);
+    await submitSearch(mounted, "global-search", "alpha");
+
+    expect(getAlertText(mounted.container, "global-search-error")).toBe("Nope");
+
+    await unmountClient(mounted);
+  });
+
+  it("renders an error alert when the response payload cannot be parsed", async () => {
+    const fetchMock = vi.fn(async () =>
+      createSearchResponse({
+        body: {},
+        status: 200,
+      }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const mounted = await mountClient(<GlobalSearchClient />);
+    await submitSearch(mounted, "global-search", "alpha");
+
+    expect(getAlertText(mounted.container, "global-search-error")).toBe(
+      "Search failed due to an unexpected server response.",
+    );
+
+    await unmountClient(mounted);
+  });
+
+  it("renders a network error when fetch throws", async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new Error("boom");
     });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const mounted = await mountClient(<GlobalSearchClient />);
+    await submitSearch(mounted, "global-search", "alpha");
+
+    expect(getAlertText(mounted.container, "global-search-error")).toBe(
+      "Network error. Please try again.",
+    );
+
+    await unmountClient(mounted);
+  });
+
+  it("ignores AbortError failures for the active request (no alert, remains loading)", async () => {
+    const fetchMock = vi.fn(async () => {
+      throw new DOMException("The operation was aborted.", "AbortError");
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const mounted = await mountClient(<GlobalSearchClient />);
+    await submitSearch(mounted, "global-search", "alpha");
+
+    expect(getAlertText(mounted.container, "global-search-error")).toBeNull();
+
+    const button = mounted.container.querySelector("button[type='submit']");
+    expect(button).toBeInstanceOf(HTMLButtonElement);
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+
+    await unmountClient(mounted);
+  });
+
+  it("does not let stale responses overwrite the latest results", async () => {
+    let resolveFirst: ((res: Response) => void) | null = null;
+    const fetchMock = vi.fn(async (url: string) => {
+      const q = new URL(url).searchParams.get("q") ?? "";
+      if (q === "alpha") {
+        return await new Promise<Response>((resolve) => {
+          resolveFirst = resolve;
+        });
+      }
+
+      return createSearchResponse({
+        body: {
+          meta: {
+            limit: 20,
+            scope: "global",
+            types: ["projects"],
+          },
+          results: [
+            {
+              href: "/projects/p1",
+              id: "p1",
+              title: "beta",
+              type: "project",
+            },
+          ],
+        },
+      });
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const mounted = await mountClient(<GlobalSearchClient />);
+    await submitSearch(mounted, "global-search", "alpha");
+    await submitSearch(mounted, "global-search", "beta");
+
+    expect(mounted.container.textContent).toContain("beta");
+    expect(mounted.container.textContent).not.toContain("alpha");
+
+    await act(async () => {
+      if (!resolveFirst) throw new Error("Missing first resolver.");
+      resolveFirst(
+        createSearchResponse({
+          body: {
+            meta: {
+              limit: 20,
+              scope: "global",
+              types: ["projects"],
+            },
+            results: [
+              {
+                href: "/projects/p2",
+                id: "p2",
+                title: "alpha",
+                type: "project",
+              },
+            ],
+          },
+        }),
+      );
+      await flushMicrotasks();
+    });
+
+    // Still beta, alpha's late response should be ignored.
+    expect(mounted.container.textContent).toContain("beta");
+    expect(mounted.container.textContent).not.toContain("alpha");
+
+    await unmountClient(mounted);
   });
 });

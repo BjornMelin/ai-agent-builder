@@ -42,6 +42,13 @@
       "tag": "0005_tranquil_the_spike",
       "version": "7",
       "when": 1770430346932
+    },
+    {
+      "breakpoints": true,
+      "idx": 6,
+      "tag": "0006_overconfident_loners",
+      "version": "7",
+      "when": 1770464732857
     }
   ],
   "version": "7"

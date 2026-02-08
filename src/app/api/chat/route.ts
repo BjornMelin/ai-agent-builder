@@ -1,31 +1,33 @@
 import {
   createUIMessageStreamResponse,
-  type InferUITools,
   safeValidateUIMessages,
   type UIMessage,
 } from "ai";
 import { getRun, start } from "workflow/api";
 import { z } from "zod";
-
+import {
+  getEnabledAgentMode,
+  requestAgentModeIdSchema,
+} from "@/lib/ai/agents/registry.server";
+import { buildChatToolsForMode } from "@/lib/ai/tools/factory.server";
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { toChatTitle } from "@/lib/chat/title";
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
-import { ensureChatThreadForWorkflowRun } from "@/lib/data/chat.server";
+import {
+  appendChatMessages,
+  ensureChatThreadForWorkflowRun,
+} from "@/lib/data/chat.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError } from "@/lib/next/responses";
 import { projectChat } from "@/workflows/chat/project-chat.workflow";
-import { chatTools } from "@/workflows/chat/tools";
 
-type ProjectChatUIMessage = UIMessage<
-  unknown,
-  never,
-  InferUITools<typeof chatTools>
->;
+type ProjectChatUIMessage = UIMessage;
 
 const bodySchema = z.strictObject({
   messages: z.array(z.unknown()),
+  modeId: z.string().min(1).optional(),
   projectId: z.string().min(1),
 });
 
@@ -51,9 +53,22 @@ export async function POST(req: Request): Promise<Response> {
       throw new AppError("not_found", 404, "Project not found.");
     }
 
+    const modeId = requestAgentModeIdSchema.parse(parsed.modeId);
+    // Validate mode is usable (feature-gated) before starting the run.
+    getEnabledAgentMode(modeId);
+
+    const tools = buildChatToolsForMode(modeId);
+
     const validated = await safeValidateUIMessages<ProjectChatUIMessage>({
       messages: parsed.messages,
-      tools: chatTools,
+      // ToolSet is structurally compatible with the UI validation tool type,
+      // but the AI SDK types are not directly assignable with exact optional
+      // property types enabled.
+      tools: tools as unknown as NonNullable<
+        Parameters<
+          typeof safeValidateUIMessages<ProjectChatUIMessage>
+        >[0]["tools"]
+      >,
     });
     if (!validated.success) {
       throw new AppError(
@@ -78,12 +93,29 @@ export async function POST(req: Request): Promise<Response> {
       parsed.projectId,
       validated.data,
       title,
+      modeId,
     ]);
     try {
-      await ensureChatThreadForWorkflowRun({
+      const thread = await ensureChatThreadForWorkflowRun({
+        mode: modeId,
         projectId: parsed.projectId,
         title,
         workflowRunId: run.runId,
+      });
+
+      await appendChatMessages({
+        messages: validated.data as unknown as Parameters<
+          typeof appendChatMessages
+        >[0]["messages"],
+        threadId: thread.id,
+      });
+
+      return createUIMessageStreamResponse({
+        headers: {
+          "x-chat-thread-id": thread.id,
+          "x-workflow-run-id": run.runId,
+        },
+        stream: run.readable,
       });
     } catch (error) {
       try {
@@ -97,11 +129,6 @@ export async function POST(req: Request): Promise<Response> {
       }
       throw error;
     }
-
-    return createUIMessageStreamResponse({
-      headers: { "x-workflow-run-id": run.runId },
-      stream: run.readable,
-    });
   } catch (err) {
     return jsonError(err);
   }

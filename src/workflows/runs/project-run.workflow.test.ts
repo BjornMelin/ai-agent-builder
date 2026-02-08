@@ -42,7 +42,7 @@ import { projectRun } from "./project-run.workflow";
 
 describe("projectRun", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
 
     persistMocks.beginRunStep.mockResolvedValue(undefined);
     persistMocks.cancelRunAndSteps.mockResolvedValue(undefined);
@@ -170,5 +170,74 @@ describe("projectRun", () => {
       }),
     );
     expect(writerMocks.closeRunStream).toHaveBeenCalledWith(state.writable);
+  });
+
+  it("cancels the run without finishing a step when cancellation occurs before any step starts", async () => {
+    const cancellationError = new Error("cancelled early");
+    persistMocks.getRunInfo.mockRejectedValueOnce(cancellationError);
+    workflowErrorMocks.isWorkflowRunCancelledError.mockReturnValueOnce(true);
+
+    await expect(projectRun("run_1")).rejects.toBe(cancellationError);
+
+    expect(persistMocks.finishRunStep).not.toHaveBeenCalled();
+    expect(persistMocks.cancelRunAndSteps).toHaveBeenCalledWith("run_1");
+    expect(writerMocks.writeRunEvent).toHaveBeenCalledWith(
+      state.writable,
+      expect.objectContaining({ status: "canceled", type: "run-finished" }),
+    );
+  });
+
+  it("marks the run failed when a non-cancel error occurs before any step starts", async () => {
+    const failure = "boom";
+    persistMocks.getRunInfo.mockRejectedValueOnce(failure);
+    workflowErrorMocks.isWorkflowRunCancelledError.mockReturnValueOnce(false);
+
+    await expect(projectRun("run_1")).rejects.toBe(failure);
+
+    expect(persistMocks.finishRunStep).not.toHaveBeenCalled();
+    expect(persistMocks.markRunTerminal).toHaveBeenCalledWith(
+      "run_1",
+      "failed",
+    );
+    expect(writerMocks.writeRunEvent).toHaveBeenCalledWith(
+      state.writable,
+      expect.objectContaining({
+        runId: "run_1",
+        status: "failed",
+        type: "run-finished",
+      }),
+    );
+  });
+
+  it("still marks the run failed when persisting step failure is best-effort", async () => {
+    const failure = new Error("artifact explode");
+    artifactsMocks.createRunSummaryArtifact.mockRejectedValueOnce(failure);
+    persistMocks.finishRunStep.mockImplementation(async (input: unknown) => {
+      const status =
+        input && typeof input === "object"
+          ? (input as { status?: unknown }).status
+          : undefined;
+      const stepId =
+        input && typeof input === "object"
+          ? (input as { stepId?: unknown }).stepId
+          : undefined;
+      if (status === "failed" && stepId === "artifact.run_summary") {
+        throw new Error("db down");
+      }
+    });
+
+    await expect(projectRun("run_1")).rejects.toThrow("artifact explode");
+
+    // Even if step persistence fails, the run is still marked terminal failed.
+    expect(persistMocks.markRunTerminal).toHaveBeenCalledWith(
+      "run_1",
+      "failed",
+    );
+  });
+
+  it("swallows closeRunStream errors in finally", async () => {
+    writerMocks.closeRunStream.mockRejectedValueOnce(new Error("close failed"));
+
+    await expect(projectRun("run_1")).resolves.toEqual({ ok: true });
   });
 });

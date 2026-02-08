@@ -15,7 +15,8 @@
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@tests/*": ["./tests/*"]
     },
     "plugins": [
       {

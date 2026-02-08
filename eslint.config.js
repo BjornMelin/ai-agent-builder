@@ -22,6 +22,7 @@ module.exports = [
     ignores: [
       ".next/**",
       "coverage/**",
+      "coverage_tmp_*/**",
       "dist/**",
       "node_modules/**",
       "out/**",

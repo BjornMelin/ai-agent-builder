@@ -61,6 +61,18 @@ export function getDefaultChatModel() {
 }
 
 /**
+ * Get a chat generation model by explicit AI Gateway model id.
+ *
+ * @param modelId - AI Gateway model id.
+ * @returns AI Gateway language model.
+ */
+export function getChatModelById(modelId: string) {
+  const provider = getAiGatewayProvider();
+  const validated = assertGatewayModelId(modelId, "chat");
+  return provider.languageModel(validated as GatewayModelId);
+}
+
+/**
  * Get the default embedding model for the app.
  *
  * This is config-driven via `AI_GATEWAY_EMBEDDING_MODEL` (see env contract).

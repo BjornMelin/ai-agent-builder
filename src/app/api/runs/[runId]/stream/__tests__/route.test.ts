@@ -1,16 +1,12 @@
+import { simulateReadableStream } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  createUIMessageStreamResponse: vi.fn(),
   getProjectByIdForUser: vi.fn(),
   getReadable: vi.fn(),
   getRun: vi.fn(),
   getRunById: vi.fn(),
   requireAppUserApi: vi.fn(),
-}));
-
-vi.mock("ai", () => ({
-  createUIMessageStreamResponse: state.createUIMessageStreamResponse,
 }));
 
 vi.mock("workflow/api", () => ({
@@ -45,17 +41,8 @@ beforeEach(() => {
     workflowRunId: "wf_1",
   });
 
-  state.getReadable.mockReturnValue(
-    new ReadableStream({
-      start(controller) {
-        controller.close();
-      },
-    }),
-  );
+  state.getReadable.mockReturnValue(simulateReadableStream({ chunks: [] }));
   state.getRun.mockReturnValue({ getReadable: state.getReadable });
-  state.createUIMessageStreamResponse.mockImplementation(
-    () => new Response("ok"),
-  );
 });
 
 describe("GET /api/runs/:runId/stream", () => {
@@ -72,7 +59,7 @@ describe("GET /api/runs/:runId/stream", () => {
 
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(state.getRun).not.toHaveBeenCalled();
-    expect(state.createUIMessageStreamResponse).not.toHaveBeenCalled();
+    expect(res.headers.get("x-vercel-ai-ui-message-stream")).toBeNull();
   });
 
   it("rejects invalid startIndex", async () => {
@@ -100,6 +87,7 @@ describe("GET /api/runs/:runId/stream", () => {
 
     expect(res.status).toBe(404);
     expect(state.getRun).not.toHaveBeenCalled();
+    expect(res.headers.get("x-vercel-ai-ui-message-stream")).toBeNull();
   });
 
   it("returns forbidden when the run's project is not accessible", async () => {
@@ -113,6 +101,7 @@ describe("GET /api/runs/:runId/stream", () => {
 
     expect(res.status).toBe(403);
     expect(state.getRun).not.toHaveBeenCalled();
+    expect(res.headers.get("x-vercel-ai-ui-message-stream")).toBeNull();
   });
 
   it("returns conflict when the run is not backed by Workflow DevKit", async () => {
@@ -129,6 +118,7 @@ describe("GET /api/runs/:runId/stream", () => {
 
     expect(res.status).toBe(409);
     expect(state.getRun).not.toHaveBeenCalled();
+    expect(res.headers.get("x-vercel-ai-ui-message-stream")).toBeNull();
   });
 
   it("returns not found when the workflow run is missing", async () => {
@@ -141,6 +131,7 @@ describe("GET /api/runs/:runId/stream", () => {
     );
 
     expect(res.status).toBe(404);
+    expect(res.headers.get("x-vercel-ai-ui-message-stream")).toBeNull();
   });
 
   it("returns a stream response for a valid startIndex", async () => {
@@ -154,6 +145,11 @@ describe("GET /api/runs/:runId/stream", () => {
     expect(res.status).toBe(200);
     expect(state.getRun).toHaveBeenCalledWith("wf_1");
     expect(state.getReadable).toHaveBeenCalledWith({ startIndex: 2 });
-    expect(state.createUIMessageStreamResponse).toHaveBeenCalledTimes(1);
+    expect(res.headers.get("content-type")).toBe("text/event-stream");
+    expect(res.headers.get("cache-control")).toBe("no-cache");
+    expect(res.headers.get("connection")).toBe("keep-alive");
+    expect(res.headers.get("x-vercel-ai-ui-message-stream")).toBe("v1");
+
+    await expect(res.text()).resolves.toContain("data: [DONE]");
   });
 });

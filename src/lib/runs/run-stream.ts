@@ -43,7 +43,7 @@ export const runStreamEventSchema = z.discriminatedUnion("type", [
     type: z.literal("step-started"),
   }),
   z.strictObject({
-    error: z.record(z.string(), z.unknown()).nullable().optional(),
+    error: z.record(z.string(), z.unknown()).nullish(),
     outputs: z.record(z.string(), z.unknown()).optional(),
     runId: z.string().min(1),
     status: runStatusSchema,

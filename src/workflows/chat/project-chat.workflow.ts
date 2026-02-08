@@ -7,19 +7,18 @@ import {
 } from "ai";
 import { getWorkflowMetadata, getWritable } from "workflow";
 
-import { getWorkflowDefaultChatModel } from "@/workflows/ai/gateway-models.step";
+import { getEnabledAgentMode } from "@/lib/ai/agents/registry.server";
+import { buildChatToolsForMode } from "@/lib/ai/tools/factory.server";
+import { getWorkflowChatModel } from "@/workflows/ai/gateway-models.step";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
-import { PROJECT_CHAT_SYSTEM_PROMPT } from "@/workflows/chat/prompt";
+import { persistChatMessagesForWorkflowRun } from "@/workflows/chat/steps/chat-messages.step";
 import { touchChatThreadState } from "@/workflows/chat/steps/chat-thread-state.step";
 import {
   writeStreamClose,
   writeUserMessageMarker,
 } from "@/workflows/chat/steps/writer.step";
-import { chatTools } from "@/workflows/chat/tools";
+import { createChatToolContext } from "@/workflows/chat/tool-context";
 import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
-
-/** Maximum tool-use steps the agent may take in a single turn. */
-const MAX_AGENT_STEPS_PER_TURN = 12;
 
 /**
  * Durable multi-turn chat workflow for a single project.
@@ -27,6 +26,7 @@ const MAX_AGENT_STEPS_PER_TURN = 12;
  * @param projectId - Project scope for retrieval and persistence.
  * @param initialMessages - Initial UI messages (must end with a user message).
  * @param threadTitle - Thread title used when lifecycle persistence needs to create the row.
+ * @param modeId - Agent mode identifier (system prompt + tool allowlist).
  * @returns Final conversation messages.
  * @throws Error - Propagates workflow execution or finalization failures.
  */
@@ -34,6 +34,7 @@ export async function projectChat(
   projectId: string,
   initialMessages: UIMessage[],
   threadTitle: string,
+  modeId: string,
 ): Promise<Readonly<{ messages: ModelMessage[] }>> {
   "use workflow";
 
@@ -42,7 +43,10 @@ export async function projectChat(
   let finishedStatus: "succeeded" | "failed" | "canceled" | null = null;
   let thrownError: unknown = null;
   const messages: ModelMessage[] = [];
+  const mode = getEnabledAgentMode(modeId);
+  const tools = buildChatToolsForMode(modeId);
   const threadStateInput = {
+    mode: mode.modeId,
     projectId,
     title: threadTitle,
     workflowRunId: runId,
@@ -51,7 +55,7 @@ export async function projectChat(
   try {
     messages.push(
       ...(await convertToModelMessages(initialMessages, {
-        tools: chatTools,
+        tools,
       })),
     );
 
@@ -73,9 +77,9 @@ export async function projectChat(
     }
 
     const agent = new DurableAgent({
-      model: getWorkflowDefaultChatModel,
-      system: PROJECT_CHAT_SYSTEM_PROMPT,
-      tools: chatTools,
+      model: () => getWorkflowChatModel(mode.defaultModel),
+      system: mode.systemPrompt,
+      tools,
     });
 
     const hook = chatMessageHook.create({ token: runId });
@@ -87,8 +91,10 @@ export async function projectChat(
       await touchChatThreadState({ ...threadStateInput, status: "running" });
 
       const result = await agent.stream({
-        experimental_context: { projectId },
-        maxSteps: MAX_AGENT_STEPS_PER_TURN,
+        activeTools: [...mode.allowedTools],
+        collectUIMessages: true,
+        experimental_context: createChatToolContext(projectId, modeId),
+        maxSteps: mode.budgets.maxStepsPerTurn,
         messages,
         preventClose: true,
         sendFinish: false,
@@ -96,17 +102,21 @@ export async function projectChat(
         writable,
       });
       messages.push(...result.messages.slice(messages.length));
+      if (result.uiMessages) {
+        await persistChatMessagesForWorkflowRun({
+          messages: result.uiMessages,
+          workflowRunId: runId,
+        });
+      }
 
       await touchChatThreadState({ ...threadStateInput, status: "waiting" });
 
-      const { message: followUp } = await hook;
+      const { message: followUp, messageId } = await hook;
       if (followUp === "/done") break;
-
-      const followUpId = `user-${runId}-${turnNumber}`;
 
       await writeUserMessageMarker(writable, {
         content: followUp,
-        messageId: followUpId,
+        messageId,
       });
       messages.push({ content: followUp, role: "user" });
     }

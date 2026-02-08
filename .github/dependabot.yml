@@ -10,6 +10,14 @@ updates:
       # Keep typings aligned with Node LTS (we target Node 24.x).
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      # ESLint v10 is not yet supported by our lint plugin stack (jsdoc/tsdoc +
+      # typescript-eslint utils). Keep us on v9 until upstream support lands.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+        versions: [">=10.0.0"]
+      - dependency-name: "@eslint/js"
+        update-types: ["version-update:semver-major"]
+        versions: [">=10.0.0"]
     groups:
       dependencies:
         patterns:

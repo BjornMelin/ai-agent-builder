@@ -6,6 +6,7 @@ import { isUndefinedTableError } from "@/lib/db/postgres-errors";
 
 type TouchInput = Readonly<{
   projectId: string;
+  mode: string;
   status: ChatThreadStatus;
   title: string;
   workflowRunId: string;
@@ -30,6 +31,7 @@ export async function touchChatThreadState(input: TouchInput): Promise<void> {
   const stateUpdate = {
     ...(input.endedAt === undefined ? {} : { endedAt: input.endedAt }),
     lastActivityAt: now,
+    mode: input.mode,
     projectId: input.projectId,
     status: input.status,
     title: input.title,

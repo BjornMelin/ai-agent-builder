@@ -4,6 +4,7 @@ import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
 import {
+  appendChatMessages,
   getChatThreadByWorkflowRunId,
   updateChatThreadByWorkflowRunId,
 } from "@/lib/data/chat.server";
@@ -14,6 +15,7 @@ import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
 
 const bodySchema = z.strictObject({
   message: z.string().min(1),
+  messageId: z.string().min(1),
 });
 
 /**
@@ -60,7 +62,21 @@ export async function POST(
       throw new AppError("forbidden", 403, "Forbidden.");
     }
 
-    await chatMessageHook.resume(params.runId, { message: parsed.message });
+    await appendChatMessages({
+      messages: [
+        {
+          id: parsed.messageId,
+          parts: [{ text: parsed.message, type: "text" }],
+          role: "user",
+        },
+      ],
+      threadId: thread.id,
+    });
+
+    await chatMessageHook.resume(params.runId, {
+      message: parsed.message,
+      messageId: parsed.messageId,
+    });
 
     const now = new Date();
     try {

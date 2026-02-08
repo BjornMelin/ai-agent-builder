@@ -1,13 +1,13 @@
 ---
 spec: SPEC-0006
 title: Agent registry & orchestration patterns
-version: 0.3.0
-date: 2026-02-01
+version: 0.4.0
+date: 2026-02-07
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements: ["FR-009", "FR-033", "NFR-011", "NFR-013", "NFR-015"]
 related_adrs: ["ADR-0006", "ADR-0012", "ADR-0024"]
-notes: "Defines agent modes, tool allowlists, and orchestration patterns."
+notes: "Defines agent modes, tool allowlists, and orchestration patterns (implemented for project chat + research)."
 ---
 
 ## Summary
@@ -18,9 +18,8 @@ Defines:
 - which tools each mode can access (least privilege)
 - orchestration patterns for multi-agent workflows
 
-The system uses AI SDK v6 agents and dynamic tools to reduce context bloat
-(see [AI SDK Agents](https://ai-sdk.dev/docs/agents/overview) and
-[dynamicTool](https://ai-sdk.dev/docs/reference/ai-sdk-core/dynamic-tool)).
+The system uses AI SDK v6 agents and tool allowlisting to reduce context bloat
+(see [AI SDK Agents](https://ai-sdk.dev/docs/agents/overview)).
 
 ## Context
 
@@ -87,15 +86,18 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ### File-level contracts
 
-- `src/lib/ai/agents/*`: agent definitions (ToolLoopAgent configs) per mode.
-- `src/lib/ai/tools/*`: tool implementations and wrappers (typed schemas).
-- `src/lib/ai/registry.ts`: canonical registry mapping mode → agent/tools.
+- `src/lib/ai/agents/agent-mode.ts`: shared agent mode types.
+- `src/lib/ai/agents/modes/*`: mode definitions (system prompt + model + budgets + tool allowlist).
+- `src/lib/ai/agents/registry.ts`: canonical registry mapping modeId → mode definition.
+- `src/lib/ai/agents/registry.server.ts`: server-facing registry (env gates + enabled modes).
+- `src/lib/ai/tools/tool-ids.ts`: canonical tool IDs for allowlists.
+- `src/lib/ai/tools/factory.server.ts`: tool factory enforcing allowlists (default deny).
 
 ### Configuration
 
 - Tool allowlists must be enforced at agent construction time (not by “prompt
   instructions” alone).
-- Dynamic tools (MCP/Context7) must be sandboxed/guarded and bounded by budgets.
+- Dynamic tools (MCP/Context7) must be guarded and bounded by budgets.
 
 ## Agent modes
 

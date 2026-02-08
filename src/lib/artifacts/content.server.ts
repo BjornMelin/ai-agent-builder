@@ -8,6 +8,15 @@ import { z } from "zod";
 export const artifactMarkdownContentSchema = z.strictObject({
   format: z.literal("markdown"),
   markdown: z.string().min(1),
+  query: z.string().min(1).optional(),
+  sources: z
+    .array(
+      z.strictObject({
+        title: z.string().min(1).optional(),
+        url: z.url(),
+      }),
+    )
+    .optional(),
   summary: z.string().min(1).optional(),
   title: z.string().min(1),
 });
