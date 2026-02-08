@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
+  appendChatMessages: vi.fn(),
   getChatThreadByWorkflowRunId: vi.fn(),
   getProjectByIdForUser: vi.fn(),
   requireAppUserApi: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock("@/lib/auth/require-app-user-api.server", () => ({
 }));
 
 vi.mock("@/lib/data/chat.server", () => ({
+  appendChatMessages: state.appendChatMessages,
   getChatThreadByWorkflowRunId: state.getChatThreadByWorkflowRunId,
   updateChatThreadByWorkflowRunId: state.updateChatThreadByWorkflowRunId,
 }));
@@ -34,6 +36,7 @@ async function loadRoute() {
 beforeEach(() => {
   vi.clearAllMocks();
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
+  state.appendChatMessages.mockResolvedValue(undefined);
   state.resume.mockResolvedValue(undefined);
   state.getChatThreadByWorkflowRunId.mockResolvedValue({
     projectId: "proj_1",
@@ -67,7 +70,7 @@ describe("POST /api/chat/:runId", () => {
 
     const res = await POST(
       new Request("http://localhost/api/chat/run_1", {
-        body: JSON.stringify({ message: "hello" }),
+        body: JSON.stringify({ message: "hello", messageId: "msg_1" }),
         method: "POST",
       }),
       { params: Promise.resolve({ runId: "run_1" }) },
@@ -87,7 +90,7 @@ describe("POST /api/chat/:runId", () => {
 
     const res = await POST(
       new Request("http://localhost/api/chat/run_1", {
-        body: JSON.stringify({ message: "hello" }),
+        body: JSON.stringify({ message: "hello", messageId: "msg_1" }),
         method: "POST",
       }),
       { params: Promise.resolve({ runId: "run_1" }) },
@@ -106,7 +109,7 @@ describe("POST /api/chat/:runId", () => {
 
     const res = await POST(
       new Request("http://localhost/api/chat/run_1", {
-        body: JSON.stringify({ message: "hello" }),
+        body: JSON.stringify({ message: "hello", messageId: "msg_1" }),
         method: "POST",
       }),
       { params: Promise.resolve({ runId: "run_1" }) },
@@ -121,7 +124,7 @@ describe("POST /api/chat/:runId", () => {
 
     const res = await POST(
       new Request("http://localhost/api/chat/run_1", {
-        body: JSON.stringify({ message: "hello" }),
+        body: JSON.stringify({ message: "hello", messageId: "msg_1" }),
         method: "POST",
       }),
       { params: Promise.resolve({ runId: "run_1" }) },
@@ -129,7 +132,11 @@ describe("POST /api/chat/:runId", () => {
 
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ ok: true });
-    expect(state.resume).toHaveBeenCalledWith("run_1", { message: "hello" });
+    expect(state.appendChatMessages).toHaveBeenCalledTimes(1);
+    expect(state.resume).toHaveBeenCalledWith("run_1", {
+      message: "hello",
+      messageId: "msg_1",
+    });
     expect(state.updateChatThreadByWorkflowRunId).toHaveBeenCalledWith(
       "run_1",
       {
@@ -144,7 +151,7 @@ describe("POST /api/chat/:runId", () => {
 
     const res = await POST(
       new Request("http://localhost/api/chat/run_1", {
-        body: JSON.stringify({ message: "/done" }),
+        body: JSON.stringify({ message: "/done", messageId: "msg_1" }),
         method: "POST",
       }),
       { params: Promise.resolve({ runId: "run_1" }) },
@@ -152,7 +159,10 @@ describe("POST /api/chat/:runId", () => {
 
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ ok: true });
-    expect(state.resume).toHaveBeenCalledWith("run_1", { message: "/done" });
+    expect(state.resume).toHaveBeenCalledWith("run_1", {
+      message: "/done",
+      messageId: "msg_1",
+    });
     expect(state.updateChatThreadByWorkflowRunId).toHaveBeenCalledWith(
       "run_1",
       {
@@ -170,7 +180,7 @@ describe("POST /api/chat/:runId", () => {
 
     const res = await POST(
       new Request("http://localhost/api/chat/run_1", {
-        body: JSON.stringify({ message: "hello" }),
+        body: JSON.stringify({ message: "hello", messageId: "msg_1" }),
         method: "POST",
       }),
       { params: Promise.resolve({ runId: "run_1" }) },
@@ -178,6 +188,9 @@ describe("POST /api/chat/:runId", () => {
 
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ ok: true });
-    expect(state.resume).toHaveBeenCalledWith("run_1", { message: "hello" });
+    expect(state.resume).toHaveBeenCalledWith("run_1", {
+      message: "hello",
+      messageId: "msg_1",
+    });
   });
 });

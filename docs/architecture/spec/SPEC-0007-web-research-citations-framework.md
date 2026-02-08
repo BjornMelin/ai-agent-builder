@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0007
 title: Web research + citations framework
-version: 0.2.0
-date: 2026-01-30
+version: 0.4.0
+date: 2026-02-07
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements: ["FR-012", "NFR-004", "NFR-006", "PR-001", "IR-007"]
 related_adrs: ["ADR-0008", "ADR-0013"]
 notes: "Defines web research tool usage, caching, and citation requirements."
@@ -16,9 +16,8 @@ Defines how web research is performed and how citations are recorded and rendere
 
 ## Context
 
-Market research must be current and auditable. [Exa](https://ai-sdk.dev/tools-registry/exa)
-search results and [Firecrawl](https://ai-sdk.dev/tools-registry/firecrawl)
-extractions must be cached and converted into a minimal citation schema.
+Market research must be current and auditable. Exa search results and Firecrawl
+extractions must be cached and converted into a minimal citation schema.[^exa-search][^firecrawl-node]
 
 ## Goals / Non-goals
 
@@ -75,21 +74,27 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ### Architecture overview
 
-- Exa search provides candidate URLs [Exa](https://ai-sdk.dev/tools-registry/exa).
-- Firecrawl extracts clean content [Firecrawl](https://ai-sdk.dev/tools-registry/firecrawl).
+- Exa search provides candidate URLs (REST wrapper with deterministic AbortController timeouts).[^exa-search]
+- Firecrawl extracts clean content (markdown-first).[^firecrawl-node]
 - Redis caches extraction results [Upstash Redis REST API](https://upstash.com/docs/redis/restapi).
 - Citations persisted in Neon and referenced by artifacts
   [Neon connection guide](https://neon.com/docs/connect/connect-from-any-app).
+- Outbound extraction URLs are validated with SSRF guardrails (deterministic, no DNS resolution).[^owasp-ssrf]
 
 ### Data contracts
 
-- `Citation`: `{url, title, publishedAt?, accessedAt, excerpt}`
+- `Citation` (minimal, auditable): `{url, title, publishedAt?, accessedAt, excerpt}`
+- Research report artifacts reference citations using `citation:n` links.
 
 ### File-level contracts
 
-- `src/lib/ai/tools/web-search.ts`: search wrapper; enforces per-step query/result bounds.
-- `src/lib/ai/tools/firecrawl.ts`: extraction wrapper; normalizes response payloads.
-- `src/lib/citations/normalize.ts`: canonical citation schema normalization.
+- `src/lib/ai/tools/web-search.server.ts`: Exa search wrapper; enforces query/result bounds and caches results.
+- `src/lib/ai/tools/web-extract.server.ts`: Firecrawl extraction wrapper; truncates + caches extracted markdown.
+- `src/lib/net/fetch-with-timeout.server.ts`: shared AbortController timeout helper for upstream requests.
+- `src/lib/security/url-safety.server.ts`: SSRF defense-in-depth URL validation for outbound extraction.
+- `src/lib/citations/normalize.server.ts`: canonical citation schema normalization.
+- `src/lib/research/research-report.server.ts`: builds research report artifacts and persists citations linked to the artifact version.
+- `src/app/(app)/projects/[projectId]/artifacts/[artifactId]/artifact-markdown-with-citations.tsx`: renders citation links in artifact markdown.
 
 ### Configuration
 
@@ -99,8 +104,8 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ## Acceptance criteria
 
-- Every research section lists citations
-- Cache reduces repeat extractions for same URL
+- Every research report section lists citations
+- Cache reduces repeat searches/extractions for identical inputs
 
 ## Testing
 
@@ -117,12 +122,17 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ## References
 
-- [Exa tool](https://ai-sdk.dev/tools-registry/exa)
-- [Firecrawl tool](https://ai-sdk.dev/tools-registry/firecrawl)
+- [Exa Search API](https://docs.exa.ai/reference/search)
+- [Firecrawl Node SDK](https://docs.firecrawl.dev/sdks/node)
 - [Upstash Redis REST API](https://upstash.com/docs/redis/restapi)
 - [Neon connection guide](https://neon.com/docs/connect/connect-from-any-app)
+- [OWASP SSRF Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html)
 
 ## Changelog
 
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+
+[^exa-search]: https://docs.exa.ai/reference/search
+[^firecrawl-node]: https://docs.firecrawl.dev/sdks/node
+[^owasp-ssrf]: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html

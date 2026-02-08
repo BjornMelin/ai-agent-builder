@@ -1,9 +1,9 @@
 ---
 ADR: 0012
 Title: MCP + dynamic tools: Context7 via MCP + dynamicTool
-Status: Accepted
-Version: 0.2
-Date: 2026-01-30
+Status: Implemented
+Version: 0.4
+Date: 2026-02-07
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0006, ADR-0008, ADR-0013]
@@ -16,7 +16,7 @@ References:
 
 ## Status
 
-Accepted — 2026-01-30.
+Implemented — 2026-02-07.
 
 ## Description
 
@@ -52,7 +52,7 @@ Library APIs change quickly. Instead of hardcoding doc content into prompts, we 
 
 ## Decision
 
-We will use **MCP tools** via `createMCPClient` and expose them to agents using `dynamicTool()` so only the required doc tools are in context for a given step.
+We will use **MCP tools** via `createMCPClient` and only expose them to agents when the selected agent mode allowlists them (default deny).
 
 ## Constraints
 
@@ -64,8 +64,8 @@ We will use **MCP tools** via `createMCPClient` and expose them to agents using 
 
 ```mermaid
 flowchart LR
-  Agent --> Dynamic[dynamicTool()]
-  Dynamic --> MCPClient[createMCPClient]
+  Agent --> Toolset[Mode-scoped toolset]
+  Toolset --> MCPClient[createMCPClient]
   MCPClient --> Context7[(Context7 MCP server)]
 ```
 
@@ -91,13 +91,18 @@ flowchart LR
 
 ### Architecture Overview
 
-- MCP client configured as stdio transport.
+- MCP client configured as HTTP transport.
 - Tools: resolve library id, query docs.
 
 ### Implementation Details
 
-- Add `src/lib/ai/tools/mcp.ts` that provides a `getMcpTools()` factory.
-- Use `dynamicTool()` to inject only when step requires.
+- `src/lib/ai/tools/mcp-context7.server.ts` wraps Context7 MCP tools (cached + size-bounded).
+- Tool calls are time-bounded and abortable:
+  - Budget: `budgets.context7TimeoutMs` in `src/lib/config/budgets.server.ts`
+  - Enforcement: AbortController timeout in `src/lib/ai/tools/mcp-context7.server.ts`
+  - Propagation: `options.abortSignal` is passed from `ToolExecutionOptions.abortSignal` in `src/workflows/chat/steps/context7.step.ts`
+- `src/lib/ai/tools/factory.server.ts` injects Context7 tools only for allowlisted modes.
+- `src/workflows/chat/steps/context7.step.ts` enforces per-turn budgets for Context7 calls.
 
 ## Testing
 
@@ -126,9 +131,11 @@ flowchart LR
 
 ### Dependencies
 
-- **Added**: @modelcontextprotocol/sdk, context7 tools
+- **Added**: `@ai-sdk/mcp` (MCP client transport)
 
 ## Changelog
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-07)**: Implemented with mode-scoped tool injection, Redis caching, and budgets.
+- **0.4 (2026-02-07)**: Documented abortable, time-bounded MCP calls (`context7TimeoutMs`) and the workflow abort propagation path.

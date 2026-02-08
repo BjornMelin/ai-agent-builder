@@ -5,10 +5,15 @@ import type { ProjectDto } from "@/lib/data/projects.server";
 
 const state = vi.hoisted(() => ({
   buildExportZipStream: vi.fn(),
+  getMarkdownContent: vi.fn(),
   getProjectByIdForUser: vi.fn(),
   listCitationsByArtifactIds: vi.fn(),
   listLatestArtifacts: vi.fn(),
   requireAppUserApi: vi.fn(),
+}));
+
+vi.mock("@/lib/artifacts/content.server", () => ({
+  getMarkdownContent: state.getMarkdownContent,
 }));
 
 vi.mock("@/lib/auth/require-app-user-api.server", () => ({
@@ -60,6 +65,7 @@ beforeEach(() => {
   state.getProjectByIdForUser.mockResolvedValue(baseProject);
   state.listLatestArtifacts.mockResolvedValue([] satisfies ArtifactDto[]);
   state.listCitationsByArtifactIds.mockResolvedValue([]);
+  state.getMarkdownContent.mockReturnValue(null);
   state.buildExportZipStream.mockResolvedValue({
     manifest: {
       entries: [],
@@ -128,5 +134,125 @@ describe("GET /api/export/[projectId]", () => {
     });
     expect(state.listCitationsByArtifactIds).toHaveBeenCalledWith([]);
     expect(state.buildExportZipStream).toHaveBeenCalledTimes(1);
+  });
+
+  it("exports markdown and JSON artifacts and groups citations by artifact id", async () => {
+    const GET = await loadRoute();
+
+    state.listLatestArtifacts.mockResolvedValueOnce([
+      {
+        content: { format: "markdown", markdown: "# Hello", title: "Hi" },
+        createdAt: now,
+        id: "art_1",
+        kind: "PRD",
+        logicalKey: "PRD",
+        projectId,
+        runId: null,
+        version: 1,
+      },
+      {
+        content: { foo: "bar" },
+        createdAt: now,
+        id: "art_2",
+        kind: "ARCH",
+        logicalKey: "ARCH",
+        projectId,
+        runId: null,
+        version: 3,
+      },
+    ] satisfies ArtifactDto[]);
+
+    state.getMarkdownContent.mockImplementation((content: unknown) => {
+      const value = content as Record<string, unknown>;
+      if (value.format === "markdown" && typeof value.markdown === "string") {
+        return {
+          format: "markdown",
+          markdown: value.markdown,
+          title: typeof value.title === "string" ? value.title : "Untitled",
+        };
+      }
+      return null;
+    });
+
+    state.listCitationsByArtifactIds.mockResolvedValueOnce([
+      {
+        artifactId: "art_1",
+        createdAt: now,
+        id: "cit_1",
+        payload: { a: 1 },
+        projectId,
+        sourceRef: "https://example.com/a",
+        sourceType: "web",
+      },
+      // This row should be ignored by the export grouping.
+      {
+        artifactId: null,
+        createdAt: now,
+        id: "cit_ignored",
+        payload: {},
+        projectId,
+        sourceRef: "ignored",
+        sourceType: "web",
+      },
+      {
+        artifactId: "art_2",
+        createdAt: now,
+        id: "cit_2",
+        payload: { b: 2 },
+        projectId,
+        sourceRef: "upload:1",
+        sourceType: "upload",
+      },
+    ]);
+
+    const res = await GET(new Request("http://localhost/api/export/proj"), {
+      params: Promise.resolve({ projectId }),
+    });
+    expect(res.status).toBe(200);
+
+    expect(state.listCitationsByArtifactIds).toHaveBeenCalledWith([
+      "art_1",
+      "art_2",
+    ]);
+    expect(state.buildExportZipStream).toHaveBeenCalledTimes(1);
+
+    const [call] = state.buildExportZipStream.mock.calls;
+    const arg = (call?.[0] ?? {}) as {
+      files?: Array<{ path: string; contentBytes: Uint8Array }>;
+    };
+    const files = arg.files ?? [];
+
+    const prdMarkdown = files.find((f) => f.path === "artifacts/PRD/PRD.v1.md");
+    expect(prdMarkdown).toBeTruthy();
+    if (prdMarkdown) {
+      const text = new TextDecoder().decode(prdMarkdown.contentBytes);
+      expect(text).toContain("# Hello");
+    }
+
+    const archJson = files.find(
+      (f) => f.path === "artifacts/ARCH/ARCH.v3.json",
+    );
+    expect(archJson).toBeTruthy();
+    if (archJson) {
+      const text = new TextDecoder().decode(archJson.contentBytes);
+      expect(text).toContain('"foo": "bar"');
+    }
+
+    const prdCitations = files.find(
+      (f) => f.path === "citations/PRD/PRD.v1.json",
+    );
+    expect(prdCitations).toBeTruthy();
+    if (prdCitations) {
+      const text = new TextDecoder().decode(prdCitations.contentBytes).trim();
+      const parsed = JSON.parse(text) as unknown;
+      expect(parsed).toEqual([
+        {
+          id: "cit_1",
+          payload: { a: 1 },
+          sourceRef: "https://example.com/a",
+          sourceType: "web",
+        },
+      ]);
+    }
   });
 });

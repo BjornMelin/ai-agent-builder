@@ -42,6 +42,7 @@ describe("chat-thread-state.step", () => {
 
     await touchChatThreadState({
       endedAt: new Date(1_000),
+      mode: "chat-assistant",
       projectId: "project_1",
       status: "failed",
       title: "Thread title",
@@ -54,6 +55,7 @@ describe("chat-thread-state.step", () => {
     const valuesArg = values.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(valuesArg).toMatchObject({
       endedAt: new Date(1_000),
+      mode: "chat-assistant",
       projectId: "project_1",
       status: "failed",
       title: "Thread title",
@@ -72,6 +74,7 @@ describe("chat-thread-state.step", () => {
     expect(conflictArg.target).toBe(schema.chatThreadsTable.workflowRunId);
     expect(conflictArg.set).toMatchObject({
       endedAt: new Date(1_000),
+      mode: "chat-assistant",
       projectId: "project_1",
       status: "failed",
       title: "Thread title",
@@ -85,6 +88,7 @@ describe("chat-thread-state.step", () => {
     state.db = db as unknown as DbClient;
 
     await touchChatThreadState({
+      mode: "chat-assistant",
       projectId: "project_1",
       status: "running",
       title: "Thread title",

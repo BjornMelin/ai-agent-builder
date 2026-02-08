@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0004
 title: Chat + retrieval augmentation
-version: 0.3.0
-date: 2026-02-03
+version: 0.4.0
+date: 2026-02-07
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements: ["FR-008", "FR-009", "FR-019", "PR-001", "PR-002"]
 related_adrs: ["ADR-0006", "ADR-0004", "ADR-0011"]
 notes: "Defines chat UX, persistence, and RAG behavior for grounded responses."
@@ -106,6 +106,9 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 - `src/app/(app)/projects/[projectId]/chat/page.tsx`: UI for streaming chat and message history.
 - `src/app/api/chat/route.ts`: server streaming endpoint; must persist messages/tool calls.
+- `src/app/api/chat/[runId]/route.ts`: resume endpoint for durable chat sessions.
+- `src/lib/data/chat.server.ts`: chat threads + messages DAL (Neon + Drizzle).
+- `src/workflows/chat/project-chat.workflow.ts`: durable chat workflow orchestration and persistence.
 - `src/lib/ai/tools/retrieval.server.ts`: retrieval tools (uploads + artifacts);
   must enforce project scoping and top-k bounds.
 - `src/lib/upstash/vector.server.ts`: vector query interface with metadata filters.
@@ -121,7 +124,7 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 - Chat streams responses and persists message history
 - RAG tool returns cited sources for grounded answers
-- Agent modes can be switched per message
+- Agent mode is selected per thread and persisted; tool allowlists follow mode
 
 ## Testing
 
