@@ -330,7 +330,7 @@ export async function appendChatMessages(
       role: m.role,
       textContent: textContent.length > 0 ? textContent : null,
       threadId: input.threadId,
-      uiMessage: m as unknown as Record<string, unknown>,
+      uiMessage: m,
     };
   });
 

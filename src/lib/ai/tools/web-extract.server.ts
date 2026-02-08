@@ -4,6 +4,7 @@ import { FirecrawlClient } from "@mendable/firecrawl-js";
 
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
+import { log } from "@/lib/core/log";
 import { sha256Hex } from "@/lib/core/sha256";
 import { env } from "@/lib/env";
 import { assertSafeExternalHttpUrl } from "@/lib/security/url-safety.server";
@@ -61,7 +62,14 @@ function normalizeMaxChars(maxChars: number | undefined): number {
  *
  * @param input - Extraction input.
  * @returns Extracted markdown and metadata.
- * @throws AppError - When the URL is invalid or extraction fails.
+ * @throws AppError - With code `"bad_request"` when the URL is invalid or unsafe.
+ * @throws AppError - With code `"aborted"` when the abort signal is already aborted
+ * or becomes aborted during extraction.
+ * @throws AppError - With code `"upstream_timeout"` when the upstream extraction
+ * request times out.
+ * @throws AppError - With code `"bad_gateway"` when the upstream extractor fails.
+ * @throws AppError - With code `"bad_request"` when extraction succeeds but returns
+ * an empty document.
  */
 export async function extractWebPage(
   input: Readonly<{
@@ -84,14 +92,19 @@ export async function extractWebPage(
   const key = cacheKey({ url: url.toString() });
 
   if (redis) {
-    const cached = await redis.get<WebExtractResult>(key);
-    if (cached) {
-      const maxChars = normalizeMaxChars(input.maxChars);
-      if (maxChars >= budgets.maxWebExtractCharsPerUrl) return cached;
-      return {
-        ...cached,
-        markdown: truncateMarkdown(cached.markdown, maxChars),
-      };
+    try {
+      const cached = await redis.get<WebExtractResult>(key);
+      if (cached) {
+        const maxChars = normalizeMaxChars(input.maxChars);
+        if (maxChars >= budgets.maxWebExtractCharsPerUrl) return cached;
+        return {
+          ...cached,
+          markdown: truncateMarkdown(cached.markdown, maxChars),
+        };
+      }
+    } catch (error) {
+      log.debug("web_extract_cache_read_failed", { err: error });
+      // Best-effort cache read; fall through to live request.
     }
   }
 

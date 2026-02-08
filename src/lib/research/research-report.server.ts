@@ -10,6 +10,7 @@ import {
   type WebCitationSource,
 } from "@/lib/citations/normalize.server";
 import { budgets } from "@/lib/config/budgets.server";
+import { addAbortListener } from "@/lib/core/abort";
 import { AppError } from "@/lib/core/errors";
 import { sha256Hex } from "@/lib/core/sha256";
 import { createArtifactVersion } from "@/lib/data/artifacts.server";
@@ -44,21 +45,6 @@ function excerptForMarkdown(markdown: string): string | undefined {
 
   const maxChars = 280;
   return cleaned.length > maxChars ? `${cleaned.slice(0, maxChars)}…` : cleaned;
-}
-
-function addAbortListener(
-  signal: AbortSignal,
-  onAbort: () => void,
-): () => void {
-  if (signal.aborted) {
-    onAbort();
-    return () => undefined;
-  }
-
-  signal.addEventListener("abort", onAbort, { once: true });
-  return () => {
-    signal.removeEventListener("abort", onAbort);
-  };
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {

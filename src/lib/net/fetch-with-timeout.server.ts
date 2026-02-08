@@ -1,5 +1,7 @@
 import "server-only";
 
+import { addAbortListener } from "@/lib/core/abort";
+
 /**
  * Error thrown when a fetch call exceeds its timeout budget.
  */
@@ -20,21 +22,6 @@ export class FetchTimeoutError extends Error {
 
 type FetchInput = Parameters<typeof fetch>[0];
 type FetchInit = Parameters<typeof fetch>[1];
-
-function addAbortListener(
-  signal: AbortSignal,
-  onAbort: () => void,
-): () => void {
-  if (signal.aborted) {
-    onAbort();
-    return () => undefined;
-  }
-
-  signal.addEventListener("abort", onAbort, { once: true });
-  return () => {
-    signal.removeEventListener("abort", onAbort);
-  };
-}
 
 /**
  * Execute a fetch call with a hard timeout and optional external abort signal.

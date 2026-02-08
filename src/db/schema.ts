@@ -355,7 +355,7 @@ export const chatMessagesTable = pgTable(
     /**
      * Full AI SDK UI message payload (including parts/tools/reasoning).
      */
-    uiMessage: jsonb("ui_message").$type<Record<string, unknown>>(),
+    uiMessage: jsonb("ui_message").$type<unknown>(),
   },
   (t) => [
     index("chat_messages_thread_id_created_at_idx").on(t.threadId, t.createdAt),
