@@ -89,6 +89,8 @@ export type ResearchReportResult = Readonly<{
  * @param input - Report generation input.
  * @returns Created artifact metadata.
  * @throws AppError - When the query is empty.
+ * @throws AppError - When the operation is aborted via the abort signal.
+ * @throws AppError - When report generation exceeds the safety timeout.
  */
 export async function createResearchReportArtifact(
   input: Readonly<{

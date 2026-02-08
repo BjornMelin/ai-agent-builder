@@ -56,7 +56,6 @@ export async function createResearchReportStep(
       "Web search budget exceeded for this turn.",
     );
   }
-  ctx.toolBudget.webSearchCalls += 1;
 
   const remainingExtracts =
     budgets.maxWebExtractCallsPerTurn - ctx.toolBudget.webExtractCalls;
@@ -68,6 +67,7 @@ export async function createResearchReportStep(
     );
   }
   const maxExtractUrls = Math.min(3, remainingExtracts);
+  ctx.toolBudget.webSearchCalls += 1;
   ctx.toolBudget.webExtractCalls += maxExtractUrls;
 
   const mode = getAgentMode(ctx.modeId);

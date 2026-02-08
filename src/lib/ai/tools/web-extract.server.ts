@@ -126,6 +126,15 @@ export async function extractWebPage(
     throw new AppError("bad_gateway", 502, "Web extraction failed.", error);
   }
 
+  if (input.abortSignal?.aborted) {
+    throw new AppError(
+      "aborted",
+      499,
+      "Operation aborted.",
+      input.abortSignal.reason,
+    );
+  }
+
   const markdownRaw = doc.markdown ?? "";
   if (markdownRaw.trim().length === 0) {
     throw new AppError("bad_request", 400, "Failed to extract page content.");

@@ -36,9 +36,9 @@ function isContext7Configured(): boolean {
 /**
  * Check whether a mode is enabled in the current environment.
  *
- * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  * @param mode - Mode definition.
  * @returns True when the mode can be used safely.
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  */
 export function isAgentModeEnabled(mode: AgentMode): boolean {
   const webResearchOk =
@@ -50,8 +50,8 @@ export function isAgentModeEnabled(mode: AgentMode): boolean {
 /**
  * List agent modes that are enabled in the current environment.
  *
- * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  * @returns Enabled modes.
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  */
 export function listEnabledAgentModes(): AgentMode[] {
   return listAllAgentModes().filter(isAgentModeEnabled);
@@ -60,10 +60,10 @@ export function listEnabledAgentModes(): AgentMode[] {
 /**
  * Resolve and validate an enabled agent mode.
  *
- * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  * @param modeId - Untrusted mode identifier.
  * @returns The resolved agent mode.
  * @throws AppError - With code "bad_request" when modeId is invalid or disabled.
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  */
 export function getEnabledAgentMode(modeId: string): AgentMode {
   const mode = getAgentMode(modeId);

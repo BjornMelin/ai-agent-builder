@@ -148,5 +148,5 @@ flowchart LR
 - **0.3 (2026-02-07)**: Implemented with server wrappers, caching, budgets, and artifact-linked citations.
 - **0.4 (2026-02-07)**: Hardened adapters with deterministic timeouts and SSRF guardrails; removed unused Exa SDK dependency.
 
-[^exa-search]: https://docs.exa.ai/reference/search
-[^owasp-ssrf]: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+[^exa-search]: See References: Exa Search API
+[^owasp-ssrf]: See References: OWASP SSRF Prevention Cheat Sheet

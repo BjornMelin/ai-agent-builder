@@ -28,8 +28,8 @@ const agentModesRegistry = {
 /**
  * List all known agent modes.
  *
- * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  * @returns All modes.
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  */
 export function listAllAgentModes(): AgentMode[] {
   return Object.values(agentModesRegistry);
@@ -38,10 +38,10 @@ export function listAllAgentModes(): AgentMode[] {
 /**
  * Resolve and validate an agent mode.
  *
- * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  * @param modeId - Untrusted mode identifier.
  * @returns The resolved agent mode.
  * @throws AppError - With code "bad_request" when modeId is invalid.
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  */
 export function getAgentMode(modeId: string): AgentMode {
   const parsed = agentModeIdSchema.safeParse(modeId);

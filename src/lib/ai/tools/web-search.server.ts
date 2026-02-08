@@ -47,6 +47,9 @@ export type WebSearchHit = Readonly<{
   highlights?: readonly string[];
 }>;
 
+/**
+ * JSON-safe web search response metadata and results.
+ */
 export type WebSearchResponse = Readonly<{
   requestId: string;
   results: readonly WebSearchHit[];
@@ -110,9 +113,12 @@ function cacheKey(
 /**
  * Execute a web search via Exa.
  *
+ * @remarks
+ * numResults is clamped to the configured max and at least 1.
+ *
  * @param input - Search input.
  * @returns Search response.
- * @throws AppError - When query is empty or numResults is out of bounds.
+ * @throws AppError - When the query is empty or date formats are invalid.
  * @see docs/architecture/spec/SPEC-0007-web-research-citations-framework.md
  */
 export async function searchWeb(
@@ -154,8 +160,12 @@ export async function searchWeb(
   });
 
   if (redis) {
-    const cached = await redis.get<WebSearchResponse>(key);
-    if (cached) return cached;
+    try {
+      const cached = await redis.get<WebSearchResponse>(key);
+      if (cached) return cached;
+    } catch {
+      // Best-effort cache read; fall through to live request.
+    }
   }
 
   let responseJson: z.infer<typeof exaSearchResponseSchema>;

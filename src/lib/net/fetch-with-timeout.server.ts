@@ -43,6 +43,7 @@ function addAbortListener(
  * @param init - Fetch init.
  * @param options - Timeout/abort options.
  * @returns Fetch response.
+ * @throws RangeError - When timeoutMs is not finite or outside 1-120000.
  * @throws FetchTimeoutError - When the request exceeds the timeout budget.
  * @throws Error - When the underlying fetch fails for reasons other than timeout.
  */
