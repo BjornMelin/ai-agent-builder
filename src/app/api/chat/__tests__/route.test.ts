@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   appendChatMessages: vi.fn(),
   buildChatToolsForMode: vi.fn(),
-  createUIMessageStreamResponse: vi.fn(),
   ensureChatThreadForWorkflowRun: vi.fn(),
   getEnabledAgentMode: vi.fn(),
   getProjectByIdForUser: vi.fn(),
@@ -14,10 +13,13 @@ const state = vi.hoisted(() => ({
   start: vi.fn(),
 }));
 
-vi.mock("ai", () => ({
-  createUIMessageStreamResponse: state.createUIMessageStreamResponse,
-  safeValidateUIMessages: state.safeValidateUIMessages,
-}));
+vi.mock("ai", async () => {
+  const actual = await vi.importActual<typeof import("ai")>("ai");
+  return {
+    ...actual,
+    safeValidateUIMessages: state.safeValidateUIMessages,
+  };
+});
 
 vi.mock("workflow/api", () => ({
   getRun: state.getRun,
@@ -98,10 +100,6 @@ beforeEach(() => {
     updatedAt: new Date().toISOString(),
     workflowRunId: "run_123",
   });
-  state.createUIMessageStreamResponse.mockImplementation(
-    ({ headers }: { headers?: Record<string, string> }) =>
-      new Response("ok", headers === undefined ? undefined : { headers }),
-  );
 });
 
 describe("POST /api/chat", () => {
@@ -206,6 +204,12 @@ describe("POST /api/chat", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("x-workflow-run-id")).toBe("run_123");
     expect(res.headers.get("x-chat-thread-id")).toBe("thread_1");
+    expect(res.headers.get("content-type")).toBe("text/event-stream");
+    expect(res.headers.get("cache-control")).toBe("no-cache");
+    expect(res.headers.get("connection")).toBe("keep-alive");
+    expect(res.headers.get("x-vercel-ai-ui-message-stream")).toBe("v1");
+
+    await expect(res.text()).resolves.toContain("data: [DONE]");
     expect(state.start).toHaveBeenCalledTimes(1);
     expect(state.start).toHaveBeenCalledWith("projectChatWorkflow", [
       "proj_1",

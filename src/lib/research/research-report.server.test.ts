@@ -1,18 +1,14 @@
+import { createMockLanguageModelV3Text } from "@tests/utils/ai-sdk";
+import type { MockLanguageModelV3 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
 import type { AppError } from "@/lib/core/errors";
 import { createResearchReportArtifact } from "@/lib/research/research-report.server";
 
 const state = vi.hoisted(() => ({
   createArtifactVersion: vi.fn(),
   extractWebPage: vi.fn(),
-  generateText: vi.fn(),
   getChatModelById: vi.fn(),
   searchWeb: vi.fn(),
-}));
-
-vi.mock("ai", () => ({
-  generateText: state.generateText,
 }));
 
 vi.mock("@/lib/ai/gateway.server", () => ({
@@ -31,13 +27,15 @@ vi.mock("@/lib/data/artifacts.server", () => ({
   createArtifactVersion: state.createArtifactVersion,
 }));
 
+let model: MockLanguageModelV3;
+
 beforeEach(() => {
   vi.clearAllMocks();
 
-  state.getChatModelById.mockReturnValue({});
-  state.generateText.mockResolvedValue({
-    text: "# Research report\n\nHello [[1]](citation:1)",
-  });
+  model = createMockLanguageModelV3Text(
+    "# Research report\n\nHello [[1]](citation:1)",
+  );
+  state.getChatModelById.mockReturnValue(model);
 
   state.searchWeb.mockResolvedValue({
     requestId: "req_1",
@@ -90,6 +88,25 @@ describe("createResearchReportArtifact", () => {
       query: "Next.js cache components",
       runId: "run_1",
     });
+
+    expect(model.doGenerateCalls).toHaveLength(1);
+    const call = model.doGenerateCalls[0];
+    const prompt = call?.prompt ?? [];
+
+    expect(prompt.find((m) => m.role === "system")?.content).toContain(
+      "Cite sources inline using the exact syntax",
+    );
+    expect(prompt.find((m) => m.role === "system")?.content).toContain(
+      "Do not invent citations.",
+    );
+
+    const userParts = prompt.find((m) => m.role === "user")?.content ?? [];
+    const userText = userParts
+      .map((part) => (part.type === "text" ? part.text : ""))
+      .join("");
+    expect(userText).toContain("Research question:");
+    expect(userText).toContain("Source 1:");
+    expect(userText).toContain("https://example.com/a");
 
     expect(result).toEqual(
       expect.objectContaining({

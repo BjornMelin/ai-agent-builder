@@ -135,33 +135,34 @@ describe("searchWeb", () => {
 
   it("times out when the upstream request exceeds the timeout budget", async () => {
     vi.useFakeTimers();
-
-    state.fetch.mockImplementation(
-      (_input: unknown, init?: { signal?: AbortSignal }) => {
-        return new Promise((_resolve, reject) => {
-          if (init?.signal) {
-            const onAbort = () => reject(new Error("aborted"));
-            if (init.signal.aborted) {
-              onAbort();
-              return;
+    try {
+      state.fetch.mockImplementation(
+        (_input: unknown, init?: { signal?: AbortSignal }) => {
+          return new Promise((_resolve, reject) => {
+            if (init?.signal) {
+              const onAbort = () => reject(new Error("aborted"));
+              if (init.signal.aborted) {
+                onAbort();
+                return;
+              }
+              init.signal.addEventListener("abort", onAbort, { once: true });
             }
-            init.signal.addEventListener("abort", onAbort, { once: true });
-          }
-        });
-      },
-    );
+          });
+        },
+      );
 
-    const { searchWeb } = await loadModule();
-    const promise = searchWeb({ query: "timeouts" });
-    const expectation = expect(promise).rejects.toMatchObject({
-      code: "upstream_timeout",
-      status: 504,
-    } satisfies Partial<AppError>);
+      const { searchWeb } = await loadModule();
+      const promise = searchWeb({ query: "timeouts" });
+      const expectation = expect(promise).rejects.toMatchObject({
+        code: "upstream_timeout",
+        status: 504,
+      } satisfies Partial<AppError>);
 
-    await vi.advanceTimersByTimeAsync(budgets.webSearchTimeoutMs);
-
-    await expectation;
-    vi.useRealTimers();
+      await vi.advanceTimersByTimeAsync(budgets.webSearchTimeoutMs);
+      await expectation;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("rejects invalid date strings", async () => {
