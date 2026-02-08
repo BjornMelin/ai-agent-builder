@@ -4,6 +4,15 @@ import { z } from "zod";
 
 import { budgets } from "@/lib/config/budgets.server";
 
+function isSafeExternalHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Canonical citation payload stored in `citations.payload`.
  */
@@ -16,7 +25,12 @@ export const webCitationPayloadSchema = z.looseObject({
   publishedDate: z.string().min(1).optional(),
   title: z.string().min(1).optional(),
   tool: z.enum(["exa", "firecrawl"]).optional(),
-  url: z.url(),
+  url: z
+    .string()
+    .url()
+    .refine((value) => isSafeExternalHttpUrl(value), {
+      message: "Unsupported URL protocol.",
+    }),
 });
 
 /**
@@ -28,6 +42,12 @@ export type CitationInput = Readonly<{
   payload: Record<string, unknown>;
 }>;
 
+/**
+ * Web citation source inputs accepted for normalization.
+ *
+ * @remarks
+ * These inputs are deduped by URL and assigned stable 1-based indices during normalization.
+ */
 export type WebCitationSource = Readonly<{
   url: string;
   title: string | null;

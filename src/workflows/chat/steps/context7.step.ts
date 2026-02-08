@@ -48,9 +48,13 @@ function assertContext7Budget(
 /**
  * Context7 MCP: resolve a library name to a library id.
  *
+ * @remarks
+ * ADR-0012 documents the Context7 MCP tool exposure and budgets.
+ *
  * @param input - Tool input.
  * @param options - Tool execution options.
  * @returns Context7 response.
+ * @throws AppError - When input is invalid, project context is missing, or the per-turn budget is exceeded.
  */
 export async function context7ResolveLibraryIdStep(
   input: Readonly<{ libraryName: string; query: string }>,
@@ -77,9 +81,13 @@ export async function context7ResolveLibraryIdStep(
 /**
  * Context7 MCP: query docs for a library id.
  *
+ * @remarks
+ * ADR-0012 documents the Context7 MCP tool exposure and budgets.
+ *
  * @param input - Tool input.
  * @param options - Tool execution options.
  * @returns Context7 response.
+ * @throws AppError - When input is invalid, project context is missing, or the per-turn budget is exceeded.
  */
 export async function context7QueryDocsStep(
   input: Readonly<{ libraryId: string; query: string }>,

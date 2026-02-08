@@ -35,21 +35,15 @@ export async function ChatContent(
   }
 
   const threadsPromise = listChatThreadsByProjectId(project.id, user.id);
-  const latestThreadPromise = getLatestChatThreadByProjectId(
-    project.id,
-    user.id,
-  );
-  const modesPromise = Promise.resolve(listEnabledAgentModes());
+  const activeThreadPromise = threadId
+    ? getChatThreadById(threadId, user.id)
+    : getLatestChatThreadByProjectId(project.id, user.id);
+  const enabledModes = listEnabledAgentModes();
 
-  const [threads, latestThread, enabledModes] = await Promise.all([
+  const [threads, activeThread] = await Promise.all([
     threadsPromise,
-    latestThreadPromise,
-    modesPromise,
+    activeThreadPromise,
   ]);
-
-  const activeThread = threadId
-    ? await getChatThreadById(threadId, user.id)
-    : latestThread;
 
   if (threadId && !activeThread) {
     notFound();

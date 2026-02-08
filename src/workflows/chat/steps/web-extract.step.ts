@@ -22,9 +22,15 @@ const inputSchema = z.object({
 /**
  * Web extraction tool step (Firecrawl).
  *
+ * @remarks
+ * SPEC-0007 defines Firecrawl integration with SSRF validation and caching.
+ *
  * @param input - Tool input.
  * @param options - Tool execution options (includes experimental_context).
  * @returns Extracted page content.
+ * @throws AppError - With code "bad_request" (400) for invalid input.
+ * @throws AppError - With code "bad_request" (400) for missing project context.
+ * @throws AppError - With code "conflict" (409) when budget is exceeded.
  */
 export async function webExtractStep(
   input: Readonly<{ url: string; maxChars?: number | undefined }>,
@@ -64,6 +70,7 @@ export async function webExtractStep(
   ctx.toolBudget.webExtractCalls += 1;
 
   return extractWebPage({
+    abortSignal: options.abortSignal,
     maxChars: parsed.data.maxChars,
     url: parsed.data.url,
   });

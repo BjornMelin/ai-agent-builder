@@ -165,7 +165,11 @@ describe("GET /api/export/[projectId]", () => {
     state.getMarkdownContent.mockImplementation((content: unknown) => {
       const value = content as Record<string, unknown>;
       if (value.format === "markdown" && typeof value.markdown === "string") {
-        return { markdown: value.markdown };
+        return {
+          format: "markdown",
+          markdown: value.markdown,
+          title: typeof value.title === "string" ? value.title : "Untitled",
+        };
       }
       return null;
     });

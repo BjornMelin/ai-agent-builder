@@ -15,8 +15,10 @@ export default async function ChatPage(
     searchParams: Promise<Record<string, string | string[] | undefined>>;
   }>,
 ) {
-  const { projectId } = await props.params;
-  const searchParams = await props.searchParams;
+  const [{ projectId }, searchParams] = await Promise.all([
+    props.params,
+    props.searchParams,
+  ]);
   const threadIdRaw = searchParams.threadId;
   const threadId = typeof threadIdRaw === "string" ? threadIdRaw : undefined;
 

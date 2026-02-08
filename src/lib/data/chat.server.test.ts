@@ -49,86 +49,97 @@ const state = vi.hoisted(() => ({
 
 function createFakeDb() {
   return {
-    insert: (_table: unknown) => ({
-      values: (input: unknown) => {
-        const values = Array.isArray(input) ? input : [input];
-        const first = values[0] as Record<string, unknown> | undefined;
+    insert: (_table: unknown) => {
+      // Signature matches Drizzle; table value isn't needed for this in-memory stub.
+      void _table;
 
-        if (first && "workflowRunId" in first) {
-          // chat_threads insert
-          const v = values[0] as Record<string, unknown>;
-          return {
-            onConflictDoNothing: (_opts: unknown) => ({
-              returning: async () => {
-                if (state.threadInsertError) {
-                  throw state.threadInsertError;
-                }
-                const workflowRunId = String(v.workflowRunId ?? "");
-                if (workflowRunId.length === 0) return [];
-                if (state.threadsByWorkflowRunId.has(workflowRunId)) {
-                  return [];
-                }
+      return {
+        values: (input: unknown) => {
+          const values = Array.isArray(input) ? input : [input];
+          const first = values[0] as Record<string, unknown> | undefined;
 
-                const now = new Date();
-                const row: ThreadRow = {
-                  createdAt: now,
-                  endedAt: null,
-                  id: `thread_${state.nextThreadId++}`,
-                  lastActivityAt: (v.lastActivityAt as Date | undefined) ?? now,
-                  mode: String(v.mode ?? "chat-assistant"),
-                  projectId: String(v.projectId ?? "proj_1"),
-                  status: (v.status as ThreadRow["status"]) ?? "running",
-                  title: String(v.title ?? "Untitled"),
-                  updatedAt: (v.updatedAt as Date | undefined) ?? now,
-                  workflowRunId,
+          if (first && "workflowRunId" in first) {
+            // chat_threads insert
+            const v = values[0] as Record<string, unknown>;
+            return {
+              onConflictDoNothing: (_opts: unknown) => {
+                void _opts;
+                return {
+                  returning: async () => {
+                    if (state.threadInsertError) {
+                      throw state.threadInsertError;
+                    }
+                    const workflowRunId = String(v.workflowRunId ?? "");
+                    if (workflowRunId.length === 0) return [];
+                    if (state.threadsByWorkflowRunId.has(workflowRunId)) {
+                      return [];
+                    }
+
+                    const now = new Date();
+                    const row: ThreadRow = {
+                      createdAt: now,
+                      endedAt: null,
+                      id: `thread_${state.nextThreadId++}`,
+                      lastActivityAt:
+                        (v.lastActivityAt as Date | undefined) ?? now,
+                      mode: String(v.mode ?? "chat-assistant"),
+                      projectId: String(v.projectId ?? "proj_1"),
+                      status: (v.status as ThreadRow["status"]) ?? "running",
+                      title: String(v.title ?? "Untitled"),
+                      updatedAt: (v.updatedAt as Date | undefined) ?? now,
+                      workflowRunId,
+                    };
+
+                    state.threadsByWorkflowRunId.set(workflowRunId, row);
+                    state.threadsById.set(row.id, row);
+                    return [row];
+                  },
                 };
-
-                state.threadsByWorkflowRunId.set(workflowRunId, row);
-                state.threadsById.set(row.id, row);
-                return [row];
               },
-            }),
+            };
+          }
+
+          // chat_messages insert
+          return {
+            onConflictDoNothing: async (_opts: unknown) => {
+              void _opts;
+              state.messageInsertCalls += 1;
+              if (state.messageInsertError) {
+                throw state.messageInsertError;
+              }
+              for (const raw of values) {
+                const v = raw as Record<string, unknown>;
+                const threadId = String(v.threadId ?? "");
+                const messageUid = String(v.messageUid ?? "");
+                const key = `${threadId}:${messageUid}`;
+                const exists = state.messages.some(
+                  (m) => `${m.threadId}:${m.messageUid ?? ""}` === key,
+                );
+                if (exists) continue;
+
+                const now = new Date(state.nextMessageId);
+                state.messages.push({
+                  createdAt: now,
+                  id: `msg_${state.nextMessageId++}`,
+                  messageUid: messageUid.length > 0 ? messageUid : null,
+                  role: String(v.role ?? "user"),
+                  textContent:
+                    typeof v.textContent === "string" &&
+                    v.textContent.length > 0
+                      ? v.textContent
+                      : null,
+                  threadId,
+                  uiMessage:
+                    v.uiMessage && typeof v.uiMessage === "object"
+                      ? (v.uiMessage as Record<string, unknown>)
+                      : null,
+                });
+              }
+            },
           };
-        }
-
-        // chat_messages insert
-        return {
-          onConflictDoNothing: async (_opts: unknown) => {
-            state.messageInsertCalls += 1;
-            if (state.messageInsertError) {
-              throw state.messageInsertError;
-            }
-            for (const raw of values) {
-              const v = raw as Record<string, unknown>;
-              const threadId = String(v.threadId ?? "");
-              const messageUid = String(v.messageUid ?? "");
-              const key = `${threadId}:${messageUid}`;
-              const exists = state.messages.some(
-                (m) => `${m.threadId}:${m.messageUid ?? ""}` === key,
-              );
-              if (exists) continue;
-
-              const now = new Date(state.nextMessageId);
-              state.messages.push({
-                createdAt: now,
-                id: `msg_${state.nextMessageId++}`,
-                messageUid: messageUid.length > 0 ? messageUid : null,
-                role: String(v.role ?? "user"),
-                textContent:
-                  typeof v.textContent === "string" && v.textContent.length > 0
-                    ? v.textContent
-                    : null,
-                threadId,
-                uiMessage:
-                  v.uiMessage && typeof v.uiMessage === "object"
-                    ? (v.uiMessage as Record<string, unknown>)
-                    : null,
-              });
-            }
-          },
-        };
-      },
-    }),
+        },
+      };
+    },
     query: {
       chatMessagesTable: {
         findMany: async (opts: unknown) => {
@@ -166,18 +177,25 @@ function createFakeDb() {
         },
       },
     },
-    update: (_table: unknown) => ({
-      set: (values: unknown) => {
-        if (values && typeof values === "object") {
-          state.lastUpdateSetValues = values as Record<string, unknown>;
-        } else {
-          state.lastUpdateSetValues = null;
-        }
-        return {
-          where: async (_where: unknown) => {},
-        };
-      },
-    }),
+    update: (_table: unknown) => {
+      // Signature matches Drizzle; table value isn't needed for this in-memory stub.
+      void _table;
+
+      return {
+        set: (values: unknown) => {
+          if (values && typeof values === "object") {
+            state.lastUpdateSetValues = values as Record<string, unknown>;
+          } else {
+            state.lastUpdateSetValues = null;
+          }
+          return {
+            where: async (_where: unknown) => {
+              void _where;
+            },
+          };
+        },
+      };
+    },
   };
 }
 
@@ -462,16 +480,16 @@ describe("chat DAL", () => {
       workflowRunId: "run_1",
     });
 
-    await listChatThreadsByProjectId("proj_1", "user_1", { limit: 0 });
+    await listChatThreadsByProjectId("proj_1", "user_1", 0);
     expect(state.lastChatThreadsFindManyLimit).toBe(1);
 
-    await listChatThreadsByProjectId("proj_1", "user_1", { limit: 999 });
+    await listChatThreadsByProjectId("proj_1", "user_1", 999);
     expect(state.lastChatThreadsFindManyLimit).toBe(200);
 
-    await listChatMessagesByThreadId(thread.id, "user_1", { limit: 0 });
+    await listChatMessagesByThreadId(thread.id, "user_1", 0);
     expect(state.lastChatMessagesFindManyLimit).toBe(1);
 
-    await listChatMessagesByThreadId(thread.id, "user_1", { limit: 999 });
+    await listChatMessagesByThreadId(thread.id, "user_1", 999);
     expect(state.lastChatMessagesFindManyLimit).toBe(500);
   });
 

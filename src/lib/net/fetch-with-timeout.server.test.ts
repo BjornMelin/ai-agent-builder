@@ -108,24 +108,18 @@ describe("fetchWithTimeout", () => {
     await expectation;
   });
 
-  it("clamps timeoutMs to [1, 120000]", async () => {
-    vi.useFakeTimers();
-
+  it("rejects timeoutMs outside [1, 120000]", async () => {
     const fetchMock = createAbortAwareFetchMock();
     vi.stubGlobal("fetch", fetchMock);
 
-    const pMin = fetchWithTimeout("https://example.com", undefined, {
-      timeoutMs: 0,
-    });
-    const eMin = expect(pMin).rejects.toMatchObject({ timeoutMs: 1 });
-    await vi.advanceTimersByTimeAsync(1);
-    await eMin;
+    await expect(
+      fetchWithTimeout("https://example.com", undefined, { timeoutMs: 0 }),
+    ).rejects.toBeInstanceOf(RangeError);
 
-    const pMax = fetchWithTimeout("https://example.com", undefined, {
-      timeoutMs: 999_999,
-    });
-    const eMax = expect(pMax).rejects.toMatchObject({ timeoutMs: 120_000 });
-    await vi.advanceTimersByTimeAsync(120_000);
-    await eMax;
+    await expect(
+      fetchWithTimeout("https://example.com", undefined, {
+        timeoutMs: 999_999,
+      }),
+    ).rejects.toBeInstanceOf(RangeError);
   });
 });

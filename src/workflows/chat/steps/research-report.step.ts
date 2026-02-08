@@ -19,6 +19,7 @@ const inputSchema = z.object({
  * @param input - Tool input.
  * @param options - Tool execution options (includes experimental_context.projectId).
  * @returns Artifact metadata for the created report.
+ * @throws AppError - When input/context is invalid or tool budgets are exceeded.
  */
 export async function createResearchReportStep(
   input: Readonly<{ query: string }>,
@@ -72,6 +73,7 @@ export async function createResearchReportStep(
   const mode = getAgentMode(ctx.modeId);
 
   return createResearchReportArtifact({
+    abortSignal: options.abortSignal,
     maxExtractUrls,
     modelId: mode.defaultModel,
     projectId: ctx.projectId,

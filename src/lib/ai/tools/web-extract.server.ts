@@ -51,6 +51,11 @@ function truncateMarkdown(markdown: string, maxChars: number): string {
   return `${markdown.slice(0, maxChars)}\n\n… [truncated]`;
 }
 
+function normalizeMaxChars(maxChars: number | undefined): number {
+  if (maxChars === undefined) return budgets.maxWebExtractCharsPerUrl;
+  return Math.min(Math.max(maxChars, 1), budgets.maxWebExtractCharsPerUrl);
+}
+
 /**
  * Extract a single URL using Firecrawl.
  *
@@ -59,9 +64,21 @@ function truncateMarkdown(markdown: string, maxChars: number): string {
  * @throws AppError - When the URL is invalid or extraction fails.
  */
 export async function extractWebPage(
-  input: Readonly<{ url: string; maxChars?: number | undefined }>,
+  input: Readonly<{
+    url: string;
+    maxChars?: number | undefined;
+    abortSignal?: AbortSignal | undefined;
+  }>,
 ): Promise<WebExtractResult> {
   const url = assertSafeExternalHttpUrl(input.url);
+  if (input.abortSignal?.aborted) {
+    throw new AppError(
+      "aborted",
+      499,
+      "Operation aborted.",
+      input.abortSignal.reason,
+    );
+  }
 
   const redis = getRedisOptional();
   const key = cacheKey({ url: url.toString() });
@@ -69,13 +86,7 @@ export async function extractWebPage(
   if (redis) {
     const cached = await redis.get<WebExtractResult>(key);
     if (cached) {
-      const maxChars =
-        input.maxChars === undefined
-          ? budgets.maxWebExtractCharsPerUrl
-          : Math.min(
-              Math.max(input.maxChars, 1),
-              budgets.maxWebExtractCharsPerUrl,
-            );
+      const maxChars = normalizeMaxChars(input.maxChars);
       if (maxChars >= budgets.maxWebExtractCharsPerUrl) return cached;
       return {
         ...cached,
@@ -85,11 +96,35 @@ export async function extractWebPage(
   }
 
   const client = getFirecrawlClient();
-  const doc = await client.scrape(url.toString(), {
-    formats: ["markdown"],
-    onlyMainContent: true,
-    timeout: budgets.webExtractTimeoutMs,
-  });
+  let doc: Awaited<ReturnType<typeof client.scrape>>;
+  try {
+    doc = await client.scrape(url.toString(), {
+      formats: ["markdown"],
+      onlyMainContent: true,
+      timeout: budgets.webExtractTimeoutMs,
+    });
+  } catch (error) {
+    if (input.abortSignal?.aborted) {
+      throw new AppError(
+        "aborted",
+        499,
+        "Operation aborted.",
+        input.abortSignal.reason,
+      );
+    }
+
+    const message =
+      error instanceof Error ? error.message.toLowerCase() : String(error);
+    if (message.includes("timeout") || message.includes("timed out")) {
+      throw new AppError(
+        "upstream_timeout",
+        504,
+        "Web extraction timed out.",
+        error,
+      );
+    }
+    throw new AppError("bad_gateway", 502, "Web extraction failed.", error);
+  }
 
   const markdownRaw = doc.markdown ?? "";
   if (markdownRaw.trim().length === 0) {
@@ -124,10 +159,7 @@ export async function extractWebPage(
       });
   }
 
-  const maxChars =
-    input.maxChars === undefined
-      ? budgets.maxWebExtractCharsPerUrl
-      : Math.min(Math.max(input.maxChars, 1), budgets.maxWebExtractCharsPerUrl);
+  const maxChars = normalizeMaxChars(input.maxChars);
   if (maxChars >= budgets.maxWebExtractCharsPerUrl) return result;
 
   return { ...result, markdown: truncateMarkdown(result.markdown, maxChars) };

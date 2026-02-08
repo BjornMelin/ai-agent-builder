@@ -107,8 +107,8 @@ describe("Context7 MCP wrapper", () => {
         query: "useState",
       }),
     ).rejects.toMatchObject({
-      code: "bad_request",
-      status: 400,
+      code: "bad_gateway",
+      status: 502,
     });
 
     expect(close).toHaveBeenCalledTimes(1);

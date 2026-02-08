@@ -122,6 +122,10 @@ export async function ArtifactDetailContent(
 
   const markdown = getMarkdownContent(artifact.content);
   const title = markdown?.title ?? `${artifact.kind} · ${artifact.logicalKey}`;
+  const citationPayloads = citations.map(({ payload, sourceType }) => ({
+    payload,
+    sourceType,
+  }));
 
   return (
     <div className="grid gap-6">
@@ -162,7 +166,7 @@ export async function ArtifactDetailContent(
         <ArtifactContent>
           {markdown ? (
             <ArtifactMarkdownWithCitations
-              citations={citations}
+              citations={citationPayloads}
               markdown={markdown.markdown}
             />
           ) : (

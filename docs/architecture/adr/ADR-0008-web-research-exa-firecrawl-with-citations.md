@@ -62,7 +62,7 @@ Implementation detail: Exa calls use a small REST wrapper (AbortController + tim
 - Do not store full copyrighted articles; store snippets + summaries.
 - Enforce max URLs per step and cache results.
 - Enforce SSRF guardrails for outbound extraction URLs.[^owasp-ssrf]
-- SSRF validation is defense-in-depth and intentionally does not perform DNS resolution; hostnames that resolve to private IPs or DNS rebinding attacks are out of scope and must be mitigated via provider-side protections and/or egress controls.
+- SSRF validation is defense-in-depth and intentionally does not perform DNS resolution; hostnames that resolve to private IPs or DNS rebinding attacks are out of scope and must be mitigated via provider-side protections or egress controls.
 
 ## High-Level Architecture
 

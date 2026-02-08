@@ -363,6 +363,8 @@ export function ProjectChatClient(
     status,
   } = useChat({
     id: chatId,
+    // `initialMessages` originate from persisted UI messages that are validated server-side
+    // before being serialized to the client, so this cast is safe.
     messages: props.initialMessages as unknown as AppUIMessage[],
     resume: shouldResume,
     transport,

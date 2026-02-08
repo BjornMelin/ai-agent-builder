@@ -253,9 +253,7 @@ describe("search clients submit behavior", () => {
 
   it("ignores AbortError failures for the active request (no alert, remains loading)", async () => {
     const fetchMock = vi.fn(async () => {
-      const err = new Error("aborted");
-      (err as unknown as { name?: unknown }).name = "AbortError";
-      throw err;
+      throw new DOMException("The operation was aborted.", "AbortError");
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
 

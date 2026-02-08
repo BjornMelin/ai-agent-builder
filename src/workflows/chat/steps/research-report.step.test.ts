@@ -1,6 +1,5 @@
-import type { ToolExecutionOptions } from "ai";
+import { makeToolOptions } from "@tests/utils/tool-execution-options";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
 import { budgets } from "@/lib/config/budgets.server";
 import type { AppError } from "@/lib/core/errors";
 import { createResearchReportStep } from "@/workflows/chat/steps/research-report.step";
@@ -15,14 +14,6 @@ let previousAiGatewayApiKey: string | undefined;
 vi.mock("@/lib/research/research-report.server", () => ({
   createResearchReportArtifact: state.createResearchReportArtifact,
 }));
-
-function makeToolOptions(experimental_context: unknown): ToolExecutionOptions {
-  return {
-    experimental_context,
-    messages: [],
-    toolCallId: "tool-call-1",
-  };
-}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -51,7 +42,7 @@ describe("createResearchReportStep", () => {
     ctx.toolBudget.webSearchCalls = budgets.maxWebSearchCallsPerTurn;
 
     await expect(
-      createResearchReportStep({ query: "test" }, makeToolOptions(ctx)),
+      createResearchReportStep({ query: "test" }, makeToolOptions({ ctx })),
     ).rejects.toMatchObject({
       code: "conflict",
       status: 409,
@@ -63,7 +54,7 @@ describe("createResearchReportStep", () => {
     ctx.toolBudget.webExtractCalls = budgets.maxWebExtractCallsPerTurn;
 
     await expect(
-      createResearchReportStep({ query: "test" }, makeToolOptions(ctx)),
+      createResearchReportStep({ query: "test" }, makeToolOptions({ ctx })),
     ).rejects.toMatchObject({
       code: "conflict",
       status: 409,
@@ -74,7 +65,7 @@ describe("createResearchReportStep", () => {
     const ctx = createChatToolContext("proj_1", "researcher");
     ctx.toolBudget.webExtractCalls = budgets.maxWebExtractCallsPerTurn - 1;
 
-    await createResearchReportStep({ query: "test" }, makeToolOptions(ctx));
+    await createResearchReportStep({ query: "test" }, makeToolOptions({ ctx }));
 
     expect(state.createResearchReportArtifact).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -15,6 +15,12 @@ export type ChatToolBudget = {
   webSearchCalls: number;
 };
 
+/**
+ * Context object passed to tools via `experimental_context`.
+ *
+ * @remarks
+ * Contains project scope, mode selection, and mutable budget counters for per-turn enforcement.
+ */
 export type ChatToolContext = {
   projectId: string;
   modeId: string;
@@ -64,6 +70,7 @@ export function createChatToolContext(
  *
  * @param value - Untrusted context value.
  * @returns Parsed tool context.
+ * @throws Error - When the context is missing or malformed.
  */
 export function parseChatToolContext(value: unknown): ChatToolContext {
   const parsed = toolContextSchema.safeParse(value);

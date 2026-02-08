@@ -11,9 +11,12 @@ import { isUndefinedTableError } from "@/lib/db/postgres-errors";
  * Persist UI messages for a workflow-backed chat thread.
  *
  * @remarks
- * Runs as a step because DB writes must not occur in `"use workflow"` functions.
+ * Runs as a step because DB writes must not occur in `"use workflow"` functions. (SPEC-0004)
+ *
+ * @see docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md
  *
  * @param input - Persistence payload.
+ * @throws AppError - When the chat thread is missing or the database is not migrated.
  */
 export async function persistChatMessagesForWorkflowRun(
   input: Readonly<{

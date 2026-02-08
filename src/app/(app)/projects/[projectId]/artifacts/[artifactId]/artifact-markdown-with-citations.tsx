@@ -15,11 +15,25 @@ import { HoverCardTrigger } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 
 type CitationDto = Readonly<{
-  id: string;
   sourceType: string;
-  sourceRef: string;
   payload: Record<string, unknown>;
 }>;
+
+function isSafeExternalHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+const safeHttpUrlSchema = z
+  .string()
+  .url()
+  .refine((value) => isSafeExternalHttpUrl(value), {
+    message: "Unsupported URL protocol.",
+  });
 
 const webCitationPayloadSchema = z
   .object({
@@ -27,7 +41,7 @@ const webCitationPayloadSchema = z
     excerpt: z.string().min(1).optional(),
     index: z.number().int().min(1),
     title: z.string().min(1).optional(),
-    url: z.string().url(),
+    url: safeHttpUrlSchema,
   })
   .passthrough();
 

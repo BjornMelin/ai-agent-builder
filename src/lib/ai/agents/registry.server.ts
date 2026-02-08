@@ -10,13 +10,16 @@ import {
 import { AppError } from "@/lib/core/errors";
 import { env } from "@/lib/env";
 
-/** Export default agent mode ID and request agent mode ID schema. */
+/**
+ * Re-export the default agent mode ID and request agent mode ID schema.
+ *
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
+ */
 export { DEFAULT_AGENT_MODE_ID, requestAgentModeIdSchema };
 
 function isWebResearchConfigured(): boolean {
   try {
-    env.webResearch;
-    return true;
+    return Boolean(env.webResearch);
   } catch {
     return false;
   }
@@ -24,8 +27,7 @@ function isWebResearchConfigured(): boolean {
 
 function isContext7Configured(): boolean {
   try {
-    env.context7;
-    return true;
+    return Boolean(env.context7);
   } catch {
     return false;
   }
@@ -34,6 +36,7 @@ function isContext7Configured(): boolean {
 /**
  * Check whether a mode is enabled in the current environment.
  *
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  * @param mode - Mode definition.
  * @returns True when the mode can be used safely.
  */
@@ -47,6 +50,7 @@ export function isAgentModeEnabled(mode: AgentMode): boolean {
 /**
  * List agent modes that are enabled in the current environment.
  *
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  * @returns Enabled modes.
  */
 export function listEnabledAgentModes(): AgentMode[] {
@@ -56,6 +60,7 @@ export function listEnabledAgentModes(): AgentMode[] {
 /**
  * Resolve and validate an enabled agent mode.
  *
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  * @param modeId - Untrusted mode identifier.
  * @returns The resolved agent mode.
  * @throws AppError - With code "bad_request" when modeId is invalid or disabled.

@@ -11,7 +11,7 @@ import { retrieveProjectChunksStep } from "@/workflows/chat/steps/retrieve-proje
 import { webExtractStep } from "@/workflows/chat/steps/web-extract.step";
 import { webSearchStep } from "@/workflows/chat/steps/web-search.step";
 
-const ISO_DATE_PATTERN = "^\\\\d{4}-\\\\d{2}-\\\\d{2}$";
+const ISO_DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
 
 const retrieveProjectChunksInput = z.strictObject({
   query: z.string().min(1),

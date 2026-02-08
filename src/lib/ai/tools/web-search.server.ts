@@ -113,6 +113,7 @@ function cacheKey(
  * @param input - Search input.
  * @returns Search response.
  * @throws AppError - When query is empty or numResults is out of bounds.
+ * @see docs/architecture/spec/SPEC-0007-web-research-citations-framework.md
  */
 export async function searchWeb(
   input: Readonly<{

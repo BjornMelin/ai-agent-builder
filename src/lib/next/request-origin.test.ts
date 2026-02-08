@@ -16,6 +16,13 @@ describe("getRequestOrigin", () => {
     expect(getRequestOrigin(headers)).toBe("https://example.com");
   });
 
+  it("defaults to https when forwarded proto is missing", () => {
+    const headers = new Headers({
+      "x-forwarded-host": "example.com",
+    });
+    expect(getRequestOrigin(headers)).toBe("https://example.com");
+  });
+
   it("falls back to host header when forwarded host is missing", () => {
     const headers = new Headers({
       host: "example.com",

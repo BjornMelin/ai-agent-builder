@@ -3,6 +3,9 @@ import { env } from "@/lib/env";
 
 /**
  * Web research + report generation mode.
+ *
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
+ * @see docs/architecture/adr/ADR-0008-web-research-exa-firecrawl-with-citations.md
  */
 export const researcherMode: AgentMode = {
   allowedTools: [

@@ -189,22 +189,24 @@ export const getLatestChatThreadByProjectId = cache(
  *
  * @param projectId - Project id.
  * @param userId - Authenticated user id used to validate project access.
- * @param options - Optional pagination options.
+ * @param limit - Optional maximum number of threads to return.
  * @returns Thread DTOs ordered by most recent activity.
+ * @throws AppError - With code "not_found" (404) when the project is not accessible.
+ * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
  */
 export const listChatThreadsByProjectId = cache(
   async (
     projectId: string,
     userId: string,
-    options: Readonly<{ limit?: number }> = {},
+    limit?: number,
   ): Promise<ChatThreadDto[]> => {
     await assertProjectAccess(projectId, userId);
-    const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
+    const cappedLimit = Math.min(Math.max(limit ?? 50, 1), 200);
     const db = getDb();
 
     try {
       const rows = await db.query.chatThreadsTable.findMany({
-        limit,
+        limit: cappedLimit,
         orderBy: (t) => [desc(t.lastActivityAt)],
         where: eq(schema.chatThreadsTable.projectId, projectId),
       });
@@ -229,6 +231,8 @@ export const listChatThreadsByProjectId = cache(
  * @param threadId - Chat thread ID.
  * @param userId - Authenticated user id used to validate project access.
  * @returns Thread DTO or null.
+ * @throws AppError - With code "not_found" (404) when the project is not accessible.
+ * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
  */
 export const getChatThreadById = cache(
   async (threadId: string, userId: string): Promise<ChatThreadDto | null> => {
@@ -307,6 +311,7 @@ function extractTextContent(message: PersistedUiMessage): string {
  * Append one or more UI messages to a chat thread (idempotent by messageUid).
  *
  * @param input - Append input.
+ * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
  */
 export async function appendChatMessages(
   input: Readonly<{
@@ -357,14 +362,16 @@ export async function appendChatMessages(
  *
  * @param threadId - Thread id.
  * @param userId - Authenticated user id used to validate project access.
- * @param options - Optional pagination options.
+ * @param limit - Optional maximum number of messages to return.
  * @returns Message DTOs.
+ * @throws AppError - With code "not_found" (404) when the thread is missing or inaccessible.
+ * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
  */
 export const listChatMessagesByThreadId = cache(
   async (
     threadId: string,
     userId: string,
-    options: Readonly<{ limit?: number }> = {},
+    limit?: number,
   ): Promise<ChatMessageDto[]> => {
     const thread = await getChatThreadById(threadId, userId);
     if (!thread) {
@@ -372,11 +379,11 @@ export const listChatMessagesByThreadId = cache(
     }
 
     const db = getDb();
-    const limit = Math.min(Math.max(options.limit ?? 200, 1), 500);
+    const cappedLimit = Math.min(Math.max(limit ?? 200, 1), 500);
 
     try {
       const rows = await db.query.chatMessagesTable.findMany({
-        limit,
+        limit: cappedLimit,
         orderBy: (t) => [t.createdAt],
         where: eq(schema.chatMessagesTable.threadId, thread.id),
       });

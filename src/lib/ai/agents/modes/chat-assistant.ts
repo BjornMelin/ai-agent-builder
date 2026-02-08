@@ -3,6 +3,8 @@ import { env } from "@/lib/env";
 
 /**
  * Default project chat assistant mode.
+ *
+ * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  */
 export const chatAssistantMode: AgentMode = {
   allowedTools: ["retrieveProjectChunks"],

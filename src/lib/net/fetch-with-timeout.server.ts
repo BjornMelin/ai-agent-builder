@@ -43,6 +43,8 @@ function addAbortListener(
  * @param init - Fetch init.
  * @param options - Timeout/abort options.
  * @returns Fetch response.
+ * @throws FetchTimeoutError - When the request exceeds the timeout budget.
+ * @throws Error - When the underlying fetch fails for reasons other than timeout.
  */
 export async function fetchWithTimeout(
   input: FetchInput,
@@ -52,7 +54,13 @@ export async function fetchWithTimeout(
     signal?: AbortSignal | undefined;
   }>,
 ): Promise<Response> {
-  const timeoutMs = Math.min(Math.max(options.timeoutMs, 1), 120_000);
+  if (!Number.isFinite(options.timeoutMs)) {
+    throw new RangeError("timeoutMs must be a finite number.");
+  }
+  if (options.timeoutMs < 1 || options.timeoutMs > 120_000) {
+    throw new RangeError("timeoutMs must be between 1 and 120000.");
+  }
+  const timeoutMs = options.timeoutMs;
   const controller = new AbortController();
   let abortedByTimeout = false;
 

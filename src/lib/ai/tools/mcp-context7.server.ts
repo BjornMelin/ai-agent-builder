@@ -56,8 +56,8 @@ function assertMaxBytes(value: unknown) {
   const bytes = Buffer.byteLength(JSON.stringify(value), "utf8");
   if (bytes > budgets.maxContext7ResponseBytes) {
     throw new AppError(
-      "bad_request",
-      400,
+      "bad_gateway",
+      502,
       "Context7 response exceeded size budget.",
     );
   }
@@ -162,6 +162,10 @@ async function callContext7Tool(
 /**
  * Resolve a human library name to a Context7 libraryId.
  *
+ * @remarks
+ * Context7 responses are treated as an opaque pass-through payload at this layer.
+ * Callers must validate/cast based on the specific tool they invoked.
+ *
  * @param input - Resolve input.
  * @param options - Optional abort signal propagation.
  * @returns Context7 response payload (pass-through).
@@ -175,6 +179,10 @@ export async function context7ResolveLibraryId(
 
 /**
  * Query Context7 docs for a specific libraryId.
+ *
+ * @remarks
+ * Context7 responses are treated as an opaque pass-through payload at this layer.
+ * Callers must validate/cast based on the specific tool they invoked.
  *
  * @param input - Query input.
  * @param options - Optional abort signal propagation.

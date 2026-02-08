@@ -29,17 +29,24 @@ vi.mock("pdf-parse", () => ({
 vi.mock("jszip", () => ({
   default: {
     loadAsync: async (_bytes: Uint8Array) => {
+      void _bytes;
       return {
         file: (path: string) => {
           if (path === "word/document.xml") {
             return {
-              async: async (_format: string) => state.docxXml,
+              async: async (_format: string) => {
+                void _format;
+                return state.docxXml;
+              },
             };
           }
           const xml = state.pptxXmlByPath.get(path);
           return xml
             ? {
-                async: async (_format: string) => xml,
+                async: async (_format: string) => {
+                  void _format;
+                  return xml;
+                },
               }
             : undefined;
         },
@@ -60,7 +67,9 @@ vi.mock("exceljs", () => ({
       name: s.name,
     }));
     public xlsx = {
-      load: async (_buffer: Buffer) => {},
+      load: async (_buffer: Buffer) => {
+        void _buffer;
+      },
     };
   },
 }));
