@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.9](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.8...ai-agent-builder-v0.1.9) (2026-02-08)
+
+
+### Features
+
+* agent registry research mcp + tools ([d5c47bd](https://github.com/BjornMelin/ai-agent-builder/commit/d5c47bd0d68daabe116f79710ea247ed6ff05465))
+* **chat:** agent modes, web research, context7, persistence ([7f320fe](https://github.com/BjornMelin/ai-agent-builder/commit/7f320fe7047a4d003d667329ce3145b774e282f9))
+* **chat:** finalize web research tool contracts ([e852816](https://github.com/BjornMelin/ai-agent-builder/commit/e852816d0840fcfc56891d2c49a2de0f6a75679b))
+* **chat:** harden web research + Context7 tools ([302e1e8](https://github.com/BjornMelin/ai-agent-builder/commit/302e1e834117b0813074a42548970fc9e73ed943))
+* **tests:** enhance test coverage and add new test cases for AI components ([39ae1a3](https://github.com/BjornMelin/ai-agent-builder/commit/39ae1a3e913d5b4fc3f68e593971cbde846c4305))
+* **tests:** introduce utility for tool execution options and refactor tests ([4695492](https://github.com/BjornMelin/ai-agent-builder/commit/469549275a164c89febb328c41715b4b978f28af))
+
+
+### Bug Fixes
+
+* address PR review feedback ([8538abe](https://github.com/BjornMelin/ai-agent-builder/commit/8538abeed9033f91e8f202823a61c678affa946b))
+* **chat:** close Context7 MCP client ([04d2b9b](https://github.com/BjornMelin/ai-agent-builder/commit/04d2b9bdc1a87e3fbead0a2c1afa9cfbca9c4e5c))
+* **review:** add shared abort listener ([53fd281](https://github.com/BjornMelin/ai-agent-builder/commit/53fd281c26164c0403bdd489aaa7b096cad8bf18))
+* **review:** address PR 26 threads ([bac31e1](https://github.com/BjornMelin/ai-agent-builder/commit/bac31e1d5b048aec690d1848d396619b9f589593))
+* **review:** resolve PR 26 feedback ([e1e430d](https://github.com/BjornMelin/ai-agent-builder/commit/e1e430d444568bc0fa04fd7ea1a9e3f1615e8edb))
+* **web-extract:** harden timeout detection ([11ba2f4](https://github.com/BjornMelin/ai-agent-builder/commit/11ba2f4fe30f34b51484a01f6a19bdc14952e957))
+
 ## [0.1.8](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.7...ai-agent-builder-v0.1.8) (2026-02-07)
 
 
