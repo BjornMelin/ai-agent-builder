@@ -1,6 +1,6 @@
 import "server-only";
 
-import { FirecrawlClient } from "@mendable/firecrawl-js";
+import { FirecrawlClient, JobTimeoutError } from "@mendable/firecrawl-js";
 
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
@@ -55,6 +55,28 @@ function truncateMarkdown(markdown: string, maxChars: number): string {
 function normalizeMaxChars(maxChars: number | undefined): number {
   if (maxChars === undefined) return budgets.maxWebExtractCharsPerUrl;
   return Math.min(Math.max(maxChars, 1), budgets.maxWebExtractCharsPerUrl);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isUpstreamTimeoutError(error: unknown): boolean {
+  if (error instanceof JobTimeoutError) return true;
+
+  const name =
+    error instanceof Error
+      ? error.name
+      : isRecord(error) && typeof error.name === "string"
+        ? error.name
+        : undefined;
+  if (name === "TimeoutError") return true;
+
+  const code =
+    isRecord(error) && typeof error.code === "string" ? error.code : undefined;
+  if (code === "ETIMEDOUT" || code === "ECONNABORTED") return true;
+
+  return false;
 }
 
 /**
@@ -123,6 +145,15 @@ export async function extractWebPage(
         499,
         "Operation aborted.",
         input.abortSignal.reason,
+      );
+    }
+
+    if (isUpstreamTimeoutError(error)) {
+      throw new AppError(
+        "upstream_timeout",
+        504,
+        "Web extraction timed out.",
+        error,
       );
     }
 
