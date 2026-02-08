@@ -1,4 +1,4 @@
-import type { ToolExecutionOptions } from "ai";
+import { makeToolOptions } from "@tests/utils/tool-execution-options";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { budgets } from "@/lib/config/budgets.server";
 import type { AppError } from "@/lib/core/errors";
@@ -10,14 +10,6 @@ const state = vi.hoisted(() => ({
 vi.mock("@/lib/ai/tools/web-extract.server", () => ({
   extractWebPage: state.extractWebPage,
 }));
-
-function makeOptions(ctx: unknown): ToolExecutionOptions {
-  return {
-    experimental_context: ctx,
-    messages: [],
-    toolCallId: "test",
-  } as unknown as ToolExecutionOptions;
-}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -40,7 +32,10 @@ describe("webExtractStep", () => {
     );
 
     await expect(
-      webExtractStep({ url: "" }, makeOptions({ projectId: "proj_1" })),
+      webExtractStep(
+        { url: "" },
+        makeToolOptions({ ctx: { projectId: "proj_1" } }),
+      ),
     ).rejects.toMatchObject({
       code: "bad_request",
       status: 400,
@@ -53,7 +48,10 @@ describe("webExtractStep", () => {
     );
 
     await expect(
-      webExtractStep({ url: "https://example.com" }, makeOptions(undefined)),
+      webExtractStep(
+        { url: "https://example.com" },
+        makeToolOptions({ ctx: undefined }),
+      ),
     ).rejects.toMatchObject({
       code: "bad_request",
       status: 400,
@@ -76,7 +74,7 @@ describe("webExtractStep", () => {
     };
 
     await expect(
-      webExtractStep({ url: "https://example.com" }, makeOptions(ctx)),
+      webExtractStep({ url: "https://example.com" }, makeToolOptions({ ctx })),
     ).rejects.toMatchObject({
       code: "conflict",
       status: 409,
@@ -99,7 +97,7 @@ describe("webExtractStep", () => {
     await expect(
       webExtractStep(
         { maxChars: 10, url: "https://example.com" },
-        makeOptions(ctx),
+        makeToolOptions({ ctx }),
       ),
     ).resolves.toMatchObject({ url: "https://example.com" });
 

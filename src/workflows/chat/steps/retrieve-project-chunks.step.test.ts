@@ -1,4 +1,4 @@
-import type { ToolExecutionOptions } from "ai";
+import { makeToolOptions } from "@tests/utils/tool-execution-options";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppError } from "@/lib/core/errors";
 
@@ -9,14 +9,6 @@ const state = vi.hoisted(() => ({
 vi.mock("@/lib/ai/tools/retrieval.server", () => ({
   retrieveProjectChunks: state.retrieveProjectChunks,
 }));
-
-function makeOptions(ctx: unknown): ToolExecutionOptions {
-  return {
-    experimental_context: ctx,
-    messages: [],
-    toolCallId: "test",
-  } as unknown as ToolExecutionOptions;
-}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -32,7 +24,10 @@ describe("retrieveProjectChunksStep", () => {
     );
 
     await expect(
-      retrieveProjectChunksStep({ query: "x" }, makeOptions(undefined)),
+      retrieveProjectChunksStep(
+        { query: "x" },
+        makeToolOptions({ ctx: undefined }),
+      ),
     ).rejects.toMatchObject({
       code: "bad_request",
       status: 400,
@@ -48,7 +43,7 @@ describe("retrieveProjectChunksStep", () => {
 
     await retrieveProjectChunksStep(
       { query: "hello", topK: 3 },
-      makeOptions({ projectId: "proj_123" }),
+      makeToolOptions({ ctx: { projectId: "proj_123" } }),
     );
 
     expect(state.retrieveProjectChunks).toHaveBeenCalledWith({

@@ -5,6 +5,27 @@ import {
   fetchWithTimeout,
 } from "@/lib/net/fetch-with-timeout.server";
 
+function createAbortAwareFetchMock() {
+  return vi
+    .fn()
+    .mockImplementation(
+      (_input: unknown, init?: { signal?: AbortSignal | null }) => {
+        return new Promise((_resolve, reject) => {
+          const signal = init?.signal;
+          if (!signal) return;
+
+          const onAbort = () => reject(signal.reason);
+          if (signal.aborted) {
+            onAbort();
+            return;
+          }
+
+          signal.addEventListener("abort", onAbort, { once: true });
+        });
+      },
+    );
+}
+
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -30,22 +51,7 @@ describe("fetchWithTimeout", () => {
   it("throws FetchTimeoutError when the timeout budget elapses", async () => {
     vi.useFakeTimers();
 
-    const fetchMock = vi
-      .fn()
-      .mockImplementation(
-        (_input: unknown, init?: { signal?: AbortSignal | null }) => {
-          return new Promise((_resolve, reject) => {
-            const signal = init?.signal;
-            if (!signal) return;
-            const onAbort = () => reject(signal.reason);
-            if (signal.aborted) {
-              onAbort();
-              return;
-            }
-            signal.addEventListener("abort", onAbort, { once: true });
-          });
-        },
-      );
+    const fetchMock = createAbortAwareFetchMock();
     vi.stubGlobal("fetch", fetchMock);
 
     const promise = fetchWithTimeout(
@@ -65,22 +71,7 @@ describe("fetchWithTimeout", () => {
   it("honors an external abort signal without re-wrapping as FetchTimeoutError", async () => {
     vi.useFakeTimers();
 
-    const fetchMock = vi
-      .fn()
-      .mockImplementation(
-        (_input: unknown, init?: { signal?: AbortSignal | null }) => {
-          return new Promise((_resolve, reject) => {
-            const signal = init?.signal;
-            if (!signal) return;
-            const onAbort = () => reject(signal.reason);
-            if (signal.aborted) {
-              onAbort();
-              return;
-            }
-            signal.addEventListener("abort", onAbort, { once: true });
-          });
-        },
-      );
+    const fetchMock = createAbortAwareFetchMock();
     vi.stubGlobal("fetch", fetchMock);
 
     const external = new AbortController();
@@ -100,22 +91,7 @@ describe("fetchWithTimeout", () => {
   it("honors init.signal abort without re-wrapping as FetchTimeoutError", async () => {
     vi.useFakeTimers();
 
-    const fetchMock = vi
-      .fn()
-      .mockImplementation(
-        (_input: unknown, init?: { signal?: AbortSignal | null }) => {
-          return new Promise((_resolve, reject) => {
-            const signal = init?.signal;
-            if (!signal) return;
-            const onAbort = () => reject(signal.reason);
-            if (signal.aborted) {
-              onAbort();
-              return;
-            }
-            signal.addEventListener("abort", onAbort, { once: true });
-          });
-        },
-      );
+    const fetchMock = createAbortAwareFetchMock();
     vi.stubGlobal("fetch", fetchMock);
 
     const initController = new AbortController();
@@ -135,22 +111,7 @@ describe("fetchWithTimeout", () => {
   it("clamps timeoutMs to [1, 120000]", async () => {
     vi.useFakeTimers();
 
-    const fetchMock = vi
-      .fn()
-      .mockImplementation(
-        (_input: unknown, init?: { signal?: AbortSignal | null }) => {
-          return new Promise((_resolve, reject) => {
-            const signal = init?.signal;
-            if (!signal) return;
-            const onAbort = () => reject(signal.reason);
-            if (signal.aborted) {
-              onAbort();
-              return;
-            }
-            signal.addEventListener("abort", onAbort, { once: true });
-          });
-        },
-      );
+    const fetchMock = createAbortAwareFetchMock();
     vi.stubGlobal("fetch", fetchMock);
 
     const pMin = fetchWithTimeout("https://example.com", undefined, {

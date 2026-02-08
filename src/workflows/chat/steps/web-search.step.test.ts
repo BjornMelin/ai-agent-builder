@@ -1,4 +1,4 @@
-import type { ToolExecutionOptions } from "ai";
+import { makeToolOptions } from "@tests/utils/tool-execution-options";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { budgets } from "@/lib/config/budgets.server";
 import type { AppError } from "@/lib/core/errors";
@@ -10,14 +10,6 @@ const state = vi.hoisted(() => ({
 vi.mock("@/lib/ai/tools/web-search.server", () => ({
   searchWeb: state.searchWeb,
 }));
-
-function makeOptions(ctx: unknown): ToolExecutionOptions {
-  return {
-    experimental_context: ctx,
-    messages: [],
-    toolCallId: "test",
-  } as unknown as ToolExecutionOptions;
-}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -33,7 +25,10 @@ describe("webSearchStep", () => {
     );
 
     await expect(
-      webSearchStep({ query: "" }, makeOptions({ projectId: "proj_1" })),
+      webSearchStep(
+        { query: "" },
+        makeToolOptions({ ctx: { projectId: "proj_1" } }),
+      ),
     ).rejects.toMatchObject({
       code: "bad_request",
       status: 400,
@@ -46,7 +41,7 @@ describe("webSearchStep", () => {
     );
 
     await expect(
-      webSearchStep({ query: "x" }, makeOptions(undefined)),
+      webSearchStep({ query: "x" }, makeToolOptions({ ctx: undefined })),
     ).rejects.toMatchObject({
       code: "bad_request",
       status: 400,
@@ -69,7 +64,7 @@ describe("webSearchStep", () => {
     };
 
     await expect(
-      webSearchStep({ query: "x" }, makeOptions(ctx)),
+      webSearchStep({ query: "x" }, makeToolOptions({ ctx })),
     ).rejects.toMatchObject({
       code: "conflict",
       status: 409,
@@ -98,7 +93,7 @@ describe("webSearchStep", () => {
           query: "Next.js",
           startPublishedDate: "2026-01-01",
         },
-        makeOptions(ctx),
+        makeToolOptions({ ctx }),
       ),
     ).resolves.toMatchObject({ requestId: "req" });
 

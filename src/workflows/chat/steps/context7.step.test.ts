@@ -1,4 +1,4 @@
-import type { ToolExecutionOptions } from "ai";
+import { makeToolOptions } from "@tests/utils/tool-execution-options";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { budgets } from "@/lib/config/budgets.server";
 import type { AppError } from "@/lib/core/errors";
@@ -12,17 +12,6 @@ vi.mock("@/lib/ai/tools/mcp-context7.server", () => ({
   context7QueryDocs: state.context7QueryDocs,
   context7ResolveLibraryId: state.context7ResolveLibraryId,
 }));
-
-function makeOptions(
-  input: Readonly<{ ctx: unknown; signal?: AbortSignal }>,
-): ToolExecutionOptions {
-  return {
-    abortSignal: input.signal,
-    experimental_context: input.ctx,
-    messages: [],
-    toolCallId: "test",
-  } as unknown as ToolExecutionOptions;
-}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -41,7 +30,7 @@ describe("Context7 tool steps", () => {
     await expect(
       context7ResolveLibraryIdStep(
         { libraryName: "", query: "" },
-        makeOptions({
+        makeToolOptions({
           ctx: { projectId: "proj_1", toolBudget: { context7Calls: 0 } },
         }),
       ),
@@ -61,7 +50,7 @@ describe("Context7 tool steps", () => {
     await expect(
       context7ResolveLibraryIdStep(
         { libraryName: "react", query: "useState" },
-        makeOptions({ ctx: undefined }),
+        makeToolOptions({ ctx: undefined }),
       ),
     ).rejects.toMatchObject({
       code: "bad_request",
@@ -87,7 +76,7 @@ describe("Context7 tool steps", () => {
     await expect(
       context7ResolveLibraryIdStep(
         { libraryName: "react", query: "useState" },
-        makeOptions({ ctx }),
+        makeToolOptions({ ctx }),
       ),
     ).rejects.toMatchObject({
       code: "conflict",
@@ -112,7 +101,7 @@ describe("Context7 tool steps", () => {
     await expect(
       context7ResolveLibraryIdStep(
         { libraryName: "react", query: "useState" },
-        makeOptions({ ctx, signal: controller.signal }),
+        makeToolOptions({ ctx, signal: controller.signal }),
       ),
     ).resolves.toEqual({ ok: true });
 
