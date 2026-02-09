@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.10](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.9...ai-agent-builder-v0.1.10) (2026-02-09)
+
+
+### Features
+
+* add Approvals and Code Mode tabs with corresponding components ([65a1358](https://github.com/BjornMelin/ai-agent-builder/commit/65a1358e4acf008eaf76486ce87e3d87acb4dc33))
+* **code-mode:** finalize compaction and docs ([91d7c3d](https://github.com/BjornMelin/ai-agent-builder/commit/91d7c3d20f76b29aa5fd4c7884ade9a06d57cc57))
+* implementation runs code mode; sandbox; ctx-zip + bash tooling; repo + deploy agent automation ([5250f1e](https://github.com/BjornMelin/ai-agent-builder/commit/5250f1e2804ab27b9993d0114a0396c23e578c15))
+* **repo:** implement GitHub repo runtime detection and enhance sandbox policies ([9f8311c](https://github.com/BjornMelin/ai-agent-builder/commit/9f8311cbf8746bc24d052cea5b9670a481eb9a52))
+
+
+### Bug Fixes
+
+* **sandbox:** harden code mode defaults and runtime detection ([a1adea5](https://github.com/BjornMelin/ai-agent-builder/commit/a1adea5e3893b249f0d8997bdf154cc834d21f50))
+* **schema:** remove NOT NULL constraint from approvedBy column in approvals table ([a211289](https://github.com/BjornMelin/ai-agent-builder/commit/a211289c4687a20288bc05ec4a43572b5448a2eb))
+
 ## [0.1.9](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.8...ai-agent-builder-v0.1.9) (2026-02-08)
 
 
