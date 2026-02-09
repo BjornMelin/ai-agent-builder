@@ -2,7 +2,7 @@
 ADR: 0025
 Title: Infrastructure provisioning and Vercel deployment automation
 Status: Accepted
-Version: 0.2
+Version: 0.3
 Date: 2026-02-03
 Supersedes: []
 Superseded-by: []
@@ -204,6 +204,7 @@ flowchart LR
 - Provisioning and deployment automation is feature-gated by env vars (see
   [ADR-0021](ADR-0021-environment-configuration-contracts-and-secret-handling.md)):
   - `VERCEL_TOKEN` (and optional `VERCEL_TEAM_ID`)
+  - `VERCEL_WEBHOOK_SECRET` (optional; inbound webhook signature verification for deployment status ingestion)
   - `GITHUB_TOKEN` (for repos connected via GitHub)
   - optional provisioning:
     - `NEON_API_KEY`

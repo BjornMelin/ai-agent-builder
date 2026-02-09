@@ -4,7 +4,7 @@ title: Implementation runs — end-to-end plan → code → verify → deploy
 version: 0.1.0
 date: 2026-02-01
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements:
   [
     "FR-022",

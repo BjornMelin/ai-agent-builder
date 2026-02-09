@@ -4,7 +4,7 @@ title: Sandbox “Code Mode”
 version: 0.2.0
 date: 2026-02-01
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements: ["FR-018", "FR-031", "NFR-014", "IR-009"]
 related_adrs: ["ADR-0010"]
 notes: "Defines the user-facing safe code execution mode for analysis tasks."

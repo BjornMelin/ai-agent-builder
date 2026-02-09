@@ -4,7 +4,7 @@ title: RepoOps and GitHub integration
 version: 0.1.0
 date: 2026-02-01
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements:
   ["FR-022", "FR-025", "FR-029", "FR-031", "FR-032", "IR-011", "NFR-013", "NFR-015"]
 related_adrs: ["ADR-0024", "ADR-0021", "ADR-0010"]

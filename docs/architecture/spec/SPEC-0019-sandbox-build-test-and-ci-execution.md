@@ -4,7 +4,7 @@ title: Sandbox build/test/verification execution
 version: 0.1.0
 date: 2026-02-01
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements: ["FR-026", "FR-018", "PR-007", "IR-009", "NFR-014", "NFR-015"]
 related_adrs: ["ADR-0010", "ADR-0024"]
 notes:

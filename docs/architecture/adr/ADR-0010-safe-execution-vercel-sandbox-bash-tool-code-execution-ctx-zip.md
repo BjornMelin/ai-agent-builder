@@ -2,7 +2,7 @@
 ADR: 0010
 Title: Safe execution: Vercel Sandbox + bash-tool + code-execution + ctx-zip
 Status: Accepted
-Version: 0.3
+Version: 0.4
 Date: 2026-02-01
 Supersedes: []
 Superseded-by: []
@@ -141,7 +141,7 @@ flowchart LR
   - `VERCEL_OIDC_TOKEN` (preferred; required for `env.sandbox` OIDC mode)
   - `VERCEL_TOKEN` (access-token auth fallback for `env.sandbox`)
   - `VERCEL_PROJECT_ID` (required for access-token auth fallback)
-  - `VERCEL_TEAM_ID` (optional; needed for team-owned resources)
+  - `VERCEL_TEAM_ID` (required for access-token auth fallback)
 - Operational config:
   - Default timeouts and resource limits must be enforced consistently for all
     sandbox jobs (analysis and verification).
@@ -155,6 +155,9 @@ flowchart LR
 ## Implementation Notes
 
 - Prefer using Sandbox for CPU-bound transformations and parsing edge cases.
+- Bind `ctx-zip` to a sandbox created via the repo env contract (OIDC preferred;
+  access-token fallback supported) to avoid helper APIs that force OIDC-only
+  flows.
 - For implementation runs, treat verification as first-class sandbox jobs
   (see
   [SPEC-0019](../spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)).
@@ -185,3 +188,4 @@ flowchart LR
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-01)**: Updated for implementation verification jobs.
+- **0.4 (2026-02-09)**: Clarified Sandbox auth env contract and ctx-zip binding approach.

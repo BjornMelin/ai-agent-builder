@@ -467,11 +467,13 @@ export async function runCodeModeSession(
                 redactSandboxLog(JSON.stringify(value, null, 2)),
             });
           } catch {
-            // Fall back to dropping tool results when storage compaction fails.
-            compacted = await compactToolResults(messages, {
-              boundary,
-              strategy: "drop-tool-results",
-            });
+            // If compaction fails (storage issues, sandbox hiccups, etc.), prefer
+            // preserving tool results to avoid degrading correctness. We still
+            // cap history size so context does not grow unbounded.
+            compacted =
+              messages.length > boundary.count
+                ? messages.slice(messages.length - boundary.count)
+                : messages;
           }
         } else {
           compacted = await compactToolResults(messages, {
