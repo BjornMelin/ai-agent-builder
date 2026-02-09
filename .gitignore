@@ -117,3 +117,6 @@ config/mcporter.json
 
 # agent-browser persisted browser state (contains cookies/sessions)
 .agent-browser/
+
+# Firecrawl tool artifacts (local research cache)
+.firecrawl/
