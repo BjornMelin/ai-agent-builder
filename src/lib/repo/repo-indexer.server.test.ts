@@ -358,4 +358,113 @@ describe("indexRepoFromSandbox", () => {
       }),
     ).rejects.toMatchObject({ code: "bad_request", status: 400 });
   });
+
+  it("detects languages for common extensions and omits language when unknown", async () => {
+    const { indexRepoFromSandbox } = await import(
+      "@/lib/repo/repo-indexer.server"
+    );
+
+    const files = [
+      "src/app.ts",
+      "src/app.tsx",
+      "src/app.js",
+      "src/app.jsx",
+      "data/config.json",
+      "README.md",
+      "docs/page.mdx",
+      "ci/workflow.yml",
+      "ci/workflow.yaml",
+      "bunfig.toml",
+      "styles/site.css",
+      "index.html",
+      "schema.sql",
+      "script.py",
+      "main.go",
+      "lib.rs",
+      "Main.java",
+      "Main.kt",
+      "script.sh",
+      "notes.txt",
+    ] as const;
+
+    const contents = new Map<string, string>();
+    const sizes = new Map<string, string>();
+    for (const f of files) {
+      contents.set(f, `// ${f}\n`);
+      sizes.set(f, "12");
+    }
+
+    const runGit = vi.fn(async ({ args }: { args: readonly string[] }) => {
+      const cmd = args.join(" ");
+
+      if (cmd.includes("rev-parse HEAD")) {
+        return { exitCode: 0, stderr: "", stdout: "deadbeef\n" };
+      }
+
+      if (cmd.includes("ls-files")) {
+        return { exitCode: 0, stderr: "", stdout: files.join("\n") };
+      }
+
+      if (cmd.includes("cat-file -s")) {
+        const last = args.at(-1) ?? "";
+        const pathPart = String(last).slice("HEAD:".length);
+        return {
+          exitCode: 0,
+          stderr: "",
+          stdout: String(sizes.get(pathPart) ?? "0"),
+        };
+      }
+
+      if (cmd.includes("show")) {
+        const last = args.at(-1) ?? "";
+        const pathPart = String(last).slice("HEAD:".length);
+        return {
+          exitCode: 0,
+          stderr: "",
+          stdout: contents.get(pathPart) ?? "",
+        };
+      }
+
+      return { exitCode: 1, stderr: "unknown", stdout: "" };
+    });
+
+    await indexRepoFromSandbox({
+      projectId: "proj_1",
+      repoId: "repo_1",
+      runGit,
+    });
+
+    const upsertPayload = state.vectorUpsert.mock.calls.at(-1)?.[0] as
+      | Array<{ metadata?: Record<string, unknown> }>
+      | undefined;
+    const languages = new Map<string, string | undefined>();
+    for (const item of upsertPayload ?? []) {
+      const meta = item.metadata ?? {};
+      const path = typeof meta.path === "string" ? meta.path : "";
+      const language =
+        typeof meta.language === "string" ? meta.language : undefined;
+      if (path) languages.set(path, language);
+    }
+
+    expect(languages.get("src/app.ts")).toBe("typescript");
+    expect(languages.get("src/app.tsx")).toBe("typescript");
+    expect(languages.get("src/app.js")).toBe("javascript");
+    expect(languages.get("src/app.jsx")).toBe("javascript");
+    expect(languages.get("data/config.json")).toBe("json");
+    expect(languages.get("README.md")).toBe("markdown");
+    expect(languages.get("docs/page.mdx")).toBe("markdown");
+    expect(languages.get("ci/workflow.yml")).toBe("yaml");
+    expect(languages.get("ci/workflow.yaml")).toBe("yaml");
+    expect(languages.get("bunfig.toml")).toBe("toml");
+    expect(languages.get("styles/site.css")).toBe("css");
+    expect(languages.get("index.html")).toBe("html");
+    expect(languages.get("schema.sql")).toBe("sql");
+    expect(languages.get("script.py")).toBe("python");
+    expect(languages.get("main.go")).toBe("go");
+    expect(languages.get("lib.rs")).toBe("rust");
+    expect(languages.get("Main.java")).toBe("java");
+    expect(languages.get("Main.kt")).toBe("kotlin");
+    expect(languages.get("script.sh")).toBe("shell");
+    expect(languages.get("notes.txt")).toBeUndefined();
+  });
 });
