@@ -33,3 +33,5 @@ status: Active
 - [SPEC-0024](./SPEC-0024-run-cancellation-and-stream-resilience.md) — Run cancellation + stream resilience hardening
 - [SPEC-0025](./SPEC-0025-cache-components-search-authorization-finalization.md) — Cache Components + search authorization + doc alignment finalization
 - [SPEC-0026](./SPEC-0026-bot-branch-preview-resource-governance-vercel-neon.md) — Bot-branch preview resource governance (Vercel + Neon)
+- [SPEC-0027](./SPEC-0027-agent-skills-runtime-integration.md) — Agent Skills runtime integration (progressive disclosure)
+- [SPEC-0028](./SPEC-0028-skills-registry-ui-and-bundled-installs.md) — Skills registry integration (skills.sh) + UI installs with bundled resources

@@ -77,6 +77,19 @@ components.
 - **FR-034:** Generate an implementation audit bundle: deterministic export of
   plan, patches, verification logs, infra metadata, and deployment provenance.
 
+### Agent runtime extensions
+
+- **FR-035:** Support runtime-loadable **Agent Skills** (progressive disclosure):
+  discover skill metadata (name/description), inject it into agent prompts, and
+  allow agents to load full skill instructions on-demand via tools.
+- **FR-036:** Support project-scoped Agent Skill overrides stored in the
+  database, with deterministic precedence over repo-bundled skills by normalized
+  name, and provide a UI/API for managing overrides.
+- **FR-037:** Support project-scoped installation of skills from the public
+  skills.sh registry (search + install/update/uninstall) without executing
+  skill-bundled code in the app runtime; installed skills must support
+  `skills.readFile` via bundled resources.
+
 ## Non-Functional Requirements
 
 - **NFR-001 (Security):** Protect all sensitive routes, server-only keys, secure
