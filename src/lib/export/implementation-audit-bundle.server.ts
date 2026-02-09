@@ -16,13 +16,15 @@ import {
   type ExportManifest,
 } from "@/lib/export/zip.server";
 
-type Json =
-  | null
-  | boolean
-  | number
-  | string
-  | readonly Json[]
-  | Readonly<Record<string, Json>>;
+type JsonPrimitive = null | boolean | number | string;
+
+// Recursive JSON type: use interfaces for the recursive arms to avoid TS2456
+// ("type alias circularly references itself") under strict compiler settings.
+type JsonValue = JsonPrimitive | JsonObject | JsonArray;
+interface JsonObject {
+  [key: string]: JsonValue;
+}
+interface JsonArray extends Array<JsonValue> {}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return (
@@ -32,10 +34,10 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   );
 }
 
-function stableStringify(value: Json): string {
+function stableStringify(value: JsonValue): string {
   const seen = new WeakSet<object>();
 
-  const visit = (v: Json): Json => {
+  const visit = (v: JsonValue): JsonValue => {
     if (v === null) return null;
     if (
       typeof v === "string" ||
@@ -44,18 +46,18 @@ function stableStringify(value: Json): string {
     ) {
       return v;
     }
-    if (Array.isArray(v)) return v.map((x) => visit(x as Json));
+    if (Array.isArray(v)) return v.map((x) => visit(x as JsonValue));
 
     // Object
-    const obj = v as Record<string, Json>;
+    const obj = v as Record<string, JsonValue>;
     if (seen.has(obj as unknown as object)) {
-      return "[CYCLE]" as unknown as Json;
+      return "[CYCLE]" as unknown as JsonValue;
     }
     seen.add(obj as unknown as object);
 
-    const out: Record<string, Json> = {};
+    const out: Record<string, JsonValue> = {};
     for (const key of Object.keys(obj).sort((a, b) => a.localeCompare(b))) {
-      out[key] = visit(obj[key] as Json);
+      out[key] = visit(obj[key] as JsonValue);
     }
     return out;
   };
@@ -72,6 +74,9 @@ const SECRET_KEY_RE =
  * @remarks
  * This is key-based redaction only. It intentionally does not attempt to detect
  * secret values heuristically (to avoid false positives and nondeterminism).
+ *
+ * @param value - Arbitrary value to redact in a best-effort, key-based manner.
+ * @returns The input value with secret-like keys replaced with `"[REDACTED]"`.
  */
 export function redactSecretsDeep<T>(value: T): T {
   const visit = (v: unknown): unknown => {
@@ -100,7 +105,7 @@ export function redactSecretsDeep<T>(value: T): T {
   return visit(value) as T;
 }
 
-function jsonBytes(value: Json): Uint8Array {
+function jsonBytes(value: JsonValue): Uint8Array {
   const text = `${stableStringify(value)}\n`;
   return new TextEncoder().encode(text);
 }
@@ -195,21 +200,24 @@ function pad3(n: number): string {
   return String(n).padStart(3, "0");
 }
 
-function safeJsonRecord(input: Record<string, unknown>): Json {
+function safeJsonRecord(input: Record<string, unknown>): JsonValue {
   // Convert unknown record into JSON-serializable data where possible.
   // `jsonb` fields should already be plain JSON, but we still defensively coerce.
-  return redactSecretsDeep(input) as unknown as Json;
+  return redactSecretsDeep(input) as unknown as JsonValue;
 }
 
 /**
  * Build deterministic audit bundle files from pre-collected data.
+ *
+ * @param data - Collected data used to produce deterministic audit bundle files.
+ * @returns Deterministic file entries to be zipped and uploaded.
  */
 export function buildImplementationAuditBundleFilesFromData(
   data: ImplementationAuditBundleData,
 ): readonly Readonly<{ path: string; contentBytes: Uint8Array }>[] {
   const files: Array<Readonly<{ path: string; contentBytes: Uint8Array }>> = [];
 
-  const bundleMeta: Json = {
+  const bundleMeta: JsonValue = {
     generatedAt: new Date(0).toISOString(),
     kind: "implementation_audit_bundle",
     projectId: data.project.id,
@@ -222,13 +230,13 @@ export function buildImplementationAuditBundleFilesFromData(
     contentBytes: jsonBytes({
       ...data.run,
       metadata: safeJsonRecord(data.run.metadata),
-    } satisfies Json),
+    } satisfies JsonValue),
     path: "run.json",
   });
 
   if (data.repo) {
     files.push({
-      contentBytes: jsonBytes(data.repo satisfies Json),
+      contentBytes: jsonBytes(data.repo satisfies JsonValue),
       path: "repo.json",
     });
   }
@@ -240,10 +248,10 @@ export function buildImplementationAuditBundleFilesFromData(
     files.push({
       contentBytes: jsonBytes({
         ...step,
-        error: step.error ? (safeJsonRecord(step.error) as Json) : null,
-        inputs: safeJsonRecord(step.inputs) as Json,
-        outputs: safeJsonRecord(step.outputs) as Json,
-      } satisfies Json),
+        error: step.error ? (safeJsonRecord(step.error) as JsonValue) : null,
+        inputs: safeJsonRecord(step.inputs) as JsonValue,
+        outputs: safeJsonRecord(step.outputs) as JsonValue,
+      } satisfies JsonValue),
       path: `steps/${pad3(idx + 1)}.${step.stepId}.json`,
     });
   }
@@ -257,7 +265,7 @@ export function buildImplementationAuditBundleFilesFromData(
       contentBytes: jsonBytes({
         ...job,
         metadata: safeJsonRecord(job.metadata),
-      } satisfies Json),
+      } satisfies JsonValue),
       path: `sandbox_jobs/${pad3(idx + 1)}.${job.jobType}.${job.id}.json`,
     });
   }
@@ -271,7 +279,7 @@ export function buildImplementationAuditBundleFilesFromData(
       contentBytes: jsonBytes({
         ...approval,
         metadata: safeJsonRecord(approval.metadata),
-      } satisfies Json),
+      } satisfies JsonValue),
       path: `approvals/${pad3(idx + 1)}.${approval.scope}.${approval.id}.json`,
     });
   }
@@ -285,7 +293,7 @@ export function buildImplementationAuditBundleFilesFromData(
       contentBytes: jsonBytes({
         ...dep,
         metadata: safeJsonRecord(dep.metadata),
-      } satisfies Json),
+      } satisfies JsonValue),
       path: `deployments/${pad3(idx + 1)}.${dep.provider}.${dep.id}.json`,
     });
   }
@@ -300,7 +308,7 @@ export function buildImplementationAuditBundleFilesFromData(
     const contentBytes = jsonBytes({
       ...artifact,
       content: safeJsonRecord(artifact.content),
-    } satisfies Json);
+    } satisfies JsonValue);
 
     // Defense-in-depth: prevent massive audit bundles from artifact content.
     const capped =
@@ -319,6 +327,9 @@ export function buildImplementationAuditBundleFilesFromData(
 
 /**
  * Collect implementation audit bundle data from Neon (no secrets, redacted).
+ *
+ * @param input - Project/run identifiers.
+ * @returns Redacted, JSON-serializable audit bundle data.
  */
 export async function collectImplementationAuditBundleDataFromDb(
   input: Readonly<{ projectId: string; runId: string }>,
@@ -485,6 +496,7 @@ export type ImplementationAuditBundleBuildResult = Readonly<{
 /**
  * Build and upload the implementation audit bundle ZIP to Vercel Blob.
  *
+ * @param input - Project/run identifiers.
  * @returns Blob URL + sha256 and export manifest.
  */
 export async function buildAndUploadImplementationAuditBundle(
