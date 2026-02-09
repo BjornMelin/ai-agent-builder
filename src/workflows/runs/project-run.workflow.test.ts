@@ -12,7 +12,9 @@ const persistMocks = vi.hoisted(() => ({
   finishRunStep: vi.fn(),
   getRunInfo: vi.fn(),
   markRunRunning: vi.fn(),
+  markRunStepStatus: vi.fn(),
   markRunTerminal: vi.fn(),
+  markRunWaiting: vi.fn(),
 }));
 
 const writerMocks = vi.hoisted(() => ({
@@ -28,6 +30,38 @@ const workflowErrorMocks = vi.hoisted(() => ({
   isWorkflowRunCancelledError: vi.fn(),
 }));
 
+const approvalsStepMocks = vi.hoisted(() => ({
+  ensureApprovalRequest: vi.fn(),
+}));
+
+const implementationStepMocks = vi.hoisted(() => ({
+  applyImplementationPatch: vi.fn(),
+  ensureImplementationRepoContext: vi.fn(),
+  openImplementationPullRequest: vi.fn(),
+  planImplementationRun: vi.fn(),
+  preflightImplementationRun: vi.fn(),
+  sandboxCheckoutImplementationRepo: vi.fn(),
+  stopImplementationSandbox: vi.fn(),
+  verifyImplementationRun: vi.fn(),
+}));
+
+const approvalHookMocks = vi.hoisted(() => ({
+  approvalHook: { create: vi.fn() },
+}));
+
+const repoStepMocks = vi.hoisted(() => ({
+  mergeGitHubPullRequestStep: vi.fn(),
+  pollGitHubChecksUntilTerminalStep: vi.fn(),
+}));
+
+const provisionStepMocks = vi.hoisted(() => ({
+  provisionImplementationInfraStep: vi.fn(),
+}));
+
+const deployStepMocks = vi.hoisted(() => ({
+  deployImplementationToProductionStep: vi.fn(),
+}));
+
 vi.mock("workflow", () => ({
   getWorkflowMetadata: () => ({ workflowRunId: state.workflowRunId }),
   getWritable: () => state.writable,
@@ -36,9 +70,34 @@ vi.mock("workflow", () => ({
 vi.mock("@/workflows/runs/steps/persist.step", () => persistMocks);
 vi.mock("@/workflows/runs/steps/writer.step", () => writerMocks);
 vi.mock("@/workflows/runs/steps/artifacts.step", () => artifactsMocks);
+vi.mock("@/workflows/runs/steps/approvals.step", () => approvalsStepMocks);
+vi.mock("@/workflows/runs/steps/repo.step", () => repoStepMocks);
+vi.mock("@/workflows/runs/steps/provision.step", () => provisionStepMocks);
+vi.mock("@/workflows/runs/steps/deploy-production.step", () => deployStepMocks);
+vi.mock(
+  "@/workflows/runs/steps/implementation.step",
+  () => implementationStepMocks,
+);
+vi.mock("@/workflows/approvals/hooks/approval", () => approvalHookMocks);
 vi.mock("@/workflows/runs/workflow-errors", () => workflowErrorMocks);
 
 import { projectRun } from "./project-run.workflow";
+
+async function waitUntil(
+  predicate: () => boolean,
+  options: Readonly<{ attempts?: number; delayMs?: number }> = {},
+): Promise<void> {
+  const attempts = Math.max(options.attempts ?? 50, 1);
+  const delayMs = Math.max(options.delayMs ?? 0, 0);
+
+  for (let i = 0; i < attempts; i += 1) {
+    if (predicate()) return;
+    // Let the workflow advance to its next await point.
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  throw new Error("Timed out waiting for predicate.");
+}
 
 describe("projectRun", () => {
   beforeEach(() => {
@@ -52,6 +111,8 @@ describe("projectRun", () => {
       kind: "research",
       projectId: "project_1",
     });
+    persistMocks.markRunStepStatus.mockResolvedValue(undefined);
+    persistMocks.markRunWaiting.mockResolvedValue(undefined);
     persistMocks.markRunRunning.mockResolvedValue(undefined);
     persistMocks.markRunTerminal.mockResolvedValue(undefined);
 
@@ -63,6 +124,101 @@ describe("projectRun", () => {
     });
 
     workflowErrorMocks.isWorkflowRunCancelledError.mockReturnValue(false);
+
+    approvalsStepMocks.ensureApprovalRequest.mockImplementation(
+      async (input: unknown) => {
+        const scope =
+          input && typeof input === "object"
+            ? String((input as { scope?: unknown }).scope ?? "")
+            : "";
+        return { approvalId: `approval_${scope}`, scope };
+      },
+    );
+
+    repoStepMocks.pollGitHubChecksUntilTerminalStep.mockResolvedValue({
+      kind: "terminal",
+      last: { checkRuns: [], ref: "test", state: "success", statuses: [] },
+      pollCount: 1,
+      waitedMs: 0,
+    });
+    repoStepMocks.mergeGitHubPullRequestStep.mockResolvedValue({
+      merged: true,
+      message: "Merged",
+      sha: "sha_test",
+    });
+
+    provisionStepMocks.provisionImplementationInfraStep.mockResolvedValue(
+      {} as unknown as Record<string, unknown>,
+    );
+    deployStepMocks.deployImplementationToProductionStep.mockResolvedValue(
+      {} as unknown as Record<string, unknown>,
+    );
+
+    implementationStepMocks.preflightImplementationRun.mockResolvedValue({
+      aiGatewayBaseUrl: "https://ai-gateway.example",
+      aiGatewayChatModel: "xai/grok",
+      githubConfigured: true,
+      ok: true,
+      sandboxAuth: "oidc",
+    });
+    implementationStepMocks.ensureImplementationRepoContext.mockResolvedValue({
+      branchName: "agent/proj/run_1",
+      cloneUrl: "https://github.com/a/b.git",
+      defaultBranch: "main",
+      htmlUrl: "https://github.com/a/b",
+      name: "b",
+      owner: "a",
+      projectId: "project_1",
+      projectName: "Project",
+      projectSlug: "proj",
+      provider: "github",
+      repoId: "repo_1",
+    });
+    implementationStepMocks.sandboxCheckoutImplementationRepo.mockResolvedValue(
+      {
+        baseBranch: "main",
+        branchName: "agent/proj/run_1",
+        repoPath: "/vercel/sandbox/repo",
+        sandboxId: "sbx_1",
+      },
+    );
+    implementationStepMocks.planImplementationRun.mockResolvedValue({
+      commitMessage: "chore: plan",
+      planMarkdown: "# Plan",
+      prBody: "Body",
+      prTitle: "Title",
+    });
+    implementationStepMocks.applyImplementationPatch.mockResolvedValue({
+      addedFilePath: "implementation-run-run_1.md",
+      branchName: "agent/proj/run_1",
+      commitSha: "sha_1",
+    });
+    implementationStepMocks.verifyImplementationRun.mockResolvedValue({
+      build: { exitCode: 0 },
+      lint: { exitCode: 0 },
+      ok: true,
+      test: { exitCode: 0 },
+      typecheck: { exitCode: 0 },
+    });
+    implementationStepMocks.openImplementationPullRequest.mockResolvedValue({
+      base: "main",
+      head: "agent/proj/run_1",
+      prNumber: 123,
+      prTitle: "Title",
+      prUrl: "https://github.com/a/b/pull/123",
+    });
+    implementationStepMocks.stopImplementationSandbox.mockResolvedValue(
+      undefined,
+    );
+
+    approvalHookMocks.approvalHook.create.mockReturnValue(
+      Promise.resolve({
+        approvalId: "approval_repo.merge",
+        approvedAt: "2026-02-09T00:00:00Z",
+        approvedBy: "user@example.com",
+        scope: "repo.merge",
+      }),
+    );
   });
 
   it("marks the active step failed when a non-cancel error is thrown mid-step", async () => {
@@ -239,5 +395,62 @@ describe("projectRun", () => {
     writerMocks.closeRunStream.mockRejectedValueOnce(new Error("close failed"));
 
     await expect(projectRun("run_1")).resolves.toEqual({ ok: true });
+  });
+
+  it("marks approval steps waiting and awaits the approval hook", async () => {
+    persistMocks.getRunInfo.mockResolvedValueOnce({
+      kind: "implementation",
+      projectId: "project_1",
+    });
+
+    type ApprovalPayload = Readonly<{
+      approvalId: string;
+      approvedAt: string | null;
+      approvedBy: string;
+      scope: string;
+    }>;
+
+    let resolveApproval!: (value: ApprovalPayload) => void;
+    const pendingApproval = new Promise<ApprovalPayload>((res) => {
+      resolveApproval = res;
+    });
+    approvalHookMocks.approvalHook.create.mockReturnValueOnce(pendingApproval);
+
+    const runPromise = projectRun("run_1");
+
+    // Wait for the workflow to request approval and mark the step waiting.
+    await waitUntil(
+      () =>
+        persistMocks.markRunWaiting.mock.calls.length > 0 &&
+        persistMocks.markRunStepStatus.mock.calls.some((call) => {
+          const arg = call[0] as unknown;
+          if (!arg || typeof arg !== "object") return false;
+          const rec = arg as Record<string, unknown>;
+          return (
+            rec.runId === "run_1" &&
+            rec.stepId === "approval.merge" &&
+            rec.status === "waiting"
+          );
+        }),
+    );
+
+    // Resolve the approval to unblock the run, and allow remaining approval gates
+    // to resolve immediately via the default mock.
+    resolveApproval({
+      approvalId: "approval_repo.merge",
+      approvedAt: "2026-02-09T00:00:00Z",
+      approvedBy: "user@example.com",
+      scope: "repo.merge",
+    });
+
+    await expect(runPromise).resolves.toEqual({ ok: true });
+
+    expect(persistMocks.finishRunStep).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: "run_1",
+        status: "succeeded",
+        stepId: "approval.merge",
+      }),
+    );
   });
 });

@@ -217,6 +217,7 @@ const sandboxSchema = z
     const hasOidcToken = Boolean(v.VERCEL_OIDC_TOKEN);
     const hasAccessToken = Boolean(v.VERCEL_TOKEN);
     const hasProjectId = Boolean(v.VERCEL_PROJECT_ID);
+    const hasTeamId = Boolean(v.VERCEL_TEAM_ID);
 
     if (!hasOidcToken && !hasAccessToken) {
       ctx.addIssue({
@@ -235,6 +236,15 @@ const sandboxSchema = z
         path: ["VERCEL_PROJECT_ID"],
       });
     }
+
+    if (!hasOidcToken && hasAccessToken && !hasTeamId) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "VERCEL_TEAM_ID is required when using VERCEL_TOKEN for Sandbox auth.",
+        path: ["VERCEL_TEAM_ID"],
+      });
+    }
   })
   .transform((v) => {
     if (v.VERCEL_OIDC_TOKEN) {
@@ -247,20 +257,21 @@ const sandboxSchema = z
 
     const token = v.VERCEL_TOKEN;
     const projectId = v.VERCEL_PROJECT_ID;
+    const teamId = v.VERCEL_TEAM_ID;
 
-    if (!token || !projectId) {
+    if (!token || !projectId || !teamId) {
       // This should be unreachable due to the schema refinement above.
       throw new AppError(
         "env_invalid",
         500,
-        'Invalid environment for feature "sandbox": missing VERCEL_TOKEN or VERCEL_PROJECT_ID. See docs/ops/env.md.',
+        'Invalid environment for feature "sandbox": missing VERCEL_TOKEN, VERCEL_TEAM_ID, or VERCEL_PROJECT_ID. See docs/ops/env.md.',
       );
     }
 
     return {
       auth: "token" as const,
       projectId,
-      teamId: v.VERCEL_TEAM_ID,
+      teamId,
       token,
     };
   });
@@ -273,12 +284,12 @@ const context7Schema = z
 
 const githubSchema = z
   .looseObject({
-    GITHUB_TOKEN: envNonEmpty,
+    GITHUB_TOKEN: envOptionalTrimmed,
     GITHUB_WEBHOOK_SECRET: envOptionalTrimmed,
   })
   .transform((v) => ({
-    token: v.GITHUB_TOKEN,
-    webhookSecret: v.GITHUB_WEBHOOK_SECRET,
+    token: v.GITHUB_TOKEN ?? null,
+    webhookSecret: v.GITHUB_WEBHOOK_SECRET ?? null,
   }));
 
 const vercelApiSchema = z
@@ -290,6 +301,12 @@ const vercelApiSchema = z
     teamId: v.VERCEL_TEAM_ID,
     token: v.VERCEL_TOKEN,
   }));
+
+const vercelWebhooksSchema = z
+  .looseObject({
+    VERCEL_WEBHOOK_SECRET: envNonEmpty,
+  })
+  .transform((v) => ({ secret: v.VERCEL_WEBHOOK_SECRET }));
 
 const neonApiSchema = z
   .looseObject({
@@ -328,6 +345,9 @@ let cachedSandboxEnv: Readonly<z.output<typeof sandboxSchema>> | undefined;
 let cachedContext7Env: Readonly<z.output<typeof context7Schema>> | undefined;
 let cachedGithubEnv: Readonly<z.output<typeof githubSchema>> | undefined;
 let cachedVercelApiEnv: Readonly<z.output<typeof vercelApiSchema>> | undefined;
+let cachedVercelWebhooksEnv:
+  | Readonly<z.output<typeof vercelWebhooksSchema>>
+  | undefined;
 let cachedNeonApiEnv: Readonly<z.output<typeof neonApiSchema>> | undefined;
 let cachedUpstashDeveloperEnv:
   | Readonly<z.output<typeof upstashDeveloperSchema>>
@@ -509,6 +529,23 @@ export const env = {
   get vercelApi(): Readonly<z.output<typeof vercelApiSchema>> {
     cachedVercelApiEnv ??= parseFeatureEnv("vercelApi", vercelApiSchema);
     return cachedVercelApiEnv;
+  },
+
+  /**
+   * Returns the Vercel webhook verification configuration.
+   *
+   * @remarks
+   * This is optional and feature-gated. Webhook handlers should treat missing
+   * `VERCEL_WEBHOOK_SECRET` as "not configured" and return a safe error.
+   *
+   * @returns Vercel webhook env.
+   */
+  get vercelWebhooks(): Readonly<z.output<typeof vercelWebhooksSchema>> {
+    cachedVercelWebhooksEnv ??= parseFeatureEnv(
+      "vercelWebhooks",
+      vercelWebhooksSchema,
+    );
+    return cachedVercelWebhooksEnv;
   },
 
   /**

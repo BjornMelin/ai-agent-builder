@@ -13,7 +13,7 @@ vi.mock("@/db/client", () => ({
   getDb: () => state.db,
 }));
 
-import { beginRunStep, finishRunStep } from "./persist.step";
+import { beginRunStep, finishRunStep, markRunStepStatus } from "./persist.step";
 
 function createFakeDb(stepRow: FakeRunStepRow | null) {
   const where = vi.fn().mockResolvedValue(undefined);
@@ -180,6 +180,45 @@ describe("persist.step", () => {
       assertIsDate(payload.endedAt);
       assertIsDate(payload.updatedAt);
       expect(payload.endedAt.getTime()).toBe(0);
+      expect(payload.updatedAt.getTime()).toBe(0);
+    });
+  });
+
+  describe("markRunStepStatus", () => {
+    it("does nothing when step is already succeeded", async () => {
+      const { db, update } = createFakeDb({ attempt: 1, status: "succeeded" });
+      state.db = db as unknown as DbClient;
+
+      await markRunStepStatus({
+        runId: "run_1",
+        status: "waiting",
+        stepId: "step_1",
+      });
+
+      expect(update).not.toHaveBeenCalled();
+    });
+
+    it("updates when step is running", async () => {
+      const { db, set, update } = createFakeDb({
+        attempt: 1,
+        status: "running",
+      });
+      state.db = db as unknown as DbClient;
+
+      await markRunStepStatus({
+        runId: "run_1",
+        status: "waiting",
+        stepId: "step_1",
+      });
+
+      expect(update).toHaveBeenCalledTimes(1);
+      expect(set).toHaveBeenCalledTimes(1);
+
+      const setArg = set.mock.calls[0]?.[0] as unknown;
+      expect(setArg).toMatchObject({ status: "waiting" });
+
+      const payload = setArg as Record<string, unknown>;
+      assertIsDate(payload.updatedAt);
       expect(payload.updatedAt.getTime()).toBe(0);
     });
   });

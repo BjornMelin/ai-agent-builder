@@ -183,17 +183,31 @@ describe("env feature gates", () => {
     });
   });
 
-  it("throws on first access when GitHub token is missing", async () => {
+  it("treats GitHub integration as optional when token is missing", async () => {
     await withEnv({ GITHUB_TOKEN: undefined }, async () => {
       const { env } = await loadEnv();
-      expect(() => env.github).toThrowError(/GITHUB_TOKEN/i);
+      expect(env.github.token).toBeNull();
     });
   });
 
-  it("parses GitHub env when required vars exist", async () => {
+  it("parses GitHub env when token exists", async () => {
     await withEnv({ GITHUB_TOKEN: "ghp_test" }, async () => {
       const { env } = await loadEnv();
       expect(env.github.token).toBe("ghp_test");
+    });
+  });
+
+  it("throws on first access when Vercel webhook secret is missing", async () => {
+    await withEnv({ VERCEL_WEBHOOK_SECRET: undefined }, async () => {
+      const { env } = await loadEnv();
+      expect(() => env.vercelWebhooks).toThrowError(/VERCEL_WEBHOOK_SECRET/i);
+    });
+  });
+
+  it("parses Vercel webhook env when required vars exist", async () => {
+    await withEnv({ VERCEL_WEBHOOK_SECRET: "secret_test" }, async () => {
+      const { env } = await loadEnv();
+      expect(env.vercelWebhooks.secret).toBe("secret_test");
     });
   });
 
@@ -220,13 +234,18 @@ describe("env feature gates", () => {
 
   it("parses Sandbox env with access token + project id (fallback)", async () => {
     await withEnv(
-      { VERCEL_PROJECT_ID: "prj_test", VERCEL_TOKEN: "vercel_test" },
+      {
+        VERCEL_PROJECT_ID: "prj_test",
+        VERCEL_TEAM_ID: "team_test",
+        VERCEL_TOKEN: "vercel_test",
+      },
       async () => {
         const { env } = await loadEnv();
         expect(env.sandbox.auth).toBe("token");
         if (env.sandbox.auth === "token") {
           expect(env.sandbox.token).toBe("vercel_test");
           expect(env.sandbox.projectId).toBe("prj_test");
+          expect(env.sandbox.teamId).toBe("team_test");
         }
       },
     );
