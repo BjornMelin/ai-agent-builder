@@ -219,8 +219,7 @@ Supported auth modes:
       variables for a Vercel project
       ([Vercel CLI env pull](https://vercel.com/docs/cli/env#exporting-development-environment-variables)).
 - **Access token (fallback):**
-- `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (required for `env.sandbox`)
-- `VERCEL_TEAM_ID` (optional; needed for team-owned resources)
+- `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` + `VERCEL_TEAM_ID` (required for `env.sandbox`)
   ([Sandbox auth](https://vercel.com/docs/vercel-sandbox/concepts/authentication)).
 
 Docs:
@@ -331,7 +330,7 @@ Only required for full repo+infra automation workflows:
 - `GITHUB_TOKEN`
 - `NEON_API_KEY`
 - `VERCEL_TOKEN`
-- `VERCEL_TEAM_ID` (optional for team scope)
+- `VERCEL_TEAM_ID` (required for Vercel Sandbox access-token mode; optional for Vercel API team scope)
 - `UPSTASH_EMAIL`
 - `UPSTASH_API_KEY`
 - `VERCEL_PROJECT_ID` (only needed for sandbox access-token fallback mode)
@@ -438,7 +437,9 @@ generate plans and manual instructions.
 - `GITHUB_TOKEN` (required for `env.github`)
   - Fine-grained PAT recommended.
 - `GITHUB_WEBHOOK_SECRET` (optional)
-  - Shared secret for webhook signature verification.
+  - Shared secret for `POST /api/webhooks/github` signature verification
+    (`x-hub-signature-256`).
+  - Missing secret returns 501 (safe-by-default).
 
 Docs:
 
@@ -452,6 +453,10 @@ Docs:
     ([Vercel REST API](https://vercel.com/docs/rest-api)).
 - `VERCEL_TEAM_ID` (optional)
   - If you operate under a Vercel team account.
+- `VERCEL_WEBHOOK_SECRET` (optional)
+  - Shared secret for `POST /api/webhooks/vercel` signature verification
+    (`x-vercel-signature`).
+  - Missing secret returns 501 (safe-by-default).
 
 Docs:
 

@@ -61,6 +61,46 @@ export function tagUploadsIndex(projectId: string): string {
 }
 
 /**
+ * Cache tag for repository listings and lookups in a project.
+ *
+ * @param projectId - Project identifier.
+ * @returns Stable cache tag.
+ */
+export function tagReposIndex(projectId: string): string {
+  return `${CACHE_TAG_NAMESPACE}:repos:index:${normalizeSegment(projectId)}`;
+}
+
+/**
+ * Cache tag for approvals listings and lookups in a project.
+ *
+ * @param projectId - Project identifier.
+ * @returns Stable cache tag.
+ */
+export function tagApprovalsIndex(projectId: string): string {
+  return `${CACHE_TAG_NAMESPACE}:approvals:index:${normalizeSegment(projectId)}`;
+}
+
+/**
+ * Cache tag for deployment listings and lookups in a project.
+ *
+ * @param projectId - Project identifier.
+ * @returns Stable cache tag.
+ */
+export function tagDeploymentsIndex(projectId: string): string {
+  return `${CACHE_TAG_NAMESPACE}:deployments:index:${normalizeSegment(projectId)}`;
+}
+
+/**
+ * Cache tag for infra resource listings and lookups in a project.
+ *
+ * @param projectId - Project identifier.
+ * @returns Stable cache tag.
+ */
+export function tagInfraResourcesIndex(projectId: string): string {
+  return `${CACHE_TAG_NAMESPACE}:infra-resources:index:${normalizeSegment(projectId)}`;
+}
+
+/**
  * Cache tag for the local model catalog JSON.
  *
  * @returns Stable cache tag.

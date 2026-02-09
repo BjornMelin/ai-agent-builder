@@ -133,9 +133,9 @@ flowchart LR
   - Cached scopes (`'use cache'`) must not call runtime APIs like `cookies()`, `headers()`, or `searchParams()`; read runtime data outside the cached scope and pass it in.[^next-use-cache-restrictions]
   - Cache tag limits: each tag string must be <= 256 characters; each cache entry may have at most 128 tags.[^next-cachetag-limits]
 
-[^next-cachetag-limits]: https://nextjs.org/docs/app/api-reference/functions/cacheTag
-[^next-use-cache-restrictions]: https://nextjs.org/docs/app/guides/caching#use-cache
-[^next-revalidatetag-max]: https://nextjs.org/docs/app/api-reference/functions/revalidateTag
+[^next-cachetag-limits]: <https://nextjs.org/docs/app/api-reference/functions/cacheTag>
+[^next-use-cache-restrictions]: <https://nextjs.org/docs/app/guides/caching#use-cache>
+[^next-revalidatetag-max]: <https://nextjs.org/docs/app/api-reference/functions/revalidateTag>
 
 ## Consequences
 

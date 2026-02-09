@@ -2,7 +2,7 @@
 ADR: 0024
 Title: GitOps automation: PR-based workflows for agentic implementation
 Status: Accepted
-Version: 0.1
+Version: 0.2
 Date: 2026-02-01
 Supersedes: []
 Superseded-by: []
@@ -112,8 +112,11 @@ agentic implementation.
 
 ## Constraints
 
-- Never perform side-effectful repo actions (pushes, merges, tag creation)
-  without explicit approvals (**FR-031**).
+- Never merge to the default/protected branch, create tags, or perform
+  destructive repo operations without explicit approvals (**FR-031**).
+- Pushing to a run-scoped branch is allowed without approval strictly to enable
+  PR creation (still subject to redaction, least privilege, and required checks
+  before merge).
 - With PAT-based auth, assume “read CI signals, don’t write CI signals”:
   GitHub’s Checks API write access is limited to GitHub Apps; plan around that
   by reading check runs and using provider-native CI rather than creating

@@ -1,3 +1,4 @@
+import { withEnv } from "@tests/utils/env";
 import { describe, expect, it, vi } from "vitest";
 
 type QstashClientInit = Readonly<{ token: string }>;
@@ -32,33 +33,6 @@ vi.mock("@upstash/qstash/nextjs", () => {
     },
   };
 });
-
-async function withEnv<T>(
-  overrides: Readonly<Record<string, string | undefined>>,
-  fn: () => Promise<T>,
-): Promise<T> {
-  const prev: Record<string, string | undefined> = {};
-  for (const [k, v] of Object.entries(overrides)) {
-    prev[k] = process.env[k];
-    if (v === undefined) {
-      delete process.env[k];
-    } else {
-      process.env[k] = v;
-    }
-  }
-
-  try {
-    return await fn();
-  } finally {
-    for (const [k, v] of Object.entries(prev)) {
-      if (v === undefined) {
-        delete process.env[k];
-      } else {
-        process.env[k] = v;
-      }
-    }
-  }
-}
 
 describe("qstash helpers", () => {
   it("fails when QStash publish env is missing", async () => {

@@ -220,6 +220,10 @@ export function ProjectChatClient(
       : null;
 
   const [runId, setRunId] = useState<string | null>(() => initialWorkflowRunId);
+  const runIdRef = useRef<string | null>(runId);
+  useEffect(() => {
+    runIdRef.current = runId;
+  }, [runId]);
   const [runStatus, setRunStatus] = useState<ChatThreadStatus | null>(
     initialThreadStatus,
   );
@@ -337,6 +341,14 @@ export function ProjectChatClient(
       api: "/api/chat",
       onChatEnd: handleChatEnd,
       onChatSendMessage: handleChatSendMessage,
+      prepareReconnectToStreamRequest: async (options) => {
+        // WorkflowChatTransport uses `chatId` by default when `workflowRunId`
+        // isn't known (e.g. page refresh). Always prefer the latest run id.
+        const effectiveRunId = runIdRef.current ?? options.id;
+        return {
+          api: `/api/chat/${encodeURIComponent(effectiveRunId)}/stream`,
+        };
+      },
       prepareSendMessagesRequest,
     });
 

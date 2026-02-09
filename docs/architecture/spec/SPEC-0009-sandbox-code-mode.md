@@ -1,11 +1,11 @@
 ---
 spec: SPEC-0009
 title: Sandbox “Code Mode”
-version: 0.2.0
-date: 2026-02-01
+version: 0.3.0
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Proposed
-related_requirements: ["FR-018", "FR-031", "NFR-014", "IR-009"]
+status: Implemented
+related_requirements: ["FR-018", "FR-031", "NFR-014", "NFR-016", "IR-009"]
 related_adrs: ["ADR-0010"]
 notes: "Defines the user-facing safe code execution mode for analysis tasks."
 ---
@@ -71,7 +71,11 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 - Never execute user-provided code in the app runtime.
 - Secrets are injected only when required and must not be written to sandbox
   disk or echoed in logs.
-- Commands must be allowlisted; network egress is restricted where supported.
+- Commands must be allowlisted; command arguments must not escape the sandbox
+  workspace root (`/vercel/sandbox`); package execution tools (e.g. `npx`,
+  `bunx`) must be restricted to an explicit allowlist (**NFR-016**).
+- Network egress is restricted where supported; default to no-access when
+  possible.
 - Any side-effectful action requires explicit approvals (**FR-031** via the run
   engine policy).
 
@@ -119,6 +123,9 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 - Sandbox jobs execute with minimal environment variables.
 - Secrets are never written to disk inside sandbox.
 - Commands are allowlisted; destructive operations are blocked by default.
+- Sandbox execution is workspace-confined: no absolute paths outside
+  `/vercel/sandbox`, no parent-directory traversal, and restricted package
+  execution tools (**NFR-016**).
 - Side-effectful operations require explicit approval gates.
 
 ## Interfaces
@@ -139,6 +146,8 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 - Code Mode runs only in Sandbox and never in the app runtime.
 - Outputs are streamed to the UI and persisted as artifacts with redaction.
 - Allowlists prevent destructive operations and obvious exfiltration paths.
+- Code Mode sandbox commands cannot read/write outside `/vercel/sandbox` and
+  cannot execute arbitrary `npx`/`bunx` packages.
 
 ## Testing
 
@@ -165,3 +174,4 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-02-01)**: Updated for Sandbox auth modes and Implementation Run reuse.
+- **0.3 (2026-02-09)**: Documented workspace confinement and package-exec allowlists.

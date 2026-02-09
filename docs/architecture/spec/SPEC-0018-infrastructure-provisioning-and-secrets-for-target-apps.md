@@ -4,7 +4,7 @@ title: Target app infrastructure provisioning and secrets mapping
 version: 0.1.1
 date: 2026-02-03
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements:
   ["FR-027", "FR-028", "FR-031", "FR-034", "IR-012", "IR-013", "IR-014", "NFR-013", "NFR-015"]
 related_adrs: ["ADR-0003", "ADR-0004", "ADR-0005", "ADR-0025", "ADR-0021"]

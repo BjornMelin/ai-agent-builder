@@ -58,9 +58,10 @@ flowchart LR
 
 Notes:
 
-- Some integrations in the diagram are **optional / spec’d** and may not be
-  implemented in the current repo snapshot (for example: Exa/Firecrawl web
-  research, Sandbox job runner, RepoOps automation, webhooks).
+- Some integrations in the diagram are **feature-gated** (env-dependent) and
+  safe-by-default: when credentials are missing, the app disables automated
+  paths and generates deterministic manual fallback steps instead (see
+  `docs/ops/env.md`).
 
 ## Repository alignment (current)
 

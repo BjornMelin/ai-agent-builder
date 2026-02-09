@@ -31,6 +31,8 @@ const TERMINAL_STATUSES = [
 ] as const satisfies readonly RunStatus[];
 type TerminalRunStatus = Extract<RunStatus, (typeof TERMINAL_STATUSES)[number]>;
 
+type NonTerminalRunStatus = Exclude<RunStatus, TerminalRunStatus>;
+
 /**
  * Load the minimal run info needed for orchestration.
  *
@@ -69,6 +71,48 @@ export async function markRunRunning(runId: string): Promise<void> {
   await db
     .update(schema.runsTable)
     .set({ status: "running", updatedAt: now })
+    .where(
+      and(
+        eq(schema.runsTable.id, runId),
+        notInArray(schema.runsTable.status, [...TERMINAL_STATUSES]),
+      ),
+    );
+}
+
+/**
+ * Mark a run as waiting (no-op for terminal statuses).
+ *
+ * @param runId - Durable run ID.
+ */
+export async function markRunWaiting(runId: string): Promise<void> {
+  "use step";
+
+  const db = getDb();
+  const now = new Date();
+  await db
+    .update(schema.runsTable)
+    .set({ status: "waiting", updatedAt: now })
+    .where(
+      and(
+        eq(schema.runsTable.id, runId),
+        notInArray(schema.runsTable.status, [...TERMINAL_STATUSES]),
+      ),
+    );
+}
+
+/**
+ * Mark a run as blocked (no-op for terminal statuses).
+ *
+ * @param runId - Durable run ID.
+ */
+export async function markRunBlocked(runId: string): Promise<void> {
+  "use step";
+
+  const db = getDb();
+  const now = new Date();
+  await db
+    .update(schema.runsTable)
+    .set({ status: "blocked", updatedAt: now })
     .where(
       and(
         eq(schema.runsTable.id, runId),
@@ -163,6 +207,61 @@ export async function beginRunStep(
           "succeeded",
           "canceled",
         ]),
+      ),
+    );
+}
+
+/**
+ * Mark a run step as waiting/blocked (idempotent, no-op for terminal steps).
+ *
+ * @param input - Step identity and non-terminal status.
+ * @throws AppError - With code "not_found" (404) when the run step cannot be found.
+ */
+export async function markRunStepStatus(
+  input: Readonly<{
+    runId: string;
+    stepId: string;
+    status: Extract<NonTerminalRunStatus, "waiting" | "blocked">;
+    outputs?: Record<string, unknown>;
+  }>,
+): Promise<void> {
+  "use step";
+
+  const db = getDb();
+  const now = new Date();
+
+  const existing = await db.query.runStepsTable.findFirst({
+    columns: { status: true },
+    where: and(
+      eq(schema.runStepsTable.runId, input.runId),
+      eq(schema.runStepsTable.stepId, input.stepId),
+    ),
+  });
+
+  if (!existing) {
+    throw new AppError("not_found", 404, "Run step not found.");
+  }
+
+  if (
+    existing.status === "succeeded" ||
+    existing.status === "canceled" ||
+    (existing.status === input.status && input.outputs === undefined)
+  ) {
+    return;
+  }
+
+  await db
+    .update(schema.runStepsTable)
+    .set({
+      ...(input.outputs === undefined ? {} : { outputs: input.outputs }),
+      status: input.status,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(schema.runStepsTable.runId, input.runId),
+        eq(schema.runStepsTable.stepId, input.stepId),
+        notInArray(schema.runStepsTable.status, ["succeeded", "canceled"]),
       ),
     );
 }

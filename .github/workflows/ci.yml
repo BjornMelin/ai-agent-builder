@@ -48,8 +48,13 @@ jobs:
         run: bun run typecheck
 
   test:
-    name: Test (Vitest)
+    name: Test (Vitest, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -60,12 +65,55 @@ jobs:
         uses: ./.github/actions/ci-setup
 
       - name: Test
-        run: bun run test
+        env:
+          VITEST_SHARD_INDEX: ${{ matrix.shardIndex }}
+          VITEST_SHARD_COUNT: ${{ matrix.shardTotal }}
+        run: bun run test:ci:shard
+
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: .vitest-reports/blob/${{ matrix.shardIndex }}.json
+          include-hidden-files: true
+          retention-days: 7
+
+  test-merge:
+    name: Test (Vitest, Merge Reports)
+    runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
+    needs: ["test"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 1
+
+      - name: Setup
+        uses: ./.github/actions/ci-setup
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: blob-report-*
+          path: .vitest-reports/blob
+          merge-multiple: true
+
+      - name: Merge reports
+        run: bun run test:ci:merge
+
+      - name: Upload JUnit report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-junit
+          path: .vitest-reports/junit.xml
+          retention-days: 14
 
   build:
     name: Build (Next.js)
     runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
-    needs: ["lint", "typecheck", "test"]
+    needs: ["lint", "typecheck", "test-merge"]
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2

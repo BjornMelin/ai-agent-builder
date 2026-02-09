@@ -1,11 +1,12 @@
 ---
 spec: SPEC-0019
 title: Sandbox build/test/verification execution
-version: 0.1.0
-date: 2026-02-01
+version: 0.2.0
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Proposed
-related_requirements: ["FR-026", "FR-018", "PR-007", "IR-009", "NFR-014", "NFR-015"]
+status: Implemented
+related_requirements:
+  ["FR-026", "FR-018", "PR-007", "IR-009", "NFR-014", "NFR-015", "NFR-016"]
 related_adrs: ["ADR-0010", "ADR-0024"]
 notes:
   "Defines standardized sandbox jobs used by Implementation Runs to run commands safely."
@@ -167,22 +168,44 @@ Outputs:
 
 ### verify.lint
 
-Commands (example for Bun + Biome):
+Commands (example for Bun + Biome / Node repos):
 
 - `bun run lint`
 - `bun run format:check`
 
+Commands (example for Python repos with `uv`):
+
+- `uv run ruff check .`
+
 ### verify.typecheck
+
+Node repos:
 
 - `bun run typecheck`
 
+Python repos:
+
+- `uv run pyright` (preferred) or `uv run mypy .`
+
 ### verify.test
+
+Node repos:
 
 - `bun run test`
 
+Python repos:
+
+- `uv run pytest`
+
 ### verify.build
 
+Node repos:
+
 - `bun run build`
+
+Python repos:
+
+- Optional / repo-defined (often no build step; treat as N/A unless configured).
 
 ### db.migrate (optional)
 
@@ -193,8 +216,10 @@ Commands (example for Bun + Biome):
 Allowlisted by default:
 
 - git (clone/checkout/status/diff/add/commit)
-- bun (install, lint, typecheck, test, build)
+- bun (install, lint, typecheck, test, build) when available
+- uv (sync, run) for Python repos (python3.13 runtime)
 - node (for tooling)
+- bunx/npx (restricted to explicit allowlisted packages/bins)
 - basic shell utilities (ls, cat, sed, rg)
 
 Blocked by default:
@@ -202,6 +227,8 @@ Blocked by default:
 - network scans / port probing
 - credential exfiltration tools
 - destructive filesystem ops outside workspace
+- path traversal (`..`) and absolute paths outside `/vercel/sandbox` (**NFR-016**)
+- package-exec bypasses (e.g. `pnpm dlx`, `npm exec`) unless explicitly approved
 
 ## Log capture and redaction
 
@@ -240,6 +267,8 @@ Persist:
 
 - Unit tests: allowlist enforcement and redaction.
 - Integration tests: run a minimal verification job and assert transcript capture.
+- Tooling note: exclude generated Workflow routes under `src/app/.well-known/workflow/**`
+  from Zod audits and lint rules that target app-authored code.
 
 ## Operational notes
 
@@ -259,10 +288,11 @@ Persist:
 
 ## References
 
+## Changelog
+
+- **0.1 (2026-02-01)**: Initial version.
+- **0.2 (2026-02-09)**: Added Python (`uv`) verification patterns and explicit sandbox command policy constraints.
+
 - [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)
 - [Vercel Sandbox system specs](https://vercel.com/docs/vercel-sandbox/system-specifications)
 - [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication)
-
-## Changelog
-
-- **0.1 (2026-02-01)**: Initial draft.

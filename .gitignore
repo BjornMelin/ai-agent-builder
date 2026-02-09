@@ -91,6 +91,8 @@ next-env.d.ts
 .vitest-result.json
 vitest.config.ts.timestamp-*
 vitest.config.js.timestamp-*
+.vitest-reports/
+.vitest-attachments/
 
 # Misc
 *.pem
@@ -117,3 +119,6 @@ config/mcporter.json
 
 # agent-browser persisted browser state (contains cookies/sessions)
 .agent-browser/
+
+# Firecrawl tool artifacts (local research cache)
+.firecrawl/

@@ -30,20 +30,19 @@ function isSafeExternalHttpUrl(value: string): boolean {
 
 const safeHttpUrlSchema = z
   .string()
-  .url()
+  .trim()
+  .pipe(z.url())
   .refine((value) => isSafeExternalHttpUrl(value), {
     message: "Unsupported URL protocol.",
   });
 
-const webCitationPayloadSchema = z
-  .object({
-    description: z.string().min(1).optional(),
-    excerpt: z.string().min(1).optional(),
-    index: z.number().int().min(1),
-    title: z.string().min(1).optional(),
-    url: safeHttpUrlSchema,
-  })
-  .passthrough();
+const webCitationPayloadSchema = z.object({
+  description: z.string().min(1).optional(),
+  excerpt: z.string().min(1).optional(),
+  index: z.number().int().min(1),
+  title: z.string().min(1).optional(),
+  url: safeHttpUrlSchema,
+});
 
 const CITATION_HREF_PATTERN = /^citation:(\d+)$/;
 

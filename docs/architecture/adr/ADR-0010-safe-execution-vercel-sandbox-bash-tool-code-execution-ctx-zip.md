@@ -1,9 +1,9 @@
 ---
 ADR: 0010
 Title: Safe execution: Vercel Sandbox + bash-tool + code-execution + ctx-zip
-Status: Accepted
-Version: 0.3
-Date: 2026-02-01
+Status: Implemented
+Version: 0.4
+Date: 2026-02-09
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0005, ADR-0006, ADR-0024]
@@ -21,7 +21,8 @@ References:
 ## Status
 
 Accepted — 2026-01-30.  
-Updated — 2026-02-01 (explicit support for implementation verification jobs).
+Implemented — 2026-02-01 (implementation verification jobs).  
+Updated — 2026-02-09 (sandbox module layout + auth contract + ctx-zip binding).
 
 ## Description
 
@@ -83,6 +84,9 @@ Use AI SDK tools where it reduces implementation effort:
 - Never execute user-provided code outside Sandbox.
 - Enforce timeout and resource limits.
 - Restrict filesystem access and network egress as supported.
+- Enforce a strict sandbox command policy: default-deny allowlists, workspace
+  path confinement to `/vercel/sandbox`, and restricted package-exec tools
+  (e.g. `npx`, `bunx`). See **NFR-016**.
 - Log all executed commands and outputs.
 
 ## High-Level Architecture
@@ -105,6 +109,7 @@ flowchart LR
 
 - **NFR-001:** isolation; no server compromise.
 - **NFR-004:** log execution.
+- **NFR-016:** default-deny sandbox command policy with workspace confinement.
 
 ### Performance Requirements
 
@@ -118,12 +123,30 @@ flowchart LR
 
 ### Architecture Overview
 
-- `src/lib/sandbox/client.ts`: Sandbox session wrapper.
-- Tool adapters expose high-level operations to agents.
+Key modules:
+
+- `src/lib/sandbox/sandbox-client.server.ts`: Sandbox client wrapper (create/get)
+  aligned to the repo env contract (OIDC preferred; token fallback supported).
+- `src/lib/sandbox/sandbox-runner.server.ts`: Sandbox job sessions with:
+  allowlist enforcement, transcript capture, redaction, and best-effort Blob
+  persistence.
+- `src/lib/sandbox/allowlist.server.ts`: Default-deny command policy, workspace
+  path confinement (`/vercel/sandbox`), and restricted package-exec tools
+  (`npx`/`bunx`) via an explicit allowlist.
+- `src/lib/sandbox/redaction.server.ts`: Log redaction for secret-like values
+  before persistence/display.
+- `src/lib/sandbox/network-policy.server.ts`: NetworkPolicy presets per job type.
+- `src/lib/sandbox/transcript.server.ts`: Bounded transcript collection utilities.
+- `src/lib/sandbox/ctxzip.server.ts`: ctx-zip integration backed by the sandbox
+  client wrapper (avoids OIDC-only helpers).
 
 ### Implementation Details
 
 - Default deny: only allow predefined commands.
+- Workspace confinement: reject parent-directory traversal and absolute paths
+  outside `/vercel/sandbox`.
+- Package execution tools (`npx`, `bunx`) must be restricted to an explicit
+  allowlist to avoid arbitrary download/execute flows.
 - Provide `ctx-zip` to compress context artifacts deterministically.
 - Persist execution logs in `run_steps`.
 
@@ -141,7 +164,7 @@ flowchart LR
   - `VERCEL_OIDC_TOKEN` (preferred; required for `env.sandbox` OIDC mode)
   - `VERCEL_TOKEN` (access-token auth fallback for `env.sandbox`)
   - `VERCEL_PROJECT_ID` (required for access-token auth fallback)
-  - `VERCEL_TEAM_ID` (optional; needed for team-owned resources)
+  - `VERCEL_TEAM_ID` (required for access-token auth fallback)
 - Operational config:
   - Default timeouts and resource limits must be enforced consistently for all
     sandbox jobs (analysis and verification).
@@ -155,6 +178,9 @@ flowchart LR
 ## Implementation Notes
 
 - Prefer using Sandbox for CPU-bound transformations and parsing edge cases.
+- Bind `ctx-zip` to a sandbox created via the repo env contract (OIDC preferred;
+  access-token fallback supported) to avoid helper APIs that force OIDC-only
+  flows.
 - For implementation runs, treat verification as first-class sandbox jobs
   (see
   [SPEC-0019](../spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)).
@@ -185,3 +211,4 @@ flowchart LR
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-01)**: Updated for implementation verification jobs.
+- **0.4 (2026-02-09)**: Clarified sandbox module layout, auth env contract, and ctx-zip binding approach.

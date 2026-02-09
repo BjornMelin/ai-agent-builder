@@ -1,19 +1,31 @@
 ---
 spec: SPEC-0008
 title: Artifact generation, versioning, and export zip
-version: 0.3.1
-date: 2026-02-05
+version: 0.3.2
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Implemented
+status: Partially implemented
 related_requirements: ["FR-014", "FR-015", "FR-017", "FR-034", "NFR-005", "NFR-015"]
 related_adrs: ["ADR-0006", "ADR-0013", "ADR-0024"]
-notes: "Defines artifact kinds, versioning, and deterministic export (including implementation audit bundles)."
+notes:
+  "Defines artifact kinds, versioning, and deterministic export (artifacts + citations implemented; implementation audit bundles pending)."
 ---
 
 ## Summary
 
 Defines artifact generation formats, versioning, and deterministic export
 packaging.
+
+## Implementation status (as of 2026-02-09)
+
+Implemented in this repo:
+
+- Deterministic export ZIP for latest project artifacts + citations via `GET /api/export/:projectId`.
+
+Not yet implemented:
+
+- **Implementation audit bundle export (FR-034)**: there is no implementation-run-specific audit bundle
+  artifact/manifest included in export yet.
 
 ## Context
 
@@ -189,3 +201,4 @@ Implementation artifacts:
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3.1 (2026-02-05)**: Hardened deterministic export ZIP (zip-slip prevention, manifest parity, collision detection).
+- **0.3.2 (2026-02-09)**: Clarified implementation audit bundle status (FR-034 pending).

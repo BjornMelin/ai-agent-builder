@@ -20,7 +20,7 @@ trail).
 - Enforces per-user project ownership for all project-scoped reads/writes.
 - Applies server-side search guardrails (strict query validation + rate limiting).
 - Maintains a formal architecture pack (PRD, ADRs, specs, security) in-repo with deterministic export.
-- Supports an implementation/deployment phase (partially implemented) to:
+- Supports an implementation/deployment phase (approval-gated side effects) to:
   - connect a target GitHub repo
   - plan changes traceable to artifacts
   - apply patches + open PRs

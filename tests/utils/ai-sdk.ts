@@ -1,3 +1,5 @@
+import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
+import { simulateReadableStream } from "ai";
 import { MockEmbeddingModelV3, MockLanguageModelV3 } from "ai/test";
 
 type LanguageModelV3GenerateResult = Awaited<
@@ -41,6 +43,31 @@ export function createMockLanguageModelV3Text(
 
   return new MockLanguageModelV3({
     doGenerate: async () => result,
+  });
+}
+
+/**
+ * Create a deterministic V3 mock language model that streams text parts.
+ *
+ * @remarks
+ * Prefer `simulateReadableStream` over hand-rolled async iterators so tests
+ * match the AI SDK's streaming shape.
+ *
+ * @param chunks - Stream parts emitted by the model.
+ * @returns A `MockLanguageModelV3` configured to stream `chunks`.
+ */
+export function createMockLanguageModelV3StreamText(
+  chunks: readonly LanguageModelV3StreamPart[],
+): MockLanguageModelV3 {
+  return new MockLanguageModelV3({
+    doStream: async () => ({
+      stream: simulateReadableStream({
+        // Emit without delays to keep tests fast/deterministic.
+        chunkDelayInMs: null,
+        chunks: Array.from(chunks),
+        initialDelayInMs: null,
+      }),
+    }),
   });
 }
 

@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0017
 title: RepoOps and GitHub integration
-version: 0.1.0
-date: 2026-02-01
+version: 0.1.1
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Partially implemented
 related_requirements:
   ["FR-022", "FR-025", "FR-029", "FR-031", "FR-032", "IR-011", "NFR-013", "NFR-015"]
 related_adrs: ["ADR-0024", "ADR-0021", "ADR-0010"]
@@ -20,7 +20,25 @@ Define a RepoOps subsystem that enables Implementation Runs to:
 - clone/check out code in sandbox
 - apply patches and commit
 - open PRs, monitor checks, and merge after approval
-- index repo code for retrieval
+- index repo code for retrieval (bounded; FR-032)
+
+## Implementation status (as of 2026-02-09)
+
+Implemented in this repo:
+
+- Repo connection persistence (non-secret GitHub repo metadata) via `repos` table and DAL.
+  See `src/db/schema.ts` and `src/lib/data/repos.server.ts`.
+- GitHub API operations for PR open/fetch, checks/status polling, and merge. See
+  `src/lib/repo/repo-ops.server.ts`.
+- Implementation-run workflow steps that use RepoOps + sandbox jobs for checkout/patch/verify,
+  and approval-gated merge. See `src/workflows/runs/project-run.workflow.ts` and
+  `src/workflows/runs/steps/implementation.step.ts`.
+
+- Repo indexing (FR-032) foundation:
+  - bounded file walk from a sandbox checkout
+  - chunk + embed + upsert into Upstash Vector under `project:{projectId}:repo:{repoId}`
+  - invoked as `impl.repo.index` in `src/workflows/runs/project-run.workflow.ts`
+  See `src/lib/repo/repo-indexer.server.ts` and `src/workflows/runs/steps/repo-index.step.ts`.
 
 ## Context
 
@@ -194,6 +212,16 @@ Two mechanisms:
 - optional: receive GitHub webhooks for check completion / PR updates
 
 ## Repo indexing (FR-032)
+
+Current status: **implemented (bounded)** in the codebase as of 2026-02-09.
+
+Implementation notes:
+
+- Indexing is latest-only (prefix delete + deterministic IDs), so retries are safe.
+- Obvious secret-like/binary paths are filtered (`.env`, key files, images/archives).
+- Strict size/count budgets prevent runaway indexing.
+
+This section also describes the target design expansions (incremental indexing, richer filters).
 
 Indexing pipeline:
 

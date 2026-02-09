@@ -2,9 +2,9 @@
 spec: SPEC-0023
 title: AI Elements workspace UI and interaction model
 version: 0.1.0
-date: 2026-02-03
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Partially Implemented
 related_requirements:
   ["FR-002", "FR-003", "FR-008", "FR-010", "FR-020", "FR-023", "FR-031", "PR-001", "NFR-008", "NFR-010"]
 related_adrs: ["ADR-0011", "ADR-0006", "ADR-0026", "ADR-0013"]
@@ -47,7 +47,19 @@ Workspace is project-centered and deep-linkable:
 - `/projects/[projectId]/chat`
 - `/projects/[projectId]/runs`
 - `/projects/[projectId]/search`
+- `/projects/[projectId]/artifacts`
+- `/projects/[projectId]/repos`
+- `/projects/[projectId]/approvals`
+- `/projects/[projectId]/deployments`
+- `/projects/[projectId]/code-mode`
 - `/projects/[projectId]/settings`
+
+## Implementation status
+
+The workspace shell and primary project tabs are implemented in:
+
+- Project layout + navigation: `src/app/(app)/projects/[projectId]/layout.tsx`, `src/app/(app)/projects/[projectId]/project-nav-client.tsx`
+- Tab routes: `src/app/(app)/projects/[projectId]/*`
 
 ### Required page conventions
 

@@ -117,6 +117,78 @@ See:
 - [SPEC-0024](./spec/SPEC-0024-run-cancellation-and-stream-resilience.md)
 - [ADR-0026](./adr/ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md)
 
+## Code Mode (sandbox-backed, Workflow DevKit)
+
+Code Mode is a user-invoked durable workflow that runs allowlisted commands in
+Vercel Sandbox. It uses AI SDK UI message streams and supports stream resumption
+via a `startIndex` cursor.
+
+- `POST /api/code-mode`
+  - body: `{ projectId: string, prompt: string, network?: "none" | "restricted", budgets?: { maxSteps?: number, timeoutMs?: number } }`
+  - response: JSON `{ runId, workflowRunId }` + header `x-workflow-run-id`
+- `GET /api/code-mode/:runId/stream?startIndex=N`
+  - resumes an existing stream; rejects invalid `startIndex`
+- `POST /api/code-mode/:runId/cancel`
+  - cancels the workflow run and marks persisted run/steps as `canceled`
+
+See:
+
+- [SPEC-0009](./spec/SPEC-0009-sandbox-code-mode.md)
+- [ADR-0010](./adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md)
+
+## RepoOps (target repo connections)
+
+- `GET /api/repos?projectId=...`
+  - lists connected repos for a project
+- `POST /api/repos`
+  - body: `{ projectId, provider: "github", owner, name, cloneUrl?, htmlUrl?, defaultBranch? }`
+  - connects a repo (metadata only). When GitHub credentials are configured, the
+    server will fetch missing repo metadata automatically.
+
+See:
+
+- [SPEC-0017](./spec/SPEC-0017-repo-ops-and-github-integration.md)
+- [ADR-0024](./adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md)
+
+## Approvals (side-effectful gates)
+
+Approvals are explicit user actions that unblock durable workflows.
+
+- `GET /api/approvals?projectId=...&runId=...&limit=...`
+  - lists pending approvals (optionally filtered by run)
+- `POST /api/approvals`
+  - body: `{ approvalId: string }`
+  - approves the request and best-effort resumes the workflow hook
+
+See:
+
+- [SPEC-0016](./spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md)
+- [ADR-0024](./adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md)
+
+## Deployments (records + status)
+
+- `GET /api/deployments?projectId=...&runId=...&limit=...`
+  - lists deployments for a project (optionally filtered by run)
+- `POST /api/deployments`
+  - creates a deployment record (non-secret metadata only)
+
+See:
+
+- [SPEC-0018](./spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)
+- [ADR-0025](./adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md)
+
+## Webhooks (external status ingestion)
+
+Webhook endpoints do not use `requireAppUserApi()`. They are safe-by-default and
+return 501 when secrets are not configured.
+
+- `POST /api/webhooks/github`
+  - verifies `x-hub-signature-256` using `GITHUB_WEBHOOK_SECRET`
+- `POST /api/webhooks/vercel`
+  - verifies `x-vercel-signature` using `VERCEL_WEBHOOK_SECRET`
+  - persists non-secret deployment status updates when a matching deployment
+    record exists
+
 ## Planned (Not Implemented)
 
 The following endpoints are **spec’d** but not implemented as Route Handlers in
@@ -124,11 +196,8 @@ this repository snapshot:
 
 - Project CRUD endpoints under `/api/projects/*` (projects exist via DAL + server actions)
 - Artifacts listing / regeneration
-- RepoOps endpoints (connect/create/index)
-- Approvals endpoints
-- Provisioning + deployment automation endpoints
-- Webhook endpoints (GitHub/Vercel)
-- Sandbox job runner endpoints
+- Provisioning automation endpoints (provider-specific admin APIs; workflow-driven today)
+- Sandbox job runner endpoints (the sandbox runner is internal today)
 
 Refer to the SPEC/ADR documents for the intended design and implementation
 order:

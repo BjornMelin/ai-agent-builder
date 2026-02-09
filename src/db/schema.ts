@@ -399,7 +399,7 @@ export const approvalsTable = pgTable(
   "approvals",
   {
     approvedAt: timestamp("approved_at", { withTimezone: true }),
-    approvedBy: text("approved_by").notNull(),
+    approvedBy: text("approved_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

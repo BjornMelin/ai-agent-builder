@@ -1,33 +1,5 @@
+import { withEnv } from "@tests/utils/env";
 import { describe, expect, it, vi } from "vitest";
-
-type EnvOverrides = Readonly<Record<string, string | undefined>>;
-
-async function withEnv<T>(
-  overrides: EnvOverrides,
-  fn: () => Promise<T>,
-): Promise<T> {
-  const previous: Record<string, string | undefined> = {};
-  for (const [key, value] of Object.entries(overrides)) {
-    previous[key] = process.env[key];
-    if (value === undefined) {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  }
-
-  try {
-    return await fn();
-  } finally {
-    for (const [key, value] of Object.entries(previous)) {
-      if (value === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
-    }
-  }
-}
 
 async function loadRegistry() {
   vi.resetModules();

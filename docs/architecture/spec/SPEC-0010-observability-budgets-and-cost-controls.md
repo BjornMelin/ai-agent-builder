@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0010
 title: Observability, budgets, and cost controls
-version: 0.3.2
-date: 2026-02-07
+version: 0.4.0
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Partially Implemented
 related_requirements: ["FR-011", "NFR-004", "NFR-006", "NFR-015", "PR-007"]
 related_adrs: ["ADR-0013", "ADR-0024", "ADR-0025"]
 notes: "Defines run-level budgets, telemetry, and cost control mechanisms."
@@ -18,6 +18,19 @@ Define a unified budget and telemetry system for:
 - implementation/deploy runs (longer and more expensive)
 
 Budgets prevent runaway spend and enforce predictable execution.
+
+## Implementation status
+
+Implemented today:
+
+- Central budget constants: `src/lib/config/budgets.server.ts`
+- Per-tool budgets + caching for web research + Context7 calls: `src/workflows/chat/tools.ts`, `src/lib/research/research-report.server.ts`
+- Sandbox job transcript persistence + redaction: `src/lib/sandbox/sandbox-runner.server.ts`, `src/lib/sandbox/redaction.server.ts`
+
+Not yet complete:
+
+- A single run-level budget envelope persisted on every run, with explicit
+  over-budget transitions and UI affordances for budget overrides.
 
 ## Context
 
