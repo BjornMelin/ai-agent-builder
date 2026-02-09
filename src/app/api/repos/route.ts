@@ -19,9 +19,9 @@ const listQuerySchema = z.strictObject({
 });
 
 const connectRepoSchema = z.strictObject({
-  cloneUrl: z.string().url().optional(),
+  cloneUrl: z.url().optional(),
   defaultBranch: z.string().min(1).optional(),
-  htmlUrl: z.string().url().optional(),
+  htmlUrl: z.url().optional(),
   name: z.string().min(1),
   owner: z.string().min(1),
   projectId: z.string().min(1),

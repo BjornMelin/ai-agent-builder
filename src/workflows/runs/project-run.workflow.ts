@@ -296,6 +296,7 @@ export async function projectRun(
           owner: value.owner,
           projectSlug: value.projectSlug,
           repoId: value.repoId,
+          repoKind: value.repoKind,
         }),
       );
 
@@ -312,6 +313,7 @@ export async function projectRun(
             cloneUrl: repo.cloneUrl,
             defaultBranch: repo.defaultBranch,
             projectId: runInfo.projectId,
+            repoKind: repo.repoKind,
             runId,
           }),
         (value) => ({
@@ -381,6 +383,7 @@ export async function projectRun(
         async () =>
           await verifyImplementationRun({
             projectId: runInfo.projectId,
+            repoKind: repo.repoKind,
             repoPath: checkout.repoPath,
             runId,
             sandboxId: checkout.sandboxId,

@@ -173,6 +173,7 @@ describe("projectRun", () => {
       projectSlug: "proj",
       provider: "github",
       repoId: "repo_1",
+      repoKind: "node",
     });
     implementationStepMocks.sandboxCheckoutImplementationRepo.mockResolvedValue(
       {
@@ -195,9 +196,13 @@ describe("projectRun", () => {
     });
     implementationStepMocks.verifyImplementationRun.mockResolvedValue({
       build: { exitCode: 0 },
+      kind: "node",
       lint: { exitCode: 0 },
       ok: true,
+      sandboxJobId: "job_verify_1",
       test: { exitCode: 0 },
+      transcriptBlobRef: null,
+      transcriptTruncated: false,
       typecheck: { exitCode: 0 },
     });
     implementationStepMocks.openImplementationPullRequest.mockResolvedValue({

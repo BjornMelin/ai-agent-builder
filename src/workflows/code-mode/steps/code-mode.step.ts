@@ -11,6 +11,11 @@ import { getDefaultChatModel } from "@/lib/ai/gateway.server";
 import { AppError } from "@/lib/core/errors";
 import { listReposByProject } from "@/lib/data/repos.server";
 import { env } from "@/lib/env";
+import { isGitHubConfigured } from "@/lib/repo/github.client.server";
+import {
+  detectGitHubRepoRuntimeKind,
+  type RepoRuntimeKind,
+} from "@/lib/repo/repo-kind.server";
 import type { CodeModeStreamEvent } from "@/lib/runs/code-mode-stream";
 import {
   createCtxZipSandboxCodeMode,
@@ -20,6 +25,7 @@ import { compactToolResults } from "@/lib/sandbox/ctxzip-compactor.server";
 import {
   SANDBOX_NETWORK_POLICY_NONE,
   SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT,
+  SANDBOX_NETWORK_POLICY_RESTRICTED_PYTHON_DEFAULT,
 } from "@/lib/sandbox/network-policy.server";
 import { redactSandboxLog } from "@/lib/sandbox/redaction.server";
 import { startSandboxJobSession } from "@/lib/sandbox/sandbox-runner.server";
@@ -38,14 +44,12 @@ const budgetsSchema = z
   })
   .optional();
 
-const codeModeMetadataSchema = z
-  .strictObject({
-    budgets: budgetsSchema,
-    networkAccess: z.enum(["none", "restricted"]).optional(),
-    origin: z.literal("code-mode"),
-    prompt: z.string().min(1),
-  })
-  .passthrough();
+const codeModeMetadataSchema = z.object({
+  budgets: budgetsSchema,
+  networkAccess: z.enum(["none", "restricted"]).optional(),
+  origin: z.literal("code-mode"),
+  prompt: z.string().min(1),
+});
 
 function nowTimestamp(): number {
   return Date.now();
@@ -262,15 +266,28 @@ export async function runCodeModeSession(
           } as const)
         : undefined;
 
+    let repoKind: RepoRuntimeKind = "node";
+    if (repo && repo.provider === "github" && isGitHubConfigured()) {
+      const detected = await detectGitHubRepoRuntimeKind({
+        owner: repo.owner,
+        ref: repo.defaultBranch,
+        repo: repo.name,
+      });
+      repoKind = detected.kind;
+    }
+
     const networkPolicy =
       networkAccess === "restricted"
-        ? SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT
+        ? repoKind === "python"
+          ? SANDBOX_NETWORK_POLICY_RESTRICTED_PYTHON_DEFAULT
+          : SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT
         : SANDBOX_NETWORK_POLICY_NONE;
 
     const session = await startSandboxJobSession({
       jobType: "code_mode",
       metadata: {
         networkAccess,
+        repoKind,
         ...(repo
           ? {
               repo: {
@@ -286,6 +303,7 @@ export async function runCodeModeSession(
       networkPolicy,
       projectId: runRow.projectId,
       runId: runRow.id,
+      runtime: repoKind === "python" ? "python3.13" : "node24",
       ...(source ? { source } : {}),
       timeoutMs: Math.min(Math.max(timeoutMs, 10_000), 30 * 60_000),
       vcpus: 2,

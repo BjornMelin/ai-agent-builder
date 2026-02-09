@@ -153,30 +153,26 @@ async function upstashApiJson(
   return (await res.json()) as unknown;
 }
 
-const upstashRedisDatabaseSchema = z
-  .object({
-    database_id: z.string().min(1),
-    database_name: z.string().min(1),
-    endpoint: z.string().min(1).optional(),
-    primary_region: z.string().min(1).optional(),
-  })
-  .passthrough();
+const upstashRedisDatabaseSchema = z.object({
+  database_id: z.string().min(1),
+  database_name: z.string().min(1),
+  endpoint: z.string().min(1).optional(),
+  primary_region: z.string().min(1).optional(),
+});
 
 type UpstashRedisDatabase = z.infer<typeof upstashRedisDatabaseSchema>;
 
-const upstashVectorIndexSchema = z
-  .object({
-    dimension_count: z.number().int().positive().optional(),
-    endpoint: z.string().min(1).optional(),
-    id: z.string().min(1),
-    name: z.string().min(1),
-    read_only_token: z.string().min(1).optional(),
-    region: z.string().min(1).optional(),
-    similarity_function: z.string().min(1).optional(),
-    // Secrets (never persisted/returned by our API surface).
-    token: z.string().min(1).optional(),
-  })
-  .passthrough();
+const upstashVectorIndexSchema = z.object({
+  dimension_count: z.number().int().positive().optional(),
+  endpoint: z.string().min(1).optional(),
+  id: z.string().min(1),
+  name: z.string().min(1),
+  read_only_token: z.string().min(1).optional(),
+  region: z.string().min(1).optional(),
+  similarity_function: z.string().min(1).optional(),
+  // Secrets (never persisted/returned by our API surface).
+  token: z.string().min(1).optional(),
+});
 
 type UpstashVectorIndex = z.infer<typeof upstashVectorIndexSchema>;
 

@@ -4,6 +4,17 @@ const state = vi.hoisted(() => ({
   appendChatMessages: vi.fn(),
   getChatThreadByWorkflowRunId: vi.fn(),
   getProjectByIdForUser: vi.fn(),
+  log: (() => {
+    const logger = {
+      child: vi.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+    };
+    logger.child.mockImplementation(() => logger);
+    return logger;
+  })(),
   requireAppUserApi: vi.fn(),
   resume: vi.fn(),
   updateChatThreadByWorkflowRunId: vi.fn(),
@@ -21,6 +32,10 @@ vi.mock("@/lib/data/chat.server", () => ({
 
 vi.mock("@/lib/data/projects.server", () => ({
   getProjectByIdForUser: state.getProjectByIdForUser,
+}));
+
+vi.mock("@/lib/core/log", () => ({
+  log: state.log,
 }));
 
 vi.mock("@/workflows/chat/hooks/chat-message", () => ({

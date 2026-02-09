@@ -17,3 +17,17 @@ export const SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT: NetworkPolicy = {
   ],
   type: "restricted",
 };
+
+export const SANDBOX_NETWORK_POLICY_RESTRICTED_PYTHON_DEFAULT: NetworkPolicy = {
+  allowedDomains: [
+    "*.github.com",
+    "*.githubusercontent.com",
+    "api.github.com",
+    "codeload.github.com",
+    "files.pythonhosted.org",
+    "github.com",
+    "pypi.org",
+    "raw.githubusercontent.com",
+  ],
+  type: "restricted",
+};

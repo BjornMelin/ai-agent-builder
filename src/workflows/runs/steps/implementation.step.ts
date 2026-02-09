@@ -8,8 +8,15 @@ import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
 import { env } from "@/lib/env";
+import {
+  detectGitHubRepoRuntimeKind,
+  type RepoRuntimeKind,
+} from "@/lib/repo/repo-kind.server";
 import { createOrGetPullRequest } from "@/lib/repo/repo-ops.server";
-import { SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT } from "@/lib/sandbox/network-policy.server";
+import {
+  SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT,
+  SANDBOX_NETWORK_POLICY_RESTRICTED_PYTHON_DEFAULT,
+} from "@/lib/sandbox/network-policy.server";
 import { getVercelSandbox } from "@/lib/sandbox/sandbox-client.server";
 import {
   attachSandboxJobSession,
@@ -62,6 +69,7 @@ export type ImplementationRepoContext = Readonly<{
   projectSlug: string;
   repoId: string;
   provider: "github";
+  repoKind: RepoRuntimeKind;
   owner: string;
   name: string;
   cloneUrl: string;
@@ -108,16 +116,29 @@ export type ImplementationPatchResult = Readonly<{
 /**
  * Verification outputs for the full suite.
  */
-export type ImplementationVerifyResult = Readonly<{
-  ok: true;
-  lint: Readonly<{ exitCode: number }>;
-  typecheck: Readonly<{ exitCode: number }>;
-  test: Readonly<{ exitCode: number }>;
-  build: Readonly<{ exitCode: number }>;
-  sandboxJobId: string;
-  transcriptBlobRef: string | null;
-  transcriptTruncated: boolean;
-}>;
+export type ImplementationVerifyResult =
+  | Readonly<{
+      kind: "node";
+      ok: true;
+      lint: Readonly<{ exitCode: number }>;
+      typecheck: Readonly<{ exitCode: number }>;
+      test: Readonly<{ exitCode: number }>;
+      build: Readonly<{ exitCode: number }>;
+      sandboxJobId: string;
+      transcriptBlobRef: string | null;
+      transcriptTruncated: boolean;
+    }>
+  | Readonly<{
+      kind: "python";
+      ok: true;
+      lint: Readonly<{ exitCode: number }>;
+      typecheck: Readonly<{ exitCode: number }>;
+      typecheckTool: "pyright" | "mypy";
+      test: Readonly<{ exitCode: number }>;
+      sandboxJobId: string;
+      transcriptBlobRef: string | null;
+      transcriptTruncated: boolean;
+    }>;
 
 /**
  * Pull request outputs persisted for the run.
@@ -200,6 +221,12 @@ export async function ensureImplementationRepoContext(
 
   const branchName = `agent/${project.slug}/${input.runId}`;
 
+  const detected = await detectGitHubRepoRuntimeKind({
+    owner: repo.owner,
+    ref: repo.defaultBranch,
+    repo: repo.name,
+  });
+
   return {
     branchName,
     cloneUrl: repo.cloneUrl,
@@ -212,6 +239,7 @@ export async function ensureImplementationRepoContext(
     projectSlug: project.slug,
     provider: repo.provider,
     repoId: repo.id,
+    repoKind: detected.kind,
   };
 }
 
@@ -228,22 +256,30 @@ export async function sandboxCheckoutImplementationRepo(
     cloneUrl: string;
     defaultBranch: string;
     branchName: string;
+    repoKind: RepoRuntimeKind;
   }>,
 ): Promise<ImplementationSandboxCheckout> {
   "use step";
 
   const token = assertGitHubToken(env.github.token ?? "");
 
+  const networkPolicy =
+    input.repoKind === "python"
+      ? SANDBOX_NETWORK_POLICY_RESTRICTED_PYTHON_DEFAULT
+      : SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT;
+  const runtime = input.repoKind === "python" ? "python3.13" : "node24";
+
   const session = await startSandboxJobSession({
     jobType: "implementation_checkout",
     metadata: {
       baseBranch: input.defaultBranch,
       branchName: input.branchName,
+      repoKind: input.repoKind,
     },
-    networkPolicy: SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT,
+    networkPolicy,
     projectId: input.projectId,
     runId: input.runId,
-    runtime: "node24",
+    runtime,
     source: {
       depth: 1,
       password: token,
@@ -275,19 +311,101 @@ export async function sandboxCheckoutImplementationRepo(
       );
     }
 
-    const install = await session.runCommand({
-      args: ["install", "--frozen-lockfile"],
-      cmd: "bun",
-      cwd: SANDBOX_REPO_ROOT,
-      policy: "implementation_run",
-    });
-    exitCode = install.exitCode;
-    if (install.exitCode !== 0) {
-      throw new AppError(
-        "bad_gateway",
-        502,
-        `bun install failed (exit ${install.exitCode}).`,
-      );
+    if (input.repoKind === "python") {
+      const uvLock = await session.runCommand({
+        args: ["-f", `${SANDBOX_REPO_ROOT}/uv.lock`],
+        cmd: "test",
+        cwd: SANDBOX_REPO_ROOT,
+        policy: "implementation_run",
+      });
+      const sync = await session.runCommand({
+        args: uvLock.exitCode === 0 ? ["sync", "--frozen"] : ["sync"],
+        cmd: "uv",
+        cwd: SANDBOX_REPO_ROOT,
+        policy: "implementation_run",
+      });
+      exitCode = sync.exitCode;
+      if (sync.exitCode !== 0) {
+        throw new AppError(
+          "bad_gateway",
+          502,
+          `uv sync failed (exit ${sync.exitCode}).`,
+        );
+      }
+    } else {
+      const bunLockb = await session.runCommand({
+        args: ["-f", `${SANDBOX_REPO_ROOT}/bun.lockb`],
+        cmd: "test",
+        cwd: SANDBOX_REPO_ROOT,
+        policy: "implementation_run",
+      });
+      const bunLock = await session.runCommand({
+        args: ["-f", `${SANDBOX_REPO_ROOT}/bun.lock`],
+        cmd: "test",
+        cwd: SANDBOX_REPO_ROOT,
+        policy: "implementation_run",
+      });
+      const pnpmLock = await session.runCommand({
+        args: ["-f", `${SANDBOX_REPO_ROOT}/pnpm-lock.yaml`],
+        cmd: "test",
+        cwd: SANDBOX_REPO_ROOT,
+        policy: "implementation_run",
+      });
+      const npmLock = await session.runCommand({
+        args: ["-f", `${SANDBOX_REPO_ROOT}/package-lock.json`],
+        cmd: "test",
+        cwd: SANDBOX_REPO_ROOT,
+        policy: "implementation_run",
+      });
+      const bunWhich = await session.runCommand({
+        args: ["bun"],
+        cmd: "which",
+        cwd: SANDBOX_REPO_ROOT,
+        policy: "implementation_run",
+      });
+
+      const hasBunLock = bunLockb.exitCode === 0 || bunLock.exitCode === 0;
+      const hasBun = bunWhich.exitCode === 0;
+      const hasPnpmLock = pnpmLock.exitCode === 0;
+      const hasNpmLock = npmLock.exitCode === 0;
+
+      const install =
+        hasBun && hasBunLock
+          ? await session.runCommand({
+              args: ["install", "--frozen-lockfile"],
+              cmd: "bun",
+              cwd: SANDBOX_REPO_ROOT,
+              policy: "implementation_run",
+            })
+          : hasPnpmLock
+            ? await session.runCommand({
+                args: ["install", "--frozen-lockfile"],
+                cmd: "pnpm",
+                cwd: SANDBOX_REPO_ROOT,
+                policy: "implementation_run",
+              })
+            : hasNpmLock
+              ? await session.runCommand({
+                  args: ["ci"],
+                  cmd: "npm",
+                  cwd: SANDBOX_REPO_ROOT,
+                  policy: "implementation_run",
+                })
+              : await session.runCommand({
+                  args: ["install"],
+                  cmd: "npm",
+                  cwd: SANDBOX_REPO_ROOT,
+                  policy: "implementation_run",
+                });
+
+      exitCode = install.exitCode;
+      if (install.exitCode !== 0) {
+        throw new AppError(
+          "bad_gateway",
+          502,
+          `Dependency install failed (exit ${install.exitCode}).`,
+        );
+      }
     }
 
     const finalized = await session.finalize({
@@ -644,6 +762,7 @@ export async function verifyImplementationRun(
     runId: string;
     sandboxId: string;
     repoPath: string;
+    repoKind: RepoRuntimeKind;
   }>,
 ): Promise<ImplementationVerifyResult> {
   "use step";
@@ -660,12 +779,173 @@ export async function verifyImplementationRun(
 
   let exitCode = 1;
   try {
-    const lint = await session.runCommand({
-      args: ["run", "lint"],
-      cmd: "bun",
+    if (input.repoKind === "python") {
+      const ruffVersion = await session.runCommand({
+        args: ["run", "ruff", "--version"],
+        cmd: "uv",
+        cwd: input.repoPath,
+        policy: "implementation_run",
+      });
+      exitCode = ruffVersion.exitCode;
+      if (ruffVersion.exitCode !== 0) {
+        throw new AppError(
+          "bad_gateway",
+          502,
+          "Python repo is missing ruff. Add it to the project and run via `uv run ruff`.",
+        );
+      }
+
+      const lint = await session.runCommand({
+        args: ["run", "ruff", "check", "."],
+        cmd: "uv",
+        cwd: input.repoPath,
+        policy: "implementation_run",
+      });
+      exitCode = lint.exitCode;
+      if (lint.exitCode !== 0) {
+        throw new AppError(
+          "bad_gateway",
+          502,
+          `ruff failed (exit ${lint.exitCode}).`,
+        );
+      }
+
+      let typecheckTool: "pyright" | "mypy" = "pyright";
+      let typecheckExitCode = 1;
+
+      const pyrightVersion = await session.runCommand({
+        args: ["run", "pyright", "--version"],
+        cmd: "uv",
+        cwd: input.repoPath,
+        policy: "implementation_run",
+      });
+      if (pyrightVersion.exitCode === 0) {
+        const pyright = await session.runCommand({
+          args: ["run", "pyright"],
+          cmd: "uv",
+          cwd: input.repoPath,
+          policy: "implementation_run",
+        });
+        typecheckExitCode = pyright.exitCode;
+        exitCode = pyright.exitCode;
+        if (pyright.exitCode !== 0) {
+          throw new AppError(
+            "bad_gateway",
+            502,
+            `pyright failed (exit ${pyright.exitCode}).`,
+          );
+        }
+      } else {
+        typecheckTool = "mypy";
+        const mypyVersion = await session.runCommand({
+          args: ["run", "mypy", "--version"],
+          cmd: "uv",
+          cwd: input.repoPath,
+          policy: "implementation_run",
+        });
+        exitCode = mypyVersion.exitCode;
+        if (mypyVersion.exitCode !== 0) {
+          throw new AppError(
+            "bad_gateway",
+            502,
+            "Python repo is missing a type checker (pyright or mypy). Add one and run via `uv run`.",
+          );
+        }
+
+        const mypy = await session.runCommand({
+          args: ["run", "mypy", "."],
+          cmd: "uv",
+          cwd: input.repoPath,
+          policy: "implementation_run",
+        });
+        typecheckExitCode = mypy.exitCode;
+        exitCode = mypy.exitCode;
+        if (mypy.exitCode !== 0) {
+          throw new AppError(
+            "bad_gateway",
+            502,
+            `mypy failed (exit ${mypy.exitCode}).`,
+          );
+        }
+      }
+
+      const pytestVersion = await session.runCommand({
+        args: ["run", "pytest", "--version"],
+        cmd: "uv",
+        cwd: input.repoPath,
+        policy: "implementation_run",
+      });
+      exitCode = pytestVersion.exitCode;
+      if (pytestVersion.exitCode !== 0) {
+        throw new AppError(
+          "bad_gateway",
+          502,
+          "Python repo is missing pytest. Add it to the project and run via `uv run pytest`.",
+        );
+      }
+
+      const test = await session.runCommand({
+        args: ["run", "pytest"],
+        cmd: "uv",
+        cwd: input.repoPath,
+        policy: "implementation_run",
+      });
+      exitCode = test.exitCode;
+      if (test.exitCode !== 0) {
+        throw new AppError(
+          "bad_gateway",
+          502,
+          `pytest failed (exit ${test.exitCode}).`,
+        );
+      }
+
+      const finalized = await session.finalize({
+        exitCode: 0,
+        status: "succeeded",
+      });
+
+      return {
+        kind: "python",
+        lint: { exitCode: lint.exitCode },
+        ok: true,
+        sandboxJobId: finalized.job.id,
+        test: { exitCode: test.exitCode },
+        transcriptBlobRef: finalized.job.transcriptBlobRef,
+        transcriptTruncated: finalized.transcript.truncated,
+        typecheck: { exitCode: typecheckExitCode },
+        typecheckTool,
+      };
+    }
+
+    const bunWhich = await session.runCommand({
+      args: ["bun"],
+      cmd: "which",
       cwd: input.repoPath,
       policy: "implementation_run",
     });
+    const runner =
+      bunWhich.exitCode === 0
+        ? ("bun" as const)
+        : (
+              await session.runCommand({
+                args: ["-f", `${input.repoPath}/pnpm-lock.yaml`],
+                cmd: "test",
+                cwd: input.repoPath,
+                policy: "implementation_run",
+              })
+            ).exitCode === 0
+          ? ("pnpm" as const)
+          : ("npm" as const);
+
+    const runScript = async (script: string) =>
+      await session.runCommand({
+        args: ["run", script],
+        cmd: runner,
+        cwd: input.repoPath,
+        policy: "implementation_run",
+      });
+
+    const lint = await runScript("lint");
     exitCode = lint.exitCode;
     if (lint.exitCode !== 0) {
       throw new AppError(
@@ -675,12 +955,7 @@ export async function verifyImplementationRun(
       );
     }
 
-    const typecheck = await session.runCommand({
-      args: ["run", "typecheck"],
-      cmd: "bun",
-      cwd: input.repoPath,
-      policy: "implementation_run",
-    });
+    const typecheck = await runScript("typecheck");
     exitCode = typecheck.exitCode;
     if (typecheck.exitCode !== 0) {
       throw new AppError(
@@ -690,12 +965,7 @@ export async function verifyImplementationRun(
       );
     }
 
-    const test = await session.runCommand({
-      args: ["run", "test"],
-      cmd: "bun",
-      cwd: input.repoPath,
-      policy: "implementation_run",
-    });
+    const test = await runScript("test");
     exitCode = test.exitCode;
     if (test.exitCode !== 0) {
       throw new AppError(
@@ -705,12 +975,7 @@ export async function verifyImplementationRun(
       );
     }
 
-    const build = await session.runCommand({
-      args: ["run", "build"],
-      cmd: "bun",
-      cwd: input.repoPath,
-      policy: "implementation_run",
-    });
+    const build = await runScript("build");
     exitCode = build.exitCode;
     if (build.exitCode !== 0) {
       throw new AppError(
@@ -727,6 +992,7 @@ export async function verifyImplementationRun(
 
     return {
       build: { exitCode: build.exitCode },
+      kind: "node",
       lint: { exitCode: lint.exitCode },
       ok: true,
       sandboxJobId: finalized.job.id,
