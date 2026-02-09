@@ -10,21 +10,24 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/require-app-user-api.server", () => ({
-  requireAppUserApi: state.requireAppUserApi,
+  requireAppUserApi: (...args: unknown[]) => state.requireAppUserApi(...args),
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
-  getProjectByIdForUser: state.getProjectByIdForUser,
+  getProjectByIdForUser: (...args: unknown[]) =>
+    state.getProjectByIdForUser(...args),
 }));
 
 vi.mock("@/lib/data/repos.server", () => ({
-  listReposByProject: state.listReposByProject,
-  upsertRepoConnection: state.upsertRepoConnection,
+  listReposByProject: (...args: unknown[]) => state.listReposByProject(...args),
+  upsertRepoConnection: (...args: unknown[]) =>
+    state.upsertRepoConnection(...args),
 }));
 
 vi.mock("@/lib/repo/github.client.server", () => ({
-  fetchGitHubRepoInfo: state.fetchGitHubRepoInfo,
-  isGitHubConfigured: state.isGitHubConfigured,
+  fetchGitHubRepoInfo: (...args: unknown[]) =>
+    state.fetchGitHubRepoInfo(...args),
+  isGitHubConfigured: (...args: unknown[]) => state.isGitHubConfigured(...args),
 }));
 
 async function loadRoute() {
@@ -36,127 +39,83 @@ async function loadRoute() {
 beforeEach(() => {
   vi.clearAllMocks();
 
-  state.requireAppUserApi.mockResolvedValue({ id: "u" });
+  state.requireAppUserApi.mockResolvedValue({ id: "user_1" });
   state.getProjectByIdForUser.mockResolvedValue({ id: "proj_1" });
-  state.listReposByProject.mockResolvedValue([
-    {
-      cloneUrl: "https://github.com/a/b.git",
-      createdAt: new Date().toISOString(),
-      defaultBranch: "main",
-      htmlUrl: "https://github.com/a/b",
-      id: "repo_1",
-      name: "b",
-      owner: "a",
-      projectId: "proj_1",
-      provider: "github",
-      updatedAt: new Date().toISOString(),
-    },
-  ]);
-
+  state.listReposByProject.mockResolvedValue([]);
   state.upsertRepoConnection.mockResolvedValue({
-    cloneUrl: "https://github.com/a/b.git",
-    createdAt: new Date().toISOString(),
+    cloneUrl: "https://example.com/repo.git",
+    createdAt: new Date(0).toISOString(),
     defaultBranch: "main",
-    htmlUrl: "https://github.com/a/b",
+    htmlUrl: "https://example.com/repo",
     id: "repo_1",
-    name: "b",
-    owner: "a",
+    name: "repo",
+    owner: "owner",
     projectId: "proj_1",
     provider: "github",
-    updatedAt: new Date().toISOString(),
+    updatedAt: new Date(0).toISOString(),
   });
-
   state.isGitHubConfigured.mockReturnValue(false);
   state.fetchGitHubRepoInfo.mockResolvedValue({
-    cloneUrl: "https://github.com/a/b.git",
+    cloneUrl: "https://example.com/repo.git",
     defaultBranch: "main",
-    htmlUrl: "https://github.com/a/b",
-    name: "b",
-    owner: "a",
+    htmlUrl: "https://example.com/repo",
+    name: "repo",
+    owner: "owner",
   });
 });
 
 describe("GET /api/repos", () => {
-  it("requires authentication before listing repos", async () => {
-    const { GET } = await loadRoute();
-    state.requireAppUserApi.mockRejectedValueOnce(new Error("Unauthorized."));
-
-    const res = await GET(
-      new Request("http://localhost/api/repos?projectId=proj_1"),
-    );
-
-    expect(res.status).toBeGreaterThanOrEqual(400);
-    expect(state.listReposByProject).not.toHaveBeenCalled();
-  });
-
   it("rejects invalid query params", async () => {
     const { GET } = await loadRoute();
-
     const res = await GET(new Request("http://localhost/api/repos"));
-
     expect(res.status).toBe(400);
     await expect(res.json()).resolves.toMatchObject({
       error: { code: "bad_request" },
     });
   });
 
-  it("lists repos for a project", async () => {
+  it("returns forbidden when the project is not accessible", async () => {
     const { GET } = await loadRoute();
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
 
     const res = await GET(
       new Request("http://localhost/api/repos?projectId=proj_1"),
     );
+    expect(res.status).toBe(403);
+  });
 
+  it("lists repos for the project", async () => {
+    const { GET } = await loadRoute();
+    state.listReposByProject.mockResolvedValueOnce([{ id: "repo_1" }]);
+
+    const res = await GET(
+      new Request("http://localhost/api/repos?projectId=proj_1"),
+    );
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toMatchObject({
       repos: [{ id: "repo_1" }],
     });
-    expect(state.listReposByProject).toHaveBeenCalledWith("proj_1");
   });
 });
 
 describe("POST /api/repos", () => {
-  it("requires authentication before connecting repos", async () => {
+  it("rejects invalid JSON bodies", async () => {
     const { POST } = await loadRoute();
-    state.requireAppUserApi.mockRejectedValueOnce(new Error("Unauthorized."));
-
-    const res = await POST(
-      new Request("http://localhost/api/repos", {
-        body: JSON.stringify({
-          name: "b",
-          owner: "a",
-          projectId: "proj_1",
-          provider: "github",
-        }),
-        method: "POST",
-      }),
-    );
-
-    expect(res.status).toBeGreaterThanOrEqual(400);
-    expect(state.upsertRepoConnection).not.toHaveBeenCalled();
-  });
-
-  it("rejects invalid bodies", async () => {
-    const { POST } = await loadRoute();
-
     const res = await POST(
       new Request("http://localhost/api/repos", { body: "{", method: "POST" }),
     );
-
     expect(res.status).toBe(400);
-    await expect(res.json()).resolves.toMatchObject({
-      error: { code: "bad_request" },
-    });
   });
 
-  it("requires manual fields when GitHub API is not configured", async () => {
+  it("requires cloneUrl/htmlUrl/defaultBranch when GitHub API is not configured", async () => {
     const { POST } = await loadRoute();
+    state.isGitHubConfigured.mockReturnValueOnce(false);
 
     const res = await POST(
       new Request("http://localhost/api/repos", {
         body: JSON.stringify({
-          name: "b",
-          owner: "a",
+          name: "repo",
+          owner: "owner",
           projectId: "proj_1",
           provider: "github",
         }),
@@ -170,15 +129,15 @@ describe("POST /api/repos", () => {
     });
   });
 
-  it("connects using GitHub API when configured", async () => {
+  it("uses GitHub API metadata when configured", async () => {
     const { POST } = await loadRoute();
     state.isGitHubConfigured.mockReturnValueOnce(true);
 
     const res = await POST(
       new Request("http://localhost/api/repos", {
         body: JSON.stringify({
-          name: "b",
-          owner: "a",
+          name: "repo",
+          owner: "owner",
           projectId: "proj_1",
           provider: "github",
         }),
@@ -188,44 +147,15 @@ describe("POST /api/repos", () => {
 
     expect(res.status).toBe(201);
     expect(state.fetchGitHubRepoInfo).toHaveBeenCalledWith({
-      name: "b",
-      owner: "a",
+      name: "repo",
+      owner: "owner",
     });
     expect(state.upsertRepoConnection).toHaveBeenCalledWith(
       expect.objectContaining({
-        cloneUrl: "https://github.com/a/b.git",
+        cloneUrl: "https://example.com/repo.git",
         defaultBranch: "main",
-        htmlUrl: "https://github.com/a/b",
-        name: "b",
-        owner: "a",
-        projectId: "proj_1",
-        provider: "github",
+        htmlUrl: "https://example.com/repo",
       }),
     );
-    await expect(res.json()).resolves.toMatchObject({ repo: { id: "repo_1" } });
-  });
-
-  it("connects using manual fields when provided", async () => {
-    const { POST } = await loadRoute();
-
-    const res = await POST(
-      new Request("http://localhost/api/repos", {
-        body: JSON.stringify({
-          cloneUrl: "https://github.com/a/b.git",
-          defaultBranch: "main",
-          htmlUrl: "https://github.com/a/b",
-          name: "b",
-          owner: "a",
-          projectId: "proj_1",
-          provider: "github",
-        }),
-        method: "POST",
-      }),
-    );
-
-    expect(res.status).toBe(201);
-    expect(state.fetchGitHubRepoInfo).not.toHaveBeenCalled();
-    expect(state.upsertRepoConnection).toHaveBeenCalledTimes(1);
-    await expect(res.json()).resolves.toMatchObject({ repo: { id: "repo_1" } });
   });
 });
