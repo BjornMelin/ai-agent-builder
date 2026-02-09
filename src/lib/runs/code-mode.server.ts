@@ -45,10 +45,10 @@ export async function startProjectCodeMode(
   const run = await createRun({
     kind: "research",
     metadata: {
+      networkAccess: input.networkAccess ?? "none",
       origin: "code-mode",
       prompt: input.prompt,
       ...(input.budgets ? { budgets: input.budgets } : {}),
-      ...(input.networkAccess ? { networkAccess: input.networkAccess } : {}),
     },
     projectId: input.projectId,
   });

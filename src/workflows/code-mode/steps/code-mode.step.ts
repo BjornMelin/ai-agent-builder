@@ -44,7 +44,7 @@ const budgetsSchema = z
   })
   .optional();
 
-const codeModeMetadataSchema = z.object({
+const codeModeMetadataSchema = z.strictObject({
   budgets: budgetsSchema,
   networkAccess: z.enum(["none", "restricted"]).optional(),
   origin: z.literal("code-mode"),
@@ -55,6 +55,8 @@ function nowTimestamp(): number {
   return Date.now();
 }
 
+const PATH_TRAVERSAL_SEGMENT_RE = /(^|\/)\.\.(\/|$)/;
+
 function resolveSandboxCwd(raw: string | undefined): string | undefined {
   if (raw === undefined) return undefined;
   const trimmed = raw.trim();
@@ -62,7 +64,7 @@ function resolveSandboxCwd(raw: string | undefined): string | undefined {
 
   // Default to /vercel/sandbox for relative paths.
   if (!trimmed.startsWith("/")) {
-    if (trimmed.includes("..")) {
+    if (PATH_TRAVERSAL_SEGMENT_RE.test(trimmed)) {
       throw new AppError("bad_request", 400, "Invalid cwd.");
     }
     return `${SANDBOX_WORKSPACE_ROOT}/${trimmed}`.replaceAll("//", "/");
@@ -75,7 +77,7 @@ function resolveSandboxCwd(raw: string | undefined): string | undefined {
       `cwd must be within ${SANDBOX_WORKSPACE_ROOT}.`,
     );
   }
-  if (trimmed.includes("..")) {
+  if (PATH_TRAVERSAL_SEGMENT_RE.test(trimmed)) {
     throw new AppError("bad_request", 400, "Invalid cwd.");
   }
 
@@ -99,13 +101,13 @@ function resolveSandboxPath(raw: string): string {
         `Path must be within ${SANDBOX_WORKSPACE_ROOT}.`,
       );
     }
-    if (trimmed.includes("..")) {
+    if (PATH_TRAVERSAL_SEGMENT_RE.test(trimmed)) {
       throw new AppError("bad_request", 400, "Invalid sandbox path.");
     }
     return trimmed;
   }
 
-  if (trimmed.includes("..")) {
+  if (PATH_TRAVERSAL_SEGMENT_RE.test(trimmed)) {
     throw new AppError("bad_request", 400, "Invalid sandbox path.");
   }
 
@@ -228,7 +230,7 @@ export async function runCodeModeSession(
   }
 
   const prompt = parsedMeta.data.prompt;
-  const networkAccess = parsedMeta.data.networkAccess ?? "restricted";
+  const networkAccess = parsedMeta.data.networkAccess ?? "none";
   const budgets = parsedMeta.data.budgets ?? {};
   const maxSteps = budgets.maxSteps ?? 12;
   const timeoutMs = budgets.timeoutMs ?? 10 * 60_000;
@@ -387,7 +389,7 @@ export async function runCodeModeSession(
 
     const sandboxRunTool = tool({
       description:
-        "Run an allowlisted command inside the sandbox repo workspace. Prefer Bun scripts (bun run lint/test/build) for project checks. Do not use curl/wget. Always keep cwd within /vercel/sandbox.",
+        "Run an allowlisted command inside the sandbox workspace. Prefer read-only inspection first. Avoid package managers and arbitrary downloads. Always keep cwd within /vercel/sandbox.",
       async execute({ cmd, args, cwd }) {
         const safeCmd = cmd.trim();
         const safeArgs = args ?? [];
@@ -432,7 +434,7 @@ export async function runCodeModeSession(
           transcriptTail: redactSandboxLog(combinedTail),
         };
       },
-      inputSchema: z.object({
+      inputSchema: z.strictObject({
         args: z.array(z.string().min(1)).max(64).optional(),
         cmd: z.string().min(1),
         cwd: z.string().min(1).optional(),
@@ -445,9 +447,11 @@ export async function runCodeModeSession(
         "You can run allowlisted commands via the sandbox_run tool, and you should be explicit about what you run and why.",
         "Large tool outputs are automatically compacted to files in the sandbox. Use sandbox_ls/sandbox_cat/sandbox_grep/sandbox_find to retrieve referenced results on-demand.",
         "Default to read-only inspection first (ls, rg, cat) before running heavier commands.",
+        "Do not run builds or installs in Code Mode. Use Implementation Runs for lint/typecheck/test/build workflows.",
         "Never attempt to fetch secrets or exfiltrate data.",
         "When you complete the task, summarize what you did and include command outputs when relevant.",
       ].join("\n"),
+      maxOutputTokens: 2048,
       model: getDefaultChatModel(),
       onStepFinish: async (step) => {
         // Best-effort: emit tool summaries without duplicating the sandbox_run stream.
@@ -506,6 +510,8 @@ export async function runCodeModeSession(
     });
 
     let assistantText = "";
+    const ASSISTANT_TEXT_LIMIT = 200_000;
+    const ASSISTANT_TEXT_TRIM_THRESHOLD = 220_000;
     let exitCode = 0;
     let failure: unknown | null = null;
 
@@ -524,8 +530,10 @@ export async function runCodeModeSession(
       for await (const delta of stream.textStream) {
         const redacted = redactSandboxLog(delta);
         assistantText += redacted;
-        if (assistantText.length > 200_000) {
-          assistantText = assistantText.slice(assistantText.length - 200_000);
+        if (assistantText.length > ASSISTANT_TEXT_TRIM_THRESHOLD) {
+          assistantText = assistantText.slice(
+            assistantText.length - ASSISTANT_TEXT_LIMIT,
+          );
         }
         await writeEvent({
           textDelta: redacted,

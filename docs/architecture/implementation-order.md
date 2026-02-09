@@ -31,7 +31,7 @@ Run** subsystem (plan → code → verify → deploy) described in:
 - Data model extensions (implementation run entities):
   - [docs/architecture/data-model.md](./data-model.md)
 
-### Group 1 — Repo connection + RepoOps foundation
+### Group 1 — Repo connection + RepoOps foundation (implemented)
 
 - Repo connect/create APIs + UI skeleton:
   - **FR-022**
@@ -42,7 +42,7 @@ Run** subsystem (plan → code → verify → deploy) described in:
   - [ADR-0004](./adr/ADR-0004-retrieval-upstash-vector-for-semantic-search.md)
   - [SPEC-0017](./spec/SPEC-0017-repo-ops-and-github-integration.md)
 
-### Group 2 — Sandbox verification jobs
+### Group 2 — Sandbox verification jobs (implemented)
 
 - Sandbox job runner + transcripts + redaction:
   - [ADR-0010](./adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md)
@@ -52,7 +52,7 @@ Run** subsystem (plan → code → verify → deploy) described in:
   - **FR-026**
   - `bun run lint`, `bun run typecheck`, `bun run test`, `bun run build`
 
-### Group 3 — Implementation Run engine
+### Group 3 — Implementation Run engine (implemented)
 
 - Implementation Run type + durable step machine + persistence:
   - **FR-023, FR-024, FR-029, FR-031**
@@ -65,7 +65,7 @@ Run** subsystem (plan → code → verify → deploy) described in:
   - [ADR-0024](./adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md)
   - [SPEC-0017](./spec/SPEC-0017-repo-ops-and-github-integration.md)
 
-### Group 4 — Approvals + external monitoring
+### Group 4 — Approvals + external monitoring (implemented)
 
 - Approval UI + API and idempotency contracts:
   - **FR-031**
@@ -76,7 +76,7 @@ Run** subsystem (plan → code → verify → deploy) described in:
   - [SPEC-0017](./spec/SPEC-0017-repo-ops-and-github-integration.md) (GitHub)
   - [SPEC-0018](./spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md) (Vercel)
 
-### Group 5 — Provisioning + deployment automation
+### Group 5 — Provisioning + deployment automation (implemented foundation)
 
 - Provision/connect infra:
   - **FR-027**

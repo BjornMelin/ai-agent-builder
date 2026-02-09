@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0005
 title: Durable runs & orchestration
-version: 0.3.1
-date: 2026-02-03
+version: 0.4.0
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements:
   ["FR-010", "FR-011", "FR-023", "FR-029", "FR-031", "PR-004", "PR-005", "PR-007", "IR-004", "NFR-004", "NFR-013", "NFR-014", "NFR-015"]
 related_adrs: ["ADR-0024", "ADR-0026", "ADR-0005"]
@@ -15,6 +15,14 @@ notes: "Defines durable run execution, step graph, retries, idempotency, and Wor
 
 Defines how durable run pipelines execute step-by-step with retries, idempotency,
 and explicit step graphs.
+
+## Implementation status
+
+Implemented in this repo:
+
+- Run persistence model + step idempotency: `src/lib/data/runs.server.ts`, `src/workflows/runs/steps/persist.step.ts`
+- Durable run orchestrator + streaming events: `src/workflows/runs/project-run.workflow.ts`
+- Durable Code Mode workflow: `src/workflows/code-mode/project-code-mode.workflow.ts`
 
 See [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
 for the cross-cutting “finalization” plan that integrates durable runs with the

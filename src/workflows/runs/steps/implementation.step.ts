@@ -637,7 +637,7 @@ export async function applyImplementationPatch(
         input.repoPath,
         "config",
         "user.email",
-        "ai-agent-builder@example.invalid",
+        "ai-agent-builder@users.noreply.github.com",
       ],
       cmd: "git",
       extraSecrets: [token],

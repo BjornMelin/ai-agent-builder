@@ -218,11 +218,13 @@ If OAuth is disabled on Preview, use **email OTP** or **magic link** auth flows:
 
 - Confirm Upstash Vector URL/token are set.
 - Confirm chunks are being created and indexed.
-- Repo indexing and approval-gated implementation steps are spec’d but not yet
-  implemented in this repository snapshot (see
-  [SPEC-0016](./spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md),
-  [SPEC-0017](./spec/SPEC-0017-repo-ops-and-github-integration.md),
-  [SPEC-0018](./spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)).
+- For repo-aware implementation runs:
+  - confirm a repo is connected in the project (`/projects/[projectId]/repos`)
+  - confirm the implementation run includes a succeeded `impl.repo.index` step
+    (bounded indexing into Upstash Vector under `project:{projectId}:repo:{repoId}`)
+  - note: the interactive chat toolset focuses on uploaded chunks today; Code
+    Mode provides sandbox-backed codebase inspection tools (`sandbox_ls`,
+    `sandbox_cat`, `sandbox_grep`, `sandbox_find`) for on-demand retrieval.
 
 ## Rotating secrets
 
@@ -232,5 +234,5 @@ If OAuth is disabled on Preview, use **email OTP** or **magic link** auth flows:
 
 [^aab-neon-auth-local-script]: ../../scripts/neon-auth-local.ts
 [^aab-neon-auth-local-ops]: ../ops/neon-auth-local.md
-[^neon-auth-overview]: https://neon.com/docs/auth/overview
-[^neon-cli-auth]: https://neon.com/docs/reference/cli-auth
+[^neon-auth-overview]: <https://neon.com/docs/auth/overview>
+[^neon-cli-auth]: <https://neon.com/docs/reference/cli-auth>

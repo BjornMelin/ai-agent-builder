@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0022
 title: Durable runs & streaming contracts (Vercel Workflow DevKit)
-version: 0.1.0
-date: 2026-02-03
+version: 0.2.0
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements:
   ["FR-008", "FR-010", "FR-011", "FR-023", "FR-031", "IR-001", "IR-004", "NFR-004", "NFR-013", "PR-001", "PR-004", "PR-005"]
 related_adrs: ["ADR-0026", "ADR-0006", "ADR-0007", "ADR-0021", "ADR-0014"]
@@ -25,6 +25,15 @@ This spec is the implementation-level companion to:
 
 - [ADR-0026](../adr/ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md)
 - [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
+
+## Implementation status
+
+Implemented in this repo:
+
+- Chat session workflow + user-message markers: `src/workflows/chat/project-chat.workflow.ts`
+- Chat stream reconnect contract (`startIndex`): `src/app/api/chat/[runId]/stream/route.ts`, `src/app/(app)/projects/[projectId]/chat/chat-client.tsx`
+- Runs stream reconnect contract (`startIndex`): `src/app/api/runs/[runId]/stream/route.ts`, `src/app/(app)/projects/[projectId]/runs/[runId]/run-stream-client.tsx`
+- Code Mode stream reconnect contract (`startIndex`): `src/app/api/code-mode/[runId]/stream/route.ts`, `src/app/(app)/projects/[projectId]/code-mode/code-mode-client.tsx`
 
 ## Goals
 

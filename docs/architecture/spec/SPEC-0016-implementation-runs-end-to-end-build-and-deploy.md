@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0016
 title: Implementation runs — end-to-end plan → code → verify → deploy
-version: 0.1.0
-date: 2026-02-01
+version: 0.1.1
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Implemented
+status: Partially implemented
 related_requirements:
   [
     "FR-022",
@@ -35,13 +35,36 @@ notes:
 Define a durable **Implementation Run** that can execute a project’s generated
 artifacts into a production-ready target application:
 
-- repo preparation and indexing
+- repo preparation + bounded repo indexing (see FR-032)
 - plan generation (traceable to artifacts)
 - patch application and verification in sandboxed compute
 - PR creation and approval-gated merges
 - infrastructure provisioning/connection
 - deployment and post-deploy validation
-- final audit bundle export
+- final audit bundle export (see FR-034)
+
+## Implementation status (as of 2026-02-09)
+
+Implemented in this repo:
+
+- Durable workflow skeleton for implementation runs, including `impl.preflight`, `impl.repo`,
+  `impl.checkout`, `impl.plan`, `impl.patch`, `impl.verify`, `impl.pr.open`, `repo.checks`,
+  `repo.merge`, `infra.provision`, `deploy.production`, and approval gates. See
+  `src/workflows/runs/project-run.workflow.ts`.
+- Sandbox execution foundation (client wrapper, job runner, allowlists, network policy, transcript
+  capture + redaction, Blob persistence). See `src/lib/sandbox/*`.
+- GitHub PR operations (open/fetch PR, poll checks/status, merge). See `src/lib/repo/repo-ops.server.ts`.
+- Provisioning and deployment automation (Neon/Upstash provisioning with manual fallback, Vercel
+  project/env/deploy ops). See `src/lib/providers/*`.
+
+Notes:
+
+- Repo indexing and audit bundle export are implemented as *bounded* foundations:
+  - `impl.repo.index` indexes tracked repo files into Upstash Vector under
+    `project:{projectId}:repo:{repoId}` with strict size/count budgets.
+  - `artifact.audit_bundle` uploads a deterministic ZIP to Vercel Blob and
+    records a `IMPLEMENTATION_AUDIT_BUNDLE` artifact containing the blob URL +
+    manifest.
 
 ## Context
 
@@ -184,8 +207,11 @@ flowchart LR
    - checkout in sandbox, create branch
 
 3. **Repo indexing (optional but recommended)**
-   - chunk codebase incrementally
-   - embed and index in Upstash Vector under a repo namespace (FR-032)
+   - Implemented as a bounded index step (`impl.repo.index`) that:
+     - lists tracked files from the sandbox checkout (`git ls-files`)
+     - filters obvious secret/binary paths
+     - chunks + embeds text in conservative batches
+     - upserts code vectors into Upstash Vector under `project:{projectId}:repo:{repoId}` (FR-032)
 
 4. **Plan generation**
    - produce a machine-readable plan:
@@ -232,7 +258,7 @@ flowchart LR
     - optional Playwright e2e smoke test (if configured)
 
 12. **Finalize**
-    - generate final audit bundle artifact
+    - generate final audit bundle artifact (deterministic ZIP in Vercel Blob, FR-034)
     - mark run succeeded
 
 ## Approvals and safety
@@ -289,7 +315,8 @@ Add run step payload conventions:
 - An Implementation Run can proceed from plan → PR → deploy with explicit approval gates.
 - Every side effect is logged with provenance (PR/commit/deployment/infra IDs).
 - Verification runs in Sandbox and produces a persisted report artifact.
-- A deterministic audit bundle can be exported for a completed run.
+- Deterministic implementation audit bundle export is generated for implementation runs (FR-034),
+  alongside the project-wide artifacts export (`GET /api/export/:projectId`).
 
 ## Testing
 

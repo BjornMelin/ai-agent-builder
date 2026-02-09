@@ -4,7 +4,10 @@ import { AppError } from "@/lib/core/errors";
 import type { RunStreamEvent } from "@/lib/runs/run-stream";
 import { approvalHook } from "@/workflows/approvals/hooks/approval";
 import { ensureApprovalRequest } from "@/workflows/runs/steps/approvals.step";
-import { createRunSummaryArtifact } from "@/workflows/runs/steps/artifacts.step";
+import {
+  createImplementationAuditBundleArtifact,
+  createRunSummaryArtifact,
+} from "@/workflows/runs/steps/artifacts.step";
 import { deployImplementationToProductionStep } from "@/workflows/runs/steps/deploy-production.step";
 import {
   applyImplementationPatch,
@@ -32,6 +35,7 @@ import {
   mergeGitHubPullRequestStep,
   pollGitHubChecksUntilTerminalStep,
 } from "@/workflows/runs/steps/repo.step";
+import { indexImplementationRepoStep } from "@/workflows/runs/steps/repo-index.step";
 import {
   closeRunStream,
   writeRunEvent,
@@ -327,6 +331,37 @@ export async function projectRun(
         }),
       );
 
+      await runPersistedStep(
+        {
+          inputs: {
+            repoId: repo.repoId,
+            sandboxId: checkout.sandboxId,
+          },
+          stepId: "impl.repo.index",
+          stepKind: "tool",
+          stepName: "Index repo (bounded)",
+        },
+        async () =>
+          await indexImplementationRepoStep({
+            projectId: runInfo.projectId,
+            repoId: repo.repoId,
+            repoKind: repo.repoKind,
+            repoPath: checkout.repoPath,
+            runId,
+            sandboxId: checkout.sandboxId,
+          }),
+        (value) => ({
+          chunksIndexed: value.chunksIndexed,
+          commitSha: value.commitSha,
+          filesIndexed: value.filesIndexed,
+          namespace: value.namespace,
+          prefix: value.prefix,
+          sandboxJobId: value.sandboxJobId,
+          transcriptBlobRef: value.transcriptBlobRef,
+          transcriptTruncated: value.transcriptTruncated,
+        }),
+      );
+
       const plan = await runPersistedStep(
         {
           inputs: {
@@ -616,6 +651,44 @@ export async function projectRun(
       type: "step-finished",
     });
     activeStepId = null;
+
+    if (runInfo.kind === "implementation") {
+      await ensureRunStepRow({
+        runId,
+        stepId: "artifact.audit_bundle",
+        stepKind: "tool",
+        stepName: "Persist implementation audit bundle",
+      });
+      await beginRunStep({ runId, stepId: "artifact.audit_bundle" });
+      await writeRunEvent(writable, {
+        runId,
+        stepId: "artifact.audit_bundle",
+        stepKind: "tool",
+        stepName: "Persist implementation audit bundle",
+        timestamp: nowTimestamp(),
+        type: "step-started",
+      });
+      activeStepId = "artifact.audit_bundle";
+      const audit = await createImplementationAuditBundleArtifact({
+        projectId: runInfo.projectId,
+        runId,
+      });
+      await finishRunStep({
+        outputs: audit,
+        runId,
+        status: "succeeded",
+        stepId: "artifact.audit_bundle",
+      });
+      await writeRunEvent(writable, {
+        outputs: audit,
+        runId,
+        status: "succeeded",
+        stepId: "artifact.audit_bundle",
+        timestamp: nowTimestamp(),
+        type: "step-finished",
+      });
+      activeStepId = null;
+    }
 
     await markRunTerminal(runId, "succeeded");
     await writeRunEvent(writable, {

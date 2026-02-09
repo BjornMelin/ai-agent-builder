@@ -59,19 +59,17 @@ system described in [docs/architecture/spec/index.md](./spec/index.md) and
 
 Major gaps that remain:
 
-- Web research integrations (Exa + Firecrawl) and citations persistence.
-- Implementation Run subsystems:
-  - RepoOps (GitHub) and PR automation
-    ([SPEC-0017](./spec/SPEC-0017-repo-ops-and-github-integration.md))
-  - sandbox verification jobs
-    ([SPEC-0019](./spec/SPEC-0019-sandbox-build-test-and-ci-execution.md))
-  - infrastructure provisioning + Vercel deployment automation
-    ([SPEC-0018](./spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md))
-  - audit bundle export
-    ([SPEC-0016](./spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md) +
-    [SPEC-0008](./spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md))
+- **Repo indexing (FR-032)** is implemented as a bounded, cost-guardrailed indexer
+  that reads tracked files from a sandbox checkout and upserts code chunks into
+  Upstash Vector under `project:{projectId}:repo:{repoId}`.
+  See [SPEC-0017](./spec/SPEC-0017-repo-ops-and-github-integration.md).
+- **Implementation audit bundle export (FR-034)** is implemented as a deterministic ZIP
+  uploaded to Vercel Blob and referenced by an artifact row. Project-wide deterministic
+  export remains available for latest artifacts + citations (`GET /api/export/:projectId`).
+  See [SPEC-0016](./spec/SPEC-0016-implementation-runs-end-to-end-build-and-deploy.md) and
+  [SPEC-0008](./spec/SPEC-0008-artifact-generation-versioning-and-export-zip.md).
 - Full artifact regeneration workflows remain partial; deterministic export endpoint is implemented (`GET /api/export/:projectId`).
-- Webhooks for external status updates (GitHub/Vercel) where polling is insufficient.
+- Provider webhooks exist (GitHub/Vercel), but polling remains the default for external state.
 
 These are intentional: the repository is bootstrapped to keep initial complexity
 low, while the docs define the full production target.

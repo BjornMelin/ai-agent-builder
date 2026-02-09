@@ -23,6 +23,7 @@ const writerMocks = vi.hoisted(() => ({
 }));
 
 const artifactsMocks = vi.hoisted(() => ({
+  createImplementationAuditBundleArtifact: vi.fn(),
   createRunSummaryArtifact: vi.fn(),
 }));
 
@@ -43,6 +44,10 @@ const implementationStepMocks = vi.hoisted(() => ({
   sandboxCheckoutImplementationRepo: vi.fn(),
   stopImplementationSandbox: vi.fn(),
   verifyImplementationRun: vi.fn(),
+}));
+
+const repoIndexStepMocks = vi.hoisted(() => ({
+  indexImplementationRepoStep: vi.fn(),
 }));
 
 const approvalHookMocks = vi.hoisted(() => ({
@@ -71,6 +76,7 @@ vi.mock("@/workflows/runs/steps/persist.step", () => persistMocks);
 vi.mock("@/workflows/runs/steps/writer.step", () => writerMocks);
 vi.mock("@/workflows/runs/steps/artifacts.step", () => artifactsMocks);
 vi.mock("@/workflows/runs/steps/approvals.step", () => approvalsStepMocks);
+vi.mock("@/workflows/runs/steps/repo-index.step", () => repoIndexStepMocks);
 vi.mock("@/workflows/runs/steps/repo.step", () => repoStepMocks);
 vi.mock("@/workflows/runs/steps/provision.step", () => provisionStepMocks);
 vi.mock("@/workflows/runs/steps/deploy-production.step", () => deployStepMocks);
@@ -119,6 +125,18 @@ describe("projectRun", () => {
     writerMocks.closeRunStream.mockResolvedValue(undefined);
     writerMocks.writeRunEvent.mockResolvedValue(undefined);
 
+    artifactsMocks.createImplementationAuditBundleArtifact.mockResolvedValue({
+      artifactId: "artifact_audit_1",
+      blobUrl: "https://blob.example/audit.zip",
+      bytes: 123,
+      manifest: {
+        entries: [],
+        project: { id: "project_1", name: "Project", slug: "proj" },
+        version: 1,
+      },
+      sha256: "sha256",
+      version: 1,
+    });
     artifactsMocks.createRunSummaryArtifact.mockResolvedValue({
       artifactId: "artifact_1",
     });
@@ -183,6 +201,18 @@ describe("projectRun", () => {
         sandboxId: "sbx_1",
       },
     );
+    repoIndexStepMocks.indexImplementationRepoStep.mockResolvedValue({
+      chunksIndexed: 2,
+      commitSha: "deadbeef",
+      filesConsidered: 2,
+      filesIndexed: 2,
+      namespace: "project:project_1:repo:repo_1",
+      prefix: "repo:repo_1:",
+      sandboxJobId: "job_idx_1",
+      skipped: { budget: 0, excluded: 0, tooLarge: 0, unreadable: 0 },
+      transcriptBlobRef: null,
+      transcriptTruncated: false,
+    });
     implementationStepMocks.planImplementationRun.mockResolvedValue({
       commitMessage: "chore: plan",
       planMarkdown: "# Plan",

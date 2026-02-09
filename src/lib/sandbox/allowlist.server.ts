@@ -7,8 +7,6 @@ export type SandboxCommandPolicy = "code_mode" | "implementation_run";
 const SANDBOX_WORKSPACE_ROOT = "/vercel/sandbox";
 
 const CODE_MODE_ALLOWED_COMMANDS: ReadonlySet<string> = new Set<string>([
-  "bun",
-  "bunx",
   "cat",
   "find",
   "grep",
@@ -16,14 +14,10 @@ const CODE_MODE_ALLOWED_COMMANDS: ReadonlySet<string> = new Set<string>([
   "ls",
   "mkdir",
   "node",
-  "npm",
-  "npx",
-  "pnpm",
   "python3",
   "rg",
   "sed",
   "test",
-  "uv",
   "which",
 ]);
 
@@ -102,6 +96,14 @@ const EXEC_ALLOWED_LEADING_FLAGS: ReadonlySet<string> = new Set<string>([
   "-y",
   "--yes",
   "--bun",
+]);
+
+const FIND_BLOCKED_FLAGS: ReadonlySet<string> = new Set<string>([
+  "-delete",
+  "-exec",
+  "-execdir",
+  "-ok",
+  "-okdir",
 ]);
 
 const MAX_ARGS = 64;
@@ -283,6 +285,22 @@ export function assertSandboxCommandAllowed(
         400,
         "Sandbox npm exec is not allowed. Use bunx/npx (restricted) or repo scripts.",
       );
+    }
+  }
+
+  // `find` can dispatch arbitrary commands via `-exec`/`-ok`-style flags. Since our
+  // policy is structured `cmd + args` (not a shell), block these dispatchers
+  // explicitly to prevent escaping the allowlist.
+  if (cmd === "find") {
+    for (const arg of args) {
+      const trimmed = arg.trim();
+      if (FIND_BLOCKED_FLAGS.has(trimmed)) {
+        throw new AppError(
+          "bad_request",
+          400,
+          `Sandbox find flag not allowed: ${trimmed}.`,
+        );
+      }
     }
   }
 }

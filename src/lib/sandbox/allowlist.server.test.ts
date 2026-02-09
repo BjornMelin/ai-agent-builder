@@ -45,7 +45,7 @@ describe("assertSandboxCommandAllowed", () => {
       assertSandboxCommandAllowed({
         args: ["--yes", "biome", "--version"],
         cmd: "npx",
-        policy: "code_mode",
+        policy: "implementation_run",
       }),
     ).not.toThrow();
 
@@ -53,7 +53,7 @@ describe("assertSandboxCommandAllowed", () => {
       assertSandboxCommandAllowed({
         args: ["--yes", "definitely-not-allowlisted"],
         cmd: "npx",
-        policy: "code_mode",
+        policy: "implementation_run",
       }),
     ).toThrow(AppError);
   });
@@ -63,7 +63,7 @@ describe("assertSandboxCommandAllowed", () => {
       assertSandboxCommandAllowed({
         args: ["--bun", "shadcn", "--help"],
         cmd: "bunx",
-        policy: "code_mode",
+        policy: "implementation_run",
       }),
     ).not.toThrow();
 
@@ -71,6 +71,24 @@ describe("assertSandboxCommandAllowed", () => {
       assertSandboxCommandAllowed({
         args: ["some-random-pkg"],
         cmd: "bunx",
+        policy: "implementation_run",
+      }),
+    ).toThrow(AppError);
+  });
+
+  it("blocks find -exec/-ok/-delete dispatch flags", () => {
+    expect(() =>
+      assertSandboxCommandAllowed({
+        args: [".", "-exec", "rm", "-rf", "/vercel/sandbox/tmp", "\\;"],
+        cmd: "find",
+        policy: "code_mode",
+      }),
+    ).toThrow(AppError);
+
+    expect(() =>
+      assertSandboxCommandAllowed({
+        args: [".", "-delete"],
+        cmd: "find",
         policy: "code_mode",
       }),
     ).toThrow(AppError);
