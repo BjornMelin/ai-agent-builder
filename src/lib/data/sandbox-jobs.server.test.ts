@@ -197,7 +197,8 @@ describe("sandbox-jobs DAL", () => {
         startedAt: now,
         status: "succeeded",
         stepId: null,
-        transcriptBlobRef: "https://blob.example/log",
+        transcriptBlobRef:
+          "projects/proj_1/runs/run_1/sandbox/job_1.log-abc123",
         updatedAt: now,
       },
     ]);
@@ -207,7 +208,7 @@ describe("sandbox-jobs DAL", () => {
       exitCode: 0,
       metadata: { b: 2 },
       status: "succeeded",
-      transcriptBlobRef: "https://blob.example/log",
+      transcriptBlobRef: "projects/proj_1/runs/run_1/sandbox/job_1.log-abc123",
     });
 
     expect(dto.metadata).toEqual({ a: 1, b: 2 });

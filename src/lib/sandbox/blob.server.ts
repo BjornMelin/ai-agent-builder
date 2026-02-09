@@ -24,7 +24,7 @@ export function getSandboxTranscriptBlobPath(
  * Persist a sandbox transcript to Vercel Blob.
  *
  * @param input - Transcript payload.
- * @returns Public blob URL.
+ * @returns Blob reference (pathname).
  */
 export async function putSandboxTranscriptBlob(
   input: Readonly<{
@@ -34,11 +34,12 @@ export async function putSandboxTranscriptBlob(
 ): Promise<string> {
   const blob = await put(input.blobPath, input.content, {
     access: "public",
-    addRandomSuffix: false,
-    allowOverwrite: true,
+    addRandomSuffix: true,
     contentType: "text/plain; charset=utf-8",
     token: env.blob.readWriteToken,
   });
 
-  return blob.url;
+  // Note: Vercel Blob currently supports public access only. Treat this
+  // pathname as sensitive metadata and avoid exposing it to untrusted clients.
+  return blob.pathname;
 }

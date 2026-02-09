@@ -20,18 +20,19 @@ export function getImplementationAuditBundleBlobPath(
  * Persist an implementation audit bundle ZIP to Vercel Blob.
  *
  * @param input - Blob path and ZIP bytes.
- * @returns Public blob URL.
+ * @returns Uploaded blob reference and URL.
  */
 export async function putImplementationAuditBundleBlob(
   input: Readonly<{ blobPath: string; bytes: Uint8Array }>,
-): Promise<string> {
+): Promise<Readonly<{ blobUrl: string; blobPath: string }>> {
   const blob = await put(input.blobPath, Buffer.from(input.bytes), {
     access: "public",
-    addRandomSuffix: false,
-    allowOverwrite: true,
+    addRandomSuffix: true,
     contentType: "application/zip",
     token: env.blob.readWriteToken,
   });
 
-  return blob.url;
+  // Note: Vercel Blob currently supports public access only. Treat the URL as
+  // sensitive and avoid logging or exposing it to untrusted clients.
+  return { blobPath: blob.pathname, blobUrl: blob.url };
 }

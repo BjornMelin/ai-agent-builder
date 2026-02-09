@@ -98,7 +98,10 @@ describe("startSandboxJobSession", () => {
   it("captures transcript output and persists a blob ref on finalize", async () => {
     const sandbox = createFakeSandbox();
 
-    const putTranscriptBlob = vi.fn(async () => "https://blob.example/log");
+    const putTranscriptBlob = vi.fn(
+      async () =>
+        "projects/proj_test/runs/run_test/sandbox/job_test.log-abc123",
+    );
     const updateJob = vi.fn(
       async (
         _id: string,
@@ -177,7 +180,8 @@ describe("startSandboxJobSession", () => {
     expect(updateJob).toHaveBeenCalledWith(
       "job_test",
       expect.objectContaining({
-        transcriptBlobRef: "https://blob.example/log",
+        transcriptBlobRef:
+          "projects/proj_test/runs/run_test/sandbox/job_test.log-abc123",
       }),
     );
   });
@@ -187,7 +191,10 @@ describe("attachSandboxJobSession", () => {
   it("captures transcript output and finalizes without stopping by default", async () => {
     const sandbox = createFakeSandbox();
 
-    const putTranscriptBlob = vi.fn(async () => "https://blob.example/log");
+    const putTranscriptBlob = vi.fn(
+      async () =>
+        "projects/proj_test/runs/run_test/sandbox/job_test.log-abc123",
+    );
     const updateJob = vi.fn(
       async (
         _id: string,

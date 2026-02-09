@@ -27,22 +27,34 @@ beforeEach(() => {
 
 describe("indexImplementationRepoStep", () => {
   it("indexes the repo, logs a summary, and finalizes the sandbox job", async () => {
-    const sandboxRunCommand = vi.fn(async () => ({
-      exitCode: 0,
-      stderr: async () => "",
-      stdout: async () => "deadbeef\n",
-    }));
+    const runCommand = vi.fn(
+      async (input: Readonly<Record<string, unknown>>) => {
+        const cmd = input.cmd;
+        if (cmd === "git") {
+          const onLog = input.onLog as
+            | ((entry: { stream: "stdout" | "stderr"; data: string }) => void)
+            | undefined;
+          onLog?.({ data: "deadbeef\n", stream: "stdout" });
+          return {
+            exitCode: 0,
+            transcript: { combined: "", truncated: false },
+          };
+        }
+
+        return { exitCode: 0, transcript: { combined: "", truncated: false } };
+      },
+    );
 
     const session = {
       finalize: vi.fn(async () => ({
-        job: { id: "job_1", transcriptBlobRef: "https://blob.example/log" },
+        job: {
+          id: "job_1",
+          transcriptBlobRef:
+            "projects/proj_1/runs/run_1/sandbox/job_1.log-abc123",
+        },
         transcript: { combined: "", truncated: false },
       })),
-      runCommand: vi.fn(async () => ({
-        exitCode: 0,
-        transcript: { combined: "", truncated: false },
-      })),
-      sandbox: { runCommand: sandboxRunCommand },
+      runCommand,
     };
 
     state.attachSandboxJobSession.mockResolvedValueOnce(session);
@@ -88,11 +100,11 @@ describe("indexImplementationRepoStep", () => {
       }),
     );
 
-    expect(sandboxRunCommand).toHaveBeenCalledWith(
-      expect.objectContaining({ cmd: "git" }),
+    expect(runCommand).toHaveBeenCalledWith(
+      expect.objectContaining({ cmd: "git", policy: "implementation_run" }),
     );
 
-    expect(session.runCommand).toHaveBeenCalledWith(
+    expect(runCommand).toHaveBeenCalledWith(
       expect.objectContaining({
         cmd: "node",
         policy: "implementation_run",
@@ -109,7 +121,7 @@ describe("indexImplementationRepoStep", () => {
       filesIndexed: 3,
       prefix: "repo/repo_1",
       sandboxJobId: "job_1",
-      transcriptBlobRef: "https://blob.example/log",
+      transcriptBlobRef: "projects/proj_1/runs/run_1/sandbox/job_1.log-abc123",
       transcriptTruncated: false,
     });
   });
@@ -123,13 +135,6 @@ describe("indexImplementationRepoStep", () => {
         exitCode: 0,
         transcript: { combined: "", truncated: false },
       })),
-      sandbox: {
-        runCommand: vi.fn(async () => ({
-          exitCode: 1,
-          stderr: async () => "fail",
-          stdout: async () => "",
-        })),
-      },
     };
 
     state.attachSandboxJobSession.mockResolvedValueOnce(session);
@@ -163,13 +168,6 @@ describe("indexImplementationRepoStep", () => {
         exitCode: 0,
         transcript: { combined: "", truncated: false },
       })),
-      sandbox: {
-        runCommand: vi.fn(async () => ({
-          exitCode: 1,
-          stderr: async () => "fail",
-          stdout: async () => "",
-        })),
-      },
     };
 
     state.attachSandboxJobSession.mockResolvedValueOnce(session);

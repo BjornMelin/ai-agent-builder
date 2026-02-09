@@ -34,12 +34,6 @@ function parseVercelWebhookEvent(
   const eventType =
     readString(raw, ["type"]) ?? readString(raw, ["event"]) ?? null;
 
-  const deploymentObj =
-    (raw.deployment && typeof raw.deployment === "object"
-      ? (raw.deployment as Record<string, unknown>)
-      : null) ??
-    (readString(raw, ["payload", "deployment", "id"]) ? null : null);
-
   const deploymentId =
     readString(raw, ["deployment", "id"]) ??
     readString(raw, ["payload", "deployment", "id"]) ??
@@ -64,8 +58,6 @@ function parseVercelWebhookEvent(
     : urlRaw
       ? `https://${urlRaw}`
       : null;
-
-  void deploymentObj;
 
   return {
     deploymentId,

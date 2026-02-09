@@ -57,7 +57,11 @@ beforeEach(() => {
     manifest: { entries: [], project: input.project, version: 1 as const },
   }));
 
-  state.putBlob.mockResolvedValue("https://blob.example/audit.zip");
+  state.putBlob.mockResolvedValue({
+    blobPath:
+      "projects/proj_1/runs/run_1/audit/implementation-audit-bundle.zip-abc123",
+    blobUrl: "https://blob.example/audit.zip",
+  });
 
   state.db.query.projectsTable.findFirst.mockResolvedValue({
     id: "proj_1",
@@ -218,7 +222,7 @@ describe("buildAndUploadImplementationAuditBundle", () => {
     });
 
     expect(result.blobPath).toBe(
-      "projects/proj_1/runs/run_1/audit/implementation-audit-bundle.zip",
+      "projects/proj_1/runs/run_1/audit/implementation-audit-bundle.zip-abc123",
     );
     expect(result.blobUrl).toBe("https://blob.example/audit.zip");
     expect(result.bytes).toBe(3);

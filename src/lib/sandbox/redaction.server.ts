@@ -10,7 +10,9 @@ const GH_PAT_PATTERN = /\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}\b/g;
 const GITHUB_FINE_GRAINED_PATTERN = /\bgithub_pat_[A-Za-z0-9_]{20,}\b/g;
 const VERCEL_TOKEN_PATTERN = /\b(vercel)[A-Za-z0-9_-]{20,}\b/gi;
 
-function collectSecretValues(): string[] {
+let cachedEnvSecretValues: readonly string[] | null = null;
+
+function collectEnvSecretValues(): string[] {
   const values: string[] = [];
 
   const pushIf = (value: unknown) => {
@@ -71,6 +73,12 @@ function collectSecretValues(): string[] {
   return values;
 }
 
+function getEnvSecretValues(): readonly string[] {
+  if (cachedEnvSecretValues) return cachedEnvSecretValues;
+  cachedEnvSecretValues = collectEnvSecretValues();
+  return cachedEnvSecretValues;
+}
+
 /**
  * Redact secret-like values from a string before persisting or displaying it.
  *
@@ -91,8 +99,7 @@ export function redactSandboxLog(
   out = out.replace(GITHUB_FINE_GRAINED_PATTERN, "<redacted>");
   out = out.replace(VERCEL_TOKEN_PATTERN, "<redacted>");
 
-  const secretValues = collectSecretValues();
-  for (const secret of secretValues) {
+  for (const secret of getEnvSecretValues()) {
     out = out.split(secret).join("<redacted>");
   }
 

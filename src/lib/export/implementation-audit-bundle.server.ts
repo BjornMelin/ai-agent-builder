@@ -511,15 +511,15 @@ export async function buildAndUploadImplementationAuditBundle(
   });
 
   const sha256 = sha256Hex(zip.bytes);
-  const blobPath = getImplementationAuditBundleBlobPath(input);
-  const blobUrl = await putImplementationAuditBundleBlob({
-    blobPath,
+  const requestedBlobPath = getImplementationAuditBundleBlobPath(input);
+  const uploaded = await putImplementationAuditBundleBlob({
+    blobPath: requestedBlobPath,
     bytes: zip.bytes,
   });
 
   return {
-    blobPath,
-    blobUrl,
+    blobPath: uploaded.blobPath,
+    blobUrl: uploaded.blobUrl,
     bytes: zip.bytes.byteLength,
     manifest: zip.manifest,
     sha256,

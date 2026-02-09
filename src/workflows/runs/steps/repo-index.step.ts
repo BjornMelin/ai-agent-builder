@@ -52,15 +52,22 @@ export async function indexImplementationRepoStep(
         cwd?: string;
       }>,
     ) => {
-      const res = await session.sandbox.runCommand({
+      let stdout = "";
+      let stderr = "";
+      const res = await session.runCommand({
         args: [...cmdInput.args],
         cmd: cmdInput.cmd,
         ...(cmdInput.cwd === undefined ? {} : { cwd: cmdInput.cwd }),
+        onLog: (entry) => {
+          if (entry.stream === "stdout") stdout += entry.data;
+          else stderr += entry.data;
+        },
+        policy: "implementation_run",
       });
       return {
         exitCode: res.exitCode,
-        stderr: await res.stderr(),
-        stdout: await res.stdout(),
+        stderr,
+        stdout,
       };
     };
 

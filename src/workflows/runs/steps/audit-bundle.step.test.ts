@@ -141,9 +141,11 @@ describe("createImplementationAuditBundleArtifact", () => {
       },
     });
 
-    state.putImplementationAuditBundleBlob.mockResolvedValue(
-      "https://blob.example/audit.zip",
-    );
+    state.putImplementationAuditBundleBlob.mockResolvedValue({
+      blobPath:
+        "projects/proj_1/runs/run_1/audit/implementation-audit-bundle.zip-abc123",
+      blobUrl: "https://blob.example/audit.zip",
+    });
 
     state.createArtifactVersion.mockResolvedValue({
       id: "art_audit",

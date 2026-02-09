@@ -32,22 +32,29 @@ describe("implementation audit bundle blob", () => {
 
   it("uploads bytes to Vercel Blob using the configured token", async () => {
     await withEnv({ BLOB_READ_WRITE_TOKEN: "blob_rw_token" }, async () => {
-      state.put.mockResolvedValueOnce({ url: "https://blob.example/file.zip" });
+      state.put.mockResolvedValueOnce({
+        pathname:
+          "projects/p1/runs/r1/audit/implementation-audit-bundle.zip-abc123",
+        url: "https://blob.example/file.zip",
+      });
 
       const mod = await loadBlobModule();
-      const url = await mod.putImplementationAuditBundleBlob({
+      const uploaded = await mod.putImplementationAuditBundleBlob({
         blobPath: "projects/p1/runs/r1/audit/implementation-audit-bundle.zip",
         bytes: new Uint8Array([1, 2, 3]),
       });
 
-      expect(url).toBe("https://blob.example/file.zip");
+      expect(uploaded).toEqual({
+        blobPath:
+          "projects/p1/runs/r1/audit/implementation-audit-bundle.zip-abc123",
+        blobUrl: "https://blob.example/file.zip",
+      });
       expect(state.put).toHaveBeenCalledWith(
         "projects/p1/runs/r1/audit/implementation-audit-bundle.zip",
         expect.any(Buffer),
         expect.objectContaining({
           access: "public",
-          addRandomSuffix: false,
-          allowOverwrite: true,
+          addRandomSuffix: true,
           contentType: "application/zip",
           token: "blob_rw_token",
         }),
