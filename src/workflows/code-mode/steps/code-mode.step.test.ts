@@ -340,17 +340,11 @@ describe("runCodeModeSession", () => {
     const dataChunks = writes.filter(
       (c): c is CodeModeDataChunk => c.type === "data-code-mode",
     );
-    expect(
-      dataChunks.some((c) => c.data.type === "status"),
-    ).toBe(true);
-    expect(
-      dataChunks.some(
-        (c) => c.data.type === "assistant-delta",
-      ),
-    ).toBe(true);
-    expect(
-      dataChunks.some((c) => c.data.type === "exit"),
-    ).toBe(true);
+    expect(dataChunks.some((c) => c.data.type === "status")).toBe(true);
+    expect(dataChunks.some((c) => c.data.type === "assistant-delta")).toBe(
+      true,
+    );
+    expect(dataChunks.some((c) => c.data.type === "exit")).toBe(true);
   });
 
   it("selects node policies when node is detected", async () => {
