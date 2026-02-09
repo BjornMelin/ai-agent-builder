@@ -150,3 +150,17 @@ describe("detectGitHubRepoRuntimeKind", () => {
     });
   });
 });
+
+describe("detectGitHubRepoRuntimeKindStrict", () => {
+  it("throws bad_gateway on non-404 getContent errors", async () => {
+    state.getContent.mockRejectedValueOnce({ status: 429 });
+
+    const { detectGitHubRepoRuntimeKindStrict } = await import(
+      "@/lib/repo/repo-kind.server"
+    );
+
+    await expect(
+      detectGitHubRepoRuntimeKindStrict({ owner: "o", repo: "r" }),
+    ).rejects.toMatchObject({ code: "bad_gateway", status: 502 });
+  });
+});

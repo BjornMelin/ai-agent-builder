@@ -72,6 +72,8 @@ vi.mock("@/db/client", () => ({
 vi.mock("@/lib/repo/repo-kind.server", () => ({
   detectGitHubRepoRuntimeKind: (...args: unknown[]) =>
     state.detectGitHubRepoRuntimeKind(...args),
+  detectGitHubRepoRuntimeKindStrict: (...args: unknown[]) =>
+    state.detectGitHubRepoRuntimeKind(...args),
 }));
 
 vi.mock("@/lib/repo/repo-ops.server", () => ({

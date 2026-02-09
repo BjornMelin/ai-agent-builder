@@ -9,7 +9,7 @@ import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
 import { env } from "@/lib/env";
 import {
-  detectGitHubRepoRuntimeKind,
+  detectGitHubRepoRuntimeKindStrict,
   type RepoRuntimeKind,
 } from "@/lib/repo/repo-kind.server";
 import { createOrGetPullRequest } from "@/lib/repo/repo-ops.server";
@@ -221,7 +221,7 @@ export async function ensureImplementationRepoContext(
 
   const branchName = `agent/${project.slug}/${input.runId}`;
 
-  const detected = await detectGitHubRepoRuntimeKind({
+  const detected = await detectGitHubRepoRuntimeKindStrict({
     owner: repo.owner,
     ref: repo.defaultBranch,
     repo: repo.name,

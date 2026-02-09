@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Octokit } from "@octokit/rest";
 
+import { AppError } from "@/lib/core/errors";
 import { getGitHubClient } from "@/lib/repo/github.client.server";
 
 /**
@@ -30,6 +31,7 @@ function getErrorStatus(err: unknown): number | null {
 async function pathExists(
   octokit: Octokit,
   input: Readonly<{ owner: string; repo: string; path: string; ref?: string }>,
+  opts: Readonly<{ onError: "default_false" | "throw" }>,
 ): Promise<boolean> {
   try {
     await octokit.repos.getContent({
@@ -42,8 +44,12 @@ async function pathExists(
   } catch (err) {
     const status = getErrorStatus(err);
     if (status === 404) return false;
-    // Best-effort: if GitHub is unavailable or rate-limited, default to false.
-    return false;
+    if (opts.onError === "default_false") return false;
+    throw new AppError(
+      "bad_gateway",
+      502,
+      "GitHub API error while detecting repo runtime kind.",
+    );
   }
 }
 
@@ -77,24 +83,116 @@ export async function detectGitHubRepoRuntimeKind(
 
   const [hasPackageJson, hasPyprojectToml, hasRequirementsTxt] =
     await Promise.all([
-      pathExists(octokit, {
-        owner,
-        path: "package.json",
-        repo,
-        ...(input.ref ? { ref: input.ref } : {}),
-      }),
-      pathExists(octokit, {
-        owner,
-        path: "pyproject.toml",
-        repo,
-        ...(input.ref ? { ref: input.ref } : {}),
-      }),
-      pathExists(octokit, {
-        owner,
-        path: "requirements.txt",
-        repo,
-        ...(input.ref ? { ref: input.ref } : {}),
-      }),
+      pathExists(
+        octokit,
+        {
+          owner,
+          path: "package.json",
+          repo,
+          ...(input.ref ? { ref: input.ref } : {}),
+        },
+        { onError: "default_false" },
+      ),
+      pathExists(
+        octokit,
+        {
+          owner,
+          path: "pyproject.toml",
+          repo,
+          ...(input.ref ? { ref: input.ref } : {}),
+        },
+        { onError: "default_false" },
+      ),
+      pathExists(
+        octokit,
+        {
+          owner,
+          path: "requirements.txt",
+          repo,
+          ...(input.ref ? { ref: input.ref } : {}),
+        },
+        { onError: "default_false" },
+      ),
+    ]);
+
+  const hasPythonMarkers = hasPyprojectToml || hasRequirementsTxt;
+
+  const kind: RepoRuntimeKind =
+    hasPackageJson && !hasPythonMarkers
+      ? "node"
+      : hasPythonMarkers && !hasPackageJson
+        ? "python"
+        : "node";
+
+  return {
+    evidence: { hasPackageJson, hasPyprojectToml, hasRequirementsTxt },
+    kind,
+  };
+}
+
+/**
+ * Detect whether a GitHub repo should run in a Node or Python sandbox runtime.
+ *
+ * @remarks
+ * This behaves like {@link detectGitHubRepoRuntimeKind}, but throws on GitHub API
+ * errors instead of silently defaulting missing evidence to false. Use this for
+ * flows where an incorrect runtime choice would lead to misleading failures
+ * (e.g. Implementation Runs).
+ *
+ * @param input - Repo identity and optional ref (branch/SHA).
+ * @returns Runtime kind and evidence booleans.
+ * @throws AppError - With code "bad_gateway" when GitHub API calls fail.
+ */
+export async function detectGitHubRepoRuntimeKindStrict(
+  input: Readonly<{ owner: string; repo: string; ref?: string }>,
+): Promise<RepoRuntimeDetection> {
+  const owner = input.owner.trim();
+  const repo = input.repo.trim();
+  if (!owner || !repo) {
+    return {
+      evidence: {
+        hasPackageJson: false,
+        hasPyprojectToml: false,
+        hasRequirementsTxt: false,
+      },
+      kind: "node",
+    };
+  }
+
+  const octokit = getGitHubClient();
+
+  const [hasPackageJson, hasPyprojectToml, hasRequirementsTxt] =
+    await Promise.all([
+      pathExists(
+        octokit,
+        {
+          owner,
+          path: "package.json",
+          repo,
+          ...(input.ref ? { ref: input.ref } : {}),
+        },
+        { onError: "throw" },
+      ),
+      pathExists(
+        octokit,
+        {
+          owner,
+          path: "pyproject.toml",
+          repo,
+          ...(input.ref ? { ref: input.ref } : {}),
+        },
+        { onError: "throw" },
+      ),
+      pathExists(
+        octokit,
+        {
+          owner,
+          path: "requirements.txt",
+          repo,
+          ...(input.ref ? { ref: input.ref } : {}),
+        },
+        { onError: "throw" },
+      ),
     ]);
 
   const hasPythonMarkers = hasPyprojectToml || hasRequirementsTxt;

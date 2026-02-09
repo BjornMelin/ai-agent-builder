@@ -118,7 +118,7 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
   const [prompt, setPrompt] = useState(
     "Run `bun run test` and summarize any failures.",
   );
-  const [network, setNetwork] = useState<"none" | "restricted">("restricted");
+  const [network, setNetwork] = useState<"none" | "restricted">("none");
 
   const [runId, setRunId] = useState<string | null>(null);
   const [workflowRunId, setWorkflowRunId] = useState<string | null>(null);
