@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0001
 title: System scope, terminology, and requirements mapping
-version: 0.3.0
-date: 2026-02-01
+version: 0.4.0
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements: [
   "FR-001",
   "FR-020",
@@ -224,3 +224,4 @@ The two capability domains map to two major pipelines:
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-01)**: Updated for implementation/deploy phase.
+- **0.4 (2026-02-09)**: Marked implemented.

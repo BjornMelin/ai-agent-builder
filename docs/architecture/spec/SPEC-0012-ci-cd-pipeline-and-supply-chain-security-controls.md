@@ -1,10 +1,10 @@
 ---
 spec: SPEC-0012
 title: CI/CD pipeline and supply chain security controls
-version: 0.2.0
-date: 2026-01-30
+version: 0.3.0
+date: 2026-02-09
 owners: ["Bjorn Melin"]
-status: Proposed
+status: Implemented
 related_requirements: ["NFR-009", "NFR-010", "PR-006", "IR-010"]
 related_adrs: ["ADR-0018", "ADR-0017"]
 notes: "Documents CI workflow and security scanning as required architecture."
@@ -134,3 +134,4 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
+- **0.3 (2026-02-09)**: Marked implemented.

@@ -133,6 +133,6 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 
-[^exa-search]: https://docs.exa.ai/reference/search
-[^firecrawl-node]: https://docs.firecrawl.dev/sdks/node
-[^owasp-ssrf]: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+[^exa-search]: <https://docs.exa.ai/reference/search>
+[^firecrawl-node]: <https://docs.firecrawl.dev/sdks/node>
+[^owasp-ssrf]: <https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html>
