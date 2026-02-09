@@ -91,6 +91,8 @@ next-env.d.ts
 .vitest-result.json
 vitest.config.ts.timestamp-*
 vitest.config.js.timestamp-*
+.vitest-reports/
+.vitest-attachments/
 
 # Misc
 *.pem
