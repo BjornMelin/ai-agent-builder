@@ -1,9 +1,9 @@
 ---
 ADR: 0010
 Title: Safe execution: Vercel Sandbox + bash-tool + code-execution + ctx-zip
-Status: Accepted
+Status: Implemented
 Version: 0.4
-Date: 2026-02-01
+Date: 2026-02-09
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0005, ADR-0006, ADR-0024]
@@ -21,6 +21,7 @@ References:
 ## Status
 
 Accepted — 2026-01-30.  
+Implemented — 2026-02-09.  
 Updated — 2026-02-01 (explicit support for implementation verification jobs).
 
 ## Description
@@ -83,6 +84,9 @@ Use AI SDK tools where it reduces implementation effort:
 - Never execute user-provided code outside Sandbox.
 - Enforce timeout and resource limits.
 - Restrict filesystem access and network egress as supported.
+- Enforce a strict sandbox command policy: default-deny allowlists, workspace
+  path confinement to `/vercel/sandbox`, and restricted package-exec tools
+  (e.g. `npx`, `bunx`). See **NFR-016**.
 - Log all executed commands and outputs.
 
 ## High-Level Architecture
@@ -105,6 +109,7 @@ flowchart LR
 
 - **NFR-001:** isolation; no server compromise.
 - **NFR-004:** log execution.
+- **NFR-016:** default-deny sandbox command policy with workspace confinement.
 
 ### Performance Requirements
 
@@ -124,6 +129,10 @@ flowchart LR
 ### Implementation Details
 
 - Default deny: only allow predefined commands.
+- Workspace confinement: reject parent-directory traversal and absolute paths
+  outside `/vercel/sandbox`.
+- Package execution tools (`npx`, `bunx`) must be restricted to an explicit
+  allowlist to avoid arbitrary download/execute flows.
 - Provide `ctx-zip` to compress context artifacts deterministically.
 - Persist execution logs in `run_steps`.
 
