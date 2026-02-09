@@ -2,14 +2,29 @@ name: CI Setup
 description: "Shared CI setup: Bun + dependency install (requires checkout)"
 
 inputs:
+  node-version:
+    description: "Node.js version to install (default: 24.x)"
+    required: false
+    default: "24.x"
+
   bun-version:
     description: "Bun version to install (default: 1.3.7)"
     required: false
     default: "1.3.7"
 
+  bun-download-url:
+    description: "Optional Bun download URL override (avoids GitHub API tag fetch). If omitted, defaults to the Bun baseline Linux x64 release asset for the selected bun-version."
+    required: false
+    default: ""
+
 runs:
   using: composite
   steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
     - name: Cache apt packages
       id: apt-cache
       uses: actions/cache@v5.0.3
@@ -30,6 +45,7 @@ runs:
       uses: oven-sh/setup-bun@v2.1.2
       with:
         bun-version: ${{ inputs.bun-version }}
+        bun-download-url: ${{ inputs.bun-download-url || format('https://github.com/oven-sh/bun/releases/download/bun-v{0}/bun-linux-x64-baseline.zip', inputs.bun-version) }}
 
     - name: Cache Bun install
       uses: actions/cache@v5.0.3

@@ -26,7 +26,7 @@
     "start": "bun --bun next start",
     "test": "bun run typegen && vitest run",
     "test:coverage": "bun run typegen && vitest run --coverage",
-    "test:ci:merge": "vitest --mergeReports .vitest-reports/blob --reporter=github-actions --reporter=junit --outputFile.junit=.vitest-reports/junit.xml",
+    "test:ci:merge": "mkdir -p .vitest-reports && vitest --merge-reports .vitest-reports/blob --reporter=github-actions --reporter=junit --outputFile.junit=.vitest-reports/junit.xml",
     "test:ci:shard": "bun run typegen && mkdir -p .vitest-reports/blob && vitest run --shard=$VITEST_SHARD_INDEX/$VITEST_SHARD_COUNT --reporter=blob --outputFile.blob=.vitest-reports/blob/$VITEST_SHARD_INDEX.json",
     "test:a11y": "vitest run src/components/ai-elements/tests/accessibility.test.tsx src/components/ai-elements/tests/code-block.test.tsx src/components/ui/tests/command.test.tsx",
     "test:a11y:watch": "vitest src/components/ai-elements/tests/accessibility.test.tsx src/components/ai-elements/tests/code-block.test.tsx src/components/ui/tests/command.test.tsx",
