@@ -109,6 +109,9 @@ components.
 - **NFR-015 (Auditability):** All side-effectful actions are logged with intent,
   parameters (redacted), and resulting external IDs (PR, deployment, resource
   IDs).
+- **NFR-016 (Sandbox command policy):** Sandbox execution enforces default-deny
+  command allowlists, workspace path confinement to `/vercel/sandbox`, and
+  restricts package-exec tools (e.g. `npx`, `bunx`) to an explicit allowlist.
 
 ## Performance & Reliability Requirements
 
