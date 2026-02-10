@@ -28,6 +28,8 @@ describe("chatTools", () => {
         "context7.resolve-library-id",
         "research.create-report",
         "retrieveProjectChunks",
+        "skills.load",
+        "skills.readFile",
         "web.extract",
         "web.search",
       ].sort(),

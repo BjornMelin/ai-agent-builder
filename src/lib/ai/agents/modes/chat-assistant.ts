@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
  * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
  */
 export const chatAssistantMode: AgentMode = {
-  allowedTools: ["retrieveProjectChunks"],
+  allowedTools: ["skills.load", "skills.readFile", "retrieveProjectChunks"],
   budgets: { maxStepsPerTurn: 12 },
   get defaultModel() {
     return env.aiGateway.chatModel;

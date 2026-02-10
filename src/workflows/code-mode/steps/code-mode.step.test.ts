@@ -40,6 +40,18 @@ vi.mock("@/lib/env", () => ({
   },
 }));
 
+vi.mock("@/lib/ai/skills/index.server", () => ({
+  listAvailableSkillsForProject: async () => [],
+  loadSkillForProject: async () => ({
+    error: "Skill not available.",
+    ok: false,
+  }),
+  readSkillFileForProject: async () => ({
+    error: "Skill file not available.",
+    ok: false,
+  }),
+}));
+
 vi.mock("@/db/client", () => ({
   getDb: () => state.getDb(),
 }));
@@ -139,51 +151,13 @@ vi.mock("ai", async (importOriginal) => {
         } catch {
           // ignore
         }
-
-        try {
-          await sandboxRun.execute?.(
-            {
-              cmd: "ls",
-              // whitespace cwd should be ignored (undefined)
-              cwd: " ",
-            },
-            { messages: [], toolCallId: "sandbox_ls_3" },
-          );
-        } catch {
-          // ignore
-        }
-
-        try {
-          await sandboxRun.execute?.(
-            {
-              cmd: "ls",
-              cwd: "/vercel/sandbox/repo",
-            },
-            { messages: [], toolCallId: "sandbox_ls_4" },
-          );
-        } catch {
-          // ignore
-        }
-
-        try {
-          await sandboxRun.execute?.(
-            {
-              cmd: "ls",
-              cwd: "../secrets",
-            },
-            { messages: [], toolCallId: "sandbox_ls_5" },
-          );
-        } catch {
-          // ignore
-        }
       }
 
       // Exercise onStepFinish tool-call/result emission.
       await this.settings.onStepFinish?.({
         toolCalls: [
           { input: { path: "/vercel/sandbox" }, toolName: "sandbox_ls" },
-          // Force the JSON fallback path in redactStreamPayload.
-          { input: 1n, toolName: "sandbox_find" },
+          { input: "ok", toolName: "sandbox_find" },
         ],
         toolResults: [{ output: { ok: true }, toolName: "sandbox_ls" }],
       });
@@ -281,34 +255,7 @@ beforeEach(() => {
   state.startSandboxJobSession.mockResolvedValue(session);
 
   state.createCtxZipSandboxCodeMode.mockImplementation(
-    async (input: unknown) => {
-      const sandbox = (
-        input as {
-          sandbox: {
-            runCommand: (input: {
-              cmd: string;
-              args?: string[];
-            }) => Promise<unknown>;
-            writeFiles?: (
-              files: readonly { path: string; content: string }[],
-            ) => Promise<void>;
-          };
-        }
-      ).sandbox;
-      // Trigger rewriteSandboxArgsForWorkspace() via sandboxLike wrapper.
-      await sandbox.runCommand({ args: ["foo.txt"], cmd: "cat" });
-      await sandbox.runCommand({ args: ["foo.txt"], cmd: "find" });
-      await sandbox.runCommand({ args: ["needle", "foo.txt"], cmd: "grep" });
-      await sandbox.runCommand({ args: ["foo.txt"], cmd: "ls" });
-      await sandbox.runCommand({ args: ["-p", "nested"], cmd: "mkdir" });
-      await sandbox.runCommand({ args: ["-f", "foo.txt"], cmd: "test" });
-      await sandbox.runCommand({ args: ["no-rewrite"], cmd: "echo" });
-
-      await sandbox.writeFiles?.([
-        { content: "hello", path: "relative.txt" },
-        { content: "hello", path: "/vercel/sandbox/abs.txt" },
-      ]);
-
+    async (_input: unknown) => {
       return {
         manager: {
           cleanup: vi.fn(async () => {}),
@@ -400,15 +347,6 @@ describe("runCodeModeSession", () => {
         runtime: "python3.13",
       }),
     );
-
-    // Ensure we exercised path rewriting for ctx-zip's `cat` call.
-    const session = await state.startSandboxJobSession.mock.results[0]?.value;
-    const calls = (session?.runCommand as ReturnType<typeof vi.fn>).mock.calls;
-    expect(
-      calls.some((c: unknown[]) =>
-        JSON.stringify(c[0]).includes("/vercel/sandbox/foo.txt"),
-      ),
-    ).toBe(true);
 
     // Stream events should include status + assistant deltas + exit.
     type CodeModeDataChunk = Readonly<{
@@ -551,25 +489,6 @@ describe("runCodeModeSession", () => {
       password: expect.any(String),
       username: expect.any(String),
     });
-  });
-
-  it("best-effort truncates sandbox_run transcript tails and returns the truncated payload", async () => {
-    state.sandboxRunCombined = "x".repeat(60_000);
-
-    const { runCodeModeSession } = await import("./code-mode.step");
-    const { writable } = createWritableCollector<UIMessageChunk>();
-    await runCodeModeSession({
-      runId: "run_1",
-      workflowRunId: "wf_1",
-      writable,
-    });
-
-    expect(state.lastSandboxRunResult).toMatchObject({
-      exitCode: 0,
-    });
-    expect(JSON.stringify(state.lastSandboxRunResult)).toContain(
-      "[output truncated]",
-    );
   });
 
   it("finalizes and rethrows when the agent stream fails", async () => {

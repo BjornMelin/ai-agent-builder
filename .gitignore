@@ -47,6 +47,9 @@ yarn-error.log*
 # Vercel
 .vercel/
 
+# Neon
+.neon
+
 # OS
 .DS_Store
 .AppleDouble

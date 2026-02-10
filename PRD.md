@@ -135,6 +135,20 @@ Primary spec/ADR references:
 - [`docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md`](./docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md)
 - [`docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md`](./docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md)
 
+### Epic 4b: Agent Skills (progressive disclosure)
+
+- Support runtime-loadable Agent Skills (name/description index + on-demand load). (FR-035)
+- Support project-scoped skill overrides stored in the DB. (FR-036)
+- Support installing skills from the public skills.sh registry from the UI. (FR-037)
+- Keep skill loading read-only; any execution of skill scripts must be sandboxed and approval-gated. (NFR-013, NFR-014, NFR-016)
+
+Primary spec/ADR references:
+
+- [`docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md`](./docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md)
+- [`docs/architecture/spec/SPEC-0028-skills-registry-ui-and-bundled-installs.md`](./docs/architecture/spec/SPEC-0028-skills-registry-ui-and-bundled-installs.md)
+- [`docs/architecture/adr/ADR-0028-agent-skills-progressive-disclosure-hybrid-fs-db.md`](./docs/architecture/adr/ADR-0028-agent-skills-progressive-disclosure-hybrid-fs-db.md)
+- [`docs/architecture/adr/ADR-0029-skills-registry-integration-ui-installs-and-bundled-db-files.md`](./docs/architecture/adr/ADR-0029-skills-registry-integration-ui-installs-and-bundled-db-files.md)
+
 ### Epic 5: Durable runs (research → artifacts)
 
 - Start and persist durable runs with step status and tool call logs. (FR-010, FR-011)

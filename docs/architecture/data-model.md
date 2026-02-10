@@ -11,6 +11,7 @@ to reconstruct what happened (without persisting secrets).
 Core workspace + research/spec pipeline:
 
 - `projects`
+- `project_skills`
 - `project_files`
 - `file_chunks`
 - `runs`
@@ -62,6 +63,19 @@ Project workspace root. Ownership is per authenticated app user.
 - `name`
 - `slug`
 - `status`
+- `created_at`, `updated_at`
+
+### `project_skills`
+
+Project-scoped Agent Skills overrides (progressive disclosure).
+
+- `id`
+- `project_id`
+- `name`
+- `name_norm` (unique per project; lowercased/trimmed)
+- `description`
+- `content` (full SKILL.md markdown; frontmatter optional)
+- `metadata` (JSON; reserved)
 - `created_at`, `updated_at`
 
 ### `repos`
@@ -165,6 +179,7 @@ rules (see
 
 - `project_files(project_id)`
 - `projects(owner_user_id, updated_at)`
+- `project_skills(project_id, name_norm)`
 - `file_chunks(project_id, file_id)`
 - `runs(project_id)`
 - `run_steps(run_id, step_name)`

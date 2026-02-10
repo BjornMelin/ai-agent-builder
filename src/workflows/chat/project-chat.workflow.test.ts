@@ -86,6 +86,10 @@ vi.mock("@/workflows/chat/steps/writer.step", () => ({
     state.writeUserMessageMarker(...args),
 }));
 
+vi.mock("@/workflows/chat/steps/skills.step", () => ({
+  listProjectSkillsStep: async () => [],
+}));
+
 vi.mock("@/workflows/runs/workflow-errors", () => ({
   isWorkflowRunCancelledError: (...args: unknown[]) =>
     state.isWorkflowRunCancelledError(...args),

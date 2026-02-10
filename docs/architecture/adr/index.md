@@ -25,6 +25,8 @@
 - [ADR-0023](./ADR-0023-public-signup-deferred-until-byok.md) — Public sign-up deferred until BYOK (deferred)
 - [ADR-0026](./ADR-0026-orchestration-vercel-workflow-devkit-for-interactive-runs.md) — Orchestration: Vercel Workflow DevKit for interactive runs (QStash for background jobs)
 - [ADR-0027](./ADR-0027-preview-resource-governance-for-bot-branches-vercel-neon.md) — Preview resource governance for bot branches (Vercel + Neon) (Implemented)
+- [ADR-0028](./ADR-0028-agent-skills-progressive-disclosure-hybrid-fs-db.md) — Agent Skills progressive disclosure (hybrid filesystem + DB) (Implemented)
+- [ADR-0029](./ADR-0029-skills-registry-integration-ui-installs-and-bundled-db-files.md) — Skills registry integration (skills.sh) with UI installs + bundled DB skill files (Implemented)
 
 ## Implementation & deployment automation
 

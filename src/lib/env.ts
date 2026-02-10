@@ -48,6 +48,19 @@ function parseCommaSeparatedList(value: string): string[] {
     .filter((v) => v.length > 0);
 }
 
+const ALLOWED_SKILL_DIRS = [".agents/skills", ".codex/skills"] as const;
+
+const skillsDirListSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") return value;
+    if (value.trim().length === 0) return undefined;
+    return parseCommaSeparatedList(value);
+  },
+  z
+    .array(z.enum(ALLOWED_SKILL_DIRS))
+    .default([".agents/skills", ".codex/skills"]),
+);
+
 /**
  * Normalize an email address for consistent allowlist matching.
  *
@@ -78,6 +91,21 @@ const appSchema = z
   })
   .transform((v) => ({
     baseUrl: v.APP_BASE_URL,
+  }));
+
+const skillsSchema = z
+  .looseObject({
+    /**
+     * Comma-separated list of repo-bundled skill roots scanned for `SKILL.md` folders.
+     *
+     * @remarks
+     * This is an allowlist of repo directories (not arbitrary filesystem paths).
+     * Supported values: `.agents/skills`, `.codex/skills` (subset allowed).
+     */
+    AGENT_SKILLS_DIRS: skillsDirListSchema,
+  })
+  .transform((v) => ({
+    dirs: v.AGENT_SKILLS_DIRS,
   }));
 
 const dbSchema = z
@@ -326,6 +354,7 @@ const upstashDeveloperSchema = z
 
 let cachedRuntimeEnv: Readonly<z.output<typeof runtimeSchema>> | undefined;
 let cachedAppEnv: Readonly<z.output<typeof appSchema>> | undefined;
+let cachedSkillsEnv: Readonly<z.output<typeof skillsSchema>> | undefined;
 let cachedDbEnv: Readonly<z.output<typeof dbSchema>> | undefined;
 let cachedAuthEnv: Readonly<z.output<typeof authSchema>> | undefined;
 let cachedAuthUiEnv: Readonly<z.output<typeof authUiSchema>> | undefined;
@@ -494,6 +523,16 @@ export const env = {
   get sandbox(): Readonly<z.output<typeof sandboxSchema>> {
     cachedSandboxEnv ??= parseFeatureEnv("sandbox", sandboxSchema);
     return cachedSandboxEnv;
+  },
+
+  /**
+   * Returns the Agent Skills configuration (skill directory roots).
+   *
+   * @returns Skills env.
+   */
+  get skills(): Readonly<z.output<typeof skillsSchema>> {
+    cachedSkillsEnv ??= parseFeatureEnv("skills", skillsSchema);
+    return cachedSkillsEnv;
   },
 
   /**

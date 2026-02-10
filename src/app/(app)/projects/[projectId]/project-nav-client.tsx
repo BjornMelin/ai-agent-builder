@@ -26,6 +26,7 @@ export function ProjectNavClient(props: Readonly<{ projectId: string }>) {
     { href: `${base}/chat`, label: "Chat" },
     { href: `${base}/runs`, label: "Runs" },
     { href: `${base}/repos`, label: "Repos" },
+    { href: `${base}/skills`, label: "Skills" },
     { href: `${base}/approvals`, label: "Approvals" },
     { href: `${base}/deployments`, label: "Deployments" },
     { href: `${base}/code-mode`, label: "Code Mode" },

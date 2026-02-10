@@ -80,10 +80,38 @@ vi.mock("@/workflows/runs/steps/repo-index.step", () => repoIndexStepMocks);
 vi.mock("@/workflows/runs/steps/repo.step", () => repoStepMocks);
 vi.mock("@/workflows/runs/steps/provision.step", () => provisionStepMocks);
 vi.mock("@/workflows/runs/steps/deploy-production.step", () => deployStepMocks);
-vi.mock(
-  "@/workflows/runs/steps/implementation.step",
-  () => implementationStepMocks,
-);
+vi.mock("@/workflows/runs/steps/implementation/checkout.step", () => ({
+  sandboxCheckoutImplementationRepo: (...args: unknown[]) =>
+    implementationStepMocks.sandboxCheckoutImplementationRepo(...args),
+}));
+vi.mock("@/workflows/runs/steps/implementation/patch.step", () => ({
+  applyImplementationPatch: (...args: unknown[]) =>
+    implementationStepMocks.applyImplementationPatch(...args),
+}));
+vi.mock("@/workflows/runs/steps/implementation/pull-request.step", () => ({
+  openImplementationPullRequest: (...args: unknown[]) =>
+    implementationStepMocks.openImplementationPullRequest(...args),
+}));
+vi.mock("@/workflows/runs/steps/implementation/planning.step", () => ({
+  planImplementationRun: (...args: unknown[]) =>
+    implementationStepMocks.planImplementationRun(...args),
+}));
+vi.mock("@/workflows/runs/steps/implementation/preflight.step", () => ({
+  preflightImplementationRun: (...args: unknown[]) =>
+    implementationStepMocks.preflightImplementationRun(...args),
+}));
+vi.mock("@/workflows/runs/steps/implementation/repo-context.step", () => ({
+  ensureImplementationRepoContext: (...args: unknown[]) =>
+    implementationStepMocks.ensureImplementationRepoContext(...args),
+}));
+vi.mock("@/workflows/runs/steps/implementation/stop-sandbox.step", () => ({
+  stopImplementationSandbox: (...args: unknown[]) =>
+    implementationStepMocks.stopImplementationSandbox(...args),
+}));
+vi.mock("@/workflows/runs/steps/implementation/verify.step", () => ({
+  verifyImplementationRun: (...args: unknown[]) =>
+    implementationStepMocks.verifyImplementationRun(...args),
+}));
 vi.mock("@/workflows/approvals/hooks/approval", () => approvalHookMocks);
 vi.mock("@/workflows/runs/workflow-errors", () => workflowErrorMocks);
 
@@ -420,6 +448,28 @@ describe("projectRun", () => {
     await expect(projectRun("run_1")).rejects.toThrow("artifact explode");
 
     // Even if step persistence fails, the run is still marked terminal failed.
+    expect(persistMocks.markRunTerminal).toHaveBeenCalledWith(
+      "run_1",
+      "failed",
+    );
+  });
+
+  it("best-effort stops the sandbox when a non-cancel error occurs after checkout", async () => {
+    persistMocks.getRunInfo.mockResolvedValueOnce({
+      kind: "implementation",
+      projectId: "project_1",
+    });
+
+    const failure = new Error("verify failed");
+    implementationStepMocks.verifyImplementationRun.mockRejectedValueOnce(
+      failure,
+    );
+
+    await expect(projectRun("run_1")).rejects.toThrow("verify failed");
+
+    expect(
+      implementationStepMocks.stopImplementationSandbox,
+    ).toHaveBeenCalledWith("sbx_1");
     expect(persistMocks.markRunTerminal).toHaveBeenCalledWith(
       "run_1",
       "failed",

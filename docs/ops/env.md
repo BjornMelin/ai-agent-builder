@@ -35,6 +35,16 @@ This project centralizes environment access in `src/lib/env.ts`.
   - Cleanup for closed PR branches is handled (best effort) by
     `.github/workflows/vercel-preview-env-cleanup.yml`.
 
+### Agent Skills (repo-bundled)
+
+- `AGENT_SKILLS_DIRS` (optional; default: `.agents/skills,.codex/skills`) (used by `env.skills`)
+  - Comma-separated allowlist of repo-bundled skill roots scanned for `SKILL.md`
+    folders.
+  - Supported values: `.agents/skills`, `.codex/skills` (subset allowed).
+  - Used by: skill index resolution (`src/lib/ai/skills/index.server.ts`).
+  - For per-project customization, use project-defined skills (stored in Postgres;
+    editable from the app UI under Projects → Skills).
+
 ### Auth (Neon Auth + app access control)
 
 - `NEON_AUTH_BASE_URL` (required for `env.auth`)
@@ -436,6 +446,8 @@ generate plans and manual instructions.
 
 - `GITHUB_TOKEN` (required for `env.github`)
   - Fine-grained PAT recommended.
+  - Also used to reduce rate limiting when downloading GitHub archive ZIPs for
+    skills.sh registry installs (SPEC-0028).
 - `GITHUB_WEBHOOK_SECRET` (optional)
   - Shared secret for `POST /api/webhooks/github` signature verification
     (`x-hub-signature-256`).

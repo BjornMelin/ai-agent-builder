@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Ensure repo-bundled skill markdown is available in serverless traces.
+  // See docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md.
+  outputFileTracingIncludes: {
+    "/*": [".agents/skills/**/*", ".codex/skills/**/*"],
+  },
   reactCompiler: true,
   turbopack: {
     root: path.resolve(__dirname),

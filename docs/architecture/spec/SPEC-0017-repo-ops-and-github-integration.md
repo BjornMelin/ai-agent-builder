@@ -32,7 +32,7 @@ Implemented in this repo:
   `src/lib/repo/repo-ops.server.ts`.
 - Implementation-run workflow steps that use RepoOps + sandbox jobs for checkout/patch/verify,
   and approval-gated merge. See `src/workflows/runs/project-run.workflow.ts` and
-  `src/workflows/runs/steps/implementation.step.ts`.
+  `src/workflows/runs/steps/implementation/*`.
 
 - Repo indexing (FR-032) foundation:
   - bounded file walk from a sandbox checkout

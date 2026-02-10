@@ -1,13 +1,19 @@
 import type { JSONSchema7 } from "@ai-sdk/provider";
-import { jsonSchema, type ToolSet, tool } from "ai";
+import type { ToolSet } from "ai";
+import { tool } from "ai";
 import { z } from "zod";
 import { budgets } from "@/lib/config/budgets.server";
+import { jsonSchemaWithZodValidation } from "@/workflows/chat/_shared/jsonschema-zod";
 import {
   context7QueryDocsStep,
   context7ResolveLibraryIdStep,
 } from "@/workflows/chat/steps/context7.step";
 import { createResearchReportStep } from "@/workflows/chat/steps/research-report.step";
 import { retrieveProjectChunksStep } from "@/workflows/chat/steps/retrieve-project-chunks.step";
+import {
+  skillsLoadStep,
+  skillsReadFileStep,
+} from "@/workflows/chat/steps/skills.step";
 import { webExtractStep } from "@/workflows/chat/steps/web-extract.step";
 import { webSearchStep } from "@/workflows/chat/steps/web-search.step";
 
@@ -18,16 +24,11 @@ const retrieveProjectChunksInput = z.strictObject({
   topK: z.number().int().min(1).max(budgets.maxVectorTopK).optional(),
 });
 
-type RetrieveProjectChunksToolInput = Readonly<{
-  query: string;
-  topK?: number | undefined;
-}>;
-
 const retrieveProjectChunksTool = tool({
   description:
     "Retrieve the most relevant chunks from this project's knowledge base. Use this to ground answers in uploaded sources.",
   execute: retrieveProjectChunksStep,
-  inputSchema: jsonSchema<RetrieveProjectChunksToolInput>(
+  inputSchema: jsonSchemaWithZodValidation(
     {
       additionalProperties: false,
       properties: {
@@ -41,14 +42,7 @@ const retrieveProjectChunksTool = tool({
       required: ["query"],
       type: "object",
     } satisfies JSONSchema7,
-    {
-      validate: (value) => {
-        const parsed = retrieveProjectChunksInput.safeParse(value);
-        return parsed.success
-          ? { success: true, value: parsed.data }
-          : { error: parsed.error, success: false };
-      },
-    },
+    retrieveProjectChunksInput,
   ),
 });
 
@@ -72,20 +66,11 @@ const webSearchInput = z.strictObject({
     .optional(),
 });
 
-type WebSearchToolInput = Readonly<{
-  query: string;
-  numResults?: number | undefined;
-  includeDomains?: readonly string[] | undefined;
-  excludeDomains?: readonly string[] | undefined;
-  startPublishedDate?: string | undefined;
-  endPublishedDate?: string | undefined;
-}>;
-
 const webSearchTool = tool({
   description:
     "Search the web for relevant sources. Use this to find authoritative pages before extracting them.",
   execute: webSearchStep,
-  inputSchema: jsonSchema<WebSearchToolInput>(
+  inputSchema: jsonSchemaWithZodValidation(
     {
       additionalProperties: false,
       properties: {
@@ -117,14 +102,7 @@ const webSearchTool = tool({
       required: ["query"],
       type: "object",
     } satisfies JSONSchema7,
-    {
-      validate: (value) => {
-        const parsed = webSearchInput.safeParse(value);
-        return parsed.success
-          ? { success: true, value: parsed.data }
-          : { error: parsed.error, success: false };
-      },
-    },
+    webSearchInput,
   ),
 });
 
@@ -138,16 +116,11 @@ const webExtractInput = z.strictObject({
   url: z.string().min(1),
 });
 
-type WebExtractToolInput = Readonly<{
-  url: string;
-  maxChars?: number | undefined;
-}>;
-
 const webExtractTool = tool({
   description:
     "Extract the main content of a web page as markdown. Use this after web.search to read sources.",
   execute: webExtractStep,
-  inputSchema: jsonSchema<WebExtractToolInput>(
+  inputSchema: jsonSchemaWithZodValidation(
     {
       additionalProperties: false,
       properties: {
@@ -161,14 +134,7 @@ const webExtractTool = tool({
       required: ["url"],
       type: "object",
     } satisfies JSONSchema7,
-    {
-      validate: (value) => {
-        const parsed = webExtractInput.safeParse(value);
-        return parsed.success
-          ? { success: true, value: parsed.data }
-          : { error: parsed.error, success: false };
-      },
-    },
+    webExtractInput,
   ),
 });
 
@@ -177,16 +143,11 @@ const context7ResolveInput = z.strictObject({
   query: z.string().min(1),
 });
 
-type Context7ResolveToolInput = Readonly<{
-  libraryName: string;
-  query: string;
-}>;
-
 const context7ResolveTool = tool({
   description:
     "Resolve a library/package name to a Context7 libraryId for documentation lookup.",
   execute: context7ResolveLibraryIdStep,
-  inputSchema: jsonSchema<Context7ResolveToolInput>(
+  inputSchema: jsonSchemaWithZodValidation(
     {
       additionalProperties: false,
       properties: {
@@ -196,14 +157,7 @@ const context7ResolveTool = tool({
       required: ["libraryName", "query"],
       type: "object",
     } satisfies JSONSchema7,
-    {
-      validate: (value) => {
-        const parsed = context7ResolveInput.safeParse(value);
-        return parsed.success
-          ? { success: true, value: parsed.data }
-          : { error: parsed.error, success: false };
-      },
-    },
+    context7ResolveInput,
   ),
 });
 
@@ -212,15 +166,10 @@ const context7QueryInput = z.strictObject({
   query: z.string().min(1),
 });
 
-type Context7QueryToolInput = Readonly<{
-  libraryId: string;
-  query: string;
-}>;
-
 const context7QueryTool = tool({
   description: "Query Context7 docs for a libraryId.",
   execute: context7QueryDocsStep,
-  inputSchema: jsonSchema<Context7QueryToolInput>(
+  inputSchema: jsonSchemaWithZodValidation(
     {
       additionalProperties: false,
       properties: {
@@ -230,14 +179,7 @@ const context7QueryTool = tool({
       required: ["libraryId", "query"],
       type: "object",
     } satisfies JSONSchema7,
-    {
-      validate: (value) => {
-        const parsed = context7QueryInput.safeParse(value);
-        return parsed.success
-          ? { success: true, value: parsed.data }
-          : { error: parsed.error, success: false };
-      },
-    },
+    context7QueryInput,
   ),
 });
 
@@ -245,15 +187,11 @@ const researchReportInput = z.strictObject({
   query: z.string().min(1),
 });
 
-type ResearchReportToolInput = Readonly<{
-  query: string;
-}>;
-
 const createResearchReportTool = tool({
   description:
     "Generate a citation-backed research report artifact for this project.",
   execute: createResearchReportStep,
-  inputSchema: jsonSchema<ResearchReportToolInput>(
+  inputSchema: jsonSchemaWithZodValidation(
     {
       additionalProperties: false,
       properties: {
@@ -262,14 +200,51 @@ const createResearchReportTool = tool({
       required: ["query"],
       type: "object",
     } satisfies JSONSchema7,
+    researchReportInput,
+  ),
+});
+
+const skillsLoadInput = z.strictObject({
+  name: z.string().min(1),
+});
+
+const skillsLoadTool = tool({
+  description:
+    "Load a skill to get specialized instructions. Use this when a request matches an available skill description.",
+  execute: skillsLoadStep,
+  inputSchema: jsonSchemaWithZodValidation(
     {
-      validate: (value) => {
-        const parsed = researchReportInput.safeParse(value);
-        return parsed.success
-          ? { success: true, value: parsed.data }
-          : { error: parsed.error, success: false };
+      additionalProperties: false,
+      properties: {
+        name: { minLength: 1, type: "string" },
       },
-    },
+      required: ["name"],
+      type: "object",
+    } satisfies JSONSchema7,
+    skillsLoadInput,
+  ),
+});
+
+const skillsReadFileInput = z.strictObject({
+  name: z.string().min(1),
+  path: z.string().min(1),
+});
+
+const skillsReadFileTool = tool({
+  description:
+    "Read a file referenced by a repo-bundled skill (e.g. references/*, assets/*, scripts/*). Path must be relative to the skill directory.",
+  execute: skillsReadFileStep,
+  inputSchema: jsonSchemaWithZodValidation(
+    {
+      additionalProperties: false,
+      properties: {
+        name: { minLength: 1, type: "string" },
+        path: { minLength: 1, type: "string" },
+      },
+      required: ["name", "path"],
+      type: "object",
+    } satisfies JSONSchema7,
+    skillsReadFileInput,
   ),
 });
 
@@ -281,6 +256,8 @@ export const chatTools = {
   "context7.resolve-library-id": context7ResolveTool,
   "research.create-report": createResearchReportTool,
   retrieveProjectChunks: retrieveProjectChunksTool,
+  "skills.load": skillsLoadTool,
+  "skills.readFile": skillsReadFileTool,
   "web.extract": webExtractTool,
   "web.search": webSearchTool,
 } satisfies ToolSet;

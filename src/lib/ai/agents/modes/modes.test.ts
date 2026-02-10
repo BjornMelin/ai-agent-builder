@@ -24,7 +24,11 @@ describe("agent modes", () => {
     );
 
     expect(chatAssistantMode.modeId).toBe("chat-assistant");
-    expect(chatAssistantMode.allowedTools).toEqual(["retrieveProjectChunks"]);
+    expect(chatAssistantMode.allowedTools).toEqual([
+      "skills.load",
+      "skills.readFile",
+      "retrieveProjectChunks",
+    ]);
     expect(chatAssistantMode.requirements).toEqual({
       context7: false,
       webResearch: false,
@@ -37,6 +41,8 @@ describe("agent modes", () => {
 
     expect(architectMode.modeId).toBe("architect");
     expect(architectMode.allowedTools).toEqual([
+      "skills.load",
+      "skills.readFile",
       "retrieveProjectChunks",
       "context7.resolve-library-id",
       "context7.query-docs",
@@ -53,6 +59,8 @@ describe("agent modes", () => {
 
     expect(researcherMode.modeId).toBe("researcher");
     expect(researcherMode.allowedTools).toEqual([
+      "skills.load",
+      "skills.readFile",
       "retrieveProjectChunks",
       "web.search",
       "web.extract",

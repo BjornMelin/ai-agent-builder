@@ -393,6 +393,75 @@ export const reposTable = pgTable(
 );
 
 /**
+ * Project-scoped Agent Skills overrides (markdown instructions).
+ */
+export const projectSkillsTable = pgTable(
+  "project_skills",
+  {
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    description: text("description").notNull(),
+    id: uuid("id").primaryKey().defaultRandom(),
+    metadata: jsonb("metadata")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
+    name: text("name").notNull(),
+    nameNorm: varchar("name_norm", { length: 128 }).notNull(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("project_skills_project_id_idx").on(t.projectId),
+    uniqueIndex("project_skills_project_id_name_norm_unique").on(
+      t.projectId,
+      t.nameNorm,
+    ),
+    index("project_skills_project_id_updated_at_idx").on(
+      t.projectId,
+      t.updatedAt.desc(),
+    ),
+  ],
+);
+
+/**
+ * Workflow-run mapping for skills registry installs.
+ *
+ * @remarks
+ * `workflowRunId` is treated as a capability token; this table binds it to a
+ * project to prevent cross-project status disclosure.
+ */
+export const projectSkillRegistryInstallsTable = pgTable(
+  "project_skill_registry_installs",
+  {
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    registryId: text("registry_id").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    workflowRunId: varchar("workflow_run_id", { length: 128 }).notNull(),
+  },
+  (t) => [
+    index("project_skill_registry_installs_project_id_idx").on(t.projectId),
+    uniqueIndex("project_skill_registry_installs_workflow_run_id_unique").on(
+      t.workflowRunId,
+    ),
+  ],
+);
+
+/**
  * Explicit approvals for side-effectful actions.
  */
 export const approvalsTable = pgTable(
@@ -533,6 +602,8 @@ export const projectsRelations = relations(projectsTable, ({ many }) => ({
   files: many(projectFilesTable),
   repos: many(reposTable),
   runs: many(runsTable),
+  skillRegistryInstalls: many(projectSkillRegistryInstallsTable),
+  skills: many(projectSkillsTable),
 }));
 
 /**
@@ -628,6 +699,32 @@ export const chatThreadsRelations = relations(
     messages: many(chatMessagesTable),
     project: one(projectsTable, {
       fields: [chatThreadsTable.projectId],
+      references: [projectsTable.id],
+    }),
+  }),
+);
+
+/**
+ * Project skill relations for Drizzle query helpers.
+ */
+export const projectSkillsRelations = relations(
+  projectSkillsTable,
+  ({ one }) => ({
+    project: one(projectsTable, {
+      fields: [projectSkillsTable.projectId],
+      references: [projectsTable.id],
+    }),
+  }),
+);
+
+/**
+ * Skills registry install relations for Drizzle query helpers.
+ */
+export const projectSkillRegistryInstallsRelations = relations(
+  projectSkillRegistryInstallsTable,
+  ({ one }) => ({
+    project: one(projectsTable, {
+      fields: [projectSkillRegistryInstallsTable.projectId],
       references: [projectsTable.id],
     }),
   }),

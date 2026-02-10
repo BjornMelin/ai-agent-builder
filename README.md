@@ -20,6 +20,7 @@ trail).
 - Enforces per-user project ownership for all project-scoped reads/writes.
 - Applies server-side search guardrails (strict query validation + rate limiting).
 - Maintains a formal architecture pack (PRD, ADRs, specs, security) in-repo with deterministic export.
+- Supports runtime-loadable Agent Skills (SKILL.md progressive disclosure) with per-project overrides and skills.sh registry installs.
 - Supports an implementation/deployment phase (approval-gated side effects) to:
   - connect a target GitHub repo
   - plan changes traceable to artifacts
@@ -65,6 +66,8 @@ flowchart LR
 - Provisioning + deploy automation: [`docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md`](./docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)
 - Sandbox verification jobs: [`docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`](./docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
 - Workspace + search UX: [`docs/architecture/spec/SPEC-0020-project-workspace-and-search.md`](./docs/architecture/spec/SPEC-0020-project-workspace-and-search.md)
+- Agent Skills (progressive disclosure): [`docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md`](./docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md)
+- Skills registry installs: [`docs/architecture/spec/SPEC-0028-skills-registry-ui-and-bundled-installs.md`](./docs/architecture/spec/SPEC-0028-skills-registry-ui-and-bundled-installs.md)
 - GitOps + deploy ADRs:
   - [`docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md`](./docs/architecture/adr/ADR-0024-gitops-repository-automation-pr-based-workflows.md)
   - [`docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md`](./docs/architecture/adr/ADR-0025-infrastructure-provisioning-and-vercel-deployment-automation.md)
