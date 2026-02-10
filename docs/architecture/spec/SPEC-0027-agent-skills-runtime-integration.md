@@ -155,7 +155,7 @@ Integration points:
 - Code Mode (`src/workflows/code-mode/steps/code-mode.step.ts`):
   - injects skills prompt via `prepareCall`
   - exposes tools `skills.load` and `skills.readFile` (read-only)
-- Implementation planning (`src/workflows/runs/steps/implementation.step.ts`):
+- Implementation planning (`src/workflows/runs/steps/implementation/planning.step.ts`):
   - injects skills prompt and exposes skills tools
   - optionally exposes Context7 tools when configured
 
