@@ -105,6 +105,7 @@ export function SkillsInstalledTab(
     skillId: string;
     skillName: string;
   }> | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   const isEditing = editingId !== null;
 
@@ -178,6 +179,7 @@ export function SkillsInstalledTab(
 
   const requestDeleteSkillById = useCallback(
     (skillId: string, skillName: string) => {
+      setConfirmError(null);
       setDeleteTarget({ skillId, skillName });
     },
     [],
@@ -187,7 +189,7 @@ export function SkillsInstalledTab(
     if (!deleteTarget) return;
 
     setIsPending(true);
-    setError(null);
+    setConfirmError(null);
 
     let res: Response;
     try {
@@ -201,19 +203,22 @@ export function SkillsInstalledTab(
       });
     } catch (err) {
       setIsPending(false);
-      setError(err instanceof Error ? err.message : "Failed to delete skill.");
-      throw err;
+      setConfirmError(
+        err instanceof Error ? err.message : "Failed to delete skill.",
+      );
+      throw err instanceof Error ? err : new Error("Failed to delete skill.");
     }
 
     if (!res.ok) {
       const fromServer = await tryReadJsonErrorMessage(res);
       setIsPending(false);
-      setError(fromServer ?? `Failed to delete skill (${res.status}).`);
+      setConfirmError(fromServer ?? `Failed to delete skill (${res.status}).`);
       throw new Error("Failed to delete skill.");
     }
 
     setIsPending(false);
     setDeleteTarget(null);
+    setConfirmError(null);
     resetForm();
     refresh();
   }, [deleteTarget, props.projectId, refresh, resetForm]);
@@ -566,9 +571,13 @@ export function SkillsInstalledTab(
         confirmDisabled={isPending}
         confirmLabel="Delete"
         description="This action cannot be undone."
+        {...(confirmError ? { dialogError: confirmError } : {})}
         onConfirm={confirmDelete}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) {
+            setDeleteTarget(null);
+            setConfirmError(null);
+          }
         }}
         open={deleteTarget !== null}
         title={

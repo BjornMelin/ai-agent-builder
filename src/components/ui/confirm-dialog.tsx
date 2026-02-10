@@ -34,6 +34,14 @@ export type ConfirmDialogProps = Readonly<{
    */
   description?: string;
   /**
+   * Optional error message shown inside the dialog.
+   *
+   * @remarks
+   * This is useful when an async {@link ConfirmDialogProps.onConfirm} fails and
+   * the dialog should remain open while showing an actionable error to the user.
+   */
+  dialogError?: string;
+  /**
    * Confirm button label.
    *
    * @defaultValue "Confirm"
@@ -76,6 +84,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
     onOpenChange,
     title,
     description,
+    dialogError,
     confirmLabel = "Confirm",
     cancelLabel = "Cancel",
     confirmVariant = "destructive",
@@ -101,6 +110,12 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
             <DialogDescription>{description}</DialogDescription>
           ) : null}
         </DialogHeader>
+
+        {dialogError ? (
+          <p className="text-destructive text-sm" role="alert">
+            {dialogError}
+          </p>
+        ) : null}
 
         <DialogFooter>
           <Button
