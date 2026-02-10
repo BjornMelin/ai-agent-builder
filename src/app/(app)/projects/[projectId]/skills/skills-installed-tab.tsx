@@ -464,7 +464,6 @@ export function SkillsInstalledTab(
                                 aria-hidden="true"
                                 className="size-4"
                               />
-                              <span className="sr-only">Update skill</span>
                             </Button>
                             <Button
                               aria-label="Open on skills.sh"
@@ -486,9 +485,6 @@ export function SkillsInstalledTab(
                                   aria-hidden="true"
                                   className="size-4"
                                 />
-                                <span className="sr-only">
-                                  Open on skills.sh
-                                </span>
                               </a>
                             </Button>
                             <Button
@@ -505,7 +501,6 @@ export function SkillsInstalledTab(
                                 aria-hidden="true"
                                 className="size-4 text-destructive"
                               />
-                              <span className="sr-only">Uninstall skill</span>
                             </Button>
                           </>
                         ) : (
@@ -533,7 +528,6 @@ export function SkillsInstalledTab(
                                 aria-hidden="true"
                                 className="size-4"
                               />
-                              <span className="sr-only">Edit skill</span>
                             </Button>
                             <Button
                               aria-label="Delete skill"
@@ -549,7 +543,6 @@ export function SkillsInstalledTab(
                                 aria-hidden="true"
                                 className="size-4 text-destructive"
                               />
-                              <span className="sr-only">Delete skill</span>
                             </Button>
                           </>
                         )}

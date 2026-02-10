@@ -129,6 +129,12 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
             type="button"
             variant={confirmVariant}
           >
+            {isConfirming ? (
+              <span
+                aria-hidden="true"
+                className="mr-2 size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
+              />
+            ) : null}
             {confirmLabel}
           </Button>
         </DialogFooter>

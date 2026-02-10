@@ -206,7 +206,7 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
 
   useEffect(() => {
     if (!runId) return;
-    void reconnectSeed;
+    void reconnectSeed; // Reference to trigger effect re-run on reconnect requests
 
     const abort = abortRef.current;
     if (!abort) return;
