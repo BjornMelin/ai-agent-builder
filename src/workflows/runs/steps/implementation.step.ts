@@ -470,6 +470,7 @@ const implementationPlanSchema = z.strictObject({
  *
  * @param input - Context used to ground the planning prompt.
  * @returns Plan metadata used for PR and patch application.
+ * @throws AppError - When planning context is missing/invalid or the Context7 budget is exceeded.
  */
 export async function planImplementationRun(
   input: Readonly<{

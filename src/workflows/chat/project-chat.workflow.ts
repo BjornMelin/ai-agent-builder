@@ -25,6 +25,9 @@ import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
 /**
  * Durable multi-turn chat workflow for a single project.
  *
+ * @remarks
+ * See SPEC-0027 for skills prompt integration details.
+ *
  * @param projectId - Project scope for retrieval and persistence.
  * @param initialMessages - Initial UI messages (must end with a user message).
  * @param threadTitle - Thread title used when lifecycle persistence needs to create the row.

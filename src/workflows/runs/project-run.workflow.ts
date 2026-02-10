@@ -66,6 +66,8 @@ function toStepErrorPayload(error: unknown): Record<string, unknown> {
  * events to the workflow stream for UI consumption, and persists run/step state
  * to Neon via Drizzle.
  *
+ * Related to SPEC-0027.
+ *
  * @param runId - Durable run ID stored in Neon.
  * @returns Ok result.
  * @throws Error - Rethrows runtime/persistence errors encountered during
@@ -366,6 +368,7 @@ export async function projectRun(
         {
           inputs: {
             branchName: repo.branchName,
+            projectId: runInfo.projectId,
             repo: `${repo.owner}/${repo.name}`,
           },
           stepId: "impl.plan",
