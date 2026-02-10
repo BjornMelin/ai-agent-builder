@@ -2,6 +2,10 @@ import type { UIMessageChunk } from "ai";
 import { getWorkflowMetadata, getWritable } from "workflow";
 import { AppError } from "@/lib/core/errors";
 import type { RunStreamEvent } from "@/lib/runs/run-stream";
+import {
+  nowTimestamp,
+  toStepErrorPayload,
+} from "@/workflows/_shared/workflow-run-utils";
 import { approvalHook } from "@/workflows/approvals/hooks/approval";
 import { ensureApprovalRequest } from "@/workflows/runs/steps/approvals.step";
 import {
@@ -40,22 +44,6 @@ import {
 } from "@/workflows/runs/steps/writer.step";
 import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
 
-function nowTimestamp(): number {
-  return Date.now();
-}
-
-function toStepErrorPayload(error: unknown): Record<string, unknown> {
-  if (error instanceof Error) {
-    return { message: error.message || "Failed." };
-  }
-
-  if (typeof error === "string" && error.length > 0) {
-    return { message: error };
-  }
-
-  return { message: "Failed." };
-}
-
 /**
  * Durable run workflow (Workflow DevKit).
  *
@@ -80,6 +68,14 @@ export async function projectRun(
   const writable = getWritable<UIMessageChunk>();
   let activeStepId: string | null = null;
   let activeSandboxId: string | null = null;
+
+  async function bestEffort(fn: () => Promise<void>): Promise<void> {
+    try {
+      await fn();
+    } catch {
+      // Best effort only.
+    }
+  }
 
   try {
     const runInfo = await getRunInfo(runId);
@@ -110,14 +106,7 @@ export async function projectRun(
       inputs?: Record<string, unknown>;
     }>;
 
-    async function runPersistedStep<T>(
-      meta: StepMeta,
-      fn: () => Promise<T>,
-      toOutputs: (value: T) => Record<string, unknown> = (value) =>
-        typeof value === "object" && value !== null
-          ? (value as unknown as Record<string, unknown>)
-          : { value },
-    ): Promise<T> {
+    async function beginPersistedStep(meta: StepMeta): Promise<void> {
       await ensureRunStepRow({
         runId,
         stepId: meta.stepId,
@@ -135,6 +124,17 @@ export async function projectRun(
         type: "step-started",
       });
       activeStepId = meta.stepId;
+    }
+
+    async function runPersistedStep<T>(
+      meta: StepMeta,
+      fn: () => Promise<T>,
+      toOutputs: (value: T) => Record<string, unknown> = (value) =>
+        typeof value === "object" && value !== null
+          ? (value as unknown as Record<string, unknown>)
+          : { value },
+    ): Promise<T> {
+      await beginPersistedStep(meta);
 
       const result = await fn();
       const outputs = toOutputs(result);
@@ -166,23 +166,12 @@ export async function projectRun(
         metadata?: Record<string, unknown>;
       }>,
     ) {
-      await ensureRunStepRow({
+      await beginPersistedStep({
         inputs: { scope: meta.scope },
-        runId,
         stepId: meta.stepId,
         stepKind: "approval",
         stepName: meta.stepName,
       });
-      await beginRunStep({ runId, stepId: meta.stepId });
-      await writeRunEvent(writable, {
-        runId,
-        stepId: meta.stepId,
-        stepKind: "approval",
-        stepName: meta.stepName,
-        timestamp: nowTimestamp(),
-        type: "step-started",
-      });
-      activeStepId = meta.stepId;
 
       const approval = await ensureApprovalRequest({
         intentSummary: meta.intentSummary,
@@ -609,74 +598,77 @@ export async function projectRun(
     return { ok: true };
   } catch (error) {
     const cancelled = isWorkflowRunCancelledError(error);
-    try {
-      if (activeSandboxId !== null) {
-        await stopImplementationSandbox(activeSandboxId);
-        activeSandboxId = null;
+
+    async function finishActiveStepTerminal(
+      status: "failed" | "canceled",
+    ): Promise<void> {
+      if (activeStepId === null) return;
+
+      if (status === "canceled") {
+        await finishRunStep({
+          runId,
+          status: "canceled",
+          stepId: activeStepId,
+        });
+        await writeRunEvent(writable, {
+          runId,
+          status: "canceled",
+          stepId: activeStepId,
+          timestamp: nowTimestamp(),
+          type: "step-finished",
+        });
+        return;
       }
 
-      if (cancelled) {
-        if (activeStepId !== null) {
-          await finishRunStep({
-            runId,
-            status: "canceled",
-            stepId: activeStepId,
-          });
-          await writeRunEvent(writable, {
-            runId,
-            status: "canceled",
-            stepId: activeStepId,
-            timestamp: nowTimestamp(),
-            type: "step-finished",
-          });
-        }
-        await cancelRunAndSteps(runId);
+      const stepError = toStepErrorPayload(error);
+      await finishRunStep({
+        error: stepError,
+        runId,
+        status: "failed",
+        stepId: activeStepId,
+      });
+      await writeRunEvent(writable, {
+        error: stepError,
+        runId,
+        status: "failed",
+        stepId: activeStepId,
+        timestamp: nowTimestamp(),
+        type: "step-finished",
+      });
+    }
+
+    if (activeSandboxId !== null) {
+      const sandboxId = activeSandboxId;
+      activeSandboxId = null;
+      await bestEffort(async () => await stopImplementationSandbox(sandboxId));
+    }
+
+    if (cancelled) {
+      await bestEffort(async () => await finishActiveStepTerminal("canceled"));
+      await bestEffort(async () => await cancelRunAndSteps(runId));
+      await bestEffort(async () => {
         await writeRunEvent(writable, {
           runId,
           status: "canceled",
           timestamp: nowTimestamp(),
           type: "run-finished",
         });
-      } else {
-        if (activeStepId !== null) {
-          try {
-            const stepError = toStepErrorPayload(error);
-            await finishRunStep({
-              error: stepError,
-              runId,
-              status: "failed",
-              stepId: activeStepId,
-            });
-            await writeRunEvent(writable, {
-              error: stepError,
-              runId,
-              status: "failed",
-              stepId: activeStepId,
-              timestamp: nowTimestamp(),
-              type: "step-finished",
-            });
-          } catch {
-            // Best effort only; still attempt to mark the run as failed.
-          }
-        }
-
-        await markRunTerminal(runId, "failed");
-        await writeRunEvent(writable, {
-          runId,
-          status: "failed",
-          timestamp: nowTimestamp(),
-          type: "run-finished",
-        });
-      }
-    } catch {
-      // Best effort only; preserve original error.
+      });
+      throw error;
     }
+
+    await bestEffort(async () => await finishActiveStepTerminal("failed"));
+    await bestEffort(async () => await markRunTerminal(runId, "failed"));
+    await bestEffort(async () => {
+      await writeRunEvent(writable, {
+        runId,
+        status: "failed",
+        timestamp: nowTimestamp(),
+        type: "run-finished",
+      });
+    });
     throw error;
   } finally {
-    try {
-      await closeRunStream(writable);
-    } catch {
-      // Best effort only.
-    }
+    await bestEffort(async () => await closeRunStream(writable));
   }
 }

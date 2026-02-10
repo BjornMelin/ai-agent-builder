@@ -1,6 +1,9 @@
 import type { UIMessageChunk } from "ai";
 import { getWorkflowMetadata, getWritable } from "workflow";
-
+import {
+  nowTimestamp,
+  toStepErrorPayload,
+} from "@/workflows/_shared/workflow-run-utils";
 import { createCodeModeSummaryArtifact } from "@/workflows/code-mode/steps/artifacts.step";
 import { runCodeModeSession } from "@/workflows/code-mode/steps/code-mode.step";
 import {
@@ -17,22 +20,6 @@ import {
   markRunTerminal,
 } from "@/workflows/runs/steps/persist.step";
 import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
-
-function nowTimestamp(): number {
-  return Date.now();
-}
-
-function toStepErrorPayload(error: unknown): Record<string, unknown> {
-  if (error instanceof Error) {
-    return { message: error.message || "Failed." };
-  }
-
-  if (typeof error === "string" && error.length > 0) {
-    return { message: error };
-  }
-
-  return { message: "Failed." };
-}
 
 /**
  * Durable Code Mode workflow (Workflow DevKit).
@@ -53,6 +40,14 @@ export async function projectCodeMode(
   const writable = getWritable<UIMessageChunk>();
   let activeStepId: string | null = null;
 
+  async function bestEffort(fn: () => Promise<void>): Promise<void> {
+    try {
+      await fn();
+    } catch {
+      // Best effort only.
+    }
+  }
+
   try {
     const runInfo = await getRunInfo(runId);
 
@@ -63,55 +58,81 @@ export async function projectCodeMode(
     });
     await markRunRunning(runId);
 
-    await ensureRunStepRow({
-      runId,
-      stepId: "code_mode.session",
-      stepKind: "sandbox",
-      stepName: "Run Code Mode session",
-    });
-    await beginRunStep({ runId, stepId: "code_mode.session" });
-    activeStepId = "code_mode.session";
-    await writeCodeModeEvent(writable, {
-      message: "Sandbox session running…",
-      timestamp: nowTimestamp(),
-      type: "status",
-    });
-    const sessionOutputs = await runCodeModeSession({
-      runId,
-      workflowRunId,
-      writable,
-    });
-    await finishRunStep({
-      outputs: { ...sessionOutputs },
-      runId,
-      status: "succeeded",
-      stepId: "code_mode.session",
-    });
-    activeStepId = null;
+    type StepMeta = Readonly<{
+      stepId: string;
+      stepKind: "sandbox" | "tool";
+      stepName: string;
+      startedMessage?: string;
+    }>;
 
-    await ensureRunStepRow({
-      runId,
-      stepId: "artifact.code_mode_summary",
-      stepKind: "tool",
-      stepName: "Persist Code Mode summary artifact",
-    });
-    await beginRunStep({ runId, stepId: "artifact.code_mode_summary" });
-    activeStepId = "artifact.code_mode_summary";
-    const artifactOutputs = await createCodeModeSummaryArtifact({
-      assistantText: sessionOutputs.assistantText,
-      projectId: runInfo.projectId,
-      prompt: sessionOutputs.prompt,
-      runId,
-      transcriptBlobRef: sessionOutputs.transcriptBlobRef,
-      workflowRunId,
-    });
-    await finishRunStep({
-      outputs: { ...artifactOutputs },
-      runId,
-      status: "succeeded",
-      stepId: "artifact.code_mode_summary",
-    });
-    activeStepId = null;
+    async function runPersistedStep<T>(
+      meta: StepMeta,
+      fn: () => Promise<T>,
+    ): Promise<T> {
+      await ensureRunStepRow({
+        runId,
+        stepId: meta.stepId,
+        stepKind: meta.stepKind,
+        stepName: meta.stepName,
+      });
+      await beginRunStep({ runId, stepId: meta.stepId });
+      activeStepId = meta.stepId;
+
+      if (meta.startedMessage) {
+        await writeCodeModeEvent(writable, {
+          message: meta.startedMessage,
+          timestamp: nowTimestamp(),
+          type: "status",
+        });
+      }
+
+      const result = await fn();
+      const outputs =
+        typeof result === "object" && result !== null
+          ? (result as unknown as Record<string, unknown>)
+          : { value: result };
+
+      await finishRunStep({
+        outputs,
+        runId,
+        status: "succeeded",
+        stepId: meta.stepId,
+      });
+      activeStepId = null;
+      return result;
+    }
+
+    const sessionOutputs = await runPersistedStep(
+      {
+        startedMessage: "Sandbox session running…",
+        stepId: "code_mode.session",
+        stepKind: "sandbox",
+        stepName: "Run Code Mode session",
+      },
+      async () =>
+        await runCodeModeSession({
+          runId,
+          workflowRunId,
+          writable,
+        }),
+    );
+
+    await runPersistedStep(
+      {
+        stepId: "artifact.code_mode_summary",
+        stepKind: "tool",
+        stepName: "Persist Code Mode summary artifact",
+      },
+      async () =>
+        await createCodeModeSummaryArtifact({
+          assistantText: sessionOutputs.assistantText,
+          projectId: runInfo.projectId,
+          prompt: sessionOutputs.prompt,
+          runId,
+          transcriptBlobRef: sessionOutputs.transcriptBlobRef,
+          workflowRunId,
+        }),
+    );
 
     await markRunTerminal(runId, "succeeded");
     await writeCodeModeEvent(writable, {
@@ -123,52 +144,54 @@ export async function projectCodeMode(
     return { ok: true };
   } catch (error) {
     const cancelled = isWorkflowRunCancelledError(error);
-    try {
-      if (cancelled) {
-        if (activeStepId !== null) {
-          await finishRunStep({
-            runId,
-            status: "canceled",
-            stepId: activeStepId,
-          });
-          await writeCodeModeEvent(writable, {
-            message: "Code Mode canceled.",
-            timestamp: nowTimestamp(),
-            type: "status",
-          });
-        }
-        await cancelRunAndSteps(runId);
-      } else {
-        if (activeStepId !== null) {
-          try {
-            const stepError = toStepErrorPayload(error);
-            await finishRunStep({
-              error: stepError,
-              runId,
-              status: "failed",
-              stepId: activeStepId,
-            });
-          } catch {
-            // Best effort only.
-          }
-        }
 
-        await markRunTerminal(runId, "failed");
+    async function finishActiveStepTerminal(
+      status: "failed" | "canceled",
+    ): Promise<void> {
+      if (activeStepId === null) return;
+
+      if (status === "canceled") {
+        await finishRunStep({
+          runId,
+          status: "canceled",
+          stepId: activeStepId,
+        });
+        return;
+      }
+
+      const stepError = toStepErrorPayload(error);
+      await finishRunStep({
+        error: stepError,
+        runId,
+        status: "failed",
+        stepId: activeStepId,
+      });
+    }
+
+    if (cancelled) {
+      await bestEffort(async () => await finishActiveStepTerminal("canceled"));
+      await bestEffort(async () => {
         await writeCodeModeEvent(writable, {
-          message: "Code Mode failed.",
+          message: "Code Mode canceled.",
           timestamp: nowTimestamp(),
           type: "status",
         });
-      }
-    } catch {
-      // Best effort only; preserve original error.
+      });
+      await bestEffort(async () => await cancelRunAndSteps(runId));
+      throw error;
     }
+
+    await bestEffort(async () => await finishActiveStepTerminal("failed"));
+    await bestEffort(async () => await markRunTerminal(runId, "failed"));
+    await bestEffort(async () => {
+      await writeCodeModeEvent(writable, {
+        message: "Code Mode failed.",
+        timestamp: nowTimestamp(),
+        type: "status",
+      });
+    });
     throw error;
   } finally {
-    try {
-      await closeCodeModeStream(writable);
-    } catch {
-      // Best effort only.
-    }
+    await bestEffort(async () => await closeCodeModeStream(writable));
   }
 }
