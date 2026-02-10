@@ -3,15 +3,15 @@ import "server-only";
 import { z } from "zod";
 
 import { budgets } from "@/lib/config/budgets.server";
+import { isSafeExternalHttpUrl } from "@/lib/urls/safe-http-url";
 
-function isSafeExternalHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+const safeHttpUrlSchema = z
+  .string()
+  .trim()
+  .pipe(z.url())
+  .refine((value) => isSafeExternalHttpUrl(value), {
+    message: "Unsupported URL protocol.",
+  });
 
 /**
  * Canonical citation payload stored in `citations.payload`.
@@ -25,12 +25,7 @@ export const webCitationPayloadSchema = z.looseObject({
   publishedDate: z.string().min(1).optional(),
   title: z.string().min(1).optional(),
   tool: z.enum(["exa", "firecrawl"]).optional(),
-  url: z
-    .string()
-    .url()
-    .refine((value) => isSafeExternalHttpUrl(value), {
-      message: "Unsupported URL protocol.",
-    }),
+  url: safeHttpUrlSchema,
 });
 
 /**
@@ -77,8 +72,11 @@ export function normalizeWebCitations(
   const byUrl = new Map<string, WebCitationSource>();
   for (const source of sources) {
     if (!source.url) continue;
-    if (!byUrl.has(source.url)) {
-      byUrl.set(source.url, source);
+
+    // Normalize early so dedupe + persisted `sourceRef` are canonical.
+    const normalizedUrl = safeHttpUrlSchema.parse(source.url);
+    if (!byUrl.has(normalizedUrl)) {
+      byUrl.set(normalizedUrl, { ...source, url: normalizedUrl });
     }
   }
 
