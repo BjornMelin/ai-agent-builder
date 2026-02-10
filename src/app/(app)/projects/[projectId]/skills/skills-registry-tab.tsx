@@ -21,6 +21,7 @@ import { z } from "zod/mini";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Empty,
   EmptyDescription,
@@ -28,15 +29,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
-
-const errorResponseSchema = z.looseObject({
-  error: z.optional(
-    z.looseObject({
-      code: z.optional(z.string()),
-      message: z.optional(z.string()),
-    }),
-  ),
-});
+import { tryReadJsonErrorMessage } from "@/lib/core/errors";
 
 const registrySearchResponseSchema = z.looseObject({
   query: z.optional(z.string()),
@@ -66,16 +59,6 @@ const useHydrated = () =>
     () => true,
     () => false,
   );
-
-async function tryParseErrorMessage(res: Response): Promise<string | null> {
-  try {
-    const jsonUnknown: unknown = await res.json();
-    const parsed = errorResponseSchema.safeParse(jsonUnknown);
-    return parsed.success ? (parsed.data.error?.message ?? null) : null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Registry tab (skills.sh search + install).
@@ -122,6 +105,10 @@ export function SkillsRegistryTab(
   >([]);
   const [registryIsSearching, setRegistryIsSearching] = useState(false);
   const registrySearchSeq = useRef(0);
+  const [deleteTarget, setDeleteTarget] = useState<Readonly<{
+    skillId: string;
+    skillName: string;
+  }> | null>(null);
 
   const refresh = useCallback(() => {
     startTransition(() => router.refresh());
@@ -214,42 +201,44 @@ export function SkillsRegistryTab(
     [projectId, setRegistryError],
   );
 
-  const deleteSkillById = useCallback(
-    async (skillId: string, skillName: string) => {
-      const ok = window.confirm(`Delete skill "${skillName}"?`);
-      if (!ok) return;
-
-      setRegistryError(null);
-
-      let res: Response;
-      try {
-        res = await fetch("/api/skills", {
-          body: JSON.stringify({
-            projectId,
-            skillId,
-          }),
-          headers: { "content-type": "application/json" },
-          method: "DELETE",
-        });
-      } catch (err) {
-        setRegistryError(
-          err instanceof Error ? err.message : "Failed to delete skill.",
-        );
-        return;
-      }
-
-      if (!res.ok) {
-        const fromServer = await tryParseErrorMessage(res);
-        setRegistryError(
-          fromServer ?? `Failed to delete skill (${res.status}).`,
-        );
-        return;
-      }
-
-      refresh();
+  const requestDeleteSkillById = useCallback(
+    (skillId: string, skillName: string) => {
+      setDeleteTarget({ skillId, skillName });
     },
-    [projectId, refresh, setRegistryError],
+    [],
   );
+
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+
+    setRegistryError(null);
+
+    let res: Response;
+    try {
+      res = await fetch("/api/skills", {
+        body: JSON.stringify({
+          projectId,
+          skillId: deleteTarget.skillId,
+        }),
+        headers: { "content-type": "application/json" },
+        method: "DELETE",
+      });
+    } catch (err) {
+      setRegistryError(
+        err instanceof Error ? err.message : "Failed to delete skill.",
+      );
+      throw err;
+    }
+
+    if (!res.ok) {
+      const fromServer = await tryReadJsonErrorMessage(res);
+      setRegistryError(fromServer ?? `Failed to delete skill (${res.status}).`);
+      throw new Error("Failed to delete skill.");
+    }
+
+    setDeleteTarget(null);
+    refresh();
+  }, [deleteTarget, projectId, refresh, setRegistryError]);
 
   useEffect(() => {
     const q = registryQuery.trim();
@@ -438,12 +427,10 @@ export function SkillsRegistryTab(
                                 disabled={!canUninstall}
                                 onClick={() => {
                                   if (!skill.installedSkillId) return;
-                                  void deleteSkillById(
+                                  requestDeleteSkillById(
                                     skill.installedSkillId,
                                     skill.name,
-                                  ).catch(() => {
-                                    // Best-effort; errors are surfaced in the tab state.
-                                  });
+                                  );
                                 }}
                                 size="sm"
                                 variant="ghost"
@@ -487,6 +474,22 @@ export function SkillsRegistryTab(
           ) : null}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        confirmDisabled={registryPending !== null}
+        confirmLabel="Delete"
+        description="This action cannot be undone."
+        onConfirm={confirmDelete}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        open={deleteTarget !== null}
+        title={
+          deleteTarget
+            ? `Delete skill "${deleteTarget.skillName}"?`
+            : "Delete skill?"
+        }
+      />
     </div>
   );
 }

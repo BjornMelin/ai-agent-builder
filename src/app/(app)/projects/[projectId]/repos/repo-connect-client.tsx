@@ -3,23 +3,10 @@
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { startTransition, useId, useState } from "react";
-import { z } from "zod/mini";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-const connectResponseSchema = z.looseObject({
-  repo: z.optional(z.looseObject({ id: z.optional(z.string()) })),
-});
-
-const errorResponseSchema = z.looseObject({
-  error: z.optional(
-    z.looseObject({
-      code: z.optional(z.string()),
-      message: z.optional(z.string()),
-    }),
-  ),
-});
+import { tryReadJsonErrorMessage } from "@/lib/core/errors";
 
 type RepoSummary = Readonly<{
   id: string;
@@ -87,29 +74,10 @@ export function RepoConnectClient(
     }
 
     if (!res.ok) {
-      let message = `Failed to connect repo (${res.status}).`;
-      try {
-        const jsonUnknown: unknown = await res.json();
-        const parsed = errorResponseSchema.safeParse(jsonUnknown);
-        const fromServer = parsed.success ? parsed.data.error?.message : null;
-        if (fromServer) message = fromServer;
-      } catch {
-        // Ignore.
-      }
+      const fromServer = await tryReadJsonErrorMessage(res);
+      const message = fromServer ?? `Failed to connect repo (${res.status}).`;
       setIsPending(false);
       setError(message);
-      return;
-    }
-
-    try {
-      const jsonUnknown: unknown = await res.json();
-      const parsed = connectResponseSchema.safeParse(jsonUnknown);
-      if (!parsed.success) {
-        throw new Error("Unexpected response from server.");
-      }
-    } catch (err) {
-      setIsPending(false);
-      setError(err instanceof Error ? err.message : "Failed to connect repo.");
       return;
     }
 

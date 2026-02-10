@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 
 import {
   cancelRunAction,
   cancelRunInitialState,
 } from "@/app/(app)/projects/[projectId]/runs/actions";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /**
  * Run cancel button (server action).
@@ -22,20 +23,15 @@ export function RunCancelClient(
     cancelRunInitialState,
   );
   const errorId = `run-cancel-error-${props.runId}`;
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <form
       action={formAction}
       aria-describedby={state.status === "error" ? errorId : undefined}
       className="flex flex-col gap-2"
-      onSubmit={(event) => {
-        const confirmed = window.confirm(
-          "Cancel this run? This action cannot be undone.",
-        );
-        if (!confirmed) {
-          event.preventDefault();
-        }
-      }}
+      ref={formRef}
     >
       <input name="projectId" type="hidden" value={props.projectId} />
       <input name="runId" type="hidden" value={props.runId} />
@@ -49,7 +45,8 @@ export function RunCancelClient(
       <Button
         aria-busy={isPending}
         disabled={isPending || !props.canCancel}
-        type="submit"
+        onClick={() => setConfirmOpen(true)}
+        type="button"
         variant="destructive"
       >
         <span className="inline-flex items-center gap-2">
@@ -62,6 +59,17 @@ export function RunCancelClient(
           <span>Cancel run</span>
         </span>
       </Button>
+
+      <ConfirmDialog
+        confirmDisabled={isPending}
+        description="This action cannot be undone."
+        onConfirm={() => {
+          formRef.current?.requestSubmit();
+        }}
+        onOpenChange={setConfirmOpen}
+        open={confirmOpen}
+        title="Cancel this run?"
+      />
     </form>
   );
 }

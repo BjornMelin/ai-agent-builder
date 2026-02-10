@@ -25,6 +25,7 @@ import type {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Empty,
   EmptyDescription,
@@ -33,15 +34,7 @@ import {
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
-const errorResponseSchema = z.looseObject({
-  error: z.optional(
-    z.looseObject({
-      code: z.optional(z.string()),
-      message: z.optional(z.string()),
-    }),
-  ),
-});
+import { tryReadJsonErrorMessage } from "@/lib/core/errors";
 
 const getSkillResponseSchema = z.looseObject({
   skill: z.optional(
@@ -77,16 +70,6 @@ function formatSource(skill: EffectiveSkillSummary): Readonly<{
     : { label: "Repo", variant: "outline" };
 }
 
-async function tryParseErrorMessage(res: Response): Promise<string | null> {
-  try {
-    const jsonUnknown: unknown = await res.json();
-    const parsed = errorResponseSchema.safeParse(jsonUnknown);
-    return parsed.success ? (parsed.data.error?.message ?? null) : null;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Installed skills tab (project overrides + effective skills list).
  *
@@ -118,6 +101,10 @@ export function SkillsInstalledTab(
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Readonly<{
+    skillId: string;
+    skillName: string;
+  }> | null>(null);
 
   const isEditing = editingId !== null;
 
@@ -159,7 +146,7 @@ export function SkillsInstalledTab(
       }
 
       if (!res.ok) {
-        const fromServer = await tryParseErrorMessage(res);
+        const fromServer = await tryReadJsonErrorMessage(res);
         setIsLoadingEdit(false);
         setError(fromServer ?? `Failed to load skill (${res.status}).`);
         return;
@@ -189,45 +176,47 @@ export function SkillsInstalledTab(
     [props.projectId],
   );
 
-  const deleteSkillById = useCallback(
-    async (skillId: string, skillName: string) => {
-      const ok = window.confirm(`Delete skill "${skillName}"?`);
-      if (!ok) return;
-
-      setIsPending(true);
-      setError(null);
-
-      let res: Response;
-      try {
-        res = await fetch("/api/skills", {
-          body: JSON.stringify({
-            projectId: props.projectId,
-            skillId,
-          }),
-          headers: { "content-type": "application/json" },
-          method: "DELETE",
-        });
-      } catch (err) {
-        setIsPending(false);
-        setError(
-          err instanceof Error ? err.message : "Failed to delete skill.",
-        );
-        return;
-      }
-
-      if (!res.ok) {
-        const fromServer = await tryParseErrorMessage(res);
-        setIsPending(false);
-        setError(fromServer ?? `Failed to delete skill (${res.status}).`);
-        return;
-      }
-
-      setIsPending(false);
-      resetForm();
-      refresh();
+  const requestDeleteSkillById = useCallback(
+    (skillId: string, skillName: string) => {
+      setDeleteTarget({ skillId, skillName });
     },
-    [props.projectId, refresh, resetForm],
+    [],
   );
+
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+
+    setIsPending(true);
+    setError(null);
+
+    let res: Response;
+    try {
+      res = await fetch("/api/skills", {
+        body: JSON.stringify({
+          projectId: props.projectId,
+          skillId: deleteTarget.skillId,
+        }),
+        headers: { "content-type": "application/json" },
+        method: "DELETE",
+      });
+    } catch (err) {
+      setIsPending(false);
+      setError(err instanceof Error ? err.message : "Failed to delete skill.");
+      throw err;
+    }
+
+    if (!res.ok) {
+      const fromServer = await tryReadJsonErrorMessage(res);
+      setIsPending(false);
+      setError(fromServer ?? `Failed to delete skill (${res.status}).`);
+      throw new Error("Failed to delete skill.");
+    }
+
+    setIsPending(false);
+    setDeleteTarget(null);
+    resetForm();
+    refresh();
+  }, [deleteTarget, props.projectId, refresh, resetForm]);
 
   const upsert = useCallback(async () => {
     setIsPending(true);
@@ -252,7 +241,7 @@ export function SkillsInstalledTab(
     }
 
     if (!res.ok) {
-      const fromServer = await tryParseErrorMessage(res);
+      const fromServer = await tryReadJsonErrorMessage(res);
       setIsPending(false);
       setError(fromServer ?? `Failed to save skill (${res.status}).`);
       return;
@@ -452,6 +441,7 @@ export function SkillsInstalledTab(
                         {skill.origin === "registry" ? (
                           <>
                             <Button
+                              aria-label="Update skill"
                               disabled={
                                 isPending ||
                                 isLoadingEdit ||
@@ -477,6 +467,7 @@ export function SkillsInstalledTab(
                               <span className="sr-only">Update skill</span>
                             </Button>
                             <Button
+                              aria-label="Open on skills.sh"
                               asChild
                               size="icon"
                               type="button"
@@ -501,19 +492,10 @@ export function SkillsInstalledTab(
                               </a>
                             </Button>
                             <Button
+                              aria-label="Uninstall skill"
                               disabled={isPending || isLoadingEdit}
                               onClick={() =>
-                                void deleteSkillById(
-                                  skill.id,
-                                  skill.name,
-                                ).catch((err) => {
-                                  setIsPending(false);
-                                  setError(
-                                    err instanceof Error
-                                      ? err.message
-                                      : "Failed to delete skill.",
-                                  );
-                                })
+                                requestDeleteSkillById(skill.id, skill.name)
                               }
                               size="icon"
                               type="button"
@@ -529,6 +511,7 @@ export function SkillsInstalledTab(
                         ) : (
                           <>
                             <Button
+                              aria-label="Edit skill"
                               disabled={isPending || isLoadingEdit}
                               onClick={() =>
                                 void loadSkillContentForEdit(skill).catch(
@@ -553,19 +536,10 @@ export function SkillsInstalledTab(
                               <span className="sr-only">Edit skill</span>
                             </Button>
                             <Button
+                              aria-label="Delete skill"
                               disabled={isPending || isLoadingEdit}
                               onClick={() =>
-                                void deleteSkillById(
-                                  skill.id,
-                                  skill.name,
-                                ).catch((err) => {
-                                  setIsPending(false);
-                                  setError(
-                                    err instanceof Error
-                                      ? err.message
-                                      : "Failed to delete skill.",
-                                  );
-                                })
+                                requestDeleteSkillById(skill.id, skill.name)
                               }
                               size="icon"
                               type="button"
@@ -594,6 +568,22 @@ export function SkillsInstalledTab(
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        confirmDisabled={isPending}
+        confirmLabel="Delete"
+        description="This action cannot be undone."
+        onConfirm={confirmDelete}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        open={deleteTarget !== null}
+        title={
+          deleteTarget
+            ? `Delete skill "${deleteTarget.skillName}"?`
+            : "Delete skill?"
+        }
+      />
 
       <Card>
         <CardHeader>

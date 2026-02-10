@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { startTransition, useId, useState } from "react";
-import { z } from "zod/mini";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,19 +17,7 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
-
-const approvalsResponseSchema = z.looseObject({
-  approvals: z.optional(z.array(z.unknown())),
-});
-
-const errorResponseSchema = z.looseObject({
-  error: z.optional(
-    z.looseObject({
-      code: z.optional(z.string()),
-      message: z.optional(z.string()),
-    }),
-  ),
-});
+import { tryReadJsonErrorMessage } from "@/lib/core/errors";
 
 type ApprovalSummary = Readonly<{
   id: string;
@@ -110,36 +97,34 @@ export function ApprovalsClient(
     }
 
     if (!res.ok) {
-      let message = `Failed to refresh approvals (${res.status}).`;
-      try {
-        const jsonUnknown: unknown = await res.json();
-        const parsed = errorResponseSchema.safeParse(jsonUnknown);
-        const fromServer = parsed.success ? parsed.data.error?.message : null;
-        if (fromServer) message = fromServer;
-      } catch {
-        // Ignore.
-      }
+      const fromServer = await tryReadJsonErrorMessage(res);
+      const message =
+        fromServer ?? `Failed to refresh approvals (${res.status}).`;
       setIsRefreshing(false);
       setError(message);
       return;
     }
 
+    let jsonUnknown: unknown;
     try {
-      const jsonUnknown: unknown = await res.json();
-      const parsed = approvalsResponseSchema.safeParse(jsonUnknown);
-      const list = parsed.success ? parsed.data.approvals : null;
-      const next =
-        list && Array.isArray(list)
-          ? list.filter(isApprovalSummary)
-          : props.initialApprovals;
-      setApprovals(next);
+      jsonUnknown = await res.json();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to parse approvals.",
       );
-    } finally {
       setIsRefreshing(false);
+      return;
     }
+
+    const approvalsValue =
+      jsonUnknown && typeof jsonUnknown === "object"
+        ? (jsonUnknown as { approvals?: unknown }).approvals
+        : undefined;
+    const next = Array.isArray(approvalsValue)
+      ? approvalsValue.filter(isApprovalSummary)
+      : props.initialApprovals;
+    setApprovals(next);
+    setIsRefreshing(false);
   };
 
   const approve = async (approvalId: string): Promise<boolean> => {
@@ -160,15 +145,8 @@ export function ApprovalsClient(
     }
 
     if (!res.ok) {
-      let message = `Failed to approve (${res.status}).`;
-      try {
-        const jsonUnknown: unknown = await res.json();
-        const parsed = errorResponseSchema.safeParse(jsonUnknown);
-        const fromServer = parsed.success ? parsed.data.error?.message : null;
-        if (fromServer) message = fromServer;
-      } catch {
-        // Ignore.
-      }
+      const fromServer = await tryReadJsonErrorMessage(res);
+      const message = fromServer ?? `Failed to approve (${res.status}).`;
       setApprovingId(null);
       setError(message);
       return false;
