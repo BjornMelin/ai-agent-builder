@@ -22,11 +22,17 @@ export function isHttpOrHttpsUrl(value: string): boolean {
  * Normalize and validate an HTTP(S) URL.
  *
  * @param value - Unknown input value.
- * @returns Trimmed URL string if it parses and uses http/https; otherwise null.
+ * @returns Canonical URL string (`URL#href`) if it parses and uses http/https; otherwise null.
  */
 export function normalizeHttpOrHttpsUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   if (trimmed.length === 0) return null;
-  return isHttpOrHttpsUrl(trimmed) ? trimmed : null;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.href;
+  } catch {
+    return null;
+  }
 }
