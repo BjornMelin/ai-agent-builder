@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Dirent } from "node:fs";
+import { constants } from "node:fs";
 import { open, readdir } from "node:fs/promises";
 import path from "node:path";
 
@@ -35,7 +36,7 @@ async function readUtf8FileCapped(
     throw new AppError("internal_error", 500, "Unexpected error.", err);
   };
 
-  const handle = await open(filePath, "r").catch((err): never =>
+  const handle = await open(filePath, constants.O_RDONLY).catch((err): never =>
     throwMappedFsError(err),
   );
   try {
