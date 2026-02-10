@@ -86,6 +86,7 @@ export async function recordProjectSkillRegistryInstall(
  * @param input - Project + workflow run identifiers.
  * @returns Ok when the mapping exists.
  * @throws AppError - With code `"not_found"` when the mapping is missing.
+ * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function assertProjectOwnsRegistryInstallRun(
   input: Readonly<{ projectId: string; workflowRunId: string }>,

@@ -25,7 +25,7 @@ function toOriginLabel(
 /**
  * Skills tab content (suspends for request-time data).
  *
- * @param props - Content props containing `projectId` for the project being viewed.
+ * @param props - Skills content props containing the target projectId.
  * @returns Skills page UI.
  */
 export async function SkillsContent(props: Readonly<{ projectId: string }>) {
