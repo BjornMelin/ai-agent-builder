@@ -1,7 +1,6 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { z } from "zod";
 
 import {
   InlineCitation,
@@ -12,6 +11,7 @@ import {
 } from "@/components/ai-elements/inline-citation";
 import { MessageResponse } from "@/components/ai-elements/message";
 import { HoverCardTrigger } from "@/components/ui/hover-card";
+import { normalizeHttpOrHttpsUrl } from "@/lib/urls/safe-http-url";
 import { cn } from "@/lib/utils";
 
 type CitationDto = Readonly<{
@@ -19,34 +19,55 @@ type CitationDto = Readonly<{
   payload: Record<string, unknown>;
 }>;
 
-function isSafeExternalHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-const safeHttpUrlSchema = z
-  .string()
-  .trim()
-  .pipe(z.url())
-  .refine((value) => isSafeExternalHttpUrl(value), {
-    message: "Unsupported URL protocol.",
-  });
-
-const webCitationPayloadSchema = z.object({
-  description: z.string().min(1).optional(),
-  excerpt: z.string().min(1).optional(),
-  index: z.number().int().min(1),
-  title: z.string().min(1).optional(),
-  url: safeHttpUrlSchema,
-});
+type WebCitationPayload = Readonly<{
+  index: number;
+  url: string;
+  title?: string;
+  description?: string;
+  excerpt?: string;
+}>;
 
 const CITATION_HREF_PATTERN = /^citation:(\d+)$/;
 
 type AnchorProps = ComponentProps<"a"> & { node?: unknown };
+
+function normalizeOptionalNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function parseWebCitationPayload(payload: unknown): WebCitationPayload | null {
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    Array.isArray(payload)
+  ) {
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+
+  const index = record.index;
+  if (typeof index !== "number" || !Number.isInteger(index) || index < 1) {
+    return null;
+  }
+
+  const url = normalizeHttpOrHttpsUrl(record.url);
+  if (!url) return null;
+
+  const title = normalizeOptionalNonEmptyString(record.title);
+  const description = normalizeOptionalNonEmptyString(record.description);
+  const excerpt = normalizeOptionalNonEmptyString(record.excerpt);
+
+  return {
+    index,
+    url,
+    ...(title ? { title } : {}),
+    ...(description ? { description } : {}),
+    ...(excerpt ? { excerpt } : {}),
+  };
+}
 
 function buildCitationIndex(citations: readonly CitationDto[]) {
   const byIndex = new Map<
@@ -61,21 +82,13 @@ function buildCitationIndex(citations: readonly CitationDto[]) {
 
   for (const citation of citations) {
     if (citation.sourceType !== "web") continue;
-    const parsed = webCitationPayloadSchema.safeParse(citation.payload);
-    if (!parsed.success) continue;
-    byIndex.set(parsed.data.index, {
-      url: parsed.data.url,
-      ...(typeof parsed.data.title === "string" && parsed.data.title.length > 0
-        ? { title: parsed.data.title }
-        : {}),
-      ...(typeof parsed.data.description === "string" &&
-      parsed.data.description.length > 0
-        ? { description: parsed.data.description }
-        : {}),
-      ...(typeof parsed.data.excerpt === "string" &&
-      parsed.data.excerpt.length > 0
-        ? { excerpt: parsed.data.excerpt }
-        : {}),
+    const parsed = parseWebCitationPayload(citation.payload);
+    if (!parsed) continue;
+    byIndex.set(parsed.index, {
+      url: parsed.url,
+      ...(parsed.title ? { title: parsed.title } : {}),
+      ...(parsed.description ? { description: parsed.description } : {}),
+      ...(parsed.excerpt ? { excerpt: parsed.excerpt } : {}),
     });
   }
 
