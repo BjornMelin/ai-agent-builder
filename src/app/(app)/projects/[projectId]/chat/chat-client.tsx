@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { WorkflowChatTransport } from "@workflow/ai";
 import type { ChatTransport, UIDataTypes, UIMessage, UITools } from "ai";
 import { getToolName, isToolUIPart } from "ai";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -193,7 +193,6 @@ export function ProjectChatClient(
     defaultModeId: string;
   }>,
 ) {
-  const router = useRouter();
   const projectIdRef = useRef(props.projectId);
   useEffect(() => {
     projectIdRef.current = props.projectId;
@@ -605,25 +604,37 @@ export function ProjectChatClient(
               </li>
               {threads.map((t) => {
                 const isActive = activeThread?.id === t.id;
+                const href = `/projects/${encodeURIComponent(
+                  props.projectId,
+                )}/chat?threadId=${encodeURIComponent(t.id)}`;
                 return (
                   <li key={t.id}>
                     <Button
-                      aria-current={isActive ? "page" : undefined}
+                      asChild
                       aria-label={`${t.title} (${t.status})`}
-                      disabled={threadSelectorDisabled}
-                      onClick={() => {
-                        if (threadSelectorDisabled) return;
-                        void router.push(
-                          `/projects/${encodeURIComponent(
-                            props.projectId,
-                          )}/chat?threadId=${encodeURIComponent(t.id)}`,
-                        );
-                      }}
                       size="sm"
-                      type="button"
                       variant={isActive ? "secondary" : "outline"}
                     >
-                      <span className="max-w-[12rem] truncate">{t.title}</span>
+                      <Link
+                        aria-current={isActive ? "page" : undefined}
+                        aria-disabled={
+                          threadSelectorDisabled ? "true" : undefined
+                        }
+                        data-disabled={
+                          threadSelectorDisabled ? "true" : undefined
+                        }
+                        href={href}
+                        onClick={(e) => {
+                          if (!threadSelectorDisabled) return;
+                          e.preventDefault();
+                        }}
+                        prefetch={false}
+                        tabIndex={threadSelectorDisabled ? -1 : 0}
+                      >
+                        <span className="max-w-[12rem] truncate">
+                          {t.title}
+                        </span>
+                      </Link>
                     </Button>
                   </li>
                 );
@@ -793,10 +804,12 @@ export function ProjectChatClient(
               Message
             </label>
             <PromptInputTextarea
+              autoComplete="off"
               aria-describedby={composerError ? composerErrorId : undefined}
               aria-invalid={composerError ? "true" : undefined}
               id={composerInputId}
               labelId={composerLabelId}
+              name="message"
               placeholder="Ask about your project…"
               className="min-h-[120px]"
             />

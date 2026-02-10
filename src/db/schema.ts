@@ -431,6 +431,37 @@ export const projectSkillsTable = pgTable(
 );
 
 /**
+ * Workflow-run mapping for skills registry installs.
+ *
+ * @remarks
+ * `workflowRunId` is treated as a capability token; this table binds it to a
+ * project to prevent cross-project status disclosure.
+ */
+export const projectSkillRegistryInstallsTable = pgTable(
+  "project_skill_registry_installs",
+  {
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    registryId: text("registry_id").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    workflowRunId: varchar("workflow_run_id", { length: 128 }).notNull(),
+  },
+  (t) => [
+    index("project_skill_registry_installs_project_id_idx").on(t.projectId),
+    uniqueIndex("project_skill_registry_installs_workflow_run_id_unique").on(
+      t.workflowRunId,
+    ),
+  ],
+);
+
+/**
  * Explicit approvals for side-effectful actions.
  */
 export const approvalsTable = pgTable(
@@ -571,6 +602,7 @@ export const projectsRelations = relations(projectsTable, ({ many }) => ({
   files: many(projectFilesTable),
   repos: many(reposTable),
   runs: many(runsTable),
+  skillRegistryInstalls: many(projectSkillRegistryInstallsTable),
   skills: many(projectSkillsTable),
 }));
 
@@ -680,6 +712,19 @@ export const projectSkillsRelations = relations(
   ({ one }) => ({
     project: one(projectsTable, {
       fields: [projectSkillsTable.projectId],
+      references: [projectsTable.id],
+    }),
+  }),
+);
+
+/**
+ * Skills registry install relations for Drizzle query helpers.
+ */
+export const projectSkillRegistryInstallsRelations = relations(
+  projectSkillRegistryInstallsTable,
+  ({ one }) => ({
+    project: one(projectsTable, {
+      fields: [projectSkillRegistryInstallsTable.projectId],
       references: [projectsTable.id],
     }),
   }),

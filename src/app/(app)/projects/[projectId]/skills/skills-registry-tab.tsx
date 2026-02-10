@@ -13,6 +13,7 @@ import {
   useEffect,
   useId,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { z } from "zod/mini";
 
@@ -58,6 +59,13 @@ const registrySearchResponseSchema = z.looseObject({
   ),
 });
 
+const useHydrated = () =>
+  useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
+
 async function tryParseErrorMessage(res: Response): Promise<string | null> {
   try {
     const jsonUnknown: unknown = await res.json();
@@ -94,6 +102,7 @@ export function SkillsRegistryTab(
   } = props;
   const router = useRouter();
   const registrySearchId = useId();
+  const hydrated = useHydrated();
 
   const [registryQuery, setRegistryQuery] = useState("");
   const [registryResults, setRegistryResults] = useState<
@@ -279,6 +288,7 @@ export function SkillsRegistryTab(
               autoCapitalize="none"
               autoComplete="off"
               id={registrySearchId}
+              name="registryQuery"
               onChange={(e) => setRegistryQuery(e.target.value)}
               placeholder="e.g. sandbox, vitest, accessibility…"
               spellCheck={false}
@@ -287,14 +297,24 @@ export function SkillsRegistryTab(
           </div>
 
           {registryError ? (
-            <p className="text-destructive text-sm">{registryError}</p>
+            <output
+              aria-atomic="true"
+              aria-live="polite"
+              className="block text-destructive text-sm"
+            >
+              {registryError}
+            </output>
           ) : null}
 
           {registryPending ? (
-            <p className="text-muted-foreground text-sm">
+            <output
+              aria-atomic="true"
+              aria-live="polite"
+              className="block text-muted-foreground text-sm"
+            >
               Installing <code>{registryPending.registryId}</code> (workflow:{" "}
               <code>{registryPending.runId}</code>)…
-            </p>
+            </output>
           ) : null}
 
           {registryIsSearching ? (
@@ -345,7 +365,10 @@ export function SkillsRegistryTab(
                             </span>
                           </div>
                           <p className="text-muted-foreground text-xs">
-                            Installs: {skill.installs.toLocaleString()}
+                            Installs:{" "}
+                            {hydrated
+                              ? skill.installs.toLocaleString()
+                              : String(skill.installs)}
                           </p>
                         </div>
 

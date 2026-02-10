@@ -14,7 +14,6 @@ import {
   readSkillFileForProject,
 } from "@/lib/ai/skills/index.server";
 import { buildSkillsPrompt } from "@/lib/ai/skills/prompt";
-import type { SkillMetadata } from "@/lib/ai/skills/types";
 import { AppError } from "@/lib/core/errors";
 import { listReposByProject } from "@/lib/data/repos.server";
 import { env } from "@/lib/env";
@@ -464,10 +463,9 @@ export async function runCodeModeSession(
       skills: z.array(skillMetadataSchema),
     });
 
-    type CodeModeCallOptions = Readonly<{
-      projectId: string;
-      skills: SkillMetadata[];
-    }>;
+    type CodeModeCallOptions = Readonly<
+      z.output<typeof codeModeCallOptionsSchema>
+    >;
 
     function parseCodeModeSkillContext(value: unknown): CodeModeCallOptions {
       const parsed = codeModeCallOptionsSchema.safeParse(value);
@@ -479,7 +477,7 @@ export async function runCodeModeSession(
           parsed.error,
         );
       }
-      return parsed.data as CodeModeCallOptions;
+      return parsed.data;
     }
 
     const skillsLoadTool = tool({

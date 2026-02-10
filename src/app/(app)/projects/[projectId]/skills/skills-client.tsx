@@ -23,6 +23,10 @@ const registryStatusResponseSchema = z.looseObject({
 
 type RegistryPending = Readonly<{ registryId: string; runId: string }>;
 
+const REGISTRY_INSTALL_POLL_TIMEOUT_MS = 10 * 60_000;
+const REGISTRY_INSTALL_POLL_INTERVAL_MS = 1_000;
+const REGISTRY_INSTALL_POLL_MAX_INTERVAL_MS = 5_000;
+
 const SkillsRegistryTab = dynamic(
   async () => {
     const mod = await import(
@@ -113,62 +117,77 @@ export function SkillsClient(
     if (!registryPending) return;
 
     let cancelled = false;
+    const startedAt = Date.now();
+    let attempt = 0;
 
-    const poll = async () => {
-      while (!cancelled) {
-        let res: Response;
-        try {
-          const url = new URL(
-            "/api/skills/registry/status",
-            window.location.origin,
-          );
-          url.searchParams.set("projectId", props.projectId);
-          url.searchParams.set("runId", registryPending.runId);
-          res = await fetch(url.toString());
-        } catch (err) {
-          setRegistryError(
-            err instanceof Error
-              ? err.message
-              : "Failed to check install status.",
-          );
-          setRegistryPending(null);
-          return;
-        }
-
-        if (!res.ok) {
-          setRegistryError(`Install status failed (${res.status}).`);
-          setRegistryPending(null);
-          return;
-        }
-
-        const jsonUnknown: unknown = await res.json();
-        const parsed = registryStatusResponseSchema.safeParse(jsonUnknown);
-        if (!parsed.success) {
-          setRegistryError("Install status response was not understood.");
-          setRegistryPending(null);
-          return;
-        }
-
-        const status = parsed.data.status;
-        if (status === "succeeded") {
-          const runId = registryPending.runId;
-          setRegistryPending(null);
-          setRegistryCompletedRunId(runId);
-          refresh();
-          return;
-        }
-
-        if (status === "failed" || status === "canceled") {
-          setRegistryPending(null);
-          setRegistryError(`Install ${status}.`);
-          return;
-        }
-
-        await new Promise((r) => setTimeout(r, 1000));
+    const tick = async () => {
+      if (cancelled) return;
+      if (Date.now() - startedAt > REGISTRY_INSTALL_POLL_TIMEOUT_MS) {
+        setRegistryError(
+          "Install is taking longer than expected. Try again or refresh the page.",
+        );
+        setRegistryPending(null);
+        return;
       }
+
+      attempt += 1;
+
+      let res: Response;
+      try {
+        const url = new URL(
+          "/api/skills/registry/status",
+          window.location.origin,
+        );
+        url.searchParams.set("projectId", props.projectId);
+        url.searchParams.set("runId", registryPending.runId);
+        res = await fetch(url.toString());
+      } catch (err) {
+        setRegistryError(
+          err instanceof Error
+            ? err.message
+            : "Failed to check install status.",
+        );
+        setRegistryPending(null);
+        return;
+      }
+
+      if (!res.ok) {
+        setRegistryError(`Install status failed (${res.status}).`);
+        setRegistryPending(null);
+        return;
+      }
+
+      const jsonUnknown: unknown = await res.json();
+      const parsed = registryStatusResponseSchema.safeParse(jsonUnknown);
+      if (!parsed.success) {
+        setRegistryError("Install status response was not understood.");
+        setRegistryPending(null);
+        return;
+      }
+
+      const status = parsed.data.status;
+      if (status === "succeeded") {
+        const runId = registryPending.runId;
+        setRegistryPending(null);
+        setRegistryCompletedRunId(runId);
+        refresh();
+        return;
+      }
+
+      if (status === "failed" || status === "canceled") {
+        setRegistryPending(null);
+        setRegistryError(`Install ${status}.`);
+        return;
+      }
+
+      const delay = Math.min(
+        REGISTRY_INSTALL_POLL_INTERVAL_MS * 2 ** Math.min(attempt - 1, 2),
+        REGISTRY_INSTALL_POLL_MAX_INTERVAL_MS,
+      );
+      window.setTimeout(() => void tick(), delay);
     };
 
-    void poll();
+    void tick();
 
     return () => {
       cancelled = true;

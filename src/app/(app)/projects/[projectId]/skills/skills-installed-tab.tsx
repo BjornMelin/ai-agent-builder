@@ -15,6 +15,7 @@ import {
   useEffect,
   useId,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { z } from "zod/mini";
 import type {
@@ -56,6 +57,13 @@ const getSkillResponseSchema = z.looseObject({
 
 const FRONTMATTER_RE = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
 
+const useHydrated = () =>
+  useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
+
 function stripFrontmatter(content: string): string {
   return content.replace(FRONTMATTER_RE, "").trim();
 }
@@ -95,6 +103,7 @@ export function SkillsInstalledTab(
   }>,
 ) {
   const router = useRouter();
+  const hydrated = useHydrated();
 
   const nameId = useId();
   const descriptionId = useId();
@@ -538,7 +547,10 @@ export function SkillsInstalledTab(
                       </div>
                     </div>
                     <p className="text-muted-foreground text-xs">
-                      Updated: {new Date(skill.updatedAt).toLocaleString()}
+                      Updated:{" "}
+                      {hydrated
+                        ? new Date(skill.updatedAt).toLocaleString()
+                        : skill.updatedAt}
                     </p>
                   </div>
                 </li>

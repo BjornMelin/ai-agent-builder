@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
+  assertProjectOwnsRegistryInstallRun: vi.fn(),
   getProjectByIdForUser: vi.fn(),
   getRun: vi.fn(),
   requireAppUserApi: vi.fn(),
@@ -13,6 +14,11 @@ vi.mock("@/lib/auth/require-app-user-api.server", () => ({
 vi.mock("@/lib/data/projects.server", () => ({
   getProjectByIdForUser: (...args: unknown[]) =>
     state.getProjectByIdForUser(...args),
+}));
+
+vi.mock("@/lib/data/project-skill-registry-installs.server", () => ({
+  assertProjectOwnsRegistryInstallRun: (...args: unknown[]) =>
+    state.assertProjectOwnsRegistryInstallRun(...args),
 }));
 
 vi.mock("workflow/api", () => ({
@@ -30,6 +36,7 @@ beforeEach(() => {
 
   state.requireAppUserApi.mockResolvedValue({ id: "user_1" });
   state.getProjectByIdForUser.mockResolvedValue({ id: "proj_1" });
+  state.assertProjectOwnsRegistryInstallRun.mockResolvedValue(undefined);
   state.getRun.mockReturnValue({ status: Promise.resolve("running") });
 });
 
@@ -45,6 +52,10 @@ describe("GET /api/skills/registry/status", () => {
     await expect(res.json()).resolves.toMatchObject({
       runId: "wf_1",
       status: "running",
+    });
+    expect(state.assertProjectOwnsRegistryInstallRun).toHaveBeenCalledWith({
+      projectId: "proj_1",
+      workflowRunId: "wf_1",
     });
   });
 });

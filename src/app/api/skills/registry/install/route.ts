@@ -1,8 +1,10 @@
+import { cancelRun, getWorld } from "@workflow/core/runtime";
 import { start } from "workflow/api";
 import { z } from "zod";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
+import { recordProjectSkillRegistryInstall } from "@/lib/data/project-skill-registry-installs.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
@@ -30,10 +32,25 @@ export async function POST(req: Request): Promise<Response> {
       throw new AppError("forbidden", 403, "Forbidden.");
     }
 
-    const run = await start(installProjectSkillFromRegistry, [
-      project.id,
-      body.registryId,
-    ]);
+    const world = getWorld();
+    const run = await start(
+      installProjectSkillFromRegistry,
+      [project.id, body.registryId],
+      { world },
+    );
+
+    // Bind workflow run IDs to a project to prevent cross-project status probing.
+    try {
+      await recordProjectSkillRegistryInstall({
+        projectId: project.id,
+        registryId: body.registryId,
+        workflowRunId: run.runId,
+      });
+    } catch (err) {
+      // Prevent orphaned runs that can't be status-polled due to ownership enforcement.
+      await cancelRun(world, run.runId).catch(() => undefined);
+      throw err;
+    }
 
     return jsonOk(
       {

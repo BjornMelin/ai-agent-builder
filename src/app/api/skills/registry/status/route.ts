@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
+import { assertProjectOwnsRegistryInstallRun } from "@/lib/data/project-skill-registry-installs.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 
@@ -33,6 +34,11 @@ export async function GET(req: Request): Promise<Response> {
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }
+
+    await assertProjectOwnsRegistryInstallRun({
+      projectId: project.id,
+      workflowRunId: parsed.data.runId,
+    });
 
     let run: ReturnType<typeof getRun>;
     try {
