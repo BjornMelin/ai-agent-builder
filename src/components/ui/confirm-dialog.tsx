@@ -40,7 +40,7 @@ export type ConfirmDialogProps = Readonly<{
    * This is useful when an async {@link ConfirmDialogProps.onConfirm} fails and
    * the dialog should remain open while showing an actionable error to the user.
    */
-  dialogError?: string;
+  dialogError?: string | undefined;
   /**
    * Confirm button label.
    *

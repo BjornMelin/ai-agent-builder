@@ -571,7 +571,7 @@ export function SkillsInstalledTab(
         confirmDisabled={isPending}
         confirmLabel="Delete"
         description="This action cannot be undone."
-        {...(confirmError ? { dialogError: confirmError } : {})}
+        dialogError={confirmError ?? undefined}
         onConfirm={confirmDelete}
         onOpenChange={(open) => {
           if (!open) {
