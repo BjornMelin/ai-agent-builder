@@ -59,6 +59,42 @@ export type JsonError = Readonly<{
 }>;
 
 /**
+ * Returns `true` if the value matches the app's standard JSON error shape.
+ *
+ * @param value - Unknown JSON value.
+ * @returns `true` if {@link value} is a {@link JsonError}.
+ */
+export function isJsonError(value: unknown): value is JsonError {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  const err = v.error;
+  if (!err || typeof err !== "object") return false;
+  const e = err as Record<string, unknown>;
+  return typeof e.code === "string" && typeof e.message === "string";
+}
+
+/**
+ * Best-effort extraction of `{ error: { message } }` from a JSON response.
+ *
+ * @remarks
+ * This function consumes the response body via {@link Response.json}. Only call
+ * it in the branch where you won't read the body again.
+ *
+ * @param res - Fetch response.
+ * @returns The server-provided error message, or `null` if unavailable.
+ */
+export async function tryReadJsonErrorMessage(
+  res: Response,
+): Promise<string | null> {
+  try {
+    const jsonUnknown: unknown = await res.json();
+    return isJsonError(jsonUnknown) ? jsonUnknown.error.message : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * A JSON-safe return type for Server Actions.
  */
 export type ActionResult<T> =

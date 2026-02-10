@@ -1,14 +1,7 @@
 "use client";
 
 import { Loader2Icon } from "lucide-react";
-import {
-  startTransition,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { startTransition, useEffect, useId, useRef, useState } from "react";
 import { z } from "zod/mini";
 
 import { Terminal } from "@/components/ai-elements/terminal";
@@ -21,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { tryReadJsonErrorMessage } from "@/lib/core/errors";
 
 type StreamStatus = "idle" | "streaming" | "done" | "error";
 const STREAM_EVENT_FLUSH_MS = 16;
@@ -28,10 +22,6 @@ const STREAM_EVENT_FLUSH_MS = 16;
 const startResponseSchema = z.looseObject({
   runId: z.optional(z.string()),
   workflowRunId: z.optional(z.string()),
-});
-
-const errorResponseSchema = z.looseObject({
-  error: z.optional(z.looseObject({ message: z.optional(z.string()) })),
 });
 
 const uiMessageChunkSchema = z.looseObject({
@@ -139,11 +129,6 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
     [],
   );
 
-  const streamStorageKey = useMemo(
-    () => (runId ? `workflow:code-mode:v1:${runId}:startIndex` : null),
-    [runId],
-  );
-
   const start = async () => {
     abortRef.current?.abort();
     abortRef.current = new AbortController();
@@ -175,15 +160,9 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
     }
 
     if (!res.ok) {
-      let message = `Failed to start Code Mode (${res.status}).`;
-      try {
-        const jsonUnknown: unknown = await res.json();
-        const parsed = errorResponseSchema.safeParse(jsonUnknown);
-        const fromServer = parsed.success ? parsed.data.error?.message : null;
-        if (fromServer) message = fromServer;
-      } catch {
-        // Ignore.
-      }
+      const fromServer = await tryReadJsonErrorMessage(res);
+      const message =
+        fromServer ?? `Failed to start Code Mode (${res.status}).`;
       setStatus("error");
       setError(message);
       return;
@@ -226,14 +205,14 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
   };
 
   useEffect(() => {
-    if (!runId || !streamStorageKey) return;
-    void reconnectSeed;
+    if (!runId) return;
+    void reconnectSeed; // Reference to trigger effect re-run on reconnect requests
 
     const abort = abortRef.current;
     if (!abort) return;
 
     const currentRunId = runId;
-    const storageKey = streamStorageKey;
+    const storageKey = `workflow:code-mode:v1:${currentRunId}:startIndex`;
 
     let startIndex = readStartIndex(storageKey);
     const autoReconnectDelaysMs = [250, 750, 1500] as const;
@@ -280,15 +259,8 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
       }
 
       if (!res.ok) {
-        let message = `Failed to open stream (${res.status}).`;
-        try {
-          const jsonUnknown: unknown = await res.json();
-          const parsed = errorResponseSchema.safeParse(jsonUnknown);
-          const fromServer = parsed.success ? parsed.data.error?.message : null;
-          if (fromServer) message = fromServer;
-        } catch {
-          // Ignore.
-        }
+        const fromServer = await tryReadJsonErrorMessage(res);
+        const message = fromServer ?? `Failed to open stream (${res.status}).`;
         setError(message);
         setStatus("error");
         return "error";
@@ -471,7 +443,7 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
       setStatus("error");
       setError(err instanceof Error ? err.message : "Stream disconnected.");
     });
-  }, [reconnectSeed, runId, streamStorageKey]);
+  }, [reconnectSeed, runId]);
 
   const cancel = async () => {
     if (!runId) return;
