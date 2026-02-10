@@ -17,6 +17,9 @@ const querySchema = z.strictObject({
  *
  * @param req - HTTP request.
  * @returns Workflow run status or JSON error.
+ * @throws AppError - With code `"bad_request"` when the query is invalid.
+ * @throws AppError - With code `"forbidden"` when the project is not accessible to the current user.
+ * @throws AppError - With code `"not_found"` when the registry install mapping is missing or the workflow run cannot be found.
  */
 export async function GET(req: Request): Promise<Response> {
   try {

@@ -115,6 +115,8 @@ export async function listAvailableSkillsForProject(
  *
  * @param input - Project scope and skill identifier.
  * @returns Skill load result.
+ * @throws AppError - With code `"bad_request"` when the skill name is invalid.
+ * @throws AppError - With code `"env_invalid"` when the Agent Skills environment is invalid (for example, unsupported `AGENT_SKILLS_DIRS` roots).
  */
 export async function loadSkillForProject(
   input: Readonly<{ projectId: string; name: string }>,
@@ -154,10 +156,13 @@ export async function loadSkillForProject(
 }
 
 /**
- * Read a file within a filesystem skill directory.
+ * Read a skill file from either a filesystem skill directory or a bundled project skill (ZIP in Blob).
  *
  * @param input - Project scope, skill name, and relative file path.
  * @returns File read result.
+ * @throws AppError - With code `"bad_request"` when the skill name/path is invalid.
+ * @throws AppError - With code `"env_invalid"` when the Agent Skills environment is invalid.
+ * @throws AppError - When reading from a bundled (Blob/ZIP) skill fails.
  */
 export async function readSkillFileForProject(
   input: Readonly<{ projectId: string; name: string; path: string }>,

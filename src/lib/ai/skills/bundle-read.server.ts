@@ -62,6 +62,9 @@ function readZipUncompressedSize(file: JSZip.JSZipObject): number | null {
  *
  * @param input - Bundle reference and file path.
  * @returns UTF-8 file content.
+ * @throws AppError - With code `"upstream_failed"` when downloading the skill bundle fails.
+ * @throws AppError - With code `"not_found"` when the requested ZIP entry is missing.
+ * @throws AppError - With code `"bad_request"` when the ZIP cannot be read safely (invalid path, binary content, or size limits).
  */
 export async function readBundledSkillFileFromBlob(
   input: Readonly<{ blobPath: string; relativePath: string }>,

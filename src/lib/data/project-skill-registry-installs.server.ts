@@ -29,6 +29,8 @@ function maybeWrapDbNotMigrated(err: unknown): unknown {
  *
  * @param input - Project + workflow run identifiers.
  * @returns Stored mapping row.
+ * @throws AppError - With code `"db_insert_failed"` when {@link recordProjectSkillRegistryInstall} cannot insert or resolve the {@link InstallRow}.
+ * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function recordProjectSkillRegistryInstall(
   input: Readonly<{

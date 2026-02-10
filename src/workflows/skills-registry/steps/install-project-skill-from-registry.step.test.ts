@@ -5,9 +5,11 @@ const state = vi.hoisted(() => ({
   del: vi.fn(),
   downloadGithubRepoZip: vi.fn(),
   error: vi.fn(),
-  getProjectSkillByName: vi.fn(),
+  findProjectSkillByNameUncached: vi.fn(),
+  findProjectSkillByRegistryId: vi.fn(),
   putProjectSkillBundleBlob: vi.fn(),
   resolveRegistrySkillFromRepoZip: vi.fn(),
+  updateProjectSkillById: vi.fn(),
   upsertProjectSkill: vi.fn(),
 }));
 
@@ -20,8 +22,12 @@ vi.mock("@/lib/core/log", () => ({
 }));
 
 vi.mock("@/lib/data/project-skills.server", () => ({
-  getProjectSkillByName: (...args: unknown[]) =>
-    state.getProjectSkillByName(...args),
+  findProjectSkillByNameUncached: (...args: unknown[]) =>
+    state.findProjectSkillByNameUncached(...args),
+  findProjectSkillByRegistryId: (...args: unknown[]) =>
+    state.findProjectSkillByRegistryId(...args),
+  updateProjectSkillById: (...args: unknown[]) =>
+    state.updateProjectSkillById(...args),
   upsertProjectSkill: (...args: unknown[]) => state.upsertProjectSkill(...args),
 }));
 
@@ -55,7 +61,8 @@ async function loadModule() {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
-  state.getProjectSkillByName.mockResolvedValue(null);
+  state.findProjectSkillByNameUncached.mockResolvedValue(null);
+  state.findProjectSkillByRegistryId.mockResolvedValue(null);
   state.del.mockResolvedValue(undefined);
 });
 
@@ -84,7 +91,7 @@ describe("installProjectSkillFromRegistryStep", () => {
       repoDirectory: "skills/find-skills",
     });
     state.putProjectSkillBundleBlob.mockResolvedValueOnce(
-      "projects/proj_1/skills/find-skills/bundles/skill-bundle.zip-abc123",
+      "projects/proj_1/skills/vercel-labs-skills-find-skills/bundles/skill-bundle.zip-abc123",
     );
     state.upsertProjectSkill.mockResolvedValueOnce({
       content: "# body",
@@ -117,7 +124,7 @@ describe("installProjectSkillFromRegistryStep", () => {
       expect(state.putProjectSkillBundleBlob).toHaveBeenCalledWith(
         expect.objectContaining({
           blobPath:
-            "projects/proj_1/skills/find-skills/bundles/skill-bundle.zip",
+            "projects/proj_1/skills/vercel-labs-skills-find-skills/bundles/skill-bundle.zip",
         }),
       );
 
@@ -126,7 +133,7 @@ describe("installProjectSkillFromRegistryStep", () => {
           metadata: expect.objectContaining({
             bundle: expect.objectContaining({
               blobPath:
-                "projects/proj_1/skills/find-skills/bundles/skill-bundle.zip-abc123",
+                "projects/proj_1/skills/vercel-labs-skills-find-skills/bundles/skill-bundle.zip-abc123",
               fileCount: 2,
               format: "zip-v1",
               sizeBytes: 123,
@@ -159,7 +166,7 @@ describe("installProjectSkillFromRegistryStep", () => {
       name: "Find Skills",
       repoDirectory: "skills/find-skills",
     });
-    state.getProjectSkillByName.mockResolvedValueOnce({
+    state.findProjectSkillByRegistryId.mockResolvedValueOnce({
       content: "---\nname: Find Skills\ndescription: Find skills\n---\n",
       createdAt: "2025-01-01T00:00:00.000Z",
       description: "Find skills",
@@ -171,13 +178,18 @@ describe("installProjectSkillFromRegistryStep", () => {
           format: "zip-v1",
           sizeBytes: 1,
         },
+        registry: {
+          id: "vercel-labs/skills/find-skills",
+          skillId: "find-skills",
+          source: "vercel-labs/skills",
+        },
       },
       name: "Find Skills",
       projectId: "proj_1",
       updatedAt: "2025-01-01T00:00:00.000Z",
     });
     state.putProjectSkillBundleBlob.mockResolvedValueOnce("new-bundle.zip");
-    state.upsertProjectSkill.mockResolvedValueOnce({
+    state.updateProjectSkillById.mockResolvedValueOnce({
       content: "# body",
       createdAt: "2025-01-01T00:00:00.000Z",
       description: "Find skills",

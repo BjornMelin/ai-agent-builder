@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { cacheLife, cacheTag, revalidateTag } from "next/cache";
 
 import { getDb } from "@/db/client";
@@ -56,12 +56,21 @@ function maybeWrapDbNotMigrated(err: unknown): unknown {
   return err;
 }
 
-function normalizeSkillName(value: string): string {
-  const normalized = value.trim().toLowerCase();
-  if (!normalized) {
+const MAX_SKILL_NAME_CHARS = 128;
+
+function sanitizeSkillName(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
     throw new AppError("bad_request", 400, "Invalid skill name.");
   }
-  return normalized;
+  if (trimmed.length > MAX_SKILL_NAME_CHARS) {
+    throw new AppError("bad_request", 400, "Skill name too long.");
+  }
+  return trimmed;
+}
+
+function normalizeSkillName(value: string): string {
+  return sanitizeSkillName(value).toLowerCase();
 }
 
 /**
@@ -123,6 +132,68 @@ export async function getProjectSkillByName(
 }
 
 /**
+ * Find a registry-installed project skill by registry id.
+ *
+ * @remarks
+ * This bypasses Cache Components to avoid stale reads in workflow/step contexts.
+ *
+ * @param projectId - Project ID.
+ * @param registryId - Canonical registry identifier (`owner/repo/skillId`).
+ * @returns Matching skill or null.
+ */
+export async function findProjectSkillByRegistryId(
+  projectId: string,
+  registryId: string,
+): Promise<ProjectSkillDto | null> {
+  const registryIdTrimmed = registryId.trim();
+  if (!registryIdTrimmed) {
+    throw new AppError("bad_request", 400, "Invalid registry id.");
+  }
+
+  const db = getDb();
+  try {
+    const row = await db.query.projectSkillsTable.findFirst({
+      where: and(
+        eq(schema.projectSkillsTable.projectId, projectId),
+        sql`${schema.projectSkillsTable.metadata} -> 'registry' ->> 'id' = ${registryIdTrimmed}`,
+      ),
+    });
+    return row ? toProjectSkillDto(row) : null;
+  } catch (err) {
+    throw maybeWrapDbNotMigrated(err);
+  }
+}
+
+/**
+ * Find a project skill by name (case-insensitive) without Cache Components.
+ *
+ * @remarks
+ * Intended for workflow/step usage where reads must reflect the latest writes.
+ *
+ * @param projectId - Project ID.
+ * @param name - Skill name.
+ * @returns Matching skill or null.
+ */
+export async function findProjectSkillByNameUncached(
+  projectId: string,
+  name: string,
+): Promise<ProjectSkillDto | null> {
+  const db = getDb();
+  try {
+    const nameNorm = normalizeSkillName(name);
+    const row = await db.query.projectSkillsTable.findFirst({
+      where: and(
+        eq(schema.projectSkillsTable.projectId, projectId),
+        eq(schema.projectSkillsTable.nameNorm, nameNorm),
+      ),
+    });
+    return row ? toProjectSkillDto(row) : null;
+  } catch (err) {
+    throw maybeWrapDbNotMigrated(err);
+  }
+}
+
+/**
  * Find a project skill by id.
  *
  * @param projectId - Project ID.
@@ -169,7 +240,8 @@ export async function upsertProjectSkill(
 ): Promise<ProjectSkillDto> {
   const db = getDb();
   const now = new Date();
-  const nameNorm = normalizeSkillName(input.name);
+  const nameTrimmed = sanitizeSkillName(input.name);
+  const nameNorm = nameTrimmed.toLowerCase();
 
   try {
     const existing = await db.query.projectSkillsTable.findFirst({
@@ -186,7 +258,7 @@ export async function upsertProjectSkill(
           content: input.content,
           description: input.description,
           metadata: input.metadata ?? existing.metadata,
-          name: input.name.trim(),
+          name: nameTrimmed,
           nameNorm,
           updatedAt: now,
         })
@@ -211,7 +283,7 @@ export async function upsertProjectSkill(
         content: input.content,
         description: input.description,
         metadata: input.metadata ?? {},
-        name: input.name.trim(),
+        name: nameTrimmed,
         nameNorm,
         projectId: input.projectId,
         updatedAt: now,
@@ -223,6 +295,83 @@ export async function upsertProjectSkill(
         "db_insert_failed",
         500,
         "Failed to create project skill.",
+      );
+    }
+
+    revalidateTag(tagProjectSkillsIndex(input.projectId), "max");
+    return toProjectSkillDto(row);
+  } catch (err) {
+    throw maybeWrapDbNotMigrated(err);
+  }
+}
+
+/**
+ * Update a project skill by id.
+ *
+ * @remarks
+ * This is used when an external identifier (like `metadata.registry.id`) should
+ * drive updates even if the skill name changes.
+ *
+ * @param input - Update payload.
+ * @returns Updated skill.
+ */
+export async function updateProjectSkillById(
+  input: Readonly<{
+    projectId: string;
+    skillId: string;
+    name: string;
+    description: string;
+    content: string;
+    metadata?: Record<string, unknown>;
+  }>,
+): Promise<ProjectSkillDto> {
+  const db = getDb();
+  const now = new Date();
+  const nameTrimmed = sanitizeSkillName(input.name);
+  const nameNorm = nameTrimmed.toLowerCase();
+
+  try {
+    const existing = await db.query.projectSkillsTable.findFirst({
+      where: and(
+        eq(schema.projectSkillsTable.projectId, input.projectId),
+        eq(schema.projectSkillsTable.id, input.skillId),
+      ),
+    });
+
+    if (!existing) {
+      throw new AppError("not_found", 404, "Skill not found.");
+    }
+
+    const conflict = await db.query.projectSkillsTable.findFirst({
+      where: and(
+        eq(schema.projectSkillsTable.projectId, input.projectId),
+        eq(schema.projectSkillsTable.nameNorm, nameNorm),
+        sql`${schema.projectSkillsTable.id} <> ${input.skillId}`,
+      ),
+    });
+
+    if (conflict) {
+      throw new AppError("conflict", 409, "Skill name already exists.");
+    }
+
+    const [row] = await db
+      .update(schema.projectSkillsTable)
+      .set({
+        content: input.content,
+        description: input.description,
+        metadata: input.metadata ?? existing.metadata,
+        name: nameTrimmed,
+        nameNorm,
+        updatedAt: now,
+      })
+      .where(eq(schema.projectSkillsTable.id, existing.id))
+      .returning();
+
+    if (!row) {
+      throw new AppError(
+        "db_update_failed",
+        500,
+        "Failed to update project skill.",
       );
     }
 

@@ -35,6 +35,9 @@ function parseLimit(value: string | undefined): number | undefined {
  *
  * @param req - HTTP request.
  * @returns Search results annotated with install state.
+ * @throws AppError - With code `"bad_request"` when the query is invalid (e.g. missing `projectId`/`q` or invalid `limit`).
+ * @throws AppError - With code `"forbidden"` when the project is not accessible to the current user.
+ * @throws AppError - With code `"upstream_failed"` when the registry lookup fails upstream.
  */
 export async function GET(req: Request): Promise<Response> {
   try {
@@ -56,7 +59,9 @@ export async function GET(req: Request): Promise<Response> {
 
     const limit = parseLimit(parsed.data.limit);
     const [results, projectSkills, effectiveSkills] = await Promise.all([
-      searchSkillsShRegistry(parsed.data.q, { ...(limit ? { limit } : {}) }),
+      searchSkillsShRegistry(parsed.data.q, {
+        ...(limit !== undefined ? { limit } : {}),
+      }),
       listProjectSkillsByProject(project.id),
       listAvailableSkillsForProject(project.id),
     ]);

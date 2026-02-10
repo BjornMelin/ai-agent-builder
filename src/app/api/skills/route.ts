@@ -123,15 +123,27 @@ export async function GET(req: Request) {
  * @throws AppError - With code "forbidden" when the project is not accessible.
  */
 export async function POST(req: Request) {
+  let userId: string | null = null;
+  let projectId: string | null = null;
+  let skillName: string | null = null;
   try {
     const authPromise = requireAppUserApi();
     const bodyPromise = parseJsonBody(req, upsertBodySchema);
     const [user, body] = await Promise.all([authPromise, bodyPromise]);
 
+    userId = user.id;
+    projectId = body.projectId;
+    skillName = body.name;
+
     const project = await getProjectByIdForUser(body.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }
+
+    log.info("project_skill_upsert_started", {
+      projectId: project.id,
+      userId: user.id,
+    });
 
     const skill = await upsertProjectSkill({
       content: buildSkillMarkdown({
@@ -152,8 +164,20 @@ export async function POST(req: Request) {
       updatedAt: skill.updatedAt,
     };
 
+    log.info("project_skill_upsert_succeeded", {
+      projectId: project.id,
+      skillId: skill.id,
+      userId: user.id,
+    });
+
     return jsonCreated({ skill: publicSkill });
   } catch (err) {
+    log.error("project_skill_upsert_failed", {
+      err,
+      projectId,
+      skillName,
+      userId,
+    });
     return jsonError(err);
   }
 }
@@ -167,15 +191,28 @@ export async function POST(req: Request) {
  * @throws AppError - With code "forbidden" when the project is not accessible.
  */
 export async function DELETE(req: Request) {
+  let userId: string | null = null;
+  let projectId: string | null = null;
+  let skillId: string | null = null;
   try {
     const authPromise = requireAppUserApi();
     const bodyPromise = parseJsonBody(req, deleteBodySchema);
     const [user, body] = await Promise.all([authPromise, bodyPromise]);
 
+    userId = user.id;
+    projectId = body.projectId;
+    skillId = body.skillId;
+
     const project = await getProjectByIdForUser(body.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }
+
+    log.info("project_skill_delete_started", {
+      projectId: project.id,
+      skillId: body.skillId,
+      userId: user.id,
+    });
 
     const skill = await getProjectSkillById(project.id, body.skillId);
     if (skill) {
@@ -195,8 +232,19 @@ export async function DELETE(req: Request) {
     }
 
     await deleteProjectSkill({ projectId: project.id, skillId: body.skillId });
+    log.info("project_skill_delete_succeeded", {
+      projectId: project.id,
+      skillId: body.skillId,
+      userId: user.id,
+    });
     return jsonOk({ ok: true });
   } catch (err) {
+    log.error("project_skill_delete_failed", {
+      err,
+      projectId,
+      skillId,
+      userId,
+    });
     return jsonError(err);
   }
 }

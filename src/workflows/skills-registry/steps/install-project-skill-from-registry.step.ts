@@ -1,13 +1,20 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import { del } from "@vercel/blob";
 import { z } from "zod";
 
-import { getProjectSkillBundleRef } from "@/lib/ai/skills/project-skill-metadata.server";
+import {
+  getProjectSkillBundleRef,
+  getProjectSkillRegistryRef,
+} from "@/lib/ai/skills/project-skill-metadata.server";
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
 import {
-  getProjectSkillByName,
+  findProjectSkillByNameUncached,
+  findProjectSkillByRegistryId,
+  updateProjectSkillById,
   upsertProjectSkill,
 } from "@/lib/data/project-skills.server";
 import { env } from "@/lib/env";
@@ -24,10 +31,19 @@ const inputSchema = z.strictObject({
   registryId: z.string().min(1),
 });
 
-function toSafeBlobSegment(value: string): string {
+const MAX_SKILL_NAME_CHARS = 128;
+const MAX_BLOB_SEGMENT_CHARS = 80;
+
+function toSafeBlobSegment(value: string, maxChars: number): string {
   const trimmed = value.trim().toLowerCase();
   const normalized = trimmed.replace(/[^a-z0-9_.-]+/g, "-").replace(/-+/g, "-");
-  return normalized.length > 0 ? normalized : "skill";
+  const base = normalized.length > 0 ? normalized : "skill";
+
+  if (base.length <= maxChars) return base;
+
+  const hash = createHash("sha256").update(base).digest("hex").slice(0, 12);
+  const keep = Math.max(1, maxChars - (hash.length + 1));
+  return `${base.slice(0, keep)}-${hash}`;
 }
 
 /**
@@ -39,6 +55,7 @@ function toSafeBlobSegment(value: string): string {
  *
  * @param input - Project identity and registry id (`owner/repo/skillId`).
  * @returns Upserted skill summary (public-safe).
+ * @throws AppError - When input validation fails (invalid `projectId` or `registryId`).
  */
 export async function installProjectSkillFromRegistryStep(
   input: Readonly<{ projectId: string; registryId: string }>,
@@ -77,17 +94,39 @@ export async function installProjectSkillFromRegistryStep(
     zipBytes: repoZipBytes,
   });
 
-  const existing = await getProjectSkillByName(
+  const resolvedNameTrimmed = resolved.name.trim();
+  if (!resolvedNameTrimmed) {
+    throw new AppError("bad_request", 400, "Invalid skill name.");
+  }
+  if (resolvedNameTrimmed.length > MAX_SKILL_NAME_CHARS) {
+    throw new AppError("bad_request", 400, "Skill name too long.");
+  }
+
+  let existing = await findProjectSkillByRegistryId(
     parsedInput.data.projectId,
-    resolved.name,
+    ref.id,
   );
+  if (!existing) {
+    const collision = await findProjectSkillByNameUncached(
+      parsedInput.data.projectId,
+      resolvedNameTrimmed,
+    );
+    const collisionRegistryId = collision
+      ? (getProjectSkillRegistryRef(collision.metadata)?.id ?? null)
+      : null;
+    if (collision && collisionRegistryId !== ref.id) {
+      throw new AppError("conflict", 409, "Skill name already exists.");
+    }
+    existing = collisionRegistryId === ref.id ? collision : null;
+  }
+
   const previousBundle = existing
     ? getProjectSkillBundleRef(existing.metadata)
     : null;
 
   const blobPath = getProjectSkillBundleBlobPath({
     projectId: parsedInput.data.projectId,
-    skillName: toSafeBlobSegment(resolved.name),
+    skillName: toSafeBlobSegment(ref.id, MAX_BLOB_SEGMENT_CHARS),
   });
 
   const bundleBlobPathname = await putProjectSkillBundleBlob({
@@ -109,13 +148,22 @@ export async function installProjectSkillFromRegistryStep(
     },
   } satisfies Record<string, unknown>;
 
-  const skill = await upsertProjectSkill({
-    content: resolved.content,
-    description: resolved.description,
-    metadata,
-    name: resolved.name,
-    projectId: parsedInput.data.projectId,
-  });
+  const skill = existing
+    ? await updateProjectSkillById({
+        content: resolved.content,
+        description: resolved.description,
+        metadata,
+        name: resolvedNameTrimmed,
+        projectId: parsedInput.data.projectId,
+        skillId: existing.id,
+      })
+    : await upsertProjectSkill({
+        content: resolved.content,
+        description: resolved.description,
+        metadata,
+        name: resolvedNameTrimmed,
+        projectId: parsedInput.data.projectId,
+      });
 
   if (
     previousBundle?.blobPath &&
@@ -131,7 +179,7 @@ export async function installProjectSkillFromRegistryStep(
         previousBlobPath: previousBundle.blobPath,
         projectId: parsedInput.data.projectId,
         registryId: ref.id,
-        skillName: resolved.name,
+        skillName: resolvedNameTrimmed,
       });
     }
   }

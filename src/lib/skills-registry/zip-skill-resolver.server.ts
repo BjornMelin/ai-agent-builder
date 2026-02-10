@@ -184,6 +184,11 @@ function readZipUncompressedSize(file: JSZip.JSZipObject): number | null {
 }
 
 function pickRootPrefix(fileNames: readonly string[]): string {
+  if (fileNames.some((name) => !name.includes("/"))) {
+    // Archives without a single top-level root dir should be treated as repo-relative.
+    return "";
+  }
+
   const roots = new Set<string>();
   for (const name of fileNames) {
     const seg = name.split("/")[0];
@@ -195,10 +200,9 @@ function pickRootPrefix(fileNames: readonly string[]): string {
     return only ? `${only}/` : "";
   }
 
-  // GitHub archives should have a single root dir; if not, choose the shortest.
-  const sorted = Array.from(roots).sort((a, b) => a.length - b.length);
-  const chosen = sorted[0];
-  return chosen ? `${chosen}/` : "";
+  // When multiple top-level roots exist, avoid guessing; callers should derive
+  // any needed prefix from the matched skill path instead.
+  return "";
 }
 
 async function readZipFileBytesCapped(
@@ -263,6 +267,7 @@ export async function resolveRegistrySkillFromRepoZip(
   if (fileNames.length === 0) {
     throw new AppError("not_found", 404, "Repository archive was empty.");
   }
+  const hasTopLevelFiles = fileNames.some((name) => !name.includes("/"));
   if (fileNames.length > MAX_ARCHIVE_FILE_COUNT) {
     throw new AppError(
       "bad_request",
@@ -328,11 +333,9 @@ export async function resolveRegistrySkillFromRepoZip(
   if (!match) {
     // Fallback: match by directory name (…/<skillId>/SKILL.md).
     const expectedSuffix = `/${skillIdNorm}/${SKILL_FILENAME.toLowerCase()}`;
-    const fallbackPath = skillMdPaths.find((p) => {
-      const rel =
-        rootPrefix && p.startsWith(rootPrefix) ? p.slice(rootPrefix.length) : p;
-      return rel.toLowerCase().endsWith(expectedSuffix);
-    });
+    const fallbackPath = skillMdPaths.find((p) =>
+      p.toLowerCase().endsWith(expectedSuffix),
+    );
 
     if (fallbackPath) {
       const bytes = await readZipFileBytesCapped(
@@ -355,6 +358,10 @@ export async function resolveRegistrySkillFromRepoZip(
     throw new AppError("not_found", 404, `Skill not found: ${input.skillId}`);
   }
 
+  const matchRoot = match.path.split("/")[0] ?? "";
+  const effectiveRootPrefix =
+    rootPrefix || (!hasTopLevelFiles && matchRoot ? `${matchRoot}/` : "");
+
   const lastSlash = match.path.lastIndexOf("/");
   if (lastSlash <= 0) {
     throw new AppError(
@@ -366,11 +373,11 @@ export async function resolveRegistrySkillFromRepoZip(
 
   const dirWithRoot = match.path.slice(0, lastSlash); // no trailing slash
   const repoDirectory =
-    rootPrefix && dirWithRoot.startsWith(rootPrefix)
-      ? dirWithRoot.slice(rootPrefix.length)
+    effectiveRootPrefix && dirWithRoot.startsWith(effectiveRootPrefix)
+      ? dirWithRoot.slice(effectiveRootPrefix.length)
       : dirWithRoot;
 
-  const bundlePrefix = `${rootPrefix}${repoDirectory}/`;
+  const bundlePrefix = `${effectiveRootPrefix}${repoDirectory}/`;
 
   const bundleZip = new JSZip();
   let totalBytes = 0;
