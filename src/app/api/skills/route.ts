@@ -65,7 +65,6 @@ function buildSkillMarkdown(
  */
 export async function GET(req: Request) {
   try {
-    const authPromise = requireAppUserApi();
     const { searchParams } = new URL(req.url);
     const parsedQuery = listQuerySchema.safeParse({
       projectId: searchParams.get("projectId") ?? "",
@@ -75,7 +74,7 @@ export async function GET(req: Request) {
       throw new AppError("bad_request", 400, "Invalid skills query.");
     }
 
-    const user = await authPromise;
+    const user = await requireAppUserApi();
     const { projectId, skillId } = parsedQuery.data;
 
     const project = await getProjectByIdForUser(projectId, user.id);

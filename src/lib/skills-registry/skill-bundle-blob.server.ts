@@ -21,6 +21,7 @@ export function getProjectSkillBundleBlobPath(
  *
  * @param input - Blob path and ZIP bytes.
  * @returns Uploaded blob pathname.
+ * @throws Error - When the Blob upload fails (network/auth/config errors).
  */
 export async function putProjectSkillBundleBlob(
   input: Readonly<{ blobPath: string; bytes: Uint8Array }>,

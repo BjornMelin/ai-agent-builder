@@ -12,6 +12,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -85,7 +86,7 @@ async function tryParseErrorMessage(res: Response): Promise<string | null> {
 export function SkillsRegistryTab(
   props: Readonly<{
     projectId: string;
-    onInstallFromRegistry: (registryId: string) => void | Promise<void>;
+    onInstallFromRegistry: (registryId: string) => Promise<void>;
     registryPending: Readonly<{ registryId: string; runId: string }> | null;
     registryError: string | null;
     setRegistryError: (value: string | null) => void;
@@ -120,6 +121,7 @@ export function SkillsRegistryTab(
     }[]
   >([]);
   const [registryIsSearching, setRegistryIsSearching] = useState(false);
+  const registrySearchSeq = useRef(0);
 
   const refresh = useCallback(() => {
     startTransition(() => router.refresh());
@@ -133,6 +135,9 @@ export function SkillsRegistryTab(
         if (!options.silent) setRegistryError(null);
         return;
       }
+
+      registrySearchSeq.current += 1;
+      const seq = registrySearchSeq.current;
 
       setRegistryIsSearching(true);
       if (!options.silent) setRegistryError(null);
@@ -148,7 +153,9 @@ export function SkillsRegistryTab(
         url.searchParams.set("limit", "20");
         res = await fetch(url.toString());
       } catch (err) {
-        setRegistryIsSearching(false);
+        if (seq === registrySearchSeq.current) {
+          setRegistryIsSearching(false);
+        }
         if (!options.silent) {
           setRegistryError(
             err instanceof Error ? err.message : "Failed to search registry.",
@@ -158,7 +165,9 @@ export function SkillsRegistryTab(
       }
 
       if (!res.ok) {
-        setRegistryIsSearching(false);
+        if (seq === registrySearchSeq.current) {
+          setRegistryIsSearching(false);
+        }
         if (!options.silent) {
           setRegistryError(`Registry search failed (${res.status}).`);
         }
@@ -185,10 +194,14 @@ export function SkillsRegistryTab(
           source: s.source,
         }));
 
-        setRegistryResults(skills);
-        setRegistryIsSearching(false);
+        if (seq === registrySearchSeq.current) {
+          setRegistryResults(skills);
+          setRegistryIsSearching(false);
+        }
       } catch (err) {
-        setRegistryIsSearching(false);
+        if (seq === registrySearchSeq.current) {
+          setRegistryIsSearching(false);
+        }
         if (!options.silent) {
           setRegistryError(
             err instanceof Error
@@ -247,7 +260,12 @@ export function SkillsRegistryTab(
     }
 
     const t = setTimeout(() => {
-      void searchRegistry(q);
+      void searchRegistry(q).catch((err) => {
+        setRegistryIsSearching(false);
+        setRegistryError(
+          err instanceof Error ? err.message : "Failed to search registry.",
+        );
+      });
     }, 250);
 
     return () => clearTimeout(t);
@@ -257,7 +275,9 @@ export function SkillsRegistryTab(
     if (!registryCompletedRunId) return;
     const q = registryQuery.trim();
     if (q.length < 2) return;
-    void searchRegistry(q, { silent: true });
+    void searchRegistry(q, { silent: true }).catch(() => {
+      // Best-effort refresh of search results after an install completes.
+    });
   }, [registryCompletedRunId, registryQuery, searchRegistry]);
 
   return (
@@ -391,9 +411,13 @@ export function SkillsRegistryTab(
                             <>
                               <Button
                                 disabled={!canInstall || isInstalling}
-                                onClick={() =>
-                                  void onInstallFromRegistry(skill.id)
-                                }
+                                onClick={() => {
+                                  void onInstallFromRegistry(skill.id).catch(
+                                    () => {
+                                      // Parent component owns error surface for registry installs.
+                                    },
+                                  );
+                                }}
                                 size="sm"
                                 variant="secondary"
                               >
@@ -412,14 +436,15 @@ export function SkillsRegistryTab(
                               </Button>
                               <Button
                                 disabled={!canUninstall}
-                                onClick={() =>
-                                  skill.installedSkillId
-                                    ? void deleteSkillById(
-                                        skill.installedSkillId,
-                                        skill.name,
-                                      )
-                                    : undefined
-                                }
+                                onClick={() => {
+                                  if (!skill.installedSkillId) return;
+                                  void deleteSkillById(
+                                    skill.installedSkillId,
+                                    skill.name,
+                                  ).catch(() => {
+                                    // Best-effort; errors are surfaced in the tab state.
+                                  });
+                                }}
                                 size="sm"
                                 variant="ghost"
                               >
@@ -433,9 +458,13 @@ export function SkillsRegistryTab(
                           ) : (
                             <Button
                               disabled={!canInstall || isInstalling}
-                              onClick={() =>
-                                void onInstallFromRegistry(skill.id)
-                              }
+                              onClick={() => {
+                                void onInstallFromRegistry(skill.id).catch(
+                                  () => {
+                                    // Parent component owns error surface for registry installs.
+                                  },
+                                );
+                              }}
                               size="sm"
                               variant="secondary"
                             >

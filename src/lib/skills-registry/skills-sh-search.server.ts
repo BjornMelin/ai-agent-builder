@@ -56,13 +56,18 @@ export async function searchSkillsShRegistry(
   url.searchParams.set("q", q);
   url.searchParams.set("limit", String(limit));
 
-  const res = await fetchWithTimeout(
-    url.toString(),
-    { method: "GET" },
-    {
-      timeoutMs: 12_000,
-    },
-  );
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      url.toString(),
+      { method: "GET" },
+      {
+        timeoutMs: 12_000,
+      },
+    );
+  } catch (err) {
+    throw new AppError("upstream_failed", 502, "skills.sh search failed.", err);
+  }
   if (!res.ok) {
     throw new AppError(
       "upstream_failed",
@@ -71,7 +76,17 @@ export async function searchSkillsShRegistry(
     );
   }
 
-  const jsonUnknown: unknown = await res.json();
+  let jsonUnknown: unknown;
+  try {
+    jsonUnknown = await res.json();
+  } catch (err) {
+    throw new AppError(
+      "upstream_failed",
+      502,
+      "skills.sh search response was not understood.",
+      err,
+    );
+  }
   const parsed = searchResponseSchema.safeParse(jsonUnknown);
   if (!parsed.success) {
     throw new AppError(

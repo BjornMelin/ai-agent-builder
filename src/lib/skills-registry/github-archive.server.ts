@@ -40,6 +40,22 @@ async function downloadArchive(
     );
   }
 
+  const contentLength = (
+    res as unknown as { headers?: { get?: (name: string) => string | null } }
+  ).headers?.get?.("content-length");
+  if (contentLength) {
+    const size = Number.parseInt(contentLength, 10);
+    if (Number.isSafeInteger(size) && size > MAX_GITHUB_ZIP_BYTES) {
+      // Best-effort: avoid buffering large responses in memory.
+      await res.body?.cancel();
+      throw new AppError(
+        "bad_request",
+        400,
+        `Repository archive exceeds maximum size (${MAX_GITHUB_ZIP_BYTES} bytes).`,
+      );
+    }
+  }
+
   const buf = new Uint8Array(await res.arrayBuffer());
   if (buf.byteLength > MAX_GITHUB_ZIP_BYTES) {
     throw new AppError(
@@ -57,6 +73,9 @@ async function downloadArchive(
  *
  * @param input - Repository identity.
  * @returns ZIP bytes and resolved branch.
+ * @throws AppError - With code `"upstream_failed"` when GitHub returns a non-404 error.
+ * @throws AppError - With code `"bad_request"` when the archive exceeds the maximum size.
+ * @throws AppError - With code `"not_found"` when neither `main` nor `master` branch exists.
  */
 export async function downloadGithubRepoZip(
   input: Readonly<{ owner: string; repo: string }>,

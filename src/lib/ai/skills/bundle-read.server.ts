@@ -1,6 +1,6 @@
 import "server-only";
 
-import { head } from "@vercel/blob";
+import { BlobNotFoundError, head } from "@vercel/blob";
 import JSZip from "jszip";
 
 import { AppError } from "@/lib/core/errors";
@@ -73,9 +73,22 @@ export async function readBundledSkillFileFromBlob(
     assertRelativePath(input.relativePath),
   );
 
-  const metadata = await head(input.blobPath, {
-    token: env.blob.readWriteToken,
-  });
+  let metadata: Awaited<ReturnType<typeof head>>;
+  try {
+    metadata = await head(input.blobPath, {
+      token: env.blob.readWriteToken,
+    });
+  } catch (err) {
+    if (err instanceof BlobNotFoundError) {
+      throw new AppError("not_found", 404, "Skill bundle not found.", err);
+    }
+    throw new AppError(
+      "upstream_failed",
+      502,
+      "Failed to fetch skill bundle metadata.",
+      err,
+    );
+  }
   if (metadata.size > MAX_BUNDLE_ZIP_BYTES) {
     throw new AppError(
       "bad_request",

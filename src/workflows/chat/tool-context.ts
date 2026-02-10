@@ -35,7 +35,10 @@ const toolBudgetSchema = z.object({
   webSearchCalls: z.number().int().min(0).default(0),
 });
 
-const skillMetadataSchema = z.object({
+/**
+ * Zod schema for skills metadata passed via `experimental_context`.
+ */
+export const chatToolSkillMetadataSchema = z.object({
   description: z.string(),
   location: z.string(),
   name: z.string(),
@@ -45,7 +48,7 @@ const skillMetadataSchema = z.object({
 const toolContextSchema = z.object({
   modeId: z.string().min(1).default(DEFAULT_AGENT_MODE_ID),
   projectId: z.string().min(1),
-  skills: z.array(skillMetadataSchema).default([]),
+  skills: z.array(chatToolSkillMetadataSchema).default([]),
   toolBudget: toolBudgetSchema.default({
     context7Calls: 0,
     webExtractCalls: 0,

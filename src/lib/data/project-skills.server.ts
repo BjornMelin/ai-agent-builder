@@ -78,6 +78,7 @@ function normalizeSkillName(value: string): string {
  *
  * @param projectId - Project ID.
  * @returns Project skill DTOs.
+ * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function listProjectSkillsByProject(
   projectId: string,
@@ -105,6 +106,8 @@ export async function listProjectSkillsByProject(
  * @param projectId - Project ID.
  * @param name - Skill name.
  * @returns Matching skill or null.
+ * @throws AppError - With code `"bad_request"` when `name` is empty or exceeds 128 characters.
+ * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function getProjectSkillByName(
   projectId: string,
@@ -140,6 +143,8 @@ export async function getProjectSkillByName(
  * @param projectId - Project ID.
  * @param registryId - Canonical registry identifier (`owner/repo/skillId`).
  * @returns Matching skill or null.
+ * @throws AppError - With code `"bad_request"` when `registryId` is empty.
+ * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function findProjectSkillByRegistryId(
   projectId: string,
@@ -173,6 +178,8 @@ export async function findProjectSkillByRegistryId(
  * @param projectId - Project ID.
  * @param name - Skill name.
  * @returns Matching skill or null.
+ * @throws AppError - With code `"bad_request"` when `name` is empty or exceeds 128 characters.
+ * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function findProjectSkillByNameUncached(
   projectId: string,
@@ -199,6 +206,7 @@ export async function findProjectSkillByNameUncached(
  * @param projectId - Project ID.
  * @param skillId - Skill ID.
  * @returns Matching skill or null.
+ * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function getProjectSkillById(
   projectId: string,
@@ -228,6 +236,10 @@ export async function getProjectSkillById(
  *
  * @param input - Skill metadata and content.
  * @returns Upserted skill.
+ * @throws AppError - With code `"bad_request"` when `input.name` is empty or exceeds 128 characters.
+ * @throws AppError - With code `"db_update_failed"` when the update returned no row.
+ * @throws AppError - With code `"db_insert_failed"` when the insert returned no row.
+ * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function upsertProjectSkill(
   input: Readonly<{
@@ -314,6 +326,11 @@ export async function upsertProjectSkill(
  *
  * @param input - Update payload.
  * @returns Updated skill.
+ * @throws AppError - With code `"bad_request"` when `input.name` is empty or exceeds 128 characters.
+ * @throws AppError - With code `"not_found"` when the skill does not exist.
+ * @throws AppError - With code `"conflict"` when another skill already uses the normalized name.
+ * @throws AppError - With code `"db_update_failed"` when the update returned no row.
+ * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function updateProjectSkillById(
   input: Readonly<{
@@ -387,6 +404,8 @@ export async function updateProjectSkillById(
  *
  * @param input - Delete input.
  * @returns Ok result.
+ * @throws AppError - With code `"not_found"` when the skill does not exist.
+ * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function deleteProjectSkill(
   input: Readonly<{ projectId: string; skillId: string }>,

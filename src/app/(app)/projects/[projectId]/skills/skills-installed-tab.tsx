@@ -98,7 +98,7 @@ export function SkillsInstalledTab(
     projectId: string;
     projectSkills: readonly ProjectSkillSummary[];
     effectiveSkills: readonly EffectiveSkillSummary[];
-    onInstallFromRegistry: (registryId: string) => void | Promise<void>;
+    onInstallFromRegistry: (registryId: string) => Promise<void>;
     registryPending: Readonly<{ registryId: string; runId: string }> | null;
   }>,
 ) {
@@ -301,7 +301,12 @@ export function SkillsInstalledTab(
             className="grid gap-4 rounded-xl border bg-muted/20 p-4"
             onSubmit={(e) => {
               e.preventDefault();
-              void upsert();
+              void upsert().catch((err) => {
+                setIsPending(false);
+                setError(
+                  err instanceof Error ? err.message : "Failed to save skill.",
+                );
+              });
             }}
           >
             <div className="flex items-start justify-between gap-4">
@@ -453,13 +458,14 @@ export function SkillsInstalledTab(
                                 props.registryPending !== null ||
                                 !skill.registryId
                               }
-                              onClick={() =>
-                                skill.registryId
-                                  ? void props.onInstallFromRegistry(
-                                      skill.registryId,
-                                    )
-                                  : undefined
-                              }
+                              onClick={() => {
+                                if (!skill.registryId) return;
+                                void props
+                                  .onInstallFromRegistry(skill.registryId)
+                                  .catch(() => {
+                                    // Parent component owns error surface for registry installs.
+                                  });
+                              }}
                               size="icon"
                               type="button"
                               variant="ghost"
@@ -497,7 +503,17 @@ export function SkillsInstalledTab(
                             <Button
                               disabled={isPending || isLoadingEdit}
                               onClick={() =>
-                                void deleteSkillById(skill.id, skill.name)
+                                void deleteSkillById(
+                                  skill.id,
+                                  skill.name,
+                                ).catch((err) => {
+                                  setIsPending(false);
+                                  setError(
+                                    err instanceof Error
+                                      ? err.message
+                                      : "Failed to delete skill.",
+                                  );
+                                })
                               }
                               size="icon"
                               type="button"
@@ -515,7 +531,16 @@ export function SkillsInstalledTab(
                             <Button
                               disabled={isPending || isLoadingEdit}
                               onClick={() =>
-                                void loadSkillContentForEdit(skill)
+                                void loadSkillContentForEdit(skill).catch(
+                                  (err) => {
+                                    setIsLoadingEdit(false);
+                                    setError(
+                                      err instanceof Error
+                                        ? err.message
+                                        : "Failed to load skill content.",
+                                    );
+                                  },
+                                )
                               }
                               size="icon"
                               type="button"
@@ -530,7 +555,17 @@ export function SkillsInstalledTab(
                             <Button
                               disabled={isPending || isLoadingEdit}
                               onClick={() =>
-                                void deleteSkillById(skill.id, skill.name)
+                                void deleteSkillById(
+                                  skill.id,
+                                  skill.name,
+                                ).catch((err) => {
+                                  setIsPending(false);
+                                  setError(
+                                    err instanceof Error
+                                      ? err.message
+                                      : "Failed to delete skill.",
+                                  );
+                                })
                               }
                               size="icon"
                               type="button"

@@ -1,3 +1,4 @@
+import { withEnv } from "@tests/utils/env";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
@@ -222,6 +223,41 @@ describe("DELETE /api/skills", () => {
     expect(state.deleteProjectSkill).toHaveBeenCalledWith({
       projectId: "proj_1",
       skillId: "skill_1",
+    });
+  });
+
+  it("best-effort deletes the bundle blob when deleting a bundled skill", async () => {
+    await withEnv({ BLOB_READ_WRITE_TOKEN: "rw_token" }, async () => {
+      const { DELETE } = await loadRoute();
+      state.getProjectSkillById.mockResolvedValueOnce({
+        content: "---\nname: skills\ndescription: x\n---\n",
+        createdAt: new Date(0).toISOString(),
+        description: "x",
+        id: "skill_1",
+        metadata: {
+          bundle: {
+            blobPath: "bundle.zip",
+            fileCount: 1,
+            format: "zip-v1",
+            sizeBytes: 1,
+          },
+        },
+        name: "skills",
+        projectId: "proj_1",
+        updatedAt: new Date(0).toISOString(),
+      });
+
+      const res = await DELETE(
+        new Request("http://localhost/api/skills", {
+          body: JSON.stringify({ projectId: "proj_1", skillId: "skill_1" }),
+          method: "DELETE",
+        }),
+      );
+
+      expect(res.status).toBe(200);
+      expect(state.del).toHaveBeenCalledWith("bundle.zip", {
+        token: "rw_token",
+      });
     });
   });
 });

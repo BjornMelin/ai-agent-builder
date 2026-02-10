@@ -26,6 +26,8 @@ const loadInputSchema = z.object({
  * @param input - Tool input.
  * @param options - Tool execution options.
  * @returns Loaded skill content or a structured error.
+ * @throws AppError - With code `"bad_request"` when input validation fails.
+ * @throws AppError - With code `"bad_request"` when project context is missing.
  */
 export async function skillsLoadStep(
   input: Readonly<{ name: string }>,
@@ -72,6 +74,8 @@ const readFileInputSchema = z.object({
  * @param input - Tool input.
  * @param options - Tool execution options.
  * @returns File content or a structured error.
+ * @throws AppError - With code `"bad_request"` when input validation fails.
+ * @throws AppError - With code `"bad_request"` when project context is missing.
  */
 export async function skillsReadFileStep(
   input: Readonly<{ name: string; path: string }>,

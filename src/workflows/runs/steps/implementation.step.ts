@@ -567,7 +567,7 @@ export async function planImplementationRun(
 
   const skillsReadFileTool = tool({
     description:
-      "Read a file referenced by a repo-bundled skill. Path must be relative to the skill directory.",
+      "Read a file referenced by a skill (repo-bundled directory or bundled ZIP). Path must be relative to the skill directory.",
     async execute(
       { name, path }: Readonly<{ name: string; path: string }>,
       options: ToolExecutionOptions,

@@ -47,7 +47,10 @@ function toRepoRelativePathOrNull(absoluteDir: string): string | null {
 }
 
 function resolveConfiguredRoots(): string[] {
-  const requested = env.skills.dirs.map(normalizeSkillRootKey).filter(Boolean);
+  const skillsEnv = env.skills;
+  if (!skillsEnv) return [];
+
+  const requested = skillsEnv.dirs.map(normalizeSkillRootKey).filter(Boolean);
   const uniqueRequested = Array.from(new Set(requested));
   if (uniqueRequested.length === 0) return [];
 
@@ -76,6 +79,7 @@ function resolveConfiguredRoots(): string[] {
  *
  * @param projectId - Project identifier.
  * @returns Skill metadata for progressive disclosure.
+ * @throws AppError - With code `"env_invalid"` when `AGENT_SKILLS_DIRS` contains unsupported roots.
  */
 export async function listAvailableSkillsForProject(
   projectId: string,

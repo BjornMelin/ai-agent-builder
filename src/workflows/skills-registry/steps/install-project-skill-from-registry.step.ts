@@ -55,7 +55,7 @@ function toSafeBlobSegment(value: string, maxChars: number): string {
  *
  * @param input - Project identity and registry id (`owner/repo/skillId`).
  * @returns Upserted skill summary (public-safe).
- * @throws AppError - When input validation fails (invalid `projectId` or `registryId`).
+ * @throws AppError - When input validation fails or when registry resolution/install fails.
  */
 export async function installProjectSkillFromRegistryStep(
   input: Readonly<{ projectId: string; registryId: string }>,

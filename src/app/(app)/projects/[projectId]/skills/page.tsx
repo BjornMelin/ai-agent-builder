@@ -4,7 +4,7 @@ import { SkillsContent } from "@/app/(app)/projects/[projectId]/skills/skills-co
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * Project skills tab.
+ * Renders the project's skills management page (Installed + Registry).
  *
  * @param props - Route params.
  * @returns Skills UI.

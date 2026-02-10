@@ -173,16 +173,6 @@ function isSafeZipRelativePath(value: string): boolean {
   return true;
 }
 
-function readZipUncompressedSize(file: JSZip.JSZipObject): number | null {
-  const dataUnknown = (file as unknown as { _data?: unknown })._data;
-  if (!dataUnknown || typeof dataUnknown !== "object") return null;
-  const size = (dataUnknown as Record<string, unknown>).uncompressedSize;
-  if (typeof size !== "number" || !Number.isFinite(size) || size < 0) {
-    return null;
-  }
-  return size;
-}
-
 function pickRootPrefix(fileNames: readonly string[]): string {
   if (fileNames.some((name) => !name.includes("/"))) {
     // Archives without a single top-level root dir should be treated as repo-relative.
@@ -215,15 +205,6 @@ async function readZipFileBytesCapped(
     throw new AppError("not_found", 404, `Zip entry not found: ${name}`);
   }
 
-  const uncompressed = readZipUncompressedSize(file);
-  if (uncompressed !== null && uncompressed > maxBytes) {
-    throw new AppError(
-      "bad_request",
-      400,
-      `Zip entry exceeds maximum size (${maxBytes} bytes): ${name}`,
-    );
-  }
-
   // Never trust ZIP metadata: enforce the cap on actual decompressed output.
   const stream: unknown = file.nodeStream("nodebuffer");
   return await readStreamBytesCapped(stream, maxBytes, name);
@@ -253,6 +234,7 @@ export type ResolvedRegistrySkill = Readonly<{
  * @param input - ZIP bytes and desired `skillId`.
  * @returns Resolved skill payload.
  * @throws AppError - With code `"not_found"` when the skill cannot be located.
+ * @throws AppError - With code `"bad_request"` when the input is invalid or the archive violates size/path safety constraints.
  */
 export async function resolveRegistrySkillFromRepoZip(
   input: Readonly<{ zipBytes: Uint8Array; skillId: string }>,

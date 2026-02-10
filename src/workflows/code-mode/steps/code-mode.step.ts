@@ -35,6 +35,7 @@ import {
 } from "@/lib/sandbox/network-policy.server";
 import { redactSandboxLog } from "@/lib/sandbox/redaction.server";
 import { startSandboxJobSession } from "@/lib/sandbox/sandbox-runner.server";
+import { chatToolSkillMetadataSchema } from "@/workflows/chat/tool-context";
 
 const SANDBOX_WORKSPACE_ROOT = "/vercel/sandbox";
 
@@ -451,16 +452,9 @@ export async function runCodeModeSession(
       }),
     });
 
-    const skillMetadataSchema = z.object({
-      description: z.string(),
-      location: z.string(),
-      name: z.string(),
-      source: z.enum(["db", "fs"]),
-    });
-
     const codeModeCallOptionsSchema = z.object({
       projectId: z.string().min(1),
-      skills: z.array(skillMetadataSchema),
+      skills: z.array(chatToolSkillMetadataSchema),
     });
 
     type CodeModeCallOptions = Readonly<

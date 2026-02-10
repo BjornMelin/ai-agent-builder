@@ -41,6 +41,52 @@ beforeEach(() => {
 });
 
 describe("GET /api/skills/registry/status", () => {
+  it("rejects invalid query params", async () => {
+    const { GET } = await loadRoute();
+    const res = await GET(
+      new Request("http://localhost/api/skills/registry/status"),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("returns forbidden when the project is not accessible", async () => {
+    const { GET } = await loadRoute();
+    state.getProjectByIdForUser.mockResolvedValueOnce(null);
+    const res = await GET(
+      new Request(
+        "http://localhost/api/skills/registry/status?projectId=proj_1&runId=wf_1",
+      ),
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("returns not_found when the workflow run is not mapped to the project", async () => {
+    const { GET } = await loadRoute();
+    const { AppError } = await import("@/lib/core/errors");
+    state.assertProjectOwnsRegistryInstallRun.mockRejectedValueOnce(
+      new AppError("not_found", 404, "Run not found."),
+    );
+    const res = await GET(
+      new Request(
+        "http://localhost/api/skills/registry/status?projectId=proj_1&runId=wf_1",
+      ),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("returns not_found when the workflow runtime cannot find the run", async () => {
+    const { GET } = await loadRoute();
+    state.getRun.mockImplementationOnce(() => {
+      throw new Error("boom");
+    });
+    const res = await GET(
+      new Request(
+        "http://localhost/api/skills/registry/status?projectId=proj_1&runId=wf_1",
+      ),
+    );
+    expect(res.status).toBe(404);
+  });
+
   it("returns run status", async () => {
     const { GET } = await loadRoute();
     const res = await GET(

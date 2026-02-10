@@ -38,7 +38,7 @@ async function readUtf8FileCapped(
         );
       }
 
-      const buf = Buffer.allocUnsafe(Math.min(64 * 1024, remaining));
+      const buf = Buffer.alloc(Math.min(64 * 1024, remaining));
       const { bytesRead } = await handle.read(buf, 0, buf.length, null);
       if (bytesRead === 0) break;
 

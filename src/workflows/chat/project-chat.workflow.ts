@@ -47,7 +47,7 @@ export async function projectChat(
   const messages: ModelMessage[] = [];
   const mode = getEnabledAgentMode(modeId);
   const tools = buildChatToolsForMode(modeId);
-  const skills = await listProjectSkillsStep({ projectId });
+  let skills: Awaited<ReturnType<typeof listProjectSkillsStep>> = [];
   const threadStateInput = {
     mode: mode.modeId,
     projectId,
@@ -56,6 +56,7 @@ export async function projectChat(
   } as const;
 
   try {
+    skills = await listProjectSkillsStep({ projectId });
     messages.push(
       ...(await convertToModelMessages(initialMessages, {
         tools,

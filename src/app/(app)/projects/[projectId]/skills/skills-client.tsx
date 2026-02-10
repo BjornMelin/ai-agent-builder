@@ -41,7 +41,11 @@ const SkillsRegistryTab = dynamic(
 );
 
 function preloadRegistryTabChunk(): void {
-  void import("@/app/(app)/projects/[projectId]/skills/skills-registry-tab");
+  void import(
+    "@/app/(app)/projects/[projectId]/skills/skills-registry-tab"
+  ).catch(() => {
+    // Best-effort prefetch; ignore failures and lazy-load on demand.
+  });
 }
 
 /**
@@ -184,10 +188,22 @@ export function SkillsClient(
         REGISTRY_INSTALL_POLL_INTERVAL_MS * 2 ** Math.min(attempt - 1, 2),
         REGISTRY_INSTALL_POLL_MAX_INTERVAL_MS,
       );
-      window.setTimeout(() => void tick(), delay);
+      window.setTimeout(runTick, delay);
     };
 
-    void tick();
+    const runTick = () => {
+      void tick().catch((err) => {
+        if (cancelled) return;
+        setRegistryError(
+          err instanceof Error
+            ? err.message
+            : "Failed to check install status.",
+        );
+        setRegistryPending(null);
+      });
+    };
+
+    runTick();
 
     return () => {
       cancelled = true;
