@@ -5,6 +5,8 @@ import { type ToolId, toolIds } from "@/lib/ai/tools/tool-ids";
 describe("tool ids", () => {
   it("exports a stable allowlist of tool identifiers", () => {
     expect(toolIds).toEqual([
+      "skills.load",
+      "skills.readFile",
       "retrieveProjectChunks",
       "web.search",
       "web.extract",

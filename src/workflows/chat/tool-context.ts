@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { DEFAULT_AGENT_MODE_ID } from "@/lib/ai/agents/registry";
+import type { SkillMetadata } from "@/lib/ai/skills/types";
 
 /**
  * Mutable tool budget counters passed via `experimental_context`.
@@ -25,6 +26,7 @@ export type ChatToolContext = {
   projectId: string;
   modeId: string;
   toolBudget: ChatToolBudget;
+  skills: readonly SkillMetadata[];
 };
 
 const toolBudgetSchema = z.object({
@@ -33,9 +35,17 @@ const toolBudgetSchema = z.object({
   webSearchCalls: z.number().int().min(0).default(0),
 });
 
+const skillMetadataSchema = z.object({
+  description: z.string(),
+  location: z.string(),
+  name: z.string(),
+  source: z.enum(["db", "fs"]),
+});
+
 const toolContextSchema = z.object({
   modeId: z.string().min(1).default(DEFAULT_AGENT_MODE_ID),
   projectId: z.string().min(1),
+  skills: z.array(skillMetadataSchema).default([]),
   toolBudget: toolBudgetSchema.default({
     context7Calls: 0,
     webExtractCalls: 0,
@@ -52,15 +62,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  *
  * @param projectId - Project identifier.
  * @param modeId - Agent mode identifier.
+ * @param skills - Skills metadata available for progressive disclosure.
  * @returns Tool context object.
  */
 export function createChatToolContext(
   projectId: string,
   modeId: string,
+  skills: readonly SkillMetadata[] = [],
 ): ChatToolContext {
   return {
     modeId,
     projectId,
+    skills,
     toolBudget: { context7Calls: 0, webExtractCalls: 0, webSearchCalls: 0 },
   };
 }
@@ -89,6 +102,8 @@ export function parseChatToolContext(value: unknown): ChatToolContext {
       } else {
         value.toolBudget = { ...parsed.data.toolBudget };
       }
+
+      value.skills = parsed.data.skills;
 
       return value as ChatToolContext;
     }

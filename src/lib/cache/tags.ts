@@ -71,6 +71,16 @@ export function tagReposIndex(projectId: string): string {
 }
 
 /**
+ * Cache tag for project skill listings and lookups.
+ *
+ * @param projectId - Project identifier.
+ * @returns Stable cache tag.
+ */
+export function tagProjectSkillsIndex(projectId: string): string {
+  return `${CACHE_TAG_NAMESPACE}:skills:index:${normalizeSegment(projectId)}`;
+}
+
+/**
  * Cache tag for approvals listings and lookups in a project.
  *
  * @param projectId - Project identifier.

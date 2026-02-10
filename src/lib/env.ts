@@ -80,6 +80,23 @@ const appSchema = z
     baseUrl: v.APP_BASE_URL,
   }));
 
+const skillsSchema = z
+  .looseObject({
+    /**
+     * Comma-separated list of repo-bundled skill roots scanned for `SKILL.md` folders.
+     *
+     * @remarks
+     * This is an allowlist of repo directories (not arbitrary filesystem paths).
+     * Supported values: `.agents/skills`, `.codex/skills` (subset allowed).
+     */
+    AGENT_SKILLS_DIRS: envOptionalTrimmed.default(
+      ".agents/skills,.codex/skills",
+    ),
+  })
+  .transform((v) => ({
+    dirs: parseCommaSeparatedList(v.AGENT_SKILLS_DIRS),
+  }));
+
 const dbSchema = z
   .looseObject({
     DATABASE_URL: envUrl,
@@ -326,6 +343,7 @@ const upstashDeveloperSchema = z
 
 let cachedRuntimeEnv: Readonly<z.output<typeof runtimeSchema>> | undefined;
 let cachedAppEnv: Readonly<z.output<typeof appSchema>> | undefined;
+let cachedSkillsEnv: Readonly<z.output<typeof skillsSchema>> | undefined;
 let cachedDbEnv: Readonly<z.output<typeof dbSchema>> | undefined;
 let cachedAuthEnv: Readonly<z.output<typeof authSchema>> | undefined;
 let cachedAuthUiEnv: Readonly<z.output<typeof authUiSchema>> | undefined;
@@ -494,6 +512,16 @@ export const env = {
   get sandbox(): Readonly<z.output<typeof sandboxSchema>> {
     cachedSandboxEnv ??= parseFeatureEnv("sandbox", sandboxSchema);
     return cachedSandboxEnv;
+  },
+
+  /**
+   * Returns the Agent Skills configuration (skill directory roots).
+   *
+   * @returns Skills env.
+   */
+  get skills(): Readonly<z.output<typeof skillsSchema>> {
+    cachedSkillsEnv ??= parseFeatureEnv("skills", skillsSchema);
+    return cachedSkillsEnv;
   },
 
   /**

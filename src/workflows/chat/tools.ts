@@ -8,6 +8,10 @@ import {
 } from "@/workflows/chat/steps/context7.step";
 import { createResearchReportStep } from "@/workflows/chat/steps/research-report.step";
 import { retrieveProjectChunksStep } from "@/workflows/chat/steps/retrieve-project-chunks.step";
+import {
+  skillsLoadStep,
+  skillsReadFileStep,
+} from "@/workflows/chat/steps/skills.step";
 import { webExtractStep } from "@/workflows/chat/steps/web-extract.step";
 import { webSearchStep } from "@/workflows/chat/steps/web-search.step";
 
@@ -273,6 +277,73 @@ const createResearchReportTool = tool({
   ),
 });
 
+const skillsLoadInput = z.strictObject({
+  name: z.string().min(1),
+});
+
+type SkillsLoadToolInput = Readonly<{
+  name: string;
+}>;
+
+const skillsLoadTool = tool({
+  description:
+    "Load a skill to get specialized instructions. Use this when a request matches an available skill description.",
+  execute: skillsLoadStep,
+  inputSchema: jsonSchema<SkillsLoadToolInput>(
+    {
+      additionalProperties: false,
+      properties: {
+        name: { minLength: 1, type: "string" },
+      },
+      required: ["name"],
+      type: "object",
+    } satisfies JSONSchema7,
+    {
+      validate: (value) => {
+        const parsed = skillsLoadInput.safeParse(value);
+        return parsed.success
+          ? { success: true, value: parsed.data }
+          : { error: parsed.error, success: false };
+      },
+    },
+  ),
+});
+
+const skillsReadFileInput = z.strictObject({
+  name: z.string().min(1),
+  path: z.string().min(1),
+});
+
+type SkillsReadFileToolInput = Readonly<{
+  name: string;
+  path: string;
+}>;
+
+const skillsReadFileTool = tool({
+  description:
+    "Read a file referenced by a repo-bundled skill (e.g. references/*, assets/*, scripts/*). Path must be relative to the skill directory.",
+  execute: skillsReadFileStep,
+  inputSchema: jsonSchema<SkillsReadFileToolInput>(
+    {
+      additionalProperties: false,
+      properties: {
+        name: { minLength: 1, type: "string" },
+        path: { minLength: 1, type: "string" },
+      },
+      required: ["name", "path"],
+      type: "object",
+    } satisfies JSONSchema7,
+    {
+      validate: (value) => {
+        const parsed = skillsReadFileInput.safeParse(value);
+        return parsed.success
+          ? { success: true, value: parsed.data }
+          : { error: parsed.error, success: false };
+      },
+    },
+  ),
+});
+
 /**
  * Toolset for project-scoped chat.
  */
@@ -281,6 +352,8 @@ export const chatTools = {
   "context7.resolve-library-id": context7ResolveTool,
   "research.create-report": createResearchReportTool,
   retrieveProjectChunks: retrieveProjectChunksTool,
+  "skills.load": skillsLoadTool,
+  "skills.readFile": skillsReadFileTool,
   "web.extract": webExtractTool,
   "web.search": webSearchTool,
 } satisfies ToolSet;

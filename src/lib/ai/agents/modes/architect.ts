@@ -9,6 +9,8 @@ import { env } from "@/lib/env";
  */
 export const architectMode: AgentMode = {
   allowedTools: [
+    "skills.load",
+    "skills.readFile",
     "retrieveProjectChunks",
     "context7.resolve-library-id",
     "context7.query-docs",

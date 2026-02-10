@@ -11,7 +11,9 @@ describe("buildChatToolsForMode", () => {
     await withEnv({}, async () => {
       const { buildChatToolsForMode } = await loadFactory();
       const tools = buildChatToolsForMode("chat-assistant");
-      expect(Object.keys(tools).sort()).toEqual(["retrieveProjectChunks"]);
+      expect(Object.keys(tools).sort()).toEqual(
+        ["retrieveProjectChunks", "skills.load", "skills.readFile"].sort(),
+      );
     });
   });
 
@@ -25,6 +27,8 @@ describe("buildChatToolsForMode", () => {
           [
             "research.create-report",
             "retrieveProjectChunks",
+            "skills.load",
+            "skills.readFile",
             "web.extract",
             "web.search",
           ].sort(),
@@ -54,6 +58,8 @@ describe("buildChatToolsForMode", () => {
           "context7.query-docs",
           "context7.resolve-library-id",
           "retrieveProjectChunks",
+          "skills.load",
+          "skills.readFile",
         ].sort(),
       );
     });

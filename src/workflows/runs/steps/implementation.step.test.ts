@@ -65,6 +65,18 @@ vi.mock("@/lib/env", () => ({
   env: state.env,
 }));
 
+vi.mock("@/lib/ai/skills/index.server", () => ({
+  listAvailableSkillsForProject: async () => [],
+  loadSkillForProject: async () => ({
+    error: "Skill not available.",
+    ok: false,
+  }),
+  readSkillFileForProject: async () => ({
+    error: "Skill file not available.",
+    ok: false,
+  }),
+}));
+
 vi.mock("@/db/client", () => ({
   getDb: () => state.getDb(),
 }));
@@ -395,6 +407,7 @@ describe("planImplementationRun", () => {
 
     const { planImplementationRun } = await import("./implementation.step");
     const res = await planImplementationRun({
+      projectId: "proj_1",
       projectName: "Project",
       projectSlug: "project",
       repoName: "repo",

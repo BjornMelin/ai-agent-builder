@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { ToolSet, UIMessageChunk } from "ai";
+import type { ToolExecutionOptions, ToolSet, UIMessageChunk } from "ai";
 import { stepCountIs, ToolLoopAgent, tool } from "ai";
 import type { FileAdapter } from "ctx-zip";
 import { eq } from "drizzle-orm";
@@ -8,6 +8,13 @@ import { z } from "zod";
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { getDefaultChatModel } from "@/lib/ai/gateway.server";
+import {
+  listAvailableSkillsForProject,
+  loadSkillForProject,
+  readSkillFileForProject,
+} from "@/lib/ai/skills/index.server";
+import { buildSkillsPrompt } from "@/lib/ai/skills/prompt";
+import type { SkillMetadata } from "@/lib/ai/skills/types";
 import { AppError } from "@/lib/core/errors";
 import { listReposByProject } from "@/lib/data/repos.server";
 import { env } from "@/lib/env";
@@ -248,6 +255,10 @@ export async function runCodeModeSession(
       type: "status",
     });
 
+    const availableSkills = await listAvailableSkillsForProject(
+      runRow.projectId,
+    );
+
     // Prefer cloning a connected repo when network access is enabled.
     const repos = await listReposByProject(runRow.projectId);
     const repo = repos.at(0) ?? null;
@@ -441,7 +452,72 @@ export async function runCodeModeSession(
       }),
     });
 
+    const skillMetadataSchema = z.object({
+      description: z.string(),
+      location: z.string(),
+      name: z.string(),
+      source: z.enum(["db", "fs"]),
+    });
+
+    const codeModeCallOptionsSchema = z.object({
+      projectId: z.string().min(1),
+      skills: z.array(skillMetadataSchema),
+    });
+
+    type CodeModeCallOptions = Readonly<{
+      projectId: string;
+      skills: SkillMetadata[];
+    }>;
+
+    function parseCodeModeSkillContext(value: unknown): CodeModeCallOptions {
+      const parsed = codeModeCallOptionsSchema.safeParse(value);
+      if (!parsed.success) {
+        throw new AppError(
+          "bad_request",
+          400,
+          "Missing skill context for Code Mode.",
+          parsed.error,
+        );
+      }
+      return parsed.data as CodeModeCallOptions;
+    }
+
+    const skillsLoadTool = tool({
+      description: "Load a skill to get specialized instructions.",
+      async execute(
+        { name }: Readonly<{ name: string }>,
+        options: ToolExecutionOptions,
+      ) {
+        const ctx = parseCodeModeSkillContext(options.experimental_context);
+        return await loadSkillForProject({ name, projectId: ctx.projectId });
+      },
+      inputSchema: z.strictObject({
+        name: z.string().min(1),
+      }),
+    });
+
+    const skillsReadFileTool = tool({
+      description:
+        "Read a file referenced by a repo-bundled skill. Path must be relative to the skill directory.",
+      async execute(
+        { name, path }: Readonly<{ name: string; path: string }>,
+        options: ToolExecutionOptions,
+      ) {
+        const ctx = parseCodeModeSkillContext(options.experimental_context);
+        return await readSkillFileForProject({
+          name,
+          path,
+          projectId: ctx.projectId,
+        });
+      },
+      inputSchema: z.strictObject({
+        name: z.string().min(1),
+        path: z.string().min(1),
+      }),
+    });
+
     const agent = new ToolLoopAgent({
+      callOptionsSchema: codeModeCallOptionsSchema,
       instructions: [
         "You are Code Mode, an AI assistant operating inside a locked-down Vercel Sandbox VM.",
         "You can run allowlisted commands via the sandbox_run tool, and you should be explicit about what you run and why.",
@@ -474,6 +550,14 @@ export async function runCodeModeSession(
           });
         }
       },
+      prepareCall: ({ options, ...settings }) => ({
+        ...settings,
+        experimental_context: options,
+        instructions: [
+          settings.instructions,
+          buildSkillsPrompt(options.skills),
+        ].join("\n\n"),
+      }),
       prepareStep: async ({ messages }) => {
         // Keep the agent loop within context budgets even with tool-heavy output.
         const boundary = { count: 8, type: "keep-last" } as const;
@@ -506,7 +590,12 @@ export async function runCodeModeSession(
         return { messages: compacted };
       },
       stopWhen: stepCountIs(maxSteps),
-      tools: { ...ctxZipTools, sandbox_run: sandboxRunTool },
+      tools: {
+        ...ctxZipTools,
+        sandbox_run: sandboxRunTool,
+        "skills.load": skillsLoadTool,
+        "skills.readFile": skillsReadFileTool,
+      },
     });
 
     let assistantText = "";
@@ -521,6 +610,10 @@ export async function runCodeModeSession(
 
     try {
       const stream = await agent.stream({
+        options: {
+          projectId: runRow.projectId,
+          skills: availableSkills,
+        },
         prompt,
         timeout: {
           totalMs: Math.min(Math.max(timeoutMs, 10_000), 30 * 60_000),

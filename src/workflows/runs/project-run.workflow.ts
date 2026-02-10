@@ -374,6 +374,7 @@ export async function projectRun(
         },
         async () =>
           await planImplementationRun({
+            projectId: runInfo.projectId,
             projectName: repo.projectName,
             projectSlug: repo.projectSlug,
             repoName: repo.name,

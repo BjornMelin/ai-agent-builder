@@ -9,6 +9,8 @@ import { env } from "@/lib/env";
  */
 export const researcherMode: AgentMode = {
   allowedTools: [
+    "skills.load",
+    "skills.readFile",
     "retrieveProjectChunks",
     "web.search",
     "web.extract",

@@ -40,6 +40,18 @@ vi.mock("@/lib/env", () => ({
   },
 }));
 
+vi.mock("@/lib/ai/skills/index.server", () => ({
+  listAvailableSkillsForProject: async () => [],
+  loadSkillForProject: async () => ({
+    error: "Skill not available.",
+    ok: false,
+  }),
+  readSkillFileForProject: async () => ({
+    error: "Skill file not available.",
+    ok: false,
+  }),
+}));
+
 vi.mock("@/db/client", () => ({
   getDb: () => state.getDb(),
 }));

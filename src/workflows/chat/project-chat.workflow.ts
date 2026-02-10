@@ -8,11 +8,13 @@ import {
 import { getWorkflowMetadata, getWritable } from "workflow";
 
 import { getEnabledAgentMode } from "@/lib/ai/agents/registry.server";
+import { buildSkillsPrompt } from "@/lib/ai/skills/prompt";
 import { buildChatToolsForMode } from "@/lib/ai/tools/factory.server";
 import { getWorkflowChatModel } from "@/workflows/ai/gateway-models.step";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
 import { persistChatMessagesForWorkflowRun } from "@/workflows/chat/steps/chat-messages.step";
 import { touchChatThreadState } from "@/workflows/chat/steps/chat-thread-state.step";
+import { listProjectSkillsStep } from "@/workflows/chat/steps/skills.step";
 import {
   writeStreamClose,
   writeUserMessageMarker,
@@ -45,6 +47,7 @@ export async function projectChat(
   const messages: ModelMessage[] = [];
   const mode = getEnabledAgentMode(modeId);
   const tools = buildChatToolsForMode(modeId);
+  const skills = await listProjectSkillsStep({ projectId });
   const threadStateInput = {
     mode: mode.modeId,
     projectId,
@@ -78,7 +81,7 @@ export async function projectChat(
 
     const agent = new DurableAgent({
       model: () => getWorkflowChatModel(mode.defaultModel),
-      system: mode.systemPrompt,
+      system: [mode.systemPrompt, buildSkillsPrompt(skills)].join("\n\n"),
       tools,
     });
 
@@ -93,7 +96,7 @@ export async function projectChat(
       const result = await agent.stream({
         activeTools: [...mode.allowedTools],
         collectUIMessages: true,
-        experimental_context: createChatToolContext(projectId, modeId),
+        experimental_context: createChatToolContext(projectId, modeId, skills),
         maxSteps: mode.budgets.maxStepsPerTurn,
         messages,
         preventClose: true,

@@ -10,6 +10,8 @@ import "server-only";
  * - tests (contract enforcement)
  */
 export const toolIds = [
+  "skills.load",
+  "skills.readFile",
   "retrieveProjectChunks",
   "web.search",
   "web.extract",
