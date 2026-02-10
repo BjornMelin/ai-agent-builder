@@ -1,5 +1,5 @@
+import { randomUUID } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -7,6 +7,13 @@ import {
   loadFilesystemSkillBody,
   readFilesystemSkillFile,
 } from "@/lib/ai/skills/fs-discovery.server";
+
+const TEST_TMP_BASE = path.join(process.cwd(), ".tmp", "vitest");
+
+async function makeTempDir(prefix: string): Promise<string> {
+  await mkdir(TEST_TMP_BASE, { recursive: true });
+  return await mkdtemp(path.join(TEST_TMP_BASE, `${prefix}-`));
+}
 
 function skillMd(name: string, description: string, body = "# Body\n"): string {
   return [
@@ -21,8 +28,8 @@ function skillMd(name: string, description: string, body = "# Body\n"): string {
 
 describe("filesystem skills discovery", () => {
   it("discovers skills and keeps the first duplicate by root order", async () => {
-    const root1 = await mkdtemp(path.join(os.tmpdir(), "skills-root1-"));
-    const root2 = await mkdtemp(path.join(os.tmpdir(), "skills-root2-"));
+    const root1 = await makeTempDir("skills-root1");
+    const root2 = await makeTempDir("skills-root2");
 
     try {
       await mkdir(path.join(root1, "a-skill"));
@@ -76,14 +83,16 @@ describe("filesystem skills discovery", () => {
   });
 
   it("skips missing roots without failing", async () => {
-    const skills = await discoverFilesystemSkills([
-      path.join(os.tmpdir(), "definitely-missing-skills-root"),
-    ]);
+    const missingRoot = path.join(
+      process.cwd(),
+      `.definitely-missing-skills-root-${randomUUID()}`,
+    );
+    const skills = await discoverFilesystemSkills([missingRoot]);
     expect(skills).toEqual([]);
   });
 
   it("loads and strips the SKILL.md frontmatter body", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "skills-body-"));
+    const root = await makeTempDir("skills-body");
     const skillDir = path.join(root, "sandbox");
 
     try {
@@ -102,7 +111,7 @@ describe("filesystem skills discovery", () => {
   });
 
   it("reads files with strict relative-path validation and size caps", async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), "skills-readfile-"));
+    const root = await makeTempDir("skills-readfile");
     const skillDir = path.join(root, "sandbox");
     const refsDir = path.join(skillDir, "references");
 

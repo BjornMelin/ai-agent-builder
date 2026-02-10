@@ -1,4 +1,4 @@
-import os from "node:os";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { withEnv } from "@tests/utils/env";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -176,7 +176,10 @@ describe("project skills resolution", () => {
   });
 
   it("loadSkillForProject returns a null skillDirectory when the skill is outside the repo", async () => {
-    const skillDir = path.join(os.tmpdir(), "external-skill");
+    const skillDir = path.join(
+      path.dirname(process.cwd()),
+      `external-skill-${randomUUID()}`,
+    );
     state.discoverFilesystemSkills.mockResolvedValueOnce([
       {
         description: "Repo skill",
