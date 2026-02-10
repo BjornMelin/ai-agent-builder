@@ -231,10 +231,13 @@ export type ResolvedRegistrySkill = Readonly<{
 /**
  * Resolve a registry skill from a GitHub repo archive ZIP.
  *
+ * @remarks ADR-0028 (hybrid filesystem + DB model for Agent Skills).
+ *
  * @param input - ZIP bytes and desired `skillId`.
  * @returns Resolved skill payload.
  * @throws AppError - With code `"not_found"` when the skill cannot be located.
  * @throws AppError - With code `"bad_request"` when the input is invalid or the archive violates size/path safety constraints.
+ * @throws AppError - With code `"internal_error"` when stream processing fails unexpectedly.
  */
 export async function resolveRegistrySkillFromRepoZip(
   input: Readonly<{ zipBytes: Uint8Array; skillId: string }>,

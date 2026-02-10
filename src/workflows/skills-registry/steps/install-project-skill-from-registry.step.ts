@@ -107,18 +107,22 @@ export async function installProjectSkillFromRegistryStep(
     parsedInput.data.projectId,
     ref.id,
   );
-  if (!existing) {
-    const collision = await findProjectSkillByNameUncached(
-      parsedInput.data.projectId,
-      resolvedNameTrimmed,
-    );
-    const collisionRegistryId = collision
-      ? (getProjectSkillRegistryRef(collision.metadata)?.id ?? null)
-      : null;
-    if (collision && collisionRegistryId !== ref.id) {
-      throw new AppError("conflict", 409, "Skill name already exists.");
-    }
-    existing = collisionRegistryId === ref.id ? collision : null;
+  const collision = await findProjectSkillByNameUncached(
+    parsedInput.data.projectId,
+    resolvedNameTrimmed,
+  );
+  const collisionRegistryId = collision
+    ? (getProjectSkillRegistryRef(collision.metadata)?.id ?? null)
+    : null;
+  if (
+    collision &&
+    collision.id !== existing?.id &&
+    collisionRegistryId !== ref.id
+  ) {
+    throw new AppError("conflict", 409, "Skill name already exists.");
+  }
+  if (!existing && collisionRegistryId === ref.id) {
+    existing = collision;
   }
 
   const previousBundle = existing

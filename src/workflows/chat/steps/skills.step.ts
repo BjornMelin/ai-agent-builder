@@ -23,6 +23,8 @@ const loadInputSchema = z.object({
 /**
  * `skills.load` tool step.
  *
+ * @remarks ADR-0028: Hybrid filesystem + DB model for Agent Skills.
+ *
  * @param input - Tool input.
  * @param options - Tool execution options.
  * @returns Loaded skill content or a structured error.
@@ -71,6 +73,8 @@ const readFileInputSchema = z.object({
 /**
  * `skills.readFile` tool step.
  *
+ * @remarks ADR-0028: Hybrid filesystem + DB model for Agent Skills.
+ *
  * @param input - Tool input.
  * @param options - Tool execution options.
  * @returns File content or a structured error.
@@ -114,6 +118,8 @@ export async function skillsReadFileStep(
 
 /**
  * List skills available for a project.
+ *
+ * @remarks ADR-0028: Hybrid filesystem + DB model for Agent Skills.
  *
  * @param input - Project identity.
  * @returns Skill metadata list.

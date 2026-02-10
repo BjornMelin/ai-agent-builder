@@ -39,7 +39,7 @@ export type SkillsShSearchResponse = Readonly<
  * @param query - Search query.
  * @param options - Optional query options (limit).
  * @returns Parsed search response.
- * @throws AppError - With code `"bad_request"` when query is invalid.
+ * @throws AppError - With code `"bad_request"` when query or limit is invalid.
  * @throws AppError - With code `"upstream_failed"` when skills.sh is unavailable.
  */
 export async function searchSkillsShRegistry(
@@ -51,7 +51,15 @@ export async function searchSkillsShRegistry(
     throw new AppError("bad_request", 400, "Search query is required.");
   }
 
-  const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
+  const rawLimit = options.limit ?? 20;
+  if (!Number.isFinite(rawLimit) || !Number.isInteger(rawLimit)) {
+    throw new AppError(
+      "bad_request",
+      400,
+      "Limit must be an integer between 1 and 50.",
+    );
+  }
+  const limit = Math.min(Math.max(rawLimit, 1), 50);
   const url = new URL("https://skills.sh/api/search");
   url.searchParams.set("q", q);
   url.searchParams.set("limit", String(limit));

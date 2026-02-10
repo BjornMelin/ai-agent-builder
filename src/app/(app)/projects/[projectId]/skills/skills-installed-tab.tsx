@@ -90,7 +90,7 @@ async function tryParseErrorMessage(res: Response): Promise<string | null> {
 /**
  * Installed skills tab (project overrides + effective skills list).
  *
- * @param props - Installed tab props.
+ * @param props - Props containing a non-empty projectId, current project/effective skills, registry install handler, and pending state.
  * @returns Installed skills UI.
  */
 export function SkillsInstalledTab(

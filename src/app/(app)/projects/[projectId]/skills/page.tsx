@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /**
  * Renders the project's skills management page (Installed + Registry).
  *
- * @param props - Route params.
+ * @param props - Route params containing the target projectId for this page.
  * @returns Skills UI.
  */
 export default async function SkillsPage(

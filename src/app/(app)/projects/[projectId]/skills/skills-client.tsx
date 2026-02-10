@@ -51,7 +51,7 @@ function preloadRegistryTabChunk(): void {
 /**
  * Skills management UI (Installed + Registry).
  *
- * @param props - `SkillsClient` props.
+ * @param props - Props containing a non-empty projectId and the current installed/effective skill lists used to render the tabs.
  * @returns Skills tab UI.
  */
 export function SkillsClient(

@@ -503,19 +503,19 @@ export async function planImplementationRun(
     }
   })();
 
-  const skillMetadataSchema = z.object({
+  const skillMetadataSchema = z.strictObject({
     description: z.string(),
     location: z.string(),
     name: z.string(),
     source: z.enum(["db", "fs"]),
   });
 
-  const callOptionsSchema = z.object({
+  const callOptionsSchema = z.strictObject({
     projectId: z.string().min(1),
     skills: z.array(skillMetadataSchema),
   });
 
-  const plannerContextSchema = z.object({
+  const plannerContextSchema = z.strictObject({
     context7Calls: z.number().int().min(0).default(0),
     projectId: z.string().min(1),
     skills: z.array(skillMetadataSchema).default([]),

@@ -48,6 +48,19 @@ function parseCommaSeparatedList(value: string): string[] {
     .filter((v) => v.length > 0);
 }
 
+const ALLOWED_SKILL_DIRS = [".agents/skills", ".codex/skills"] as const;
+
+const skillsDirListSchema = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") return value;
+    if (value.trim().length === 0) return undefined;
+    return parseCommaSeparatedList(value);
+  },
+  z
+    .array(z.enum(ALLOWED_SKILL_DIRS))
+    .default([".agents/skills", ".codex/skills"]),
+);
+
 /**
  * Normalize an email address for consistent allowlist matching.
  *
@@ -89,12 +102,10 @@ const skillsSchema = z
      * This is an allowlist of repo directories (not arbitrary filesystem paths).
      * Supported values: `.agents/skills`, `.codex/skills` (subset allowed).
      */
-    AGENT_SKILLS_DIRS: envOptionalTrimmed.default(
-      ".agents/skills,.codex/skills",
-    ),
+    AGENT_SKILLS_DIRS: skillsDirListSchema,
   })
   .transform((v) => ({
-    dirs: parseCommaSeparatedList(v.AGENT_SKILLS_DIRS),
+    dirs: v.AGENT_SKILLS_DIRS,
   }));
 
 const dbSchema = z

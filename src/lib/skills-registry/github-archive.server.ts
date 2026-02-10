@@ -25,11 +25,22 @@ async function downloadArchive(
   input: Readonly<{ owner: string; repo: string; branch: string }>,
 ): Promise<Readonly<{ bytes: Uint8Array; branch: string }> | null> {
   const url = buildArchiveUrl(input);
-  const res = await fetchWithTimeout(
-    url,
-    { headers: githubAuthHeaders(), method: "GET" },
-    { timeoutMs: 30_000 },
-  );
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      url,
+      { headers: githubAuthHeaders(), method: "GET" },
+      { timeoutMs: 30_000 },
+    );
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(
+      "upstream_failed",
+      502,
+      "GitHub archive download failed (network/timeout).",
+      error,
+    );
+  }
 
   if (res.status === 404) return null;
   if (!res.ok) {

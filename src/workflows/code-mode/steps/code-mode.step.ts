@@ -255,12 +255,11 @@ export async function runCodeModeSession(
       type: "status",
     });
 
-    const availableSkills = await listAvailableSkillsForProject(
-      runRow.projectId,
-    );
-
     // Prefer cloning a connected repo when network access is enabled.
-    const repos = await listReposByProject(runRow.projectId);
+    const [availableSkills, repos] = await Promise.all([
+      listAvailableSkillsForProject(runRow.projectId),
+      listReposByProject(runRow.projectId),
+    ]);
     const repo = repos.at(0) ?? null;
 
     const source =
