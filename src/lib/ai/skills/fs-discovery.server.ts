@@ -21,7 +21,23 @@ async function readUtf8FileCapped(
   filePath: string,
   maxBytes: number,
 ): Promise<string> {
-  const handle = await open(filePath, "r");
+  const throwMappedFsError = (err: unknown): never => {
+    const code = (err as { code?: unknown } | null)?.code;
+    if (code === "ENOENT") {
+      throw new AppError("not_found", 404, "Skill file not found.", err);
+    }
+    if (code === "EISDIR") {
+      throw new AppError("bad_request", 400, "Path must refer to a file.", err);
+    }
+    if (code === "EACCES" || code === "EPERM") {
+      throw new AppError("forbidden", 403, "Access denied.", err);
+    }
+    throw new AppError("internal_error", 500, "Unexpected error.", err);
+  };
+
+  const handle = await open(filePath, "r").catch((err): never =>
+    throwMappedFsError(err),
+  );
   try {
     const chunks: Buffer[] = [];
     let total = 0;
@@ -39,7 +55,9 @@ async function readUtf8FileCapped(
       }
 
       const buf = Buffer.alloc(Math.min(64 * 1024, remaining));
-      const { bytesRead } = await handle.read(buf, 0, buf.length, null);
+      const { bytesRead } = await handle
+        .read(buf, 0, buf.length, null)
+        .catch((err): never => throwMappedFsError(err));
       if (bytesRead === 0) break;
 
       total += bytesRead;
@@ -64,6 +82,15 @@ function assertRelativePath(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
     throw new AppError("bad_request", 400, "Invalid path.");
+  }
+  if (
+    trimmed === "." ||
+    trimmed === "./" ||
+    trimmed === ".\\" ||
+    trimmed.endsWith("/") ||
+    trimmed.endsWith("\\")
+  ) {
+    throw new AppError("bad_request", 400, "Path must refer to a file.");
   }
   if (trimmed.startsWith("/") || trimmed.startsWith("~")) {
     throw new AppError("bad_request", 400, "Path must be relative.");

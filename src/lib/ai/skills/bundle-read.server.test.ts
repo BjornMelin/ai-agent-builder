@@ -90,6 +90,33 @@ describe("readBundledSkillFileFromBlob", () => {
     });
   });
 
+  it("rejects '.' and directory paths", async () => {
+    await withEnv({ BLOB_READ_WRITE_TOKEN: "rw_token" }, async () => {
+      const mod = await loadModule();
+
+      await expect(
+        mod.readBundledSkillFileFromBlob({
+          blobPath: "bundle",
+          relativePath: ".",
+        }),
+      ).rejects.toMatchObject({ code: "bad_request", status: 400 });
+
+      await expect(
+        mod.readBundledSkillFileFromBlob({
+          blobPath: "bundle",
+          relativePath: "./",
+        }),
+      ).rejects.toMatchObject({ code: "bad_request", status: 400 });
+
+      await expect(
+        mod.readBundledSkillFileFromBlob({
+          blobPath: "bundle",
+          relativePath: "references/",
+        }),
+      ).rejects.toMatchObject({ code: "bad_request", status: 400 });
+    });
+  });
+
   it("throws when the bundle is too large", async () => {
     await withEnv({ BLOB_READ_WRITE_TOKEN: "rw_token" }, async () => {
       state.head.mockResolvedValueOnce({

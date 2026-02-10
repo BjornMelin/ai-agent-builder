@@ -120,6 +120,27 @@ describe("filesystem skills discovery", () => {
 
       await expect(
         readFilesystemSkillFile({
+          relativePath: ".",
+          skillDirectory: skillDir,
+        }),
+      ).rejects.toMatchObject({ code: "bad_request", status: 400 });
+
+      await expect(
+        readFilesystemSkillFile({
+          relativePath: "references/",
+          skillDirectory: skillDir,
+        }),
+      ).rejects.toMatchObject({ code: "bad_request", status: 400 });
+
+      await expect(
+        readFilesystemSkillFile({
+          relativePath: "references",
+          skillDirectory: skillDir,
+        }),
+      ).rejects.toMatchObject({ code: "bad_request", status: 400 });
+
+      await expect(
+        readFilesystemSkillFile({
           relativePath: "/etc/passwd",
           skillDirectory: skillDir,
         }),

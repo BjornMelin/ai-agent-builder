@@ -16,6 +16,15 @@ function assertRelativePath(value: string): string {
   if (!trimmed) {
     throw new AppError("bad_request", 400, "Invalid path.");
   }
+  if (
+    trimmed === "." ||
+    trimmed === "./" ||
+    trimmed === ".\\" ||
+    trimmed.endsWith("/") ||
+    trimmed.endsWith("\\")
+  ) {
+    throw new AppError("bad_request", 400, "Path must refer to a file.");
+  }
   if (trimmed.startsWith("/") || trimmed.startsWith("~")) {
     throw new AppError("bad_request", 400, "Path must be relative.");
   }
@@ -72,6 +81,9 @@ export async function readBundledSkillFileFromBlob(
   const relativePath = normalizeZipRelativePath(
     assertRelativePath(input.relativePath),
   );
+  if (!relativePath || relativePath === "." || relativePath.endsWith("/")) {
+    throw new AppError("bad_request", 400, "Path must refer to a file.");
+  }
 
   let metadata: Awaited<ReturnType<typeof head>>;
   try {
