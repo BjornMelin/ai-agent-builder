@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.11](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.10...ai-agent-builder-v0.1.11) (2026-02-10)
+
+
+### Features
+
+* add agent skills + UI for management ([36f0986](https://github.com/BjornMelin/ai-agent-builder/commit/36f0986595886ba5c350627691b985bf64084ba8))
+* add project skills table and relations for agent skills management ([ebc6f3c](https://github.com/BjornMelin/ai-agent-builder/commit/ebc6f3c77e5263063f00cd00396746e456cb6c9e))
+* **code-mode:** enhance sandbox path management and introduce redaction utilities ([d05783c](https://github.com/BjornMelin/ai-agent-builder/commit/d05783c502395bc9091303bca7abd38e1d80070d))
+* implement runtime-loadable Agent Skills with project-scoped overrides and skills registry integration ([eb06c58](https://github.com/BjornMelin/ai-agent-builder/commit/eb06c587dd54c692b726d5f9672243d2022910f7))
+* **projects:** implement virtualized project list and enhance project management ([9fbff7a](https://github.com/BjornMelin/ai-agent-builder/commit/9fbff7a6a9e7b45b54bb17a196994b92c51b6940))
+* **skills:** add registry UI management and runtime loading ([1fc2161](https://github.com/BjornMelin/ai-agent-builder/commit/1fc2161851906478b2751b84a6adfd209bcb8171))
+* **skills:** enhance skills management with installed and registry tabs ([bdd8b55](https://github.com/BjornMelin/ai-agent-builder/commit/bdd8b558adc8bba391004ac8dd9ce25dcd98f597))
+* **workflows:** introduce workflow orchestration utilities and enhance error handling ([dd85e33](https://github.com/BjornMelin/ai-agent-builder/commit/dd85e3366ee6a3826b277cdf8a34694d27b4c3e2))
+
+
+### Bug Fixes
+
+* **security:** avoid insecure temp-file pattern in skill fs reads ([12731d7](https://github.com/BjornMelin/ai-agent-builder/commit/12731d7dea8508e3945aa3f5f3ff4d06f6cd15f9))
+* **skills:** address follow-up review ([f6df49c](https://github.com/BjornMelin/ai-agent-builder/commit/f6df49cf9df24f2c15c1b17b6689116e30d9db26))
+* **skills:** address review feedback ([4ac6c8c](https://github.com/BjornMelin/ai-agent-builder/commit/4ac6c8ca23eda39af5de250a45bf3f7403b21efe))
+* **skills:** address review feedback ([26de75c](https://github.com/BjornMelin/ai-agent-builder/commit/26de75c4bc0d087bf6bd018bdfa0773a8c67e0c7))
+* **skills:** align env defaults ([33d9dac](https://github.com/BjornMelin/ai-agent-builder/commit/33d9dac896769b840ba5cf5f603bafde2d4b94c8))
+* **skills:** reject directory paths in readFile ([371c604](https://github.com/BjornMelin/ai-agent-builder/commit/371c60471766bff5c7968979c11e26eb2037c2ac))
+
 ## [0.1.10](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.9...ai-agent-builder-v0.1.10) (2026-02-09)
 
 
