@@ -1,6 +1,6 @@
 {
   "name": "ai-agent-builder",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "private": true,
   "engines": {
     "bun": ">=1.2.0",

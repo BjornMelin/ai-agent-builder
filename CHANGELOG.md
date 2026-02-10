@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.12](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.11...ai-agent-builder-v0.1.12) (2026-02-10)
+
+
+### Bug Fixes
+
+* **citations:** address review feedback ([fa9d568](https://github.com/BjornMelin/ai-agent-builder/commit/fa9d568ee55e80526037a5edd74fbcb0d122a42e))
+* **db:** address PR review feedback ([a91f48d](https://github.com/BjornMelin/ai-agent-builder/commit/a91f48dbee02772808fe63b08575c70102d31368))
+* **ui:** address review feedback ([bf9f919](https://github.com/BjornMelin/ai-agent-builder/commit/bf9f919ec2fcfde191defb3d2b35e53f173e43c4))
+* **ui:** show delete errors in confirm dialog ([c88f3aa](https://github.com/BjornMelin/ai-agent-builder/commit/c88f3aa8cfb5c66ee898ae9bc78e734eba98f78d))
+* **urls:** canonicalize http(s) url normalization ([6b05e85](https://github.com/BjornMelin/ai-agent-builder/commit/6b05e85df977188885b95997dc2fb7f14d22b74c))
+
 ## [0.1.11](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.10...ai-agent-builder-v0.1.11) (2026-02-10)
 
 
