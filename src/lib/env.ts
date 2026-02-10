@@ -89,7 +89,9 @@ const skillsSchema = z
      * This is an allowlist of repo directories (not arbitrary filesystem paths).
      * Supported values: `.agents/skills`, `.codex/skills` (subset allowed).
      */
-    AGENT_SKILLS_DIRS: envNonEmpty,
+    AGENT_SKILLS_DIRS: envOptionalTrimmed.default(
+      ".agents/skills,.codex/skills",
+    ),
   })
   .transform((v) => ({
     dirs: parseCommaSeparatedList(v.AGENT_SKILLS_DIRS),
@@ -517,10 +519,7 @@ export const env = {
    *
    * @returns Skills env.
    */
-  get skills(): false | Readonly<z.output<typeof skillsSchema>> {
-    const raw = process.env.AGENT_SKILLS_DIRS;
-    if (!raw || raw.trim().length === 0) return false;
-
+  get skills(): Readonly<z.output<typeof skillsSchema>> {
     cachedSkillsEnv ??= parseFeatureEnv("skills", skillsSchema);
     return cachedSkillsEnv;
   },

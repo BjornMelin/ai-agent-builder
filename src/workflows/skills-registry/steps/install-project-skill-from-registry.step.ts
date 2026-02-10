@@ -55,7 +55,8 @@ function toSafeBlobSegment(value: string, maxChars: number): string {
  *
  * @param input - Project identity and registry id (`owner/repo/skillId`).
  * @returns Upserted skill summary (public-safe).
- * @throws AppError - When input validation fails or when registry resolution/install fails.
+ * @throws AppError - With code `"bad_request"` when `projectId`, `registryId`, or the resolved skill name is invalid or too long.
+ * @throws AppError - With code `"conflict"` when a different skill already uses the resolved name.
  */
 export async function installProjectSkillFromRegistryStep(
   input: Readonly<{ projectId: string; registryId: string }>,

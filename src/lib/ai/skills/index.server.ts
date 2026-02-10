@@ -47,10 +47,7 @@ function toRepoRelativePathOrNull(absoluteDir: string): string | null {
 }
 
 function resolveConfiguredRoots(): string[] {
-  const skillsEnv = env.skills;
-  if (!skillsEnv) return [];
-
-  const requested = skillsEnv.dirs.map(normalizeSkillRootKey).filter(Boolean);
+  const requested = env.skills.dirs.map(normalizeSkillRootKey).filter(Boolean);
   const uniqueRequested = Array.from(new Set(requested));
   if (uniqueRequested.length === 0) return [];
 

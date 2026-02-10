@@ -7,22 +7,19 @@ async function loadEnv() {
 }
 
 describe("env feature gates", () => {
-  it("defaults env.skills to false when AGENT_SKILLS_DIRS is unset", async () => {
+  it("defaults AGENT_SKILLS_DIRS when unset", async () => {
     await withEnv({ AGENT_SKILLS_DIRS: undefined }, async () => {
       const { env } = await loadEnv();
-      expect(env.skills).toBe(false);
+      expect(env.skills.dirs).toEqual([".agents/skills", ".codex/skills"]);
     });
   });
 
-  it("enables env.skills and parses AGENT_SKILLS_DIRS when set", async () => {
+  it("parses AGENT_SKILLS_DIRS when set", async () => {
     await withEnv(
       { AGENT_SKILLS_DIRS: ".agents/skills, .codex/skills" },
       async () => {
         const { env } = await loadEnv();
-        expect(env.skills).not.toBe(false);
-        if (env.skills !== false) {
-          expect(env.skills.dirs).toEqual([".agents/skills", ".codex/skills"]);
-        }
+        expect(env.skills.dirs).toEqual([".agents/skills", ".codex/skills"]);
       },
     );
   });

@@ -37,7 +37,7 @@ This project centralizes environment access in `src/lib/env.ts`.
 
 ### Agent Skills (repo-bundled)
 
-- `AGENT_SKILLS_DIRS` (optional; enables `env.skills` when set) (used by `env.skills`)
+- `AGENT_SKILLS_DIRS` (optional; default: `.agents/skills,.codex/skills`) (used by `env.skills`)
   - Comma-separated allowlist of repo-bundled skill roots scanned for `SKILL.md`
     folders.
   - Supported values: `.agents/skills`, `.codex/skills` (subset allowed).
