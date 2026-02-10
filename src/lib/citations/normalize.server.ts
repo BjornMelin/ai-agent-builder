@@ -3,13 +3,13 @@ import "server-only";
 import { z } from "zod";
 
 import { budgets } from "@/lib/config/budgets.server";
-import { isSafeExternalHttpUrl } from "@/lib/urls/safe-http-url";
+import { isHttpOrHttpsUrl } from "@/lib/urls/safe-http-url";
 
 const safeHttpUrlSchema = z
   .string()
   .trim()
   .pipe(z.url())
-  .refine((value) => isSafeExternalHttpUrl(value), {
+  .refine((value) => isHttpOrHttpsUrl(value), {
     message: "Unsupported URL protocol.",
   });
 
@@ -72,6 +72,7 @@ export function normalizeWebCitations(
   const byUrl = new Map<string, WebCitationSource>();
   for (const source of sources) {
     if (!source.url) continue;
+    if (byUrl.size >= max) break;
 
     // Normalize early so dedupe + persisted `sourceRef` are canonical.
     const normalizedUrl = safeHttpUrlSchema.parse(source.url);

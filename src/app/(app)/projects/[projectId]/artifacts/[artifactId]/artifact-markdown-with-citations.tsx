@@ -11,7 +11,7 @@ import {
 } from "@/components/ai-elements/inline-citation";
 import { MessageResponse } from "@/components/ai-elements/message";
 import { HoverCardTrigger } from "@/components/ui/hover-card";
-import { normalizeSafeHttpUrl } from "@/lib/urls/safe-http-url";
+import { normalizeHttpOrHttpsUrl } from "@/lib/urls/safe-http-url";
 import { cn } from "@/lib/utils";
 
 type CitationDto = Readonly<{
@@ -33,7 +33,8 @@ type AnchorProps = ComponentProps<"a"> & { node?: unknown };
 
 function normalizeOptionalNonEmptyString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
-  return value.trim().length > 0 ? value : undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 function parseWebCitationPayload(payload: unknown): WebCitationPayload | null {
@@ -52,7 +53,7 @@ function parseWebCitationPayload(payload: unknown): WebCitationPayload | null {
     return null;
   }
 
-  const url = normalizeSafeHttpUrl(record.url);
+  const url = normalizeHttpOrHttpsUrl(record.url);
   if (!url) return null;
 
   const title = normalizeOptionalNonEmptyString(record.title);
