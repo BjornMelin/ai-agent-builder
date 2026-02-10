@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0022
 title: Durable runs & streaming contracts (Vercel Workflow DevKit)
-version: 0.2.0
-date: 2026-02-09
+version: 0.2.1
+date: 2026-02-10
 owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements:
@@ -98,7 +98,13 @@ Response:
 
 Request body (JSON):
 
-- `message`: string (required)
+- `messageId`: string (required)
+- `message`: string (optional)
+- `files`: `FileUIPart[]` (optional)
+
+Validation:
+
+- At least one of `message` or `files` MUST be provided.
 
 Response:
 
@@ -141,7 +147,7 @@ We use the AI SDK UI message streaming format.
 To ensure correct message ordering on replay, the workflow MUST emit explicit user-message markers in the stream:
 
 - Chunk type: `data-workflow`
-- Data payload: `{ type: "user-message", id: string, content: string, timestamp: number }`
+- Data payload: `{ type: "user-message", id: string, content: string, files?: FileUIPart[], timestamp: number }`
 
 Reference: “writeUserMessageMarker” in the multi-turn workflow example ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling)).
 

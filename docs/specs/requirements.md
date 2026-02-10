@@ -22,7 +22,8 @@ components.
   stable rules.
 - **FR-007:** Generate embeddings via AI Gateway and index chunks in vector store.
 - **FR-008:** Project-scoped, multi-turn chat with streaming responses that can
-  resume after disconnects/timeouts.
+  resume after disconnects/timeouts. Chat messages may include document
+  attachments (files) as part of the UI message history.
 - **FR-009:** Agent mode selection per chat (Orchestrator, Market Research,
   Architect, etc.).
 - **FR-010:** Start a durable, multi-step “Run” that executes the research → spec

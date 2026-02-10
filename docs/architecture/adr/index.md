@@ -27,6 +27,7 @@
 - [ADR-0027](./ADR-0027-preview-resource-governance-for-bot-branches-vercel-neon.md) — Preview resource governance for bot branches (Vercel + Neon) (Implemented)
 - [ADR-0028](./ADR-0028-agent-skills-progressive-disclosure-hybrid-fs-db.md) — Agent Skills progressive disclosure (hybrid filesystem + DB) (Implemented)
 - [ADR-0029](./ADR-0029-skills-registry-integration-ui-installs-and-bundled-db-files.md) — Skills registry integration (skills.sh) with UI installs + bundled DB skill files (Implemented)
+- [ADR-0030](./ADR-0030-chat-attachments-reuse-upload-pipeline.md) — Chat attachments reuse /api/upload pipeline (hosted URLs + inline AI Elements)
 
 ## Implementation & deployment automation
 

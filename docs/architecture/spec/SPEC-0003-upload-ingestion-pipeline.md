@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0003
 title: Upload + ingestion pipeline
-version: 0.4.0
-date: 2026-02-03
+version: 0.4.1
+date: 2026-02-10
 owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements: ["FR-003", "FR-004", "FR-005", "FR-006", "FR-007", "PR-003", "IR-006", "IR-005", "IR-001"]
@@ -17,6 +17,9 @@ Defines how uploaded files are stored, extracted, chunked, embedded, and indexed
 See [SPEC-0021](./SPEC-0021-full-stack-finalization-fluid-compute-neon-upstash-ai-elements.md)
 for the cross-cutting “finalization” plan that integrates ingestion with
 durable runs, retrieval, and the workspace UI.
+
+See [SPEC-0029](./SPEC-0029-chat-attachments.md) for the Project Chat document
+attachments flow that reuses `POST /api/upload` as the ingestion entrypoint.
 
 ## Context
 
@@ -106,6 +109,7 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 ### File-level contracts
 
 - `src/app/api/upload/route.ts`: accepts uploads, stores originals, writes DB metadata.
+- `src/app/(app)/projects/[projectId]/chat/chat-client.tsx`: uploads chat attachments via `POST /api/upload` (upload-before-send; see SPEC-0029).
 - `src/app/api/jobs/ingest-file/route.ts`: QStash-signed async ingestion worker (optional; used for larger inputs).
 - `src/lib/ingest/extract/*`: extraction adapters per file type; must preserve stable refs.
 - `src/lib/ingest/chunk/*`: deterministic chunking rules (stable chunk ids).
