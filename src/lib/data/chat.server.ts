@@ -102,9 +102,17 @@ export async function ensureChatThreadForWorkflowRun(
     return toChatThreadDto(row);
   }
 
-  const existing = await db.query.chatThreadsTable.findFirst({
-    where: eq(schema.chatThreadsTable.workflowRunId, input.workflowRunId),
-  });
+  let existing: ChatThreadRow | undefined;
+  try {
+    existing = await db.query.chatThreadsTable.findFirst({
+      where: eq(schema.chatThreadsTable.workflowRunId, input.workflowRunId),
+    });
+  } catch (error) {
+    throw maybeWrapDbNotMigrated(
+      error,
+      "Database is not migrated. Run migrations and try again.",
+    );
+  }
 
   if (!existing) {
     throw new AppError(
