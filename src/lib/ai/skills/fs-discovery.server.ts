@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { Dirent } from "node:fs";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { open, readdir } from "node:fs/promises";
 import path from "node:path";
 
 import { AppError } from "@/lib/core/errors";
@@ -21,16 +21,43 @@ async function readUtf8FileCapped(
   filePath: string,
   maxBytes: number,
 ): Promise<string> {
-  const info = await stat(filePath);
-  if (info.size > maxBytes) {
-    throw new AppError(
-      "bad_request",
-      400,
-      `Skill file exceeds maximum size (${maxBytes} bytes).`,
-    );
+  const handle = await open(filePath, "r");
+  try {
+    const chunks: Buffer[] = [];
+    let total = 0;
+
+    // Read up to maxBytes + 1, then error if we cross the limit.
+    // This avoids a stat()-then-read() TOCTOU pattern.
+    while (true) {
+      const remaining = maxBytes + 1 - total;
+      if (remaining <= 0) {
+        throw new AppError(
+          "bad_request",
+          400,
+          `Skill file exceeds maximum size (${maxBytes} bytes).`,
+        );
+      }
+
+      const buf = Buffer.allocUnsafe(Math.min(64 * 1024, remaining));
+      const { bytesRead } = await handle.read(buf, 0, buf.length, null);
+      if (bytesRead === 0) break;
+
+      total += bytesRead;
+      if (total > maxBytes) {
+        throw new AppError(
+          "bad_request",
+          400,
+          `Skill file exceeds maximum size (${maxBytes} bytes).`,
+        );
+      }
+
+      chunks.push(buf.subarray(0, bytesRead));
+    }
+
+    return Buffer.concat(chunks, total).toString("utf8");
+  } finally {
+    await handle.close();
   }
-  const buf = await readFile(filePath);
-  return buf.toString("utf8");
 }
 
 function assertRelativePath(value: string): string {
