@@ -1,8 +1,7 @@
 import "server-only";
 
-import type { ToolExecutionOptions, ToolSet, UIMessageChunk } from "ai";
+import type { ToolExecutionOptions, UIMessageChunk } from "ai";
 import { stepCountIs, ToolLoopAgent, tool } from "ai";
-import type { FileAdapter } from "ctx-zip";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/db/client";
@@ -23,10 +22,7 @@ import {
   type RepoRuntimeKind,
 } from "@/lib/repo/repo-kind.server";
 import type { CodeModeStreamEvent } from "@/lib/runs/code-mode-stream";
-import {
-  createCtxZipSandboxCodeMode,
-  type VercelSandboxLike,
-} from "@/lib/sandbox/ctxzip.server";
+import type { VercelSandboxLike } from "@/lib/sandbox/ctxzip.server";
 import { compactToolResults } from "@/lib/sandbox/ctxzip-compactor.server";
 import {
   SANDBOX_NETWORK_POLICY_NONE,
@@ -35,169 +31,21 @@ import {
 } from "@/lib/sandbox/network-policy.server";
 import { redactSandboxLog } from "@/lib/sandbox/redaction.server";
 import { startSandboxJobSession } from "@/lib/sandbox/sandbox-runner.server";
+import { nowTimestamp } from "@/workflows/_shared/workflow-run-utils";
 import { chatToolSkillMetadataSchema } from "@/workflows/chat/tool-context";
-
-const SANDBOX_WORKSPACE_ROOT = "/vercel/sandbox";
-
-const budgetsSchema = z
-  .strictObject({
-    maxSteps: z.number().int().min(1).max(50).optional(),
-    timeoutMs: z
-      .number()
-      .int()
-      .min(1)
-      .max(30 * 60_000)
-      .optional(),
-  })
-  .optional();
-
-const codeModeMetadataSchema = z.strictObject({
-  budgets: budgetsSchema,
-  networkAccess: z.enum(["none", "restricted"]).optional(),
-  origin: z.literal("code-mode"),
-  prompt: z.string().min(1),
-});
-
-function nowTimestamp(): number {
-  return Date.now();
-}
-
-const PATH_TRAVERSAL_SEGMENT_RE = /(^|\/)\.\.(\/|$)/;
-
-function resolveSandboxCwd(raw: string | undefined): string | undefined {
-  if (raw === undefined) return undefined;
-  const trimmed = raw.trim();
-  if (!trimmed) return undefined;
-
-  // Default to /vercel/sandbox for relative paths.
-  if (!trimmed.startsWith("/")) {
-    if (PATH_TRAVERSAL_SEGMENT_RE.test(trimmed)) {
-      throw new AppError("bad_request", 400, "Invalid cwd.");
-    }
-    return `${SANDBOX_WORKSPACE_ROOT}/${trimmed}`.replaceAll("//", "/");
-  }
-
-  if (!trimmed.startsWith(SANDBOX_WORKSPACE_ROOT)) {
-    throw new AppError(
-      "bad_request",
-      400,
-      `cwd must be within ${SANDBOX_WORKSPACE_ROOT}.`,
-    );
-  }
-  if (PATH_TRAVERSAL_SEGMENT_RE.test(trimmed)) {
-    throw new AppError("bad_request", 400, "Invalid cwd.");
-  }
-
-  return trimmed;
-}
-
-function resolveSandboxPath(raw: string): string {
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    throw new AppError("bad_request", 400, "Invalid sandbox path.");
-  }
-  if (trimmed.startsWith("~")) {
-    throw new AppError("bad_request", 400, "Invalid sandbox path.");
-  }
-
-  if (trimmed.startsWith("/")) {
-    if (!trimmed.startsWith(SANDBOX_WORKSPACE_ROOT)) {
-      throw new AppError(
-        "bad_request",
-        400,
-        `Path must be within ${SANDBOX_WORKSPACE_ROOT}.`,
-      );
-    }
-    if (PATH_TRAVERSAL_SEGMENT_RE.test(trimmed)) {
-      throw new AppError("bad_request", 400, "Invalid sandbox path.");
-    }
-    return trimmed;
-  }
-
-  if (PATH_TRAVERSAL_SEGMENT_RE.test(trimmed)) {
-    throw new AppError("bad_request", 400, "Invalid sandbox path.");
-  }
-
-  return `${SANDBOX_WORKSPACE_ROOT}/${trimmed}`.replaceAll("//", "/");
-}
-
-function rewriteSandboxArgsForWorkspace(cmd: string, args: readonly string[]) {
-  if (args.length === 0) return args;
-
-  const next = [...args];
-
-  const rewriteAt = (index: number) => {
-    const current = next[index];
-    if (typeof current !== "string") return;
-    next[index] = resolveSandboxPath(current);
-  };
-
-  switch (cmd) {
-    case "ls": {
-      // ctx-zip places the path as the final arg.
-      rewriteAt(next.length - 1);
-      break;
-    }
-    case "cat": {
-      rewriteAt(0);
-      break;
-    }
-    case "grep": {
-      // Args end with: <pattern> <path>
-      rewriteAt(next.length - 1);
-      break;
-    }
-    case "find": {
-      rewriteAt(0);
-      break;
-    }
-    case "mkdir": {
-      // Best-effort: the final arg is the path.
-      rewriteAt(next.length - 1);
-      break;
-    }
-    case "test": {
-      // For `test -f <path>` or similar, rewrite the final arg.
-      rewriteAt(next.length - 1);
-      break;
-    }
-    default: {
-      break;
-    }
-  }
-
-  return next;
-}
-
-function limitText(value: string, maxChars: number): string {
-  if (value.length <= maxChars) return value;
-  return `${value.slice(0, maxChars)}\n\n[output truncated]`;
-}
-
-function redactToolCallArgs(args: readonly string[] | undefined): string[] {
-  if (!args) return [];
-  return args.map((arg) => redactSandboxLog(arg));
-}
-
-function redactStreamPayload(value: unknown): unknown {
-  if (value === undefined) return undefined;
-
-  if (typeof value === "string") {
-    return redactSandboxLog(value);
-  }
-
-  try {
-    const redacted = redactSandboxLog(JSON.stringify(value));
-    // Preserve object shape for UI rendering when possible.
-    return JSON.parse(redacted) as unknown;
-  } catch {
-    try {
-      return redactSandboxLog(String(value));
-    } catch {
-      return "<redacted>";
-    }
-  }
-}
+import { enableCtxZipRuntime } from "@/workflows/code-mode/steps/code-mode/ctxzip-runtime";
+import {
+  limitText,
+  redactStreamPayload,
+  redactToolCallArgs,
+} from "@/workflows/code-mode/steps/code-mode/redaction";
+import {
+  resolveSandboxCwd,
+  resolveSandboxPath,
+  rewriteSandboxArgsForWorkspace,
+  SANDBOX_WORKSPACE_ROOT,
+} from "@/workflows/code-mode/steps/code-mode/sandbox-paths";
+import { parseCodeModeRunMetadata } from "@/workflows/code-mode/steps/code-mode/session-metadata";
 
 type CodeModeStepResult = Readonly<{
   assistantText: string;
@@ -231,14 +79,10 @@ export async function runCodeModeSession(
     throw new AppError("not_found", 404, "Run not found.");
   }
 
-  const parsedMeta = codeModeMetadataSchema.safeParse(runRow.metadata);
-  if (!parsedMeta.success) {
-    throw new AppError("bad_request", 400, "Invalid Code Mode run metadata.");
-  }
-
-  const prompt = parsedMeta.data.prompt;
-  const networkAccess = parsedMeta.data.networkAccess ?? "none";
-  const budgets = parsedMeta.data.budgets ?? {};
+  const parsedMeta = parseCodeModeRunMetadata(runRow.metadata);
+  const prompt = parsedMeta.prompt;
+  const networkAccess = parsedMeta.networkAccess ?? "none";
+  const budgets = parsedMeta.budgets ?? {};
   const maxSteps = budgets.maxSteps ?? 12;
   const timeoutMs = budgets.timeoutMs ?? 10 * 60_000;
 
@@ -356,46 +200,13 @@ export async function runCodeModeSession(
       },
     };
 
-    let ctxZip: Awaited<ReturnType<typeof createCtxZipSandboxCodeMode>> | null =
-      null;
-    let compactionStorage: FileAdapter | null = null;
-    const ctxZipTools: ToolSet = {};
-
-    try {
-      ctxZip = await createCtxZipSandboxCodeMode({
-        sandbox: sandboxLike,
-        stopOnCleanup: false,
-        workspacePath: SANDBOX_WORKSPACE_ROOT,
-      });
-      compactionStorage = ctxZip.manager.getFileAdapter({
-        sessionId: compactionSessionId,
-      });
-      const catTool = ctxZip.tools.sandbox_cat;
-      if (catTool) ctxZipTools.sandbox_cat = catTool;
-      const findTool = ctxZip.tools.sandbox_find;
-      if (findTool) ctxZipTools.sandbox_find = findTool;
-      const grepTool = ctxZip.tools.sandbox_grep;
-      if (grepTool) ctxZipTools.sandbox_grep = grepTool;
-      const lsTool = ctxZip.tools.sandbox_ls;
-      if (lsTool) ctxZipTools.sandbox_ls = lsTool;
-      await writeEvent({
-        message: "ctx-zip compaction enabled (write tool results to sandbox).",
-        timestamp: nowTimestamp(),
-        type: "status",
-      });
-    } catch (err) {
-      // Code Mode remains usable without ctx-zip, but compaction will be less effective.
-      ctxZip = null;
-      compactionStorage = null;
-
-      const message =
-        err instanceof Error ? err.message : "Failed to enable ctx-zip.";
-      await writeEvent({
-        message: `ctx-zip compaction disabled: ${message}`,
-        timestamp: nowTimestamp(),
-        type: "status",
-      });
-    }
+    const ctxZipRuntime = await enableCtxZipRuntime({
+      sandbox: sandboxLike,
+      sessionId: compactionSessionId,
+      writeStatus: writeEvent,
+    });
+    const ctxZipTools = ctxZipRuntime.ctxZipTools;
+    const compactionStorage = ctxZipRuntime.storage;
 
     const sandboxRunTool = tool({
       description:
@@ -451,7 +262,7 @@ export async function runCodeModeSession(
       }),
     });
 
-    const codeModeCallOptionsSchema = z.object({
+    const codeModeCallOptionsSchema = z.strictObject({
       projectId: z.string().min(1),
       skills: z.array(chatToolSkillMetadataSchema),
     });
@@ -636,7 +447,7 @@ export async function runCodeModeSession(
       });
     } finally {
       try {
-        await ctxZip?.manager.cleanup();
+        await ctxZipRuntime.cleanup();
       } catch {
         // Best effort only.
       }
