@@ -175,6 +175,8 @@ export type ImplementationPullRequestResult = Readonly<{
 /**
  * Validate required env + integrations for implementation runs.
  *
+ * @see docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md
+ *
  * @returns Preflight metadata (no secrets).
  */
 export async function preflightImplementationRun(): Promise<ImplementationPreflight> {
@@ -207,6 +209,8 @@ export async function preflightImplementationRun(): Promise<ImplementationPrefli
 
 /**
  * Resolve the connected repo for a project and compute the implementation branch name.
+ *
+ * @see docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md
  *
  * @param input - Project scope and run identity.
  * @returns Repo context required for sandbox checkout and PR creation.
@@ -266,6 +270,8 @@ export async function ensureImplementationRepoContext(
 
 /**
  * Create a sandbox checkout and install dependencies.
+ *
+ * @see docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md
  *
  * @param input - Repo connection + branch info.
  * @returns Sandbox identity and repo path.
@@ -471,6 +477,7 @@ const implementationPlanSchema = z.strictObject({
  * @param input - Context used to ground the planning prompt.
  * @returns Plan metadata used for PR and patch application.
  * @throws AppError - When planning context is missing/invalid or the Context7 budget is exceeded.
+ * @see docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md
  */
 export async function planImplementationRun(
   input: Readonly<{
@@ -738,6 +745,8 @@ function toNewFilePatch(
 /**
  * Apply a deterministic patch in the sandbox checkout and push a branch.
  *
+ * @see docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md
+ *
  * @param input - Sandbox + repo context.
  * @returns Commit identity.
  */
@@ -958,6 +967,8 @@ export async function applyImplementationPatch(
 
 /**
  * Run the full verification suite in the sandbox checkout.
+ *
+ * @see docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md
  *
  * @param input - Sandbox + repo path.
  * @returns Verification result.
@@ -1225,6 +1236,8 @@ export async function verifyImplementationRun(
 /**
  * Open (or fetch) a pull request for the run branch.
  *
+ * @see docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md
+ *
  * @param input - Repo + branch identity and PR content.
  * @returns Pull request metadata.
  */
@@ -1260,6 +1273,8 @@ export async function openImplementationPullRequest(
 
 /**
  * Stop a sandbox after implementation steps complete.
+ *
+ * @see docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md
  *
  * @param sandboxId - Sandbox ID.
  */
