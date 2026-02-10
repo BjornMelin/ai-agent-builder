@@ -31,7 +31,6 @@ const state = vi.hoisted(() => ({
     vi.fn<
       (projectId: string, userId: string) => Promise<{ id: string } | null>
     >(),
-  isUndefinedTableError: vi.fn<(err: unknown) => boolean>(),
   lastChatMessagesFindManyLimit: null as number | null,
   lastChatThreadsFindManyLimit: null as number | null,
   lastUpdateSetValues: null as Record<string, unknown> | null,
@@ -208,10 +207,6 @@ vi.mock("@/lib/data/projects.server", () => ({
     state.getProjectByIdForUser(projectId, userId),
 }));
 
-vi.mock("@/lib/db/postgres-errors", () => ({
-  isUndefinedTableError: (err: unknown) => state.isUndefinedTableError(err),
-}));
-
 vi.mock("react", () => ({
   cache: <TArgs extends readonly unknown[], TResult>(
     fn: (...args: TArgs) => TResult,
@@ -226,7 +221,6 @@ async function loadChatDal() {
 beforeEach(() => {
   state.db = createFakeDb();
   state.getProjectByIdForUser.mockResolvedValue({ id: "proj_1" });
-  state.isUndefinedTableError.mockReturnValue(false);
 
   state.lastChatMessagesFindManyLimit = null;
   state.lastChatThreadsFindManyLimit = null;
@@ -308,9 +302,8 @@ describe("chat DAL", () => {
   it("wraps undefined-table insert errors as db_not_migrated", async () => {
     const { ensureChatThreadForWorkflowRun } = await loadChatDal();
 
-    const err = new Error("missing table");
+    const err = Object.assign(new Error("missing table"), { code: "42P01" });
     state.threadInsertError = err;
-    state.isUndefinedTableError.mockReturnValueOnce(true);
 
     await expect(
       ensureChatThreadForWorkflowRun({
@@ -410,9 +403,8 @@ describe("chat DAL", () => {
   it("wraps undefined-table insert errors for chat messages as db_not_migrated", async () => {
     const { appendChatMessages } = await loadChatDal();
 
-    const err = new Error("missing table");
+    const err = Object.assign(new Error("missing table"), { code: "42P01" });
     state.messageInsertError = err;
-    state.isUndefinedTableError.mockReturnValueOnce(true);
 
     await expect(
       appendChatMessages({

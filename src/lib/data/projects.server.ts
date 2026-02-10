@@ -8,10 +8,7 @@ import * as schema from "@/db/schema";
 import { tagProject, tagProjectsIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
 import { LEGACY_UNOWNED_PROJECT_OWNER_ID } from "@/lib/data/project-ownership";
-import {
-  isUndefinedColumnError,
-  isUndefinedTableError,
-} from "@/lib/db/postgres-errors";
+import { maybeWrapDbNotMigrated } from "@/lib/db/postgres-errors";
 
 /**
  * JSON-safe project DTO.
@@ -92,15 +89,7 @@ export async function createProject(
       .values({ name, ownerUserId, slug })
       .returning();
   } catch (err) {
-    if (isUndefinedTableError(err) || isUndefinedColumnError(err)) {
-      throw new AppError(
-        "db_not_migrated",
-        500,
-        "Database is not migrated. Run migrations and refresh the page.",
-        err,
-      );
-    }
-    throw err;
+    throw maybeWrapDbNotMigrated(err);
   }
 
   if (!row) {
@@ -140,15 +129,7 @@ export async function getProjectByIdForUser(
       ),
     });
   } catch (err) {
-    if (isUndefinedTableError(err) || isUndefinedColumnError(err)) {
-      throw new AppError(
-        "db_not_migrated",
-        500,
-        "Database is not migrated. Run migrations and refresh the page.",
-        err,
-      );
-    }
-    throw err;
+    throw maybeWrapDbNotMigrated(err);
   }
 
   return row ? toProjectDto(row) : null;
@@ -183,15 +164,7 @@ export async function getProjectBySlugForUser(
       ),
     });
   } catch (err) {
-    if (isUndefinedTableError(err) || isUndefinedColumnError(err)) {
-      throw new AppError(
-        "db_not_migrated",
-        500,
-        "Database is not migrated. Run migrations and refresh the page.",
-        err,
-      );
-    }
-    throw err;
+    throw maybeWrapDbNotMigrated(err);
   }
   if (row) {
     // Tag with project ID only when known; null results expire via
@@ -234,14 +207,6 @@ export async function listProjects(
     });
     return rows.map(toProjectDto);
   } catch (err) {
-    if (isUndefinedTableError(err) || isUndefinedColumnError(err)) {
-      throw new AppError(
-        "db_not_migrated",
-        500,
-        "Database is not migrated. Run migrations and refresh the page.",
-        err,
-      );
-    }
-    throw err;
+    throw maybeWrapDbNotMigrated(err);
   }
 }

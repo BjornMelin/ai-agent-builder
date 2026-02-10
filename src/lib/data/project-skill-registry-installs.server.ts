@@ -5,24 +5,9 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
-import {
-  isUndefinedColumnError,
-  isUndefinedTableError,
-} from "@/lib/db/postgres-errors";
+import { maybeWrapDbNotMigrated } from "@/lib/db/postgres-errors";
 
 type InstallRow = typeof schema.projectSkillRegistryInstallsTable.$inferSelect;
-
-function maybeWrapDbNotMigrated(err: unknown): unknown {
-  if (isUndefinedTableError(err) || isUndefinedColumnError(err)) {
-    return new AppError(
-      "db_not_migrated",
-      500,
-      "Database is not migrated. Run migrations and refresh the page.",
-      err,
-    );
-  }
-  return err;
-}
 
 /**
  * Persist a binding between a skills registry install workflow run and a project.

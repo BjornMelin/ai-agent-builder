@@ -6,10 +6,7 @@ import { cache } from "react";
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
-import {
-  isUndefinedColumnError,
-  isUndefinedTableError,
-} from "@/lib/db/postgres-errors";
+import { maybeWrapDbNotMigrated } from "@/lib/db/postgres-errors";
 
 /**
  * JSON-safe sandbox job DTO.
@@ -48,18 +45,6 @@ function toSandboxJobDto(row: SandboxJobRow): SandboxJobDto {
     transcriptBlobRef: row.transcriptBlobRef ?? null,
     updatedAt: row.updatedAt.toISOString(),
   };
-}
-
-function maybeWrapDbNotMigrated(err: unknown): unknown {
-  if (isUndefinedTableError(err) || isUndefinedColumnError(err)) {
-    return new AppError(
-      "db_not_migrated",
-      500,
-      "Database is not migrated. Run migrations and refresh the page.",
-      err,
-    );
-  }
-  return err;
 }
 
 /**

@@ -7,10 +7,7 @@ import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { tagInfraResourcesIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
-import {
-  isUndefinedColumnError,
-  isUndefinedTableError,
-} from "@/lib/db/postgres-errors";
+import { maybeWrapDbNotMigrated } from "@/lib/db/postgres-errors";
 
 /**
  * JSON-safe infra resource DTO.
@@ -43,18 +40,6 @@ function toInfraResourceDto(row: InfraResourceRow): InfraResourceDto {
     runId: row.runId ?? null,
     updatedAt: row.updatedAt.toISOString(),
   };
-}
-
-function maybeWrapDbNotMigrated(err: unknown): unknown {
-  if (isUndefinedTableError(err) || isUndefinedColumnError(err)) {
-    return new AppError(
-      "db_not_migrated",
-      500,
-      "Database is not migrated. Run migrations and refresh the page.",
-      err,
-    );
-  }
-  return err;
 }
 
 /**
