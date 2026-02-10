@@ -26,7 +26,8 @@ import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
  * Durable multi-turn chat workflow for a single project.
  *
  * @remarks
- * See SPEC-0027 for skills prompt integration details.
+ * See SPEC-0027 for skills prompt integration details and SPEC-0028 for skills
+ * registry integration behavior.
  *
  * @param projectId - Project scope for retrieval and persistence.
  * @param initialMessages - Initial UI messages (must end with a user message).
