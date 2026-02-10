@@ -8,8 +8,6 @@ const state = vi.hoisted(() => ({
   findFirst: vi.fn(),
   findMany: vi.fn(),
   insertReturning: vi.fn(),
-  isUndefinedColumnError: vi.fn(),
-  isUndefinedTableError: vi.fn(),
   revalidateTag: vi.fn(),
   updateReturning: vi.fn(),
 }));
@@ -43,16 +41,9 @@ vi.mock("@/db/client", () => ({
   }),
 }));
 
-vi.mock("@/lib/db/postgres-errors", () => ({
-  isUndefinedColumnError: (err: unknown) => state.isUndefinedColumnError(err),
-  isUndefinedTableError: (err: unknown) => state.isUndefinedTableError(err),
-}));
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
-  state.isUndefinedColumnError.mockReturnValue(false);
-  state.isUndefinedTableError.mockReturnValue(false);
 });
 
 describe("repos DAL", () => {
@@ -218,9 +209,8 @@ describe("repos DAL", () => {
   });
 
   it("wraps undefined-table/column errors into db_not_migrated", async () => {
-    const err = new Error("missing");
+    const err = Object.assign(new Error("missing"), { code: "42P01" });
     state.findMany.mockRejectedValueOnce(err);
-    state.isUndefinedTableError.mockReturnValueOnce(true);
 
     const { listReposByProject } = await import("@/lib/data/repos.server");
     await expect(listReposByProject("proj_1")).rejects.toMatchObject({

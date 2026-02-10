@@ -9,7 +9,7 @@ import * as schema from "@/db/schema";
 import type { ChatThreadStatus } from "@/lib/chat/thread-status";
 import { AppError } from "@/lib/core/errors";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
-import { isUndefinedTableError } from "@/lib/db/postgres-errors";
+import { maybeWrapDbNotMigrated } from "@/lib/db/postgres-errors";
 
 /** Chat thread status values shared with chat data DTOs and update helpers. */
 export type { ChatThreadStatus } from "@/lib/chat/thread-status";
@@ -92,24 +92,27 @@ export async function ensureChatThreadForWorkflowRun(
       .onConflictDoNothing({ target: schema.chatThreadsTable.workflowRunId })
       .returning();
   } catch (error) {
-    if (isUndefinedTableError(error)) {
-      throw new AppError(
-        "db_not_migrated",
-        500,
-        "Database is not migrated. Run migrations and try again.",
-        error,
-      );
-    }
-    throw error;
+    throw maybeWrapDbNotMigrated(
+      error,
+      "Database is not migrated. Run migrations and try again.",
+    );
   }
 
   if (row) {
     return toChatThreadDto(row);
   }
 
-  const existing = await db.query.chatThreadsTable.findFirst({
-    where: eq(schema.chatThreadsTable.workflowRunId, input.workflowRunId),
-  });
+  let existing: ChatThreadRow | undefined;
+  try {
+    existing = await db.query.chatThreadsTable.findFirst({
+      where: eq(schema.chatThreadsTable.workflowRunId, input.workflowRunId),
+    });
+  } catch (error) {
+    throw maybeWrapDbNotMigrated(
+      error,
+      "Database is not migrated. Run migrations and try again.",
+    );
+  }
 
   if (!existing) {
     throw new AppError(
@@ -138,15 +141,7 @@ export const getChatThreadByWorkflowRunId = cache(
       });
       return row ? toChatThreadDto(row) : null;
     } catch (error) {
-      if (isUndefinedTableError(error)) {
-        throw new AppError(
-          "db_not_migrated",
-          500,
-          "Database is not migrated. Run migrations and refresh the page.",
-          error,
-        );
-      }
-      throw error;
+      throw maybeWrapDbNotMigrated(error);
     }
   },
 );
@@ -171,15 +166,7 @@ export const getLatestChatThreadByProjectId = cache(
       });
       return row ? toChatThreadDto(row) : null;
     } catch (error) {
-      if (isUndefinedTableError(error)) {
-        throw new AppError(
-          "db_not_migrated",
-          500,
-          "Database is not migrated. Run migrations and refresh the page.",
-          error,
-        );
-      }
-      throw error;
+      throw maybeWrapDbNotMigrated(error);
     }
   },
 );
@@ -212,15 +199,7 @@ export const listChatThreadsByProjectId = cache(
       });
       return rows.map(toChatThreadDto);
     } catch (error) {
-      if (isUndefinedTableError(error)) {
-        throw new AppError(
-          "db_not_migrated",
-          500,
-          "Database is not migrated. Run migrations and refresh the page.",
-          error,
-        );
-      }
-      throw error;
+      throw maybeWrapDbNotMigrated(error);
     }
   },
 );
@@ -245,15 +224,7 @@ export const getChatThreadById = cache(
       await assertProjectAccess(row.projectId, userId);
       return toChatThreadDto(row);
     } catch (error) {
-      if (isUndefinedTableError(error)) {
-        throw new AppError(
-          "db_not_migrated",
-          500,
-          "Database is not migrated. Run migrations and refresh the page.",
-          error,
-        );
-      }
-      throw error;
+      throw maybeWrapDbNotMigrated(error);
     }
   },
 );
@@ -345,15 +316,7 @@ export async function appendChatMessages(
         ],
       });
   } catch (error) {
-    if (isUndefinedTableError(error)) {
-      throw new AppError(
-        "db_not_migrated",
-        500,
-        "Database is not migrated. Run migrations and refresh the page.",
-        error,
-      );
-    }
-    throw error;
+    throw maybeWrapDbNotMigrated(error);
   }
 }
 
@@ -389,15 +352,7 @@ export const listChatMessagesByThreadId = cache(
       });
       return rows.map(toChatMessageDto);
     } catch (error) {
-      if (isUndefinedTableError(error)) {
-        throw new AppError(
-          "db_not_migrated",
-          500,
-          "Database is not migrated. Run migrations and refresh the page.",
-          error,
-        );
-      }
-      throw error;
+      throw maybeWrapDbNotMigrated(error);
     }
   },
 );
@@ -435,14 +390,9 @@ export async function updateChatThreadByWorkflowRunId(
       .set(next)
       .where(eq(schema.chatThreadsTable.workflowRunId, workflowRunId));
   } catch (error) {
-    if (isUndefinedTableError(error)) {
-      throw new AppError(
-        "db_not_migrated",
-        500,
-        "Database is not migrated. Run migrations and try again.",
-        error,
-      );
-    }
-    throw error;
+    throw maybeWrapDbNotMigrated(
+      error,
+      "Database is not migrated. Run migrations and try again.",
+    );
   }
 }

@@ -5,7 +5,7 @@ import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
 import { appendChatMessages } from "@/lib/data/chat.server";
-import { isUndefinedTableError } from "@/lib/db/postgres-errors";
+import { maybeWrapDbNotMigrated } from "@/lib/db/postgres-errors";
 
 type PersistedUiMessage = Parameters<
   typeof appendChatMessages
@@ -81,14 +81,6 @@ export async function persistChatMessagesForWorkflowRun(
       threadId: thread.id,
     });
   } catch (error) {
-    if (isUndefinedTableError(error)) {
-      throw new AppError(
-        "db_not_migrated",
-        500,
-        "Database is not migrated. Run migrations and refresh the page.",
-        error,
-      );
-    }
-    throw error;
+    throw maybeWrapDbNotMigrated(error);
   }
 }

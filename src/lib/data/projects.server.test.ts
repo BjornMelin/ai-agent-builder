@@ -8,8 +8,6 @@ const state = vi.hoisted(() => ({
   findFirst: vi.fn(),
   findMany: vi.fn(),
   insertReturning: vi.fn(),
-  isUndefinedColumnError: vi.fn(),
-  isUndefinedTableError: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
@@ -33,17 +31,9 @@ vi.mock("@/db/client", () => ({
   }),
 }));
 
-vi.mock("@/lib/db/postgres-errors", () => ({
-  isUndefinedColumnError: (err: unknown) => state.isUndefinedColumnError(err),
-  isUndefinedTableError: (err: unknown) => state.isUndefinedTableError(err),
-}));
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
-
-  state.isUndefinedColumnError.mockReturnValue(false);
-  state.isUndefinedTableError.mockReturnValue(false);
 });
 
 describe("projects DAL", () => {
@@ -104,9 +94,8 @@ describe("projects DAL", () => {
   });
 
   it("wraps undefined-table/column errors into db_not_migrated", async () => {
-    const err = new Error("missing");
+    const err = Object.assign(new Error("missing"), { code: "42P01" });
     state.insertReturning.mockRejectedValueOnce(err);
-    state.isUndefinedTableError.mockReturnValueOnce(true);
 
     const { createProject } = await import("@/lib/data/projects.server");
     await expect(
@@ -122,8 +111,9 @@ describe("projects DAL", () => {
   });
 
   it("wraps undefined-table/column errors in reads too", async () => {
-    state.findFirst.mockRejectedValueOnce(new Error("missing"));
-    state.isUndefinedColumnError.mockReturnValueOnce(true);
+    state.findFirst.mockRejectedValueOnce(
+      Object.assign(new Error("missing"), { code: "42703" }),
+    );
 
     const { getProjectByIdForUser } = await import(
       "@/lib/data/projects.server"
@@ -265,8 +255,9 @@ describe("projects DAL", () => {
   });
 
   it("wraps undefined-table/column errors in listProjects", async () => {
-    state.findMany.mockRejectedValueOnce(new Error("missing"));
-    state.isUndefinedTableError.mockReturnValueOnce(true);
+    state.findMany.mockRejectedValueOnce(
+      Object.assign(new Error("missing"), { code: "42P01" }),
+    );
 
     const { listProjects } = await import("@/lib/data/projects.server");
     await expect(listProjects("user_1")).rejects.toMatchObject({

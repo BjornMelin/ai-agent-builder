@@ -6,7 +6,6 @@ const state = vi.hoisted(() => ({
   appendChatMessages: vi.fn(),
   findFirst: vi.fn(),
   getDb: vi.fn(),
-  isUndefinedTableError: vi.fn(),
 }));
 
 vi.mock("@/db/client", () => ({
@@ -17,15 +16,10 @@ vi.mock("@/lib/data/chat.server", () => ({
   appendChatMessages: state.appendChatMessages,
 }));
 
-vi.mock("@/lib/db/postgres-errors", () => ({
-  isUndefinedTableError: (err: unknown) => state.isUndefinedTableError(err),
-}));
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
 
-  state.isUndefinedTableError.mockReturnValue(false);
   state.findFirst.mockResolvedValue({ id: "thread_1" });
   state.getDb.mockReturnValue({
     query: {
@@ -89,8 +83,9 @@ describe("persistChatMessagesForWorkflowRun", () => {
   });
 
   it("wraps undefined-table errors into db_not_migrated", async () => {
-    state.findFirst.mockRejectedValueOnce(new Error("missing table"));
-    state.isUndefinedTableError.mockReturnValueOnce(true);
+    state.findFirst.mockRejectedValueOnce(
+      Object.assign(new Error("missing table"), { code: "42P01" }),
+    );
 
     const { persistChatMessagesForWorkflowRun } = await import(
       "@/workflows/chat/steps/chat-messages.step"

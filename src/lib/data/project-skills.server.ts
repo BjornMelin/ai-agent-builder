@@ -7,10 +7,7 @@ import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { tagProjectSkillsIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
-import {
-  isUndefinedColumnError,
-  isUndefinedTableError,
-} from "@/lib/db/postgres-errors";
+import { maybeWrapDbNotMigrated } from "@/lib/db/postgres-errors";
 
 type ProjectSkillRow = typeof schema.projectSkillsTable.$inferSelect;
 
@@ -42,18 +39,6 @@ function toProjectSkillDto(row: ProjectSkillRow): ProjectSkillDto {
     projectId: row.projectId,
     updatedAt: row.updatedAt.toISOString(),
   };
-}
-
-function maybeWrapDbNotMigrated(err: unknown): unknown {
-  if (isUndefinedTableError(err) || isUndefinedColumnError(err)) {
-    return new AppError(
-      "db_not_migrated",
-      500,
-      "Database is not migrated. Run migrations and refresh the page.",
-      err,
-    );
-  }
-  return err;
 }
 
 const MAX_SKILL_NAME_CHARS = 128;

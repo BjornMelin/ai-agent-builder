@@ -7,10 +7,7 @@ import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { tagApprovalsIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
-import {
-  isUndefinedColumnError,
-  isUndefinedTableError,
-} from "@/lib/db/postgres-errors";
+import { maybeWrapDbNotMigrated } from "@/lib/db/postgres-errors";
 
 /**
  * JSON-safe approval DTO.
@@ -46,18 +43,6 @@ function toApprovalDto(row: ApprovalRow): ApprovalDto {
     scope: row.scope,
     stepId: row.stepId ?? null,
   };
-}
-
-function maybeWrapDbNotMigrated(err: unknown): unknown {
-  if (isUndefinedTableError(err) || isUndefinedColumnError(err)) {
-    return new AppError(
-      "db_not_migrated",
-      500,
-      "Database is not migrated. Run migrations and refresh the page.",
-      err,
-    );
-  }
-  return err;
 }
 
 /**

@@ -6,8 +6,6 @@ const state = vi.hoisted(() => ({
   findFirst: vi.fn(),
   findMany: vi.fn(),
   insertReturning: vi.fn(),
-  isUndefinedColumnError: vi.fn(),
-  isUndefinedTableError: vi.fn(),
   updateReturning: vi.fn(),
   updateSet: vi.fn(),
 }));
@@ -38,16 +36,9 @@ vi.mock("@/db/client", () => ({
   }),
 }));
 
-vi.mock("@/lib/db/postgres-errors", () => ({
-  isUndefinedColumnError: (err: unknown) => state.isUndefinedColumnError(err),
-  isUndefinedTableError: (err: unknown) => state.isUndefinedTableError(err),
-}));
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
-  state.isUndefinedColumnError.mockReturnValue(false);
-  state.isUndefinedTableError.mockReturnValue(false);
 });
 
 describe("sandbox-jobs DAL", () => {
@@ -104,8 +95,9 @@ describe("sandbox-jobs DAL", () => {
   });
 
   it("wraps undefined table/column errors into db_not_migrated", async () => {
-    state.isUndefinedTableError.mockReturnValueOnce(true);
-    state.insertReturning.mockRejectedValueOnce(new Error("missing table"));
+    state.insertReturning.mockRejectedValueOnce(
+      Object.assign(new Error("missing table"), { code: "42P01" }),
+    );
 
     const { createSandboxJob } = await import("@/lib/data/sandbox-jobs.server");
     await expect(

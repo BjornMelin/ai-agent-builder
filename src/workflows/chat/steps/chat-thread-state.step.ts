@@ -1,8 +1,7 @@
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import type { ChatThreadStatus } from "@/lib/chat/thread-status";
-import { AppError } from "@/lib/core/errors";
-import { isUndefinedTableError } from "@/lib/db/postgres-errors";
+import { maybeWrapDbNotMigrated } from "@/lib/db/postgres-errors";
 
 type TouchInput = Readonly<{
   projectId: string;
@@ -50,14 +49,6 @@ export async function touchChatThreadState(input: TouchInput): Promise<void> {
         target: schema.chatThreadsTable.workflowRunId,
       });
   } catch (error) {
-    if (isUndefinedTableError(error)) {
-      throw new AppError(
-        "db_not_migrated",
-        500,
-        "Database is not migrated. Run migrations and refresh the page.",
-        error,
-      );
-    }
-    throw error;
+    throw maybeWrapDbNotMigrated(error);
   }
 }
