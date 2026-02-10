@@ -91,6 +91,43 @@ describe("GET /api/skills", () => {
       skills: [{ id: "skill_1" }],
     });
   });
+
+  it("returns a single skill when skillId is provided", async () => {
+    const { GET } = await loadRoute();
+    state.getProjectSkillById.mockResolvedValueOnce({
+      content: '---\nname: "skills"\ndescription: "x"\n---\n\n# Body\n',
+      createdAt: new Date(0).toISOString(),
+      description: "x",
+      id: "skill_1",
+      metadata: {},
+      name: "skills",
+      projectId: "proj_1",
+      updatedAt: new Date(0).toISOString(),
+    });
+
+    const res = await GET(
+      new Request(
+        "http://localhost/api/skills?projectId=proj_1&skillId=skill_1",
+      ),
+    );
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      skill: { id: "skill_1", name: "skills" },
+    });
+    expect(state.listProjectSkillsByProject).not.toHaveBeenCalled();
+  });
+
+  it("returns not found when skillId is missing", async () => {
+    const { GET } = await loadRoute();
+    state.getProjectSkillById.mockResolvedValueOnce(null);
+
+    const res = await GET(
+      new Request(
+        "http://localhost/api/skills?projectId=proj_1&skillId=skill_1",
+      ),
+    );
+    expect(res.status).toBe(404);
+  });
 });
 
 describe("POST /api/skills", () => {

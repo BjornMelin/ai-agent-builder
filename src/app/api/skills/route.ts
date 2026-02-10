@@ -18,6 +18,7 @@ import { jsonCreated, jsonError, jsonOk } from "@/lib/next/responses";
 
 const listQuerySchema = z.strictObject({
   projectId: z.string().min(1),
+  skillId: z.string().min(1).optional(),
 });
 
 const upsertBodySchema = z.strictObject({
@@ -64,20 +65,39 @@ function buildSkillMarkdown(
  */
 export async function GET(req: Request) {
   try {
+    const authPromise = requireAppUserApi();
     const { searchParams } = new URL(req.url);
     const parsedQuery = listQuerySchema.safeParse({
       projectId: searchParams.get("projectId") ?? "",
+      skillId: searchParams.get("skillId") ?? undefined,
     });
     if (!parsedQuery.success) {
       throw new AppError("bad_request", 400, "Invalid skills query.");
     }
 
-    const user = await requireAppUserApi();
-    const { projectId } = parsedQuery.data;
+    const user = await authPromise;
+    const { projectId, skillId } = parsedQuery.data;
 
     const project = await getProjectByIdForUser(projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
+    }
+
+    if (skillId) {
+      const skill = await getProjectSkillById(project.id, skillId);
+      if (!skill) {
+        throw new AppError("not_found", 404, "Skill not found.");
+      }
+
+      const publicSkill = {
+        content: skill.content,
+        description: skill.description,
+        id: skill.id,
+        name: skill.name,
+        updatedAt: skill.updatedAt,
+      };
+
+      return jsonOk({ skill: publicSkill });
     }
 
     const skills = await listProjectSkillsByProject(project.id);

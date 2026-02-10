@@ -1,11 +1,11 @@
 import path from "node:path";
 import { notFound } from "next/navigation";
 
-import {
-  type EffectiveSkillSummary,
-  type ProjectSkillSummary,
-  SkillsClient,
-} from "@/app/(app)/projects/[projectId]/skills/skills-client";
+import { SkillsClient } from "@/app/(app)/projects/[projectId]/skills/skills-client";
+import type {
+  EffectiveSkillSummary,
+  ProjectSkillSummary,
+} from "@/app/(app)/projects/[projectId]/skills/skills-types";
 import { listAvailableSkillsForProject } from "@/lib/ai/skills/index.server";
 import {
   getProjectSkillBundleRef,
@@ -44,7 +44,6 @@ export async function SkillsContent(props: Readonly<{ projectId: string }>) {
       const bundle = getProjectSkillBundleRef(skill.metadata);
       return {
         bundlePresent: Boolean(bundle?.blobPath),
-        content: skill.content,
         description: skill.description,
         id: skill.id,
         name: skill.name,
