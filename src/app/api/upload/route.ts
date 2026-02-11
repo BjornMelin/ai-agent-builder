@@ -8,6 +8,7 @@ import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { env } from "@/lib/env";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { allowedUploadMimeTypes } from "@/lib/uploads/allowed-mime-types";
+import { assertValidProjectUploadPathname } from "@/lib/uploads/trusted-blob-url.server";
 
 function safeParseClientPayload(payload: string | null): { projectId: string } {
   if (!payload) {
@@ -27,22 +28,6 @@ function safeParseClientPayload(payload: string | null): { projectId: string } {
     throw new AppError("bad_request", 400, "Missing projectId.");
   }
   return { projectId: projectId.trim() };
-}
-
-function assertValidUploadPath(pathname: string, projectId: string): void {
-  if (!pathname.startsWith(`projects/${projectId}/uploads/`)) {
-    throw new AppError("bad_request", 400, "Invalid upload path.");
-  }
-  // Disallow path traversal and separators inside segments.
-  const segments = pathname.split("/").map((s) => s.trim());
-  for (const segment of segments) {
-    if (segment === "." || segment === "..") {
-      throw new AppError("bad_request", 400, "Invalid upload path.");
-    }
-    if (segment.includes("\\")) {
-      throw new AppError("bad_request", 400, "Invalid upload path.");
-    }
-  }
 }
 
 /**
@@ -75,7 +60,7 @@ export async function POST(
       body: body as HandleUploadBody,
       onBeforeGenerateToken: async (pathname, clientPayload, _multipart) => {
         const { projectId } = safeParseClientPayload(clientPayload);
-        assertValidUploadPath(pathname, projectId);
+        assertValidProjectUploadPathname({ pathname, projectId });
 
         const project = await getProjectByIdForUser(projectId, user.id);
         if (!project) {

@@ -207,4 +207,47 @@ describe("POST /api/upload", () => {
       ),
     ).rejects.toMatchObject({ code: "bad_request" });
   });
+
+  it("rejects upload paths that do not match the strict projects/{id}/uploads/{objectKey} shape", async () => {
+    const POST = await loadRoute();
+
+    await POST(
+      buildRequest({
+        payload: {
+          clientPayload: JSON.stringify({ projectId }),
+          multipart: false,
+          pathname: `projects/${projectId}/uploads/alpha.txt`,
+        },
+        type: "blob.generate-client-token",
+      }),
+    );
+
+    const call = state.handleUpload.mock.calls[0]?.[0] as
+      | undefined
+      | {
+          onBeforeGenerateToken?: (
+            pathname: string,
+            clientPayload: string | null,
+            multipart: boolean,
+          ) => Promise<Record<string, unknown>>;
+        };
+
+    expect(call?.onBeforeGenerateToken).toBeTypeOf("function");
+
+    const invalid = [
+      `projects/${projectId}/uploads/a/b`,
+      `projects/${projectId}/uploads/%2e%2e`,
+      `projects/${projectId}/uploads/a%2Fb`,
+    ] as const;
+
+    for (const pathname of invalid) {
+      await expect(
+        call?.onBeforeGenerateToken?.(
+          pathname,
+          JSON.stringify({ projectId }),
+          false,
+        ),
+      ).rejects.toMatchObject({ code: "bad_request" });
+    }
+  });
 });
