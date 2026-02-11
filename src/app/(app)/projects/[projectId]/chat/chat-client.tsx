@@ -154,6 +154,19 @@ function isUserMessageMarker(data: unknown): data is UserMessageMarker {
   );
 }
 
+function isFileUIPart(part: unknown): part is FileUIPart {
+  if (!part || typeof part !== "object") return false;
+  const value = part as Partial<FileUIPart>;
+  const hasValidFilename =
+    value.filename === undefined || typeof value.filename === "string";
+  return (
+    value.type === "file" &&
+    typeof value.mediaType === "string" &&
+    hasValidFilename &&
+    typeof value.url === "string"
+  );
+}
+
 function ChatComposerAttachments() {
   const attachments = usePromptInputAttachments();
 
@@ -222,7 +235,7 @@ function reconstructMessages(
           if (!seenUserMessageIds.has(marker.id)) {
             seenUserMessageIds.add(marker.id);
             const markerParts: AppUIMessage["parts"] = [
-              ...(marker.files ?? []),
+              ...(marker.files?.filter(isFileUIPart) ?? []),
               ...(marker.content.length > 0
                 ? [{ text: marker.content, type: "text" as const }]
                 : []),
