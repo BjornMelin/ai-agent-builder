@@ -597,7 +597,7 @@ export function ProjectChatClient(
         return;
       }
       if (followUpResult.status === "failed") {
-        throw new Error(followUpResult.message);
+        return;
       }
 
       // Session may have ended; start a new session using the current transcript as context.
@@ -614,7 +614,7 @@ export function ProjectChatClient(
         const messageText =
           error instanceof Error ? error.message : "Failed to send message.";
         setComposerError(messageText);
-        throw new Error(messageText);
+        return;
       }
       return;
     }
@@ -631,7 +631,7 @@ export function ProjectChatClient(
       const messageText =
         error instanceof Error ? error.message : "Failed to send message.";
       setComposerError(messageText);
-      throw new Error(messageText);
+      return;
     }
   }
 
