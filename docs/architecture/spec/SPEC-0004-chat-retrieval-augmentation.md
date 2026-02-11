@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0004
 title: Chat + retrieval augmentation
-version: 0.4.0
-date: 2026-02-07
+version: 0.4.1
+date: 2026-02-10
 owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements: ["FR-008", "FR-009", "FR-019", "PR-001", "PR-002"]
@@ -23,6 +23,9 @@ for the canonical streaming + resumption API contracts and Workflow DevKit integ
 
 See [SPEC-0023](./SPEC-0023-ai-elements-workspace-ui-and-interaction-model.md)
 for the AI Elements-based workspace UI interaction model.
+
+See [SPEC-0029](./SPEC-0029-chat-attachments.md) for the Project Chat document
+attachments UX and contracts.
 
 ## Context
 
@@ -106,7 +109,7 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 - `src/app/(app)/projects/[projectId]/chat/page.tsx`: UI for streaming chat and message history.
 - `src/app/api/chat/route.ts`: server streaming endpoint; must persist messages/tool calls.
-- `src/app/api/chat/[runId]/route.ts`: resume endpoint for durable chat sessions.
+- `src/app/api/chat/[runId]/route.ts`: resume endpoint for durable chat sessions (supports follow-up attachments).
 - `src/lib/data/chat.server.ts`: chat threads + messages DAL (Neon + Drizzle).
 - `src/workflows/chat/project-chat.workflow.ts`: durable chat workflow orchestration and persistence.
 - `src/lib/ai/tools/retrieval.server.ts`: retrieval tools (uploads + artifacts);

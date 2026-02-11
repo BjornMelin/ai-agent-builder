@@ -14,7 +14,7 @@ beforeEach(() => {
 });
 
 describe("chatMessageHook", () => {
-  it("defines a hook with a zod schema requiring message + messageId", async () => {
+  it("defines a hook with a zod schema requiring messageId and at least one of message/files", async () => {
     state.defineHook.mockImplementation((input: unknown) => input);
 
     await import("@/workflows/chat/hooks/chat-message");
@@ -31,8 +31,21 @@ describe("chatMessageHook", () => {
     expect(schema.safeParse({ message: "hi", messageId: "m1" }).success).toBe(
       true,
     );
+    expect(
+      schema.safeParse({
+        files: [
+          {
+            mediaType: "application/pdf",
+            type: "file",
+            url: "https://example.com/file.pdf",
+          },
+        ],
+        messageId: "m1",
+      }).success,
+    ).toBe(true);
     expect(schema.safeParse({ message: "", messageId: "m1" }).success).toBe(
       false,
     );
+    expect(schema.safeParse({ messageId: "m1" }).success).toBe(false);
   });
 });

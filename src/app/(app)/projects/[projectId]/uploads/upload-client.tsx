@@ -6,9 +6,10 @@ import { type FormEvent, startTransition, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { uploadProjectFilesFromFiles } from "@/lib/uploads/upload-files.client";
 
 /**
- * Upload form that posts to the `/api/upload` route handler.
+ * Upload form that uses Vercel Blob client uploads via the `/api/upload` token route.
  *
  * @param props - Upload props containing the destination `projectId`.
  * @returns The upload form.
@@ -41,37 +42,19 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
 
     setStatus("uploading");
 
-    const form = new FormData();
-    form.append("projectId", props.projectId);
-    if (asyncIngest) {
-      form.append("async", "true");
-    }
-    for (const file of Array.from(files)) {
-      form.append("file", file);
-    }
-
-    let res: Response;
     try {
-      res = await fetch("/api/upload", {
-        body: form,
-        method: "POST",
+      await uploadProjectFilesFromFiles({
+        asyncIngest,
+        files: Array.from(files),
+        projectId: props.projectId,
       });
-    } catch {
-      setError("Network error while uploading. Please try again.");
-      setStatus("error");
-      return;
-    }
-
-    if (!res.ok) {
-      const payload = await res.json().catch(() => null);
+    } catch (err) {
       const message =
-        payload?.error?.message ?? `Upload failed (HTTP ${res.status}).`;
-      setError(message);
+        err instanceof Error ? err.message : "Upload failed. Please try again.";
       setStatus("error");
+      setError(message);
       return;
     }
-
-    await res.json().catch(() => null);
 
     setStatus("success");
     setFiles(null);

@@ -1,6 +1,7 @@
 import { DurableAgent } from "@workflow/ai/agent";
 import {
   convertToModelMessages,
+  type FileUIPart,
   type ModelMessage,
   type UIMessage,
   type UIMessageChunk,
@@ -21,6 +22,55 @@ import {
 } from "@/workflows/chat/steps/writer.step";
 import { createChatToolContext } from "@/workflows/chat/tool-context";
 import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
+
+function formatAttachedFilesNote(files: readonly FileUIPart[]): string {
+  const counts = new Map<string, number>();
+  const ordered: string[] = [];
+
+  for (const file of files) {
+    const label = file.filename?.trim() || "Attachment";
+    if (!counts.has(label)) {
+      ordered.push(label);
+      counts.set(label, 1);
+    } else {
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+  }
+
+  const unique = ordered.filter((label) => label.length > 0);
+  if (unique.length === 0) {
+    return "Attached files provided.";
+  }
+  const preview = unique
+    .slice(0, 5)
+    .map((label) => {
+      const count = counts.get(label) ?? 1;
+      return count > 1 ? `${label} (x${count})` : label;
+    })
+    .join(", ");
+  const suffix = unique.length > 5 ? ` (+${unique.length - 5} more)` : "";
+  return `Attached files: ${preview}${suffix}.`;
+}
+
+function normalizeUiUserMessageForModel(message: UIMessage): UIMessage {
+  if (message.role !== "user") return message;
+
+  const fileParts = message.parts.filter(
+    (part): part is FileUIPart => part.type === "file",
+  );
+  if (fileParts.length === 0) return message;
+
+  const nonFileParts = message.parts.filter((part) => part.type !== "file");
+  const note = formatAttachedFilesNote(fileParts);
+  const prefix = nonFileParts.some((p) => p.type === "text") ? "\n\n" : "";
+
+  return {
+    ...message,
+    // Do not pass file parts to the model directly; we rely on ingestion + retrieval
+    // for documents, and include filenames as a text hint for grounding.
+    parts: [...nonFileParts, { text: `${prefix}[${note}]`, type: "text" }],
+  };
+}
 
 /**
  * Durable multi-turn chat workflow for a single project.
@@ -62,9 +112,12 @@ export async function projectChat(
   try {
     skills = await listProjectSkillsStep({ projectId });
     messages.push(
-      ...(await convertToModelMessages(initialMessages, {
-        tools,
-      })),
+      ...(await convertToModelMessages(
+        initialMessages.map(normalizeUiUserMessageForModel),
+        {
+          tools,
+        },
+      )),
     );
 
     await touchChatThreadState({ ...threadStateInput, status: "running" });
@@ -76,10 +129,14 @@ export async function projectChat(
         .filter((p) => p.type === "text")
         .map((p) => p.text)
         .join("");
-      if (!text) continue;
+      const files = msg.parts.filter(
+        (part): part is FileUIPart => part.type === "file",
+      );
+      if (!text && files.length === 0) continue;
 
       await writeUserMessageMarker(writable, {
         content: text,
+        ...(files.length > 0 ? { files } : {}),
         messageId: msg.id,
       });
     }
@@ -119,14 +176,33 @@ export async function projectChat(
 
       await touchChatThreadState({ ...threadStateInput, status: "waiting" });
 
-      const { message: followUp, messageId } = await hook;
+      const { files: rawFiles, message: followUp, messageId } = await hook;
       if (followUp === "/done") break;
 
+      const files: FileUIPart[] | undefined =
+        rawFiles && rawFiles.length > 0
+          ? rawFiles.map(({ filename, ...rest }) =>
+              filename === undefined ? rest : { ...rest, filename },
+            )
+          : undefined;
+
       await writeUserMessageMarker(writable, {
-        content: followUp,
+        content: followUp ?? "",
+        ...(files && files.length > 0 ? { files } : {}),
         messageId,
       });
-      messages.push({ content: followUp, role: "user" });
+      const nextText = [
+        followUp?.trim().length ? followUp.trim() : null,
+        files && files.length > 0
+          ? `[${formatAttachedFilesNote(files)}]`
+          : null,
+      ]
+        .filter((part): part is string => typeof part === "string")
+        .join("\n\n");
+
+      if (nextText.length > 0) {
+        messages.push({ content: nextText, role: "user" });
+      }
     }
 
     finishedStatus = "succeeded";

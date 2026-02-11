@@ -11,20 +11,43 @@ import {
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
+import { allowedUploadMimeTypeSet } from "@/lib/uploads/allowed-mime-types";
+import { parseTrustedProjectUploadBlobUrl } from "@/lib/uploads/trusted-blob-url.server";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
 
-const bodySchema = z.strictObject({
-  message: z.string().min(1),
-  messageId: z.string().min(1),
+const filePartSchema = z.strictObject({
+  filename: z.string().min(1).optional(),
+  mediaType: z.string().min(1),
+  type: z.literal("file"),
+  url: z.string().min(1),
 });
 
+const bodySchema = z
+  .strictObject({
+    files: z.array(filePartSchema).min(1).optional(),
+    message: z.string().trim().min(1).optional(),
+    messageId: z.string().min(1),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.message && !value.files) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Provide either message or files.",
+        path: ["message"],
+      });
+    }
+  });
+
 /**
- * Resume an in-flight multi-turn chat run by injecting a follow-up message.
+ * Resume an in-flight multi-turn chat run by injecting a follow-up user message
+ * with optional attachments.
  *
  * @param req - HTTP request.
  * @param context - Route params.
  * @returns JSON ok or JSON error.
  * @throws AppError - When the request body is invalid.
+ * @throws AppError - With code "unsupported_file_type" when an attachment media type is rejected.
+ * @throws AppError - With code "bad_request" when an attachment URL is invalid.
  * @throws AppError - With code "not_found" when the chat session cannot be found.
  * @throws AppError - With code "conflict" when the chat session is no longer active.
  * @throws AppError - With code "forbidden" when the session's project is not accessible.
@@ -62,11 +85,40 @@ export async function POST(
       throw new AppError("forbidden", 403, "Forbidden.");
     }
 
+    const safeFiles = parsed.files?.map((file) => {
+      const mediaType = file.mediaType.trim().toLowerCase();
+      if (!allowedUploadMimeTypeSet.has(mediaType)) {
+        throw new AppError(
+          "unsupported_file_type",
+          400,
+          `Unsupported file type: ${mediaType}`,
+        );
+      }
+
+      try {
+        // Ensures attachments are hosted on trusted Vercel Blob URLs and scoped
+        // to this chat session's project prefix.
+        const url = parseTrustedProjectUploadBlobUrl({
+          projectId: thread.projectId,
+          urlString: file.url.trim(),
+        });
+
+        return { ...file, mediaType, url: url.toString() };
+      } catch (err) {
+        // `parseTrustedProjectUploadBlobUrl` throws `blob_fetch_failed` (502) for
+        // fetch-time flows. Here it's user input validation; return 400 instead.
+        throw new AppError("bad_request", 400, "Invalid attachment URL.", err);
+      }
+    });
+
     await appendChatMessages({
       messages: [
         {
           id: parsed.messageId,
-          parts: [{ text: parsed.message, type: "text" }],
+          parts: [
+            ...(safeFiles ?? []),
+            ...(parsed.message ? [{ text: parsed.message, type: "text" }] : []),
+          ],
           role: "user",
         },
       ],
@@ -74,7 +126,8 @@ export async function POST(
     });
 
     await chatMessageHook.resume(params.runId, {
-      message: parsed.message,
+      ...(safeFiles?.length ? { files: safeFiles } : {}),
+      ...(parsed.message ? { message: parsed.message } : {}),
       messageId: parsed.messageId,
     });
 

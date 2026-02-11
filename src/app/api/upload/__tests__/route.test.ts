@@ -1,17 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ProjectFileDto } from "@/lib/data/files.server";
 import type { ProjectDto } from "@/lib/data/projects.server";
-import type { IngestFileResult } from "@/lib/ingest/ingest-file.server";
-
-type UpsertFileInput = Readonly<{
-  projectId: string;
-  name: string;
-  mimeType: string;
-  sha256: string;
-  sizeBytes: number;
-  storageKey: string;
-}>;
 
 const state = vi.hoisted(() => ({
   budgets: {
@@ -21,26 +10,15 @@ const state = vi.hoisted(() => ({
     toolCacheTtlSeconds: 600,
   },
   env: {
-    app: { baseUrl: "https://app.example.com" },
     blob: { readWriteToken: "blob-token" },
-    runtime: { isVercel: false },
   },
   getProjectByIdForUser: vi.fn(),
-  getProjectFileBySha256: vi.fn(),
-  ingestFile: vi.fn(),
-  publishJSON: vi.fn(),
-  put: vi.fn(),
+  handleUpload: vi.fn(),
   requireAppUserApi: vi.fn(),
-  revalidateTag: vi.fn(),
-  upsertProjectFile: vi.fn(),
 }));
 
-vi.mock("@vercel/blob", () => ({
-  put: state.put,
-}));
-
-vi.mock("next/cache", () => ({
-  revalidateTag: state.revalidateTag,
+vi.mock("@vercel/blob/client", () => ({
+  handleUpload: (...args: unknown[]) => state.handleUpload(...args),
 }));
 
 vi.mock("@/lib/auth/require-app-user-api.server", () => ({
@@ -51,27 +29,12 @@ vi.mock("@/lib/config/budgets.server", () => ({
   budgets: state.budgets,
 }));
 
-vi.mock("@/lib/data/files.server", () => ({
-  getProjectFileBySha256: state.getProjectFileBySha256,
-  upsertProjectFile: state.upsertProjectFile,
-}));
-
 vi.mock("@/lib/data/projects.server", () => ({
   getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
 vi.mock("@/lib/env", () => ({
   env: state.env,
-}));
-
-vi.mock("@/lib/ingest/ingest-file.server", () => ({
-  ingestFile: state.ingestFile,
-}));
-
-vi.mock("@/lib/upstash/qstash.server", () => ({
-  getQstashClient: () => ({
-    publishJSON: state.publishJSON,
-  }),
 }));
 
 const projectId = "proj_123";
@@ -86,22 +49,10 @@ const baseProject = {
   updatedAt: now,
 } satisfies ProjectDto;
 
-type UploadBlob = Readonly<{ blob: Blob; name: string }>;
-
-function buildRequest(
-  files: UploadBlob[],
-  options?: Readonly<{ async?: boolean; projectId?: string }>,
-): Request {
-  const form = new FormData();
-  form.append("projectId", options?.projectId ?? projectId);
-  if (options?.async) {
-    form.append("async", "true");
-  }
-  for (const file of files) {
-    form.append("file", file.blob, file.name);
-  }
+function buildRequest(body: unknown): Request {
   return new Request("http://localhost/api/upload", {
-    body: form,
+    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json" },
     method: "POST",
   });
 }
@@ -112,150 +63,177 @@ async function loadRoute() {
   return mod.POST;
 }
 
+type HandleUploadCall = {
+  onBeforeGenerateToken?: (
+    pathname: string,
+    clientPayload: string | null,
+    multipart: boolean,
+  ) => Promise<Record<string, unknown>>;
+};
+
+function getOnBeforeGenerateToken(): HandleUploadCall["onBeforeGenerateToken"] {
+  const call = state.handleUpload.mock.calls[0]?.[0] as
+    | HandleUploadCall
+    | undefined;
+  return call?.onBeforeGenerateToken;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
-  state.env.runtime.isVercel = false;
-  state.budgets.maxUploadBytes = 1024;
 
+  state.budgets.maxUploadBytes = 1024;
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
   state.getProjectByIdForUser.mockResolvedValue(baseProject);
-  state.getProjectFileBySha256.mockResolvedValue(null);
-  state.put.mockResolvedValue({ url: "https://blob.test/file" });
-  state.publishJSON.mockResolvedValue({ messageId: "msg", url: "https://q" });
-  state.ingestFile.mockResolvedValue({
-    chunksIndexed: 2,
-    fileId: "file_1",
-  } satisfies IngestFileResult);
-  state.upsertProjectFile.mockImplementation(async (input: UpsertFileInput) => {
-    return {
-      createdAt: now,
-      id: `file_${input.sha256.slice(0, 6)}`,
-      mimeType: input.mimeType,
-      name: input.name,
-      projectId: input.projectId,
-      sha256: input.sha256,
-      sizeBytes: input.sizeBytes,
-      storageKey: input.storageKey,
-    } satisfies ProjectFileDto;
+  state.handleUpload.mockResolvedValue({
+    clientToken: "vercel_blob_client_token",
+    type: "blob.generate-client-token",
   });
 });
 
 describe("POST /api/upload", () => {
-  it("uploads multiple files and enqueues async ingestion in parallel", async () => {
+  it("proxies token exchange through handleUpload and returns clientToken", async () => {
     const POST = await loadRoute();
 
-    const fileA = {
-      blob: new Blob(["alpha"], { type: "text/plain" }),
-      name: "alpha.txt",
-    };
-    const fileB = {
-      blob: new Blob(["beta"], { type: "text/plain" }),
-      name: "beta.txt",
-    };
+    const res = await POST(
+      buildRequest({
+        payload: {
+          clientPayload: JSON.stringify({ projectId }),
+          multipart: false,
+          pathname: `projects/${projectId}/uploads/alpha.txt`,
+        },
+        type: "blob.generate-client-token",
+      }),
+    );
 
-    const res = await POST(buildRequest([fileA, fileB], { async: true }));
     expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      clientToken: "vercel_blob_client_token",
+    });
 
-    const body = await res.json();
-    expect(body.files).toHaveLength(2);
-    expect(state.publishJSON).toHaveBeenCalledTimes(2);
-    expect(state.ingestFile).not.toHaveBeenCalled();
-    expect(state.revalidateTag).toHaveBeenCalledTimes(2);
-    for (const call of state.revalidateTag.mock.calls) {
-      expect(call[1]).toBe("max");
+    expect(state.handleUpload).toHaveBeenCalledTimes(1);
+  });
+
+  it("scopes token generation to the authenticated user's project in onBeforeGenerateToken", async () => {
+    const POST = await loadRoute();
+
+    await POST(
+      buildRequest({
+        payload: {
+          clientPayload: JSON.stringify({ projectId }),
+          multipart: false,
+          pathname: `projects/${projectId}/uploads/alpha.txt`,
+        },
+        type: "blob.generate-client-token",
+      }),
+    );
+
+    const onBeforeGenerateToken = getOnBeforeGenerateToken();
+    if (!onBeforeGenerateToken) {
+      throw new Error("Missing onBeforeGenerateToken.");
     }
 
-    for (const call of state.publishJSON.mock.calls) {
-      const [payload] = call;
-      expect(payload).toMatchObject({
-        label: "ingest-file",
-        url: "https://app.example.com/api/jobs/ingest-file",
-      });
-      expect(payload.deduplicationId).toContain("ingest:");
-      expect(payload.body).toMatchObject({ projectId });
+    const opts = await onBeforeGenerateToken(
+      `projects/${projectId}/uploads/alpha.txt`,
+      JSON.stringify({ projectId }),
+      false,
+    );
+
+    expect(state.getProjectByIdForUser).toHaveBeenCalledWith(projectId, "user");
+    expect(opts).toMatchObject({
+      addRandomSuffix: true,
+      allowOverwrite: false,
+      maximumSizeInBytes: 1024,
+    });
+    expect(
+      (opts as { allowedContentTypes?: unknown }).allowedContentTypes,
+    ).toBeTruthy();
+  });
+
+  it("rejects invalid clientPayload", async () => {
+    const POST = await loadRoute();
+
+    await POST(
+      buildRequest({
+        payload: {
+          clientPayload: "not-json",
+          multipart: false,
+          pathname: `projects/${projectId}/uploads/alpha.txt`,
+        },
+        type: "blob.generate-client-token",
+      }),
+    );
+
+    const onBeforeGenerateToken = getOnBeforeGenerateToken();
+    if (!onBeforeGenerateToken) {
+      throw new Error("Missing onBeforeGenerateToken.");
     }
+
+    await expect(
+      onBeforeGenerateToken(
+        `projects/${projectId}/uploads/alpha.txt`,
+        "not-json",
+        false,
+      ),
+    ).rejects.toMatchObject({ code: "bad_request" });
   });
 
-  it("falls back to inline ingestion when QStash publish fails locally", async () => {
+  it("rejects invalid upload paths", async () => {
     const POST = await loadRoute();
 
-    const debugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
-    state.publishJSON.mockRejectedValueOnce(new Error("no qstash"));
-    state.env.runtime.isVercel = false;
+    await POST(
+      buildRequest({
+        payload: {
+          clientPayload: JSON.stringify({ projectId }),
+          multipart: false,
+          pathname: `projects/${projectId}/not-uploads/alpha.txt`,
+        },
+        type: "blob.generate-client-token",
+      }),
+    );
 
-    const file = {
-      blob: new Blob(["alpha"], { type: "text/plain" }),
-      name: "alpha.txt",
-    };
-    const res = await POST(buildRequest([file], { async: true }));
+    const onBeforeGenerateToken = getOnBeforeGenerateToken();
+    if (!onBeforeGenerateToken) {
+      throw new Error("Missing onBeforeGenerateToken.");
+    }
 
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.files[0].ingest?.chunksIndexed).toBe(2);
-    expect(state.ingestFile).toHaveBeenCalledTimes(1);
-    expect(state.revalidateTag).toHaveBeenCalledTimes(2);
-    debugSpy.mockRestore();
+    await expect(
+      onBeforeGenerateToken(
+        `projects/${projectId}/not-uploads/alpha.txt`,
+        JSON.stringify({ projectId }),
+        false,
+      ),
+    ).rejects.toMatchObject({ code: "bad_request" });
   });
 
-  it("returns an existing file without re-uploading", async () => {
+  it("rejects upload paths that do not match the strict projects/{id}/uploads/{objectKey} shape", async () => {
     const POST = await loadRoute();
 
-    const existing = {
-      createdAt: now,
-      id: "file_existing",
-      mimeType: "text/plain",
-      name: "alpha.txt",
-      projectId,
-      sha256: "existing",
-      sizeBytes: 5,
-      storageKey: "https://blob.test/existing",
-    } satisfies ProjectFileDto;
+    await POST(
+      buildRequest({
+        payload: {
+          clientPayload: JSON.stringify({ projectId }),
+          multipart: false,
+          pathname: `projects/${projectId}/uploads/alpha.txt`,
+        },
+        type: "blob.generate-client-token",
+      }),
+    );
 
-    state.getProjectFileBySha256.mockResolvedValueOnce(existing);
+    const onBeforeGenerateToken = getOnBeforeGenerateToken();
+    if (!onBeforeGenerateToken) {
+      throw new Error("Missing onBeforeGenerateToken.");
+    }
 
-    const file = {
-      blob: new Blob(["alpha"], { type: "text/plain" }),
-      name: "alpha.txt",
-    };
-    const res = await POST(buildRequest([file]));
+    const invalid = [
+      `projects/${projectId}/uploads/a/b`,
+      `projects/${projectId}/uploads/%2e%2e`,
+      `projects/${projectId}/uploads/a%2Fb`,
+    ] as const;
 
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.files).toEqual([existing]);
-    expect(state.put).not.toHaveBeenCalled();
-    expect(state.upsertProjectFile).not.toHaveBeenCalled();
-    expect(state.ingestFile).not.toHaveBeenCalled();
-    expect(state.revalidateTag).not.toHaveBeenCalled();
-  });
-
-  it("rejects unsupported mime types", async () => {
-    const POST = await loadRoute();
-
-    const file = {
-      blob: new Blob(["data"], { type: "image/png" }),
-      name: "image.png",
-    };
-    const res = await POST(buildRequest([file]));
-
-    expect(res.status).toBe(400);
-    await expect(res.json()).resolves.toMatchObject({
-      error: { code: "unsupported_file_type" },
-    });
-  });
-
-  it("rejects files that exceed the upload size budget", async () => {
-    const POST = await loadRoute();
-
-    state.budgets.maxUploadBytes = 1;
-    const file = {
-      blob: new Blob(["too-big"], { type: "text/plain" }),
-      name: "alpha.txt",
-    };
-    const res = await POST(buildRequest([file]));
-
-    expect(res.status).toBe(413);
-    await expect(res.json()).resolves.toMatchObject({
-      error: { code: "file_too_large" },
-    });
+    for (const pathname of invalid) {
+      await expect(
+        onBeforeGenerateToken(pathname, JSON.stringify({ projectId }), false),
+      ).rejects.toMatchObject({ code: "bad_request" });
+    }
   });
 });

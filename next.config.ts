@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
         pathname: "/logos/**",
         protocol: "https",
       },
+      {
+        hostname: "**.public.blob.vercel-storage.com",
+        pathname: "/**",
+        protocol: "https",
+        search: "",
+      },
     ],
   },
   // Ensure repo-bundled skill markdown is available in serverless traces.

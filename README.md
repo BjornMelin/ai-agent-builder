@@ -16,6 +16,7 @@ trail).
 ## What it does
 
 - Ingests source material: PDFs, slides, docs, markdown, spreadsheets.
+- Project chat supports attaching documents directly in the composer (upload-before-send via `POST /api/upload`) and in follow-ups during active durable sessions.
 - Supports project and global search across projects, uploads, chunks, artifacts, and runs.
 - Enforces per-user project ownership for all project-scoped reads/writes.
 - Applies server-side search guardrails (strict query validation + rate limiting).
@@ -66,6 +67,7 @@ flowchart LR
 - Provisioning + deploy automation: [`docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md`](./docs/architecture/spec/SPEC-0018-infrastructure-provisioning-and-secrets-for-target-apps.md)
 - Sandbox verification jobs: [`docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md`](./docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
 - Workspace + search UX: [`docs/architecture/spec/SPEC-0020-project-workspace-and-search.md`](./docs/architecture/spec/SPEC-0020-project-workspace-and-search.md)
+- Project chat attachments: [`docs/architecture/spec/SPEC-0029-chat-attachments.md`](./docs/architecture/spec/SPEC-0029-chat-attachments.md)
 - Agent Skills (progressive disclosure): [`docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md`](./docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md)
 - Skills registry installs: [`docs/architecture/spec/SPEC-0028-skills-registry-ui-and-bundled-installs.md`](./docs/architecture/spec/SPEC-0028-skills-registry-ui-and-bundled-installs.md)
 - GitOps + deploy ADRs:

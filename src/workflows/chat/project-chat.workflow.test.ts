@@ -1,8 +1,9 @@
-import type { ModelMessage, UIMessage, UIMessageChunk } from "ai";
+import type { FileUIPart, ModelMessage, UIMessage, UIMessageChunk } from "ai";
 import { mockValues } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
+  agentStreamInputs: [] as ModelMessage[][],
   buildChatToolsForMode: vi.fn(),
   chatMessageHook: {
     create: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock("@workflow/ai/agent", () => ({
       messages: ModelMessage[];
       uiMessages?: UIMessage[];
     }> => {
+      state.agentStreamInputs.push(input.messages);
       const next: ModelMessage = { content: "assistant", role: "assistant" };
       const uiMessages: UIMessage[] = [
         {
@@ -99,6 +101,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
 
+  state.agentStreamInputs = [];
   state.getWorkflowMetadata.mockReturnValue({ workflowRunId: "run_1" });
   state.getWritable.mockReturnValue(
     new WritableStream<UIMessageChunk>({
@@ -123,8 +126,22 @@ beforeEach(() => {
 
   // Thenable hook that yields one follow-up, then /done.
   state.chatMessageHook.create.mockImplementation(() => {
+    const files: FileUIPart[] = [
+      {
+        filename: "report.pdf",
+        mediaType: "application/pdf",
+        type: "file",
+        url: "https://example.com/report.pdf",
+      },
+      {
+        filename: "report.pdf",
+        mediaType: "application/pdf",
+        type: "file",
+        url: "https://example.com/report-2.pdf",
+      },
+    ];
     const next = mockValues(
-      { message: "follow up", messageId: "m_follow" },
+      { files, message: "follow up", messageId: "m_follow" },
       { message: "/done", messageId: "m_done" },
     );
     return {
@@ -158,6 +175,29 @@ describe("projectChat workflow", () => {
     expect(state.persistChatMessagesForWorkflowRun).toHaveBeenCalled();
     expect(state.writeUserMessageMarker).toHaveBeenCalled();
     expect(state.writeStreamClose).toHaveBeenCalled();
+
+    // Follow-up with attachments should be written as a user-message marker,
+    // and projected into the model messages as a text hint.
+    const markerPayloads = state.writeUserMessageMarker.mock.calls.map(
+      (call) => call[1],
+    );
+    expect(
+      markerPayloads.some(
+        (payload) =>
+          typeof payload === "object" &&
+          payload !== null &&
+          "messageId" in payload &&
+          payload.messageId === "m_follow" &&
+          "files" in payload,
+      ),
+    ).toBe(true);
+
+    expect(state.agentStreamInputs.length).toBe(2);
+    const secondTurn = state.agentStreamInputs[1] ?? [];
+    const lastUser = [...secondTurn].reverse().find((m) => m.role === "user");
+    expect(lastUser?.content).toContain("follow up");
+    expect(lastUser?.content).toContain("Attached files:");
+    expect(lastUser?.content).toContain("report.pdf (x2)");
 
     // Finalization should record a terminal status for the thread state.
     const calls = state.touchChatThreadState.mock.calls.flat();

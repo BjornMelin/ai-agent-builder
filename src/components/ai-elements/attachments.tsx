@@ -207,7 +207,7 @@ export const Attachment = (props: AttachmentProps) => {
           "group relative",
           variant === "grid" && "size-24 overflow-hidden rounded-lg",
           variant === "inline" && [
-            "flex h-8 cursor-pointer select-none items-center gap-1.5",
+            "flex h-8 select-none items-center gap-1.5",
             "rounded-md border border-border px-1.5",
             "font-medium text-sm transition-colors",
             "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
@@ -271,7 +271,10 @@ export const AttachmentPreview = (props: AttachmentPreviewProps) => {
   };
 
   const renderIcon = (Icon: typeof ImageIcon) => (
-    <Icon className={cn(iconSize, "text-muted-foreground")} />
+    <Icon
+      aria-hidden="true"
+      className={cn(iconSize, "text-muted-foreground")}
+    />
   );
 
   const renderContent = () => {
@@ -280,7 +283,15 @@ export const AttachmentPreview = (props: AttachmentPreviewProps) => {
     }
 
     if (mediaCategory === "video" && data.type === "file" && data.url) {
-      return <video className="size-full object-cover" muted src={data.url} />;
+      return (
+        <video
+          className="size-full object-cover"
+          muted
+          playsInline
+          preload="metadata"
+          src={data.url}
+        />
+      );
     }
 
     const iconMap: Record<AttachmentMediaCategory, typeof ImageIcon> = {
@@ -379,13 +390,13 @@ export const AttachmentRemove = (props: AttachmentRemoveProps) => {
         variant === "grid" && [
           "absolute top-2 right-2 size-6 rounded-full p-0",
           "bg-background/80 backdrop-blur-sm",
-          "opacity-0 transition-opacity group-hover:opacity-100",
+          "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
           "hover:bg-background",
           "[&>svg]:size-3",
         ],
         variant === "inline" && [
           "size-6 rounded p-0",
-          "opacity-0 transition-opacity group-hover:opacity-100",
+          "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100",
           "[&>svg]:size-2.5",
         ],
         variant === "list" && ["size-8 shrink-0 rounded p-0", "[&>svg]:size-4"],
@@ -399,7 +410,7 @@ export const AttachmentRemove = (props: AttachmentRemoveProps) => {
       variant="ghost"
       {...rest}
     >
-      {children ?? <XIcon />}
+      {children ?? <XIcon aria-hidden="true" />}
       <span className="sr-only">{label}</span>
     </Button>
   );

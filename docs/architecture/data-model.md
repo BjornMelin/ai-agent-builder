@@ -146,6 +146,32 @@ Stores non-secret resource identity + metadata.
 - `started_at`, `ended_at`
 - `metadata` (JSON; promotion info, commit SHA)
 
+### `chat_threads`
+
+Project-scoped chat threads backed by Workflow DevKit run IDs.
+
+- `id`
+- `project_id`
+- `mode` (agent mode id)
+- `title`
+- `status` (running/waiting/succeeded/failed/canceled)
+- `workflow_run_id` (unique; used for resumable stream + follow-ups)
+- `last_activity_at`
+- `ended_at` (nullable)
+- `created_at`, `updated_at`
+
+### `chat_messages`
+
+Persisted UI messages for a thread.
+
+- `id` (AI SDK UI message id; stable across replay)
+- `thread_id`
+- `role` (user/assistant/system)
+- `parts` (JSON array)
+  - Stores AI SDK UI parts (text, tool parts, reasoning, etc.).
+  - May include document attachments as `FileUIPart` parts (hosted Blob URLs).
+- `created_at`
+
 ## Vector indexing
 
 Namespaces:

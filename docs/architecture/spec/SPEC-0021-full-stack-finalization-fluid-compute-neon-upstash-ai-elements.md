@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0021
 title: Full-stack finalization (Fluid Compute + Neon/Drizzle + Upstash + AI Gateway + AI Elements UI)
-version: 0.1.4
-date: 2026-02-06
+version: 0.1.5
+date: 2026-02-10
 owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements:
@@ -161,7 +161,8 @@ Workspace pages under `src/app/(app)/…` are implemented and are protected by
 
 shadcn/ui + AI Elements component code is vendored:
 
-- AI Elements: `src/components/ai-elements/**` (chat UI currently uses `conversation`, `message`, `prompt-input`, `reasoning`, `tool`)
+- AI Elements: `src/components/ai-elements/**` (chat UI uses `conversation`, `message`, `attachments`, `prompt-input`, `reasoning`, `tool`)
+- Chat attachments: `/projects/[projectId]/chat` supports document attachments (Inline `Attachments` + upload-before-send via Vercel Blob client uploads + `POST /api/upload/register`; see SPEC-0029)
 - shadcn/ui: `src/components/ui/**`
 - shared search UI: `src/components/search/**`
 - Shared utilities: `src/lib/utils.ts`
@@ -171,6 +172,10 @@ Route handler tests exist for `/api/chat`:
 - `src/app/api/chat/__tests__/route.test.ts`
 - `src/app/api/chat/[runId]/__tests__/route.test.ts`
 - `src/app/api/chat/[runId]/stream/__tests__/route.test.ts`
+
+See [SPEC-0029](./SPEC-0029-chat-attachments.md) and
+[ADR-0030](../adr/ADR-0030-chat-attachments-reuse-upload-pipeline.md) for the
+document attachment contracts and design decisions.
 
 ## Target Architecture (Final System Shape)
 
@@ -384,19 +389,17 @@ curl -s https://ai-gateway.vercel.sh/v1/models | jq -r '[.data[] | select(.id | 
 This section documents the current API surface (repo truth) and the required
 additions to complete the UI.
 
-### Uploads: `POST /api/upload` (implemented)
+### Uploads: Vercel Blob client uploads + registration (implemented)
 
-Request: `multipart/form-data`
+The uploads pipeline is split into:
 
-- `projectId`: string (required)
-- `file`: File (one or many; required)
-- `async`: `"true"` or `"false"` (optional; when `true`, try QStash and fall back to inline locally)
+- `POST /api/upload`: Vercel Blob client upload token exchange (used by `@vercel/blob/client upload()` via `handleUploadUrl`).
+- `POST /api/upload/register`: register already-uploaded blobs, persist metadata (idempotent by sha256), and ingest (inline by default; optionally enqueues async ingestion via QStash).
 
-Response:
+Code:
 
-- `{ files: ProjectFileDto[] }` (with optional `ingest.chunksIndexed` when inline ingestion runs)
-
-Code: `src/app/api/upload/route.ts`
+- `src/app/api/upload/route.ts`
+- `src/app/api/upload/register/route.ts`
 
 ### Search: `GET /api/search` (implemented)
 

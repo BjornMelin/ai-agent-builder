@@ -6,7 +6,7 @@ Version: 0.1
 Date: 2026-02-03
 Supersedes: []
 Superseded-by: []
-Related: [ADR-0005, ADR-0006, ADR-0011, ADR-0021]
+Related: [ADR-0005, ADR-0006, ADR-0011, ADR-0021, ADR-0030]
 Tags: [architecture, reliability, workflows]
 References:
   - [Vercel Workflow](https://vercel.com/docs/workflow)
@@ -168,7 +168,8 @@ flowchart LR
   WF --> VECTOR[(Upstash Vector)]
   WF --> REDIS[(Upstash Redis)]
 
-  Upload[POST /api/upload<br/>enqueue to QStash] --> Q[QStash<br/>POST /api/jobs/ingest-file]
+  UploadToken[POST /api/upload<br/>Blob token exchange] --> Register[POST /api/upload/register<br/>register + ingest (or enqueue)]
+  Register --> Q[QStash<br/>POST /api/jobs/ingest-file]
   Q --> Ingest[POST /api/jobs/ingest-file]
   Ingest --> DB
   Ingest --> VECTOR

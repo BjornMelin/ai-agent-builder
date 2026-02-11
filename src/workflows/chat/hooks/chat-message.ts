@@ -2,12 +2,31 @@ import { defineHook } from "workflow";
 import { z } from "zod";
 
 /**
- * Payload schema for injecting a follow-up message into a multi-turn chat run.
+ * Payload schema for injecting a follow-up user message into a multi-turn chat
+ * run with optional attachments.
  */
-const chatMessageSchema = z.object({
-  message: z.string().min(1),
-  messageId: z.string().min(1),
+const filePartSchema = z.object({
+  filename: z.string().min(1).optional(),
+  mediaType: z.string().min(1),
+  type: z.literal("file"),
+  url: z.string().min(1),
 });
+
+const chatMessageSchema = z
+  .object({
+    files: z.array(filePartSchema).min(1).optional(),
+    message: z.string().trim().min(1).optional(),
+    messageId: z.string().min(1),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.message && !value.files) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Provide either message or files.",
+        path: ["message"],
+      });
+    }
+  });
 
 /**
  * Hook used to resume an in-flight multi-turn chat workflow with a new user message.

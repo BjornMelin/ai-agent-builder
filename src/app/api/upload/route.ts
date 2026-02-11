@@ -1,188 +1,92 @@
-import { put } from "@vercel/blob";
-import { revalidateTag } from "next/cache";
+import { type HandleUploadBody, handleUpload } from "@vercel/blob/client";
 import type { NextResponse } from "next/server";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
-import { tagUploadsIndex } from "@/lib/cache/tags";
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError, type JsonError } from "@/lib/core/errors";
-import { sha256Hex } from "@/lib/core/sha256";
-import {
-  getProjectFileBySha256,
-  type ProjectFileDto,
-  upsertProjectFile,
-} from "@/lib/data/files.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { env } from "@/lib/env";
-import { ingestFile } from "@/lib/ingest/ingest-file.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
-import { getQstashClient } from "@/lib/upstash/qstash.server";
+import { allowedUploadMimeTypes } from "@/lib/uploads/allowed-mime-types";
+import { assertValidProjectUploadPathname } from "@/lib/uploads/trusted-blob-url.server";
 
-const allowedMimeTypes = new Set<string>([
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "text/plain",
-  "text/markdown",
-]);
-
-function sanitizeFilename(name: string): string {
-  const trimmed = name.trim();
-  if (trimmed.length === 0) return "upload";
-  return trimmed.replaceAll(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 128);
+function safeParseClientPayload(payload: string | null): { projectId: string } {
+  if (!payload) {
+    throw new AppError("bad_request", 400, "Missing upload payload.");
+  }
+  let value: unknown;
+  try {
+    value = JSON.parse(payload);
+  } catch {
+    throw new AppError("bad_request", 400, "Invalid upload payload.");
+  }
+  if (!value || typeof value !== "object") {
+    throw new AppError("bad_request", 400, "Invalid upload payload.");
+  }
+  const projectId = (value as Record<string, unknown>).projectId;
+  if (typeof projectId !== "string" || projectId.trim().length === 0) {
+    throw new AppError("bad_request", 400, "Missing projectId.");
+  }
+  return { projectId: projectId.trim() };
 }
 
 /**
- * Response payload for the upload endpoint.
+ * Vercel Blob client upload token exchange endpoint.
  *
- * Contains a JSON-safe readonly array of ProjectFileDto values, each optionally
- * extended with ingestion metadata (`ingest.chunksIndexed`).
- */
-type UploadResponse = Readonly<{
-  files: readonly (ProjectFileDto &
-    Readonly<{ ingest?: { chunksIndexed: number } }>)[]; // JSON-safe
-}>;
-
-/**
- * Upload one or more files to a project, optionally ingesting them.
+ * @remarks
+ * This route is used by `@vercel/blob/client upload()` via `handleUploadUrl`.
+ * It issues scoped client tokens for authorized project uploads.
  *
- * @param req - Authenticated multipart/form-data request containing projectId, file(s), and optional async flag; files must be within size limits and supported MIME types.
- * @returns JSON response with uploaded file metadata and optional ingestion results (chunk counts when ingested).
- * @throws AppError - When authentication fails, inputs are invalid, or upload/ingest operations fail.
+ * @param req - HTTP request.
+ * @returns JSON response with a client token.
+ * @throws AppError - Thrown when request validation fails or the project is not found.
  */
 export async function POST(
   req: Request,
-): Promise<NextResponse<UploadResponse | JsonError>> {
+): Promise<
+  NextResponse<
+    Readonly<{ clientToken: string }> | Readonly<{ response: "ok" }> | JsonError
+  >
+> {
   try {
-    const authPromise = requireAppUserApi();
-    const formPromise = req.formData().catch(() => null);
-    const [user, form] = await Promise.all([authPromise, formPromise]);
-    if (!form) {
-      throw new AppError("bad_request", 400, "Invalid form data.");
-    }
-    const projectId = String(form.get("projectId") ?? "").trim();
+    const userPromise = requireAppUserApi();
+    const bodyPromise = req.json().catch(() => null);
+    const [user, body] = await Promise.all([userPromise, bodyPromise]);
 
-    if (!projectId) {
-      throw new AppError("bad_request", 400, "Missing projectId.");
+    if (!body) {
+      throw new AppError("bad_request", 400, "Invalid request body.");
     }
 
-    const project = await getProjectByIdForUser(projectId, user.id);
-    if (!project) {
-      throw new AppError("not_found", 404, "Project not found.");
+    const result = await handleUpload({
+      body: body as HandleUploadBody,
+      onBeforeGenerateToken: async (pathname, clientPayload) => {
+        const { projectId } = safeParseClientPayload(clientPayload);
+        assertValidProjectUploadPathname({ pathname, projectId });
+
+        const project = await getProjectByIdForUser(projectId, user.id);
+        if (!project) {
+          throw new AppError("not_found", 404, "Project not found.");
+        }
+
+        return {
+          addRandomSuffix: true,
+          allowedContentTypes: [...allowedUploadMimeTypes],
+          allowOverwrite: false,
+          maximumSizeInBytes: budgets.maxUploadBytes,
+          tokenPayload: clientPayload,
+        };
+      },
+      request: req,
+      token: env.blob.readWriteToken,
+    });
+
+    if (result.type === "blob.generate-client-token") {
+      return jsonOk({ clientToken: result.clientToken });
     }
 
-    const files = form
-      .getAll("file")
-      .filter((v): v is File => v instanceof File);
-    if (files.length === 0) {
-      throw new AppError("bad_request", 400, "Missing file.");
-    }
-
-    const shouldIngestAsync =
-      String(form.get("async") ?? "")
-        .trim()
-        .toLowerCase() === "true";
-
-    const results = await Promise.all(
-      files.map(
-        async (
-          file,
-        ): Promise<
-          ProjectFileDto & Readonly<{ ingest?: { chunksIndexed: number } }>
-        > => {
-          const sizeBytes = file.size;
-          if (sizeBytes > budgets.maxUploadBytes) {
-            throw new AppError(
-              "file_too_large",
-              413,
-              `File too large (max ${budgets.maxUploadBytes} bytes).`,
-            );
-          }
-
-          const mimeType = file.type || "application/octet-stream";
-          if (!allowedMimeTypes.has(mimeType)) {
-            throw new AppError(
-              "unsupported_file_type",
-              400,
-              `Unsupported file type: ${mimeType}`,
-            );
-          }
-
-          const bytes = new Uint8Array(await file.arrayBuffer());
-          const sha256 = sha256Hex(bytes);
-
-          const existing = await getProjectFileBySha256(projectId, sha256);
-          if (existing) {
-            return existing;
-          }
-
-          const safeName = sanitizeFilename(file.name);
-          const blobPath = `projects/${projectId}/uploads/${sha256}-${safeName}`;
-
-          const blob = await put(blobPath, file, {
-            access: "public",
-            addRandomSuffix: false,
-            allowOverwrite: true,
-            contentType: mimeType,
-            token: env.blob.readWriteToken,
-          });
-
-          const dbFile = await upsertProjectFile({
-            mimeType,
-            name: safeName,
-            projectId,
-            sha256,
-            sizeBytes,
-            storageKey: blob.url,
-          });
-          revalidateTag(tagUploadsIndex(projectId), "max");
-
-          // Prefer QStash for heavier ingestion; fall back to inline when not configured.
-          if (shouldIngestAsync) {
-            try {
-              const qstash = getQstashClient();
-              const origin = env.app.baseUrl;
-
-              await qstash.publishJSON({
-                body: { fileId: dbFile.id, projectId },
-                deduplicationId: `ingest:${dbFile.id}`,
-                label: "ingest-file",
-                url: `${origin}/api/jobs/ingest-file`,
-              });
-
-              return dbFile;
-            } catch (err) {
-              // If QStash isn't configured, fall through to inline ingestion.
-              // This keeps local development usable without tunneling.
-              if (env.runtime.isVercel) {
-                throw err;
-              }
-              console.debug(
-                "[upload] QStash unavailable, falling back to inline ingestion",
-                err,
-              );
-            }
-          }
-
-          const ingest = await ingestFile({
-            bytes,
-            fileId: dbFile.id,
-            mimeType,
-            name: safeName,
-            projectId,
-          });
-          revalidateTag(tagUploadsIndex(projectId), "max");
-
-          return {
-            ...dbFile,
-            ingest: { chunksIndexed: ingest.chunksIndexed },
-          };
-        },
-      ),
-    );
-
-    return jsonOk({ files: results });
+    // We don't register upload completion callbacks for these tokens, but handle
+    // the response defensively if one is received.
+    return jsonOk({ response: "ok" as const });
   } catch (err) {
     return jsonError(err);
   }

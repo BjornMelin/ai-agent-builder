@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD) — ai-agent-builder
 
-**Version**: 0.2.1  
-**Date**: 2026-02-06  
+**Version**: 0.2.2  
+**Date**: 2026-02-10  
 **Owner**: Bjorn Melin
 
 ## Executive summary
@@ -62,14 +62,16 @@ plan” without redoing analysis.
 3. User uploads files (PDF/DOCX/PPTX/XLSX/TXT/MD).
 4. System extracts text and structure, chunks content, and indexes it for
    retrieval.
-5. User chats with the project knowledge base (streaming responses).
+5. User chats with the project knowledge base (streaming responses) and can
+   attach additional documents directly in chat (docs-only scope).
 6. User starts a durable run that performs research and generates artifacts
    (PRD/specs/ADRs/security/roadmap/prompts).
 7. User exports the latest artifacts and citations as a deterministic zip.
 
 ### Journey B: Iterate on an existing project
 
-1. User uploads additional material and/or adds instructions in chat.
+1. User uploads additional material, attaches documents, and adds instructions
+   in chat.
 2. User regenerates or refines a subset of artifacts.
 3. System versions artifacts and updates export output deterministically.
 
@@ -127,6 +129,7 @@ Primary spec/ADR references:
 ### Epic 4: Chat with retrieval augmentation
 
 - Project-scoped chat with streaming UI. (FR-008, PR-001)
+- Chat messages can include document attachments (uploaded/ingested before send) and render as part of chat history. (FR-003, FR-008, FR-019)
 - Retrieval-augmented responses using project KB. (FR-019)
 - Agent mode selection per chat. (FR-009)
 

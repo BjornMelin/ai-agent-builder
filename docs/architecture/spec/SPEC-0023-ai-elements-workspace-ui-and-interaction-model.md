@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0023
 title: AI Elements workspace UI and interaction model
-version: 0.1.0
-date: 2026-02-09
+version: 0.1.1
+date: 2026-02-10
 owners: ["Bjorn Melin"]
 status: Partially Implemented
 related_requirements:
@@ -85,6 +85,7 @@ Chat:
 
 - `conversation` (Conversation shell + scroll behavior)
 - `message` (Message + MessageContent + MessageResponse)
+- `attachments` (Attachments + Attachment primitives for rendering file/source parts)
 - `prompt-input` (PromptInputTextarea + PromptInputSubmit, etc.)
 
 Runs/workflow visualization:
@@ -132,7 +133,9 @@ Use AI Elements primitives for message rendering:
 - `ConversationScrollButton` appears when user scrolls away
 - `Message` and `MessageContent` wrap each message
 - `MessageResponse` renders streaming content (Streamdown-compatible)
+- `Attachments` renders `FileUIPart` parts as inline chips (SPEC-0029)
 - `PromptInputTextarea` + `PromptInputSubmit` compose the input
+- `PromptInput` attachments UI uses `Attachments` inline above the textarea (SPEC-0029)
 
 All AI Elements component names and usage are sourced from the AI Elements docs index ([AI Elements docs index](https://elements.ai-sdk.dev/llms.txt)).
 
@@ -205,6 +208,7 @@ Settings tab must expose:
 - Chat:
   - start session, stream tokens, refresh mid-stream, stream resumes
   - send follow-up while session active and see new assistant output stream
+  - attach a document and see attachment chips in the composer and transcript (SPEC-0029)
 - Runs:
   - run shows steps updating in real time (poll or stream depending on implementation)
   - approval gate blocks UI until approved, then resumes
