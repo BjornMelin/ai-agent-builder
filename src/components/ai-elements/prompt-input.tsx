@@ -779,11 +779,13 @@ export const PromptInput = (props: PromptInputProps) => {
   };
 
   const convertBlobUrlToDataUrl = async (
-    url: string,
+    source: File | string,
   ): Promise<string | null> => {
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
+      const blob =
+        source instanceof File
+          ? source
+          : await fetch(source).then((response) => response.blob());
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
@@ -836,7 +838,14 @@ export const PromptInput = (props: PromptInputProps) => {
       const convertedFiles: FileUIPart[] =
         fileUrlMode === "data-url"
           ? await Promise.all(
-              files.map(async ({ file: _file, id: _id, ...item }) => {
+              files.map(async ({ file, id: _id, ...item }) => {
+                if (file) {
+                  const dataUrl = await convertBlobUrlToDataUrl(file);
+                  return {
+                    ...item,
+                    url: dataUrl ?? item.url,
+                  };
+                }
                 if (item.url?.startsWith("blob:")) {
                   const dataUrl = await convertBlobUrlToDataUrl(item.url);
                   // If conversion failed, keep the original blob URL.
