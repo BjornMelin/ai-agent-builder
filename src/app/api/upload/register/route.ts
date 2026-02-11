@@ -106,6 +106,31 @@ async function readResponseBytesWithLimit(
   return out;
 }
 
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const limit = Math.max(1, Math.floor(concurrency));
+  const results: R[] = new Array(items.length);
+  let index = 0;
+
+  const worker = async () => {
+    while (true) {
+      const current = index;
+      index += 1;
+      if (current >= items.length) return;
+      results[current] = await fn(items[current] as T);
+    }
+  };
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, () =>
+    worker(),
+  );
+  await Promise.all(workers);
+  return results;
+}
+
 async function deleteUploadedBlob(url: string): Promise<void> {
   try {
     await del(url, { token: env.blob.readWriteToken });
@@ -141,161 +166,177 @@ export async function POST(
 
     const shouldIngestAsync = parsed.async === true;
 
-    const results: (ProjectFileDto &
-      Readonly<{ ingest?: { chunksIndexed: number } }>)[] = [];
+    let didMutateFilesIndex = false;
+    const results = await mapWithConcurrency(
+      parsed.blobs,
+      2,
+      async (
+        blob,
+      ): Promise<
+        ProjectFileDto & Readonly<{ ingest?: { chunksIndexed: number } }>
+      > => {
+        const contentType = blob.contentType.trim();
+        if (!allowedUploadMimeTypeSet.has(contentType)) {
+          throw new AppError(
+            "unsupported_file_type",
+            400,
+            `Unsupported file type: ${contentType}`,
+          );
+        }
 
-    // Intentionally process sequentially to cap peak memory usage (we buffer each
-    // file to compute sha256) and avoid saturating the upstream Blob fetch path.
-    for (const blob of parsed.blobs) {
-      const contentType = blob.contentType.trim();
-      if (!allowedUploadMimeTypeSet.has(contentType)) {
-        throw new AppError(
-          "unsupported_file_type",
-          400,
-          `Unsupported file type: ${contentType}`,
-        );
-      }
+        // Defense-in-depth. The real size is validated after fetch (and streamed
+        // with an explicit max byte limit), but this can reject obviously invalid
+        // requests early.
+        if (blob.size > budgets.maxUploadBytes) {
+          throw new AppError(
+            "file_too_large",
+            413,
+            `File too large (max ${budgets.maxUploadBytes} bytes).`,
+          );
+        }
 
-      // Defense-in-depth. The real size is validated after fetch (and streamed
-      // with an explicit max byte limit), but this can reject obviously invalid
-      // requests early.
-      if (blob.size > budgets.maxUploadBytes) {
-        throw new AppError(
-          "file_too_large",
-          413,
-          `File too large (max ${budgets.maxUploadBytes} bytes).`,
-        );
-      }
-
-      const blobUrl = parseTrustedProjectUploadBlobUrl({
-        projectId: parsed.projectId,
-        urlString: blob.url,
-      });
-
-      let res: Response;
-      try {
-        res = await fetch(blobUrl.toString(), {
-          signal: AbortSignal.timeout(60_000),
+        const blobUrl = parseTrustedProjectUploadBlobUrl({
+          projectId: parsed.projectId,
+          urlString: blob.url,
         });
-      } catch (err) {
-        const message =
-          err instanceof DOMException && err.name === "TimeoutError"
-            ? "Blob fetch timed out."
-            : "Failed to fetch blob.";
-        throw new AppError("blob_fetch_failed", 502, message, err);
-      }
-      if (!res.ok) {
-        throw new AppError(
-          "blob_fetch_failed",
-          502,
-          `Failed to fetch blob (${res.status}).`,
-        );
-      }
 
-      const contentLength = parseContentLengthHeader(res);
-      if (contentLength !== null && contentLength > budgets.maxUploadBytes) {
-        throw new AppError(
-          "file_too_large",
-          413,
-          `File too large (max ${budgets.maxUploadBytes} bytes).`,
-        );
-      }
-
-      let bytes: Uint8Array;
-      try {
-        bytes = await readResponseBytesWithLimit(res, budgets.maxUploadBytes);
-      } catch (err) {
-        if (err instanceof AppError) {
-          throw err;
-        }
-        throw new AppError(
-          "blob_fetch_failed",
-          502,
-          "Failed to read blob.",
-          err,
-        );
-      }
-      if (bytes.byteLength > budgets.maxUploadBytes) {
-        throw new AppError(
-          "file_too_large",
-          413,
-          `File too large (max ${budgets.maxUploadBytes} bytes).`,
-        );
-      }
-
-      const sha256 = sha256Hex(bytes);
-
-      const existing = await getProjectFileBySha256(parsed.projectId, sha256);
-      if (existing) {
-        // Only clean up when this register call refers to an extra duplicate blob.
-        // If the URL matches the canonical stored key, deleting would break the DB reference.
-        if (existing.storageKey !== blob.url) {
-          await deleteUploadedBlob(blob.url);
-        }
-        results.push(existing);
-        continue;
-      }
-
-      const safeName = sanitizeFilename(blob.originalName);
-      const dbFile = await upsertProjectFile({
-        mimeType: contentType,
-        name: safeName,
-        projectId: parsed.projectId,
-        sha256,
-        sizeBytes: bytes.byteLength,
-        storageKey: blob.url,
-      });
-      revalidateTag(tagUploadsIndex(parsed.projectId), "max");
-
-      if (shouldIngestAsync) {
+        let res: Response;
         try {
-          const qstash = getQstashClient();
-          const origin = env.app.baseUrl;
-
-          await qstash.publishJSON({
-            body: { fileId: dbFile.id, projectId: parsed.projectId },
-            deduplicationId: `ingest:${dbFile.id}`,
-            label: "ingest-file",
-            url: `${origin}/api/jobs/ingest-file`,
+          res = await fetch(blobUrl.toString(), {
+            signal: AbortSignal.timeout(60_000),
           });
-
-          results.push(dbFile);
-          continue;
         } catch (err) {
-          if (env.runtime.isVercel) {
+          const message =
+            err instanceof DOMException && err.name === "TimeoutError"
+              ? "Blob fetch timed out."
+              : "Failed to fetch blob.";
+          throw new AppError("blob_fetch_failed", 502, message, err);
+        }
+        if (!res.ok) {
+          throw new AppError(
+            "blob_fetch_failed",
+            502,
+            `Failed to fetch blob (${res.status}).`,
+          );
+        }
+
+        const contentLength = parseContentLengthHeader(res);
+        if (contentLength !== null && contentLength > budgets.maxUploadBytes) {
+          throw new AppError(
+            "file_too_large",
+            413,
+            `File too large (max ${budgets.maxUploadBytes} bytes).`,
+          );
+        }
+
+        let bytes: Uint8Array;
+        try {
+          bytes = await readResponseBytesWithLimit(res, budgets.maxUploadBytes);
+        } catch (err) {
+          if (err instanceof AppError) {
             throw err;
           }
-          if (process.env.NODE_ENV !== "production") {
-            log.debug("upload_register_qstash_unavailable_falling_back", {
-              err:
-                err instanceof Error
-                  ? {
-                      name: err.name,
-                      ...(typeof (err as unknown as { code?: unknown }).code ===
-                      "string"
-                        ? { code: (err as unknown as { code: string }).code }
-                        : {}),
-                    }
-                  : { kind: typeof err },
+          throw new AppError(
+            "blob_fetch_failed",
+            502,
+            "Failed to read blob.",
+            err,
+          );
+        }
+        if (bytes.byteLength > budgets.maxUploadBytes) {
+          throw new AppError(
+            "file_too_large",
+            413,
+            `File too large (max ${budgets.maxUploadBytes} bytes).`,
+          );
+        }
+
+        const sha256 = sha256Hex(bytes);
+
+        const existing = await getProjectFileBySha256(parsed.projectId, sha256);
+        if (existing) {
+          // Only clean up when this register call refers to an extra duplicate blob.
+          // If the URL matches the canonical stored key, deleting would break the DB reference.
+          if (existing.storageKey !== blob.url) {
+            await deleteUploadedBlob(blob.url);
+          }
+          return existing;
+        }
+
+        const safeName = sanitizeFilename(blob.originalName);
+        didMutateFilesIndex = true;
+        const dbFile = await upsertProjectFile({
+          mimeType: contentType,
+          name: safeName,
+          projectId: parsed.projectId,
+          sha256,
+          sizeBytes: bytes.byteLength,
+          storageKey: blob.url,
+        });
+
+        // Concurrency safety: if another task registered the same sha256 first,
+        // ensure we return the canonical DB row and clean up our extra blob.
+        const canonical = await getProjectFileBySha256(
+          parsed.projectId,
+          sha256,
+        );
+        const resolved = canonical ?? dbFile;
+        if (resolved.storageKey !== blob.url) {
+          await deleteUploadedBlob(blob.url);
+        }
+
+        if (shouldIngestAsync) {
+          try {
+            const qstash = getQstashClient();
+            const origin = env.app.baseUrl;
+
+            await qstash.publishJSON({
+              body: { fileId: resolved.id, projectId: parsed.projectId },
+              deduplicationId: `ingest:${resolved.id}`,
+              label: "ingest-file",
+              url: `${origin}/api/jobs/ingest-file`,
             });
+
+            return resolved;
+          } catch (err) {
+            if (env.runtime.isVercel) {
+              throw err;
+            }
+            if (process.env.NODE_ENV !== "production") {
+              log.debug("upload_register_qstash_unavailable_falling_back", {
+                err:
+                  err instanceof Error
+                    ? {
+                        name: err.name,
+                        ...(typeof (err as unknown as { code?: unknown })
+                          .code === "string"
+                          ? { code: (err as unknown as { code: string }).code }
+                          : {}),
+                      }
+                    : { kind: typeof err },
+              });
+            }
           }
         }
-      }
 
-      const ingest = await ingestFile({
-        bytes,
-        fileId: dbFile.id,
-        mimeType: contentType,
-        name: safeName,
-        projectId: parsed.projectId,
-      });
+        const ingest = await ingestFile({
+          bytes,
+          fileId: resolved.id,
+          mimeType: contentType,
+          name: safeName,
+          projectId: parsed.projectId,
+        });
 
-      results.push({
-        ...dbFile,
-        ingest: { chunksIndexed: ingest.chunksIndexed },
-      });
+        return {
+          ...resolved,
+          ingest: { chunksIndexed: ingest.chunksIndexed },
+        };
+      },
+    );
+
+    if (didMutateFilesIndex) {
+      revalidateTag(tagUploadsIndex(parsed.projectId), "max");
     }
-
     return jsonOk({ files: results });
   } catch (err) {
     return jsonError(err);

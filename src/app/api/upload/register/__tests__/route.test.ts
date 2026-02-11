@@ -164,7 +164,7 @@ describe("POST /api/upload/register", () => {
     expect(body.files).toHaveLength(2);
     expect(state.publishJSON).toHaveBeenCalledTimes(2);
     expect(state.ingestFile).not.toHaveBeenCalled();
-    expect(state.revalidateTag).toHaveBeenCalledTimes(2);
+    expect(state.revalidateTag).toHaveBeenCalledTimes(1);
     for (const call of state.revalidateTag.mock.calls) {
       expect(call[1]).toBe("max");
     }
