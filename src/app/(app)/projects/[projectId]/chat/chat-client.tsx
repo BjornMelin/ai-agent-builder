@@ -68,20 +68,35 @@ import {
 } from "@/components/ui/select";
 import { toChatTitle } from "@/lib/chat/title";
 import { tryReadJsonErrorMessage } from "@/lib/core/errors";
+import {
+  uploadAcceptList,
+  uploadMaxFiles,
+} from "@/lib/uploads/allowed-mime-types";
 import { uploadProjectFilesFromFiles } from "@/lib/uploads/upload-files.client";
 import {
   type ChatThreadStatus,
   resolveRunStatusAfterChatEnd,
 } from "./run-status";
 
-const CHAT_ATTACHMENT_ACCEPT =
+const CHAT_ATTACHMENT_ACCEPT_FALLBACK =
   ".pdf,.docx,.pptx,.xlsx,.txt,.md," +
   "application/pdf,text/plain,text/markdown," +
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document," +
   "application/vnd.openxmlformats-officedocument.presentationml.presentation," +
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-const CHAT_MAX_ATTACHMENT_FILES = 5;
+const CHAT_ATTACHMENT_ACCEPT =
+  typeof uploadAcceptList === "string" && uploadAcceptList.length > 0
+    ? uploadAcceptList
+    : CHAT_ATTACHMENT_ACCEPT_FALLBACK;
+
+const CHAT_MAX_ATTACHMENT_FILES_FALLBACK = 5;
+const CHAT_MAX_ATTACHMENT_FILES =
+  typeof uploadMaxFiles === "number" &&
+  Number.isFinite(uploadMaxFiles) &&
+  uploadMaxFiles > 0
+    ? uploadMaxFiles
+    : CHAT_MAX_ATTACHMENT_FILES_FALLBACK;
 
 type UserMessageMarker = Readonly<{
   type: "user-message";

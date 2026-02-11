@@ -14,6 +14,34 @@ export const allowedUploadMimeTypes = [
 ] as const;
 
 /**
+ * File extensions accepted by the upload picker UI.
+ *
+ * @remarks
+ * Keep extension and MIME allow-lists aligned.
+ */
+export const allowedUploadExtensions = [
+  ".pdf",
+  ".docx",
+  ".pptx",
+  ".xlsx",
+  ".txt",
+  ".md",
+] as const;
+
+/**
+ * Comma-delimited `accept` value for file-input controls.
+ */
+export const uploadAcceptList = [
+  ...allowedUploadExtensions,
+  ...allowedUploadMimeTypes,
+].join(",");
+
+/**
+ * Maximum number of files accepted per upload action.
+ */
+export const uploadMaxFiles = 5;
+
+/**
  * Provides a set view of allowed upload MIME types for fast membership checks.
  */
 export const allowedUploadMimeTypeSet = new Set<string>(allowedUploadMimeTypes);
