@@ -31,15 +31,25 @@ export const allowedUploadExtensions = [
 /**
  * Comma-delimited `accept` value for file-input controls.
  */
-export const uploadAcceptList = [
+export const defaultUploadAcceptList = [
   ...allowedUploadExtensions,
   ...allowedUploadMimeTypes,
 ].join(",");
 
 /**
+ * Comma-delimited `accept` value for file-input controls.
+ */
+export const uploadAcceptList = defaultUploadAcceptList;
+
+/**
  * Maximum number of files accepted per upload action.
  */
-export const uploadMaxFiles = 5;
+export const defaultUploadMaxFiles = 5;
+
+/**
+ * Maximum number of files accepted per upload action.
+ */
+export const uploadMaxFiles = defaultUploadMaxFiles;
 
 /**
  * Provides a set view of allowed upload MIME types for fast membership checks.
