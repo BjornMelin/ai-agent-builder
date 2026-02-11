@@ -142,7 +142,7 @@ const subscribeToGlobalDrop = (handler: GlobalDropHandler) => {
 
 /** Context for managing file attachments in the prompt input. */
 export interface AttachmentsContext {
-  files: (FileUIPart & { id: string; file?: File | undefined })[];
+  files: (FileUIPart & { id: string; file?: File })[];
   add: (files: File[] | FileList) => void;
   remove: (id: string) => void;
   clear: () => void;
@@ -247,10 +247,10 @@ export function PromptInputProvider(props: PromptInputProviderProps) {
   });
   const clearInput = () => setTextInput("");
 
-  // ----- attachments state (global when wrapped)
-  const [attachmentFiles, setAttachmentFiles] = useState<
-    (FileUIPart & { id: string; file?: File | undefined })[]
-  >([]);
+	// ----- attachments state (global when wrapped)
+	const [attachmentFiles, setAttachmentFiles] = useState<
+	  (FileUIPart & { id: string; file?: File })[]
+	>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const openRef = useRef<() => void>(() => undefined);
 
@@ -447,6 +447,7 @@ export const PromptInputActionAddAttachments = (
 export interface PromptInputMessage {
   text: string;
   files: FileUIPart[];
+  /** Original File objects for upload; only populated when File references are available. */
   rawFiles: File[];
 }
 
@@ -519,10 +520,10 @@ export const PromptInput = (props: PromptInputProps) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
 
-  // ----- Local attachments (only used when no provider)
-  const [items, setItems] = useState<
-    (FileUIPart & { id: string; file?: File | undefined })[]
-  >([]);
+	// ----- Local attachments (only used when no provider)
+	const [items, setItems] = useState<
+	  (FileUIPart & { id: string; file?: File })[]
+	>([]);
   const files = usingProvider ? controller.attachments.files : items;
 
   // ----- Local referenced sources (always local to PromptInput)
@@ -619,17 +620,17 @@ export const PromptInput = (props: PromptInputProps) => {
     return capped;
   };
 
-  const addLocal = (fileList: File[] | FileList) => {
-    setItems((prev) => {
+	const addLocal = (fileList: File[] | FileList) => {
+	  setItems((prev) => {
       const capped = validateFiles(fileList, prev.length);
       if (capped.length === 0) {
         return prev;
       }
-      const next: (FileUIPart & { id: string; file?: File | undefined })[] = [];
-      for (const file of capped) {
-        next.push({
-          file,
-          filename: file.name,
+	      const next: (FileUIPart & { id: string; file?: File })[] = [];
+	      for (const file of capped) {
+	        next.push({
+	          file,
+	          filename: file.name,
           id: nanoid(),
           mediaType: file.type,
           type: "file",

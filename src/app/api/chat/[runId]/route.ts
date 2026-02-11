@@ -46,6 +46,8 @@ const bodySchema = z
  * @param context - Route params.
  * @returns JSON ok or JSON error.
  * @throws AppError - When the request body is invalid.
+ * @throws AppError - With code "unsupported_file_type" when an attachment media type is rejected.
+ * @throws AppError - With code "bad_request" when an attachment URL is invalid.
  * @throws AppError - With code "not_found" when the chat session cannot be found.
  * @throws AppError - With code "conflict" when the chat session is no longer active.
  * @throws AppError - With code "forbidden" when the session's project is not accessible.
