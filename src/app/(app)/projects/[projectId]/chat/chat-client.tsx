@@ -67,7 +67,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toChatTitle } from "@/lib/chat/title";
-import { parseApiErrorMessage } from "@/lib/net/parse-api-error-message";
+import { tryReadJsonErrorMessage } from "@/lib/core/errors";
 import { uploadProjectFilesFromFiles } from "@/lib/uploads/upload-files.client";
 import {
   type ChatThreadStatus,
@@ -524,10 +524,9 @@ export function ProjectChatClient(
       });
 
       if (!response.ok) {
-        const errorMessage = await parseApiErrorMessage(
-          response,
-          "Failed to send message.",
-        );
+        const errorMessage =
+          (await tryReadJsonErrorMessage(response)) ??
+          "Failed to send message.";
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
         if (response.status === 404 || response.status === 409) {
           setRunStatus(null);

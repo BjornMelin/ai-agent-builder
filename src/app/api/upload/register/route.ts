@@ -124,6 +124,7 @@ async function deleteUploadedBlob(url: string): Promise<void> {
  *
  * @param req - HTTP request.
  * @returns JSON response with registered file metadata.
+ * @throws AppError - Thrown when authorization, validation, blob fetch, or ingestion fails.
  */
 export async function POST(
   req: Request,
@@ -212,12 +213,23 @@ export async function POST(
           err,
         );
       }
+      if (bytes.byteLength > budgets.maxUploadBytes) {
+        throw new AppError(
+          "file_too_large",
+          413,
+          `File too large (max ${budgets.maxUploadBytes} bytes).`,
+        );
+      }
 
       const sha256 = sha256Hex(bytes);
 
       const existing = await getProjectFileBySha256(parsed.projectId, sha256);
       if (existing) {
-        await deleteUploadedBlob(blob.url);
+        // Only clean up when this register call refers to an extra duplicate blob.
+        // If the URL matches the canonical stored key, deleting would break the DB reference.
+        if (existing.storageKey !== blob.url) {
+          await deleteUploadedBlob(blob.url);
+        }
         results.push(existing);
         continue;
       }

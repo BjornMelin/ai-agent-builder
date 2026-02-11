@@ -3,7 +3,7 @@
 import { upload } from "@vercel/blob/client";
 import type { FileUIPart } from "ai";
 
-import { parseApiErrorMessage } from "@/lib/net/parse-api-error-message";
+import { tryReadJsonErrorMessage } from "@/lib/core/errors";
 import { allowedUploadMimeTypeSet } from "@/lib/uploads/allowed-mime-types";
 import { sanitizeFilename } from "@/lib/uploads/filename";
 
@@ -77,6 +77,8 @@ async function mapWithConcurrency<T, R>(
  *
  * @param input - Upload input.
  * @returns Hosted `FileUIPart[]` pointing at stored Blob URLs.
+ * @throws Error - Thrown when a file has an unsupported MIME type.
+ * @throws Error - Thrown when Vercel Blob upload or `POST /api/upload/register` fails.
  */
 export async function uploadProjectFilesFromFiles(
   input: Readonly<{
@@ -127,9 +129,10 @@ export async function uploadProjectFilesFromFiles(
   });
 
   if (!response.ok) {
-    throw new Error(
-      await parseApiErrorMessage(response, "Failed to upload attachments."),
-    );
+    const message =
+      (await tryReadJsonErrorMessage(response)) ??
+      "Failed to upload attachments.";
+    throw new Error(message);
   }
 
   const json = await response.json().catch(() => null);

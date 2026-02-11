@@ -84,7 +84,7 @@ export async function POST(
     }
 
     const safeFiles = parsed.files?.map((file) => {
-      const mediaType = file.mediaType.trim();
+      const mediaType = file.mediaType.trim().toLowerCase();
       if (!allowedUploadMimeTypeSet.has(mediaType)) {
         throw new AppError(
           "unsupported_file_type",
@@ -98,7 +98,7 @@ export async function POST(
         // to this chat session's project prefix.
         const url = parseTrustedProjectUploadBlobUrl({
           projectId: thread.projectId,
-          urlString: file.url,
+          urlString: file.url.trim(),
         });
 
         return { ...file, mediaType, url: url.toString() };

@@ -13,4 +13,7 @@ export const allowedUploadMimeTypes = [
   "text/markdown",
 ] as const;
 
+/**
+ * Provides a set view of allowed upload MIME types for fast membership checks.
+ */
 export const allowedUploadMimeTypeSet = new Set<string>(allowedUploadMimeTypes);

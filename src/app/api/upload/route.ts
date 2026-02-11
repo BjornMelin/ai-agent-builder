@@ -39,6 +39,7 @@ function safeParseClientPayload(payload: string | null): { projectId: string } {
  *
  * @param req - HTTP request.
  * @returns JSON response with a client token.
+ * @throws AppError - Thrown when request validation fails or the project is not found.
  */
 export async function POST(
   req: Request,
@@ -58,7 +59,7 @@ export async function POST(
 
     const result = await handleUpload({
       body: body as HandleUploadBody,
-      onBeforeGenerateToken: async (pathname, clientPayload, _multipart) => {
+      onBeforeGenerateToken: async (pathname, clientPayload) => {
         const { projectId } = safeParseClientPayload(clientPayload);
         assertValidProjectUploadPathname({ pathname, projectId });
 
