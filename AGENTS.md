@@ -75,7 +75,7 @@ bun run fetch:models           # Update AI model catalog (requires AI_GATEWAY_AP
 
 - Project chat supports **document attachments** (PDF/DOCX/PPTX/XLSX/TXT/MD) rendered using vendored AI Elements `attachments` (inline variant).
 - The UI uses **upload-before-send** via `POST /api/upload` (sync ingest by default) and sends hosted Blob URLs as AI SDK `FileUIPart` values.
-- The composer enforces `maxFileSize = budgets.maxUploadBytes` (default 25MB) and `maxFiles = 5` per message.
+- The composer enforces `maxFileSize = budgets.maxUploadBytes` (default 25 MB) and `maxFiles = 5` per message.
 - Follow-ups during active durable chat sessions use `POST /api/chat/:runId` and accept optional `files` alongside `message` (`messageId` required).
 - Document file parts are persisted in UI message history; not passed to the model directly; grounding relies on ingestion + retrieval (see `docs/architecture/spec/SPEC-0029-chat-attachments.md`).
 

@@ -6,7 +6,7 @@ Version: 0.1
 Date: 2026-02-03
 Supersedes: []
 Superseded-by: []
-Related: [ADR-0005, ADR-0006, ADR-0011, ADR-0021]
+Related: [ADR-0005, ADR-0006, ADR-0011, ADR-0021, ADR-0030]
 Tags: [architecture, reliability, workflows]
 References:
   - [Vercel Workflow](https://vercel.com/docs/workflow)

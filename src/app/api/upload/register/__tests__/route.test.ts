@@ -200,6 +200,57 @@ describe("POST /api/upload/register", () => {
     debugSpy.mockRestore();
   });
 
+  it("rejects when the downloaded blob exceeds the upload budget (even if request size is small)", async () => {
+    const POST = await loadRoute();
+
+    state.budgets.maxUploadBytes = 3;
+    state.fetch.mockResolvedValue(
+      new Response(new Blob(["abcd"], { type: "text/plain" }), { status: 200 }),
+    );
+
+    const blob = {
+      contentType: "text/plain",
+      originalName: "alpha.txt",
+      size: 1, // falsified/smaller than reality
+      url: `https://1.public.blob.vercel-storage.com/projects/${projectId}/uploads/alpha.txt`,
+    };
+    const res = await POST(buildRequest({ blobs: [blob], projectId }));
+
+    expect(res.status).toBe(413);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: "file_too_large" },
+    });
+    expect(state.upsertProjectFile).not.toHaveBeenCalled();
+    expect(state.ingestFile).not.toHaveBeenCalled();
+  });
+
+  it("rejects when Content-Length exceeds the upload budget", async () => {
+    const POST = await loadRoute();
+
+    state.budgets.maxUploadBytes = 1;
+    state.fetch.mockResolvedValue(
+      new Response(new Blob(["ab"], { type: "text/plain" }), {
+        headers: { "content-length": "2" },
+        status: 200,
+      }),
+    );
+
+    const blob = {
+      contentType: "text/plain",
+      originalName: "alpha.txt",
+      size: 1,
+      url: `https://1.public.blob.vercel-storage.com/projects/${projectId}/uploads/alpha.txt`,
+    };
+    const res = await POST(buildRequest({ blobs: [blob], projectId }));
+
+    expect(res.status).toBe(413);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: "file_too_large" },
+    });
+    expect(state.upsertProjectFile).not.toHaveBeenCalled();
+    expect(state.ingestFile).not.toHaveBeenCalled();
+  });
+
   it("returns an existing file and deletes the uploaded blob", async () => {
     const POST = await loadRoute();
 

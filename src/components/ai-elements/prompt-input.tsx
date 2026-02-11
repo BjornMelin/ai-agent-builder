@@ -786,10 +786,14 @@ export const PromptInput = (props: PromptInputProps) => {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = () => resolve(null);
+        reader.onerror = () => {
+          console.warn("[PromptInput] FileReader error converting blob URL");
+          resolve(null);
+        };
         reader.readAsDataURL(blob);
       });
     } catch {
+      console.warn("[PromptInput] Failed to convert blob URL to data URL");
       return null;
     }
   };

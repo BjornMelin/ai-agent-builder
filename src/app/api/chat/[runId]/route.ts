@@ -11,6 +11,8 @@ import {
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
+import { allowedUploadMimeTypeSet } from "@/lib/uploads/allowed-mime-types";
+import { parseTrustedProjectUploadBlobUrl } from "@/lib/uploads/trusted-blob-url.server";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
 
 const filePartSchema = z.strictObject({
@@ -81,12 +83,38 @@ export async function POST(
       throw new AppError("forbidden", 403, "Forbidden.");
     }
 
+    const safeFiles = parsed.files?.map((file) => {
+      const mediaType = file.mediaType.trim();
+      if (!allowedUploadMimeTypeSet.has(mediaType)) {
+        throw new AppError(
+          "unsupported_file_type",
+          400,
+          `Unsupported file type: ${mediaType}`,
+        );
+      }
+
+      try {
+        // Ensures attachments are hosted on trusted Vercel Blob URLs and scoped
+        // to this chat session's project prefix.
+        const url = parseTrustedProjectUploadBlobUrl({
+          projectId: thread.projectId,
+          urlString: file.url,
+        });
+
+        return { ...file, mediaType, url: url.toString() };
+      } catch (err) {
+        // `parseTrustedProjectUploadBlobUrl` throws `blob_fetch_failed` (502) for
+        // fetch-time flows. Here it's user input validation; return 400 instead.
+        throw new AppError("bad_request", 400, "Invalid attachment URL.", err);
+      }
+    });
+
     await appendChatMessages({
       messages: [
         {
           id: parsed.messageId,
           parts: [
-            ...(parsed.files ?? []),
+            ...(safeFiles ?? []),
             ...(parsed.message ? [{ text: parsed.message, type: "text" }] : []),
           ],
           role: "user",
@@ -96,7 +124,7 @@ export async function POST(
     });
 
     await chatMessageHook.resume(params.runId, {
-      ...(parsed.files?.length ? { files: parsed.files } : {}),
+      ...(safeFiles?.length ? { files: safeFiles } : {}),
       ...(parsed.message ? { message: parsed.message } : {}),
       messageId: parsed.messageId,
     });

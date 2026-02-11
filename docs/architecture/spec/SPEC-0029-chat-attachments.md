@@ -75,7 +75,7 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
    - uploads the original `File` objects to Vercel Blob using `@vercel/blob/client upload()` with `handleUploadUrl: "/api/upload"`
    - registers the uploaded blobs with `POST /api/upload/register` (which persists metadata and ingests)
 3. The register response is mapped back to `FileUIPart[]` where:
-   - `url` is the hosted Blob URL (no base64/data URL payloads)
+   - `url` is the hosted Blob URL (no base64/data URL payloads).
    - `filename` and `mediaType` are preserved
 
 Rationale:

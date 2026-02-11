@@ -70,8 +70,8 @@ plan” without redoing analysis.
 
 ### Journey B: Iterate on an existing project
 
-1. User uploads additional material and/or attaches documents in chat and adds
-   instructions in chat.
+1. User uploads additional material, attaches documents, and adds instructions
+   in chat.
 2. User regenerates or refines a subset of artifacts.
 3. System versions artifacts and updates export output deterministically.
 

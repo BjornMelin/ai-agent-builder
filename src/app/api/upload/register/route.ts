@@ -7,6 +7,7 @@ import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { tagUploadsIndex } from "@/lib/cache/tags";
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError, type JsonError } from "@/lib/core/errors";
+import { log } from "@/lib/core/log";
 import { sha256Hex } from "@/lib/core/sha256";
 import {
   getProjectFileBySha256,
@@ -46,6 +47,64 @@ type RegisterUploadResponse = Readonly<{
   files: readonly (ProjectFileDto &
     Readonly<{ ingest?: { chunksIndexed: number } }>)[]; // JSON-safe
 }>;
+
+function parseContentLengthHeader(res: Response): number | null {
+  const raw = res.headers.get("content-length");
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.floor(n);
+}
+
+async function readResponseBytesWithLimit(
+  res: Response,
+  maxBytes: number,
+): Promise<Uint8Array> {
+  // Prefer streaming to avoid buffering unexpected response sizes.
+  const reader = res.body?.getReader();
+  if (!reader) {
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    if (bytes.byteLength > maxBytes) {
+      throw new AppError(
+        "file_too_large",
+        413,
+        `File too large (max ${maxBytes} bytes).`,
+      );
+    }
+    return bytes;
+  }
+
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    total += value.byteLength;
+    if (total > maxBytes) {
+      try {
+        await reader.cancel();
+      } catch {
+        // Best-effort cancel; size enforcement is the important part.
+      }
+      throw new AppError(
+        "file_too_large",
+        413,
+        `File too large (max ${maxBytes} bytes).`,
+      );
+    }
+    chunks.push(value);
+  }
+
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
+}
 
 async function deleteUploadedBlob(url: string): Promise<void> {
   try {
@@ -94,6 +153,9 @@ export async function POST(
         );
       }
 
+      // Defense-in-depth. The real size is validated after fetch (and streamed
+      // with an explicit max byte limit), but this can reject obviously invalid
+      // requests early.
       if (blob.size > budgets.maxUploadBytes) {
         throw new AppError(
           "file_too_large",
@@ -127,7 +189,30 @@ export async function POST(
         );
       }
 
-      const bytes = new Uint8Array(await res.arrayBuffer());
+      const contentLength = parseContentLengthHeader(res);
+      if (contentLength !== null && contentLength > budgets.maxUploadBytes) {
+        throw new AppError(
+          "file_too_large",
+          413,
+          `File too large (max ${budgets.maxUploadBytes} bytes).`,
+        );
+      }
+
+      let bytes: Uint8Array;
+      try {
+        bytes = await readResponseBytesWithLimit(res, budgets.maxUploadBytes);
+      } catch (err) {
+        if (err instanceof AppError) {
+          throw err;
+        }
+        throw new AppError(
+          "blob_fetch_failed",
+          502,
+          "Failed to read blob.",
+          err,
+        );
+      }
+
       const sha256 = sha256Hex(bytes);
 
       const existing = await getProjectFileBySha256(parsed.projectId, sha256);
@@ -166,10 +251,20 @@ export async function POST(
           if (env.runtime.isVercel) {
             throw err;
           }
-          console.debug(
-            "[upload/register] QStash unavailable, falling back to inline ingestion",
-            err,
-          );
+          if (process.env.NODE_ENV !== "production") {
+            log.debug("upload_register_qstash_unavailable_falling_back", {
+              err:
+                err instanceof Error
+                  ? {
+                      name: err.name,
+                      ...(typeof (err as unknown as { code?: unknown }).code ===
+                      "string"
+                        ? { code: (err as unknown as { code: string }).code }
+                        : {}),
+                    }
+                  : { kind: typeof err },
+            });
+          }
         }
       }
 

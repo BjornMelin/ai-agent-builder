@@ -170,7 +170,7 @@ describe("POST /api/chat/:runId", () => {
         filename: "report.pdf",
         mediaType: "application/pdf",
         type: "file",
-        url: "https://example.com/report.pdf",
+        url: "https://1.public.blob.vercel-storage.com/projects/proj_1/uploads/report.pdf",
       },
     ] as const;
 
@@ -193,7 +193,7 @@ describe("POST /api/chat/:runId", () => {
               filename: "report.pdf",
               mediaType: "application/pdf",
               type: "file",
-              url: "https://example.com/report.pdf",
+              url: "https://1.public.blob.vercel-storage.com/projects/proj_1/uploads/report.pdf",
             },
             { text: "hello", type: "text" },
           ],
@@ -207,6 +207,93 @@ describe("POST /api/chat/:runId", () => {
       message: "hello",
       messageId: "msg_1",
     });
+  });
+
+  it("rejects when an attachment URL is not a trusted project blob URL", async () => {
+    const POST = await loadRoute();
+
+    const res = await POST(
+      new Request("http://localhost/api/chat/run_1", {
+        body: JSON.stringify({
+          files: [
+            {
+              filename: "report.pdf",
+              mediaType: "application/pdf",
+              type: "file",
+              url: "https://example.com/report.pdf",
+            },
+          ],
+          messageId: "msg_1",
+        }),
+        method: "POST",
+      }),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: "bad_request" },
+    });
+    expect(state.appendChatMessages).not.toHaveBeenCalled();
+    expect(state.resume).not.toHaveBeenCalled();
+  });
+
+  it("rejects when an attachment URL belongs to a different project prefix", async () => {
+    const POST = await loadRoute();
+
+    const res = await POST(
+      new Request("http://localhost/api/chat/run_1", {
+        body: JSON.stringify({
+          files: [
+            {
+              filename: "report.pdf",
+              mediaType: "application/pdf",
+              type: "file",
+              url: "https://1.public.blob.vercel-storage.com/projects/proj_2/uploads/report.pdf",
+            },
+          ],
+          messageId: "msg_1",
+        }),
+        method: "POST",
+      }),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: "bad_request" },
+    });
+    expect(state.appendChatMessages).not.toHaveBeenCalled();
+    expect(state.resume).not.toHaveBeenCalled();
+  });
+
+  it("rejects when an attachment media type is not supported", async () => {
+    const POST = await loadRoute();
+
+    const res = await POST(
+      new Request("http://localhost/api/chat/run_1", {
+        body: JSON.stringify({
+          files: [
+            {
+              filename: "image.png",
+              mediaType: "image/png",
+              type: "file",
+              url: "https://1.public.blob.vercel-storage.com/projects/proj_1/uploads/image.png",
+            },
+          ],
+          messageId: "msg_1",
+        }),
+        method: "POST",
+      }),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toMatchObject({
+      error: { code: "unsupported_file_type" },
+    });
+    expect(state.appendChatMessages).not.toHaveBeenCalled();
+    expect(state.resume).not.toHaveBeenCalled();
   });
 
   it("sets status to waiting when the message is /done", async () => {

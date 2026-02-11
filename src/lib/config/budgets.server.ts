@@ -48,6 +48,10 @@ export type BudgetConfig = Readonly<{
 
   /**
    * Maximum upload size accepted by the API (bytes).
+   *
+   * @remarks
+   * This is enforced both on request metadata (defense-in-depth) and on the
+   * actual downloaded bytes when registering uploaded blobs.
    */
   maxUploadBytes: number;
 
