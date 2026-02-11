@@ -247,10 +247,10 @@ export function PromptInputProvider(props: PromptInputProviderProps) {
   });
   const clearInput = () => setTextInput("");
 
-	// ----- attachments state (global when wrapped)
-	const [attachmentFiles, setAttachmentFiles] = useState<
-	  (FileUIPart & { id: string; file?: File })[]
-	>([]);
+  // ----- attachments state (global when wrapped)
+  const [attachmentFiles, setAttachmentFiles] = useState<
+    (FileUIPart & { id: string; file?: File })[]
+  >([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const openRef = useRef<() => void>(() => undefined);
 
@@ -520,10 +520,10 @@ export const PromptInput = (props: PromptInputProps) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
 
-	// ----- Local attachments (only used when no provider)
-	const [items, setItems] = useState<
-	  (FileUIPart & { id: string; file?: File })[]
-	>([]);
+  // ----- Local attachments (only used when no provider)
+  const [items, setItems] = useState<
+    (FileUIPart & { id: string; file?: File })[]
+  >([]);
   const files = usingProvider ? controller.attachments.files : items;
 
   // ----- Local referenced sources (always local to PromptInput)
@@ -620,17 +620,17 @@ export const PromptInput = (props: PromptInputProps) => {
     return capped;
   };
 
-	const addLocal = (fileList: File[] | FileList) => {
-	  setItems((prev) => {
+  const addLocal = (fileList: File[] | FileList) => {
+    setItems((prev) => {
       const capped = validateFiles(fileList, prev.length);
       if (capped.length === 0) {
         return prev;
       }
-	      const next: (FileUIPart & { id: string; file?: File })[] = [];
-	      for (const file of capped) {
-	        next.push({
-	          file,
-	          filename: file.name,
+      const next: (FileUIPart & { id: string; file?: File })[] = [];
+      for (const file of capped) {
+        next.push({
+          file,
+          filename: file.name,
           id: nanoid(),
           mediaType: file.type,
           type: "file",
@@ -788,13 +788,11 @@ export const PromptInput = (props: PromptInputProps) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.onerror = () => {
-          console.warn("[PromptInput] FileReader error converting blob URL");
           resolve(null);
         };
         reader.readAsDataURL(blob);
       });
     } catch {
-      console.warn("[PromptInput] Failed to convert blob URL to data URL");
       return null;
     }
   };

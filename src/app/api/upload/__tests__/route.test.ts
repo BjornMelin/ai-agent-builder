@@ -63,6 +63,21 @@ async function loadRoute() {
   return mod.POST;
 }
 
+type HandleUploadCall = {
+  onBeforeGenerateToken?: (
+    pathname: string,
+    clientPayload: string | null,
+    multipart: boolean,
+  ) => Promise<Record<string, unknown>>;
+};
+
+function getOnBeforeGenerateToken(): HandleUploadCall["onBeforeGenerateToken"] {
+  const call = state.handleUpload.mock.calls[0]?.[0] as
+    | HandleUploadCall
+    | undefined;
+  return call?.onBeforeGenerateToken;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
@@ -113,19 +128,12 @@ describe("POST /api/upload", () => {
       }),
     );
 
-    const call = state.handleUpload.mock.calls[0]?.[0] as
-      | undefined
-      | {
-          onBeforeGenerateToken?: (
-            pathname: string,
-            clientPayload: string | null,
-            multipart: boolean,
-          ) => Promise<Record<string, unknown>>;
-        };
+    const onBeforeGenerateToken = getOnBeforeGenerateToken();
+    if (!onBeforeGenerateToken) {
+      throw new Error("Missing onBeforeGenerateToken.");
+    }
 
-    expect(call?.onBeforeGenerateToken).toBeTypeOf("function");
-
-    const opts = await call?.onBeforeGenerateToken?.(
+    const opts = await onBeforeGenerateToken(
       `projects/${projectId}/uploads/alpha.txt`,
       JSON.stringify({ projectId }),
       false,
@@ -156,18 +164,13 @@ describe("POST /api/upload", () => {
       }),
     );
 
-    const call = state.handleUpload.mock.calls[0]?.[0] as
-      | undefined
-      | {
-          onBeforeGenerateToken?: (
-            pathname: string,
-            clientPayload: string | null,
-            multipart: boolean,
-          ) => Promise<Record<string, unknown>>;
-        };
+    const onBeforeGenerateToken = getOnBeforeGenerateToken();
+    if (!onBeforeGenerateToken) {
+      throw new Error("Missing onBeforeGenerateToken.");
+    }
 
     await expect(
-      call?.onBeforeGenerateToken?.(
+      onBeforeGenerateToken(
         `projects/${projectId}/uploads/alpha.txt`,
         "not-json",
         false,
@@ -189,18 +192,13 @@ describe("POST /api/upload", () => {
       }),
     );
 
-    const call = state.handleUpload.mock.calls[0]?.[0] as
-      | undefined
-      | {
-          onBeforeGenerateToken?: (
-            pathname: string,
-            clientPayload: string | null,
-            multipart: boolean,
-          ) => Promise<Record<string, unknown>>;
-        };
+    const onBeforeGenerateToken = getOnBeforeGenerateToken();
+    if (!onBeforeGenerateToken) {
+      throw new Error("Missing onBeforeGenerateToken.");
+    }
 
     await expect(
-      call?.onBeforeGenerateToken?.(
+      onBeforeGenerateToken(
         `projects/${projectId}/not-uploads/alpha.txt`,
         JSON.stringify({ projectId }),
         false,
@@ -222,17 +220,10 @@ describe("POST /api/upload", () => {
       }),
     );
 
-    const call = state.handleUpload.mock.calls[0]?.[0] as
-      | undefined
-      | {
-          onBeforeGenerateToken?: (
-            pathname: string,
-            clientPayload: string | null,
-            multipart: boolean,
-          ) => Promise<Record<string, unknown>>;
-        };
-
-    expect(call?.onBeforeGenerateToken).toBeTypeOf("function");
+    const onBeforeGenerateToken = getOnBeforeGenerateToken();
+    if (!onBeforeGenerateToken) {
+      throw new Error("Missing onBeforeGenerateToken.");
+    }
 
     const invalid = [
       `projects/${projectId}/uploads/a/b`,
@@ -242,11 +233,7 @@ describe("POST /api/upload", () => {
 
     for (const pathname of invalid) {
       await expect(
-        call?.onBeforeGenerateToken?.(
-          pathname,
-          JSON.stringify({ projectId }),
-          false,
-        ),
+        onBeforeGenerateToken(pathname, JSON.stringify({ projectId }), false),
       ).rejects.toMatchObject({ code: "bad_request" });
     }
   });
