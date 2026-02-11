@@ -302,18 +302,27 @@ export async function POST(
             if (env.runtime.isVercel) {
               throw err;
             }
-            if (process.env.NODE_ENV !== "production") {
+            const errForLog =
+              err instanceof Error
+                ? {
+                    name: err.name,
+                    ...(typeof (err as unknown as { code?: unknown }).code ===
+                    "string"
+                      ? { code: (err as unknown as { code: string }).code }
+                      : {}),
+                  }
+                : { kind: typeof err };
+
+            // Non-Vercel runs intentionally fall back to inline ingestion.
+            // Still log at warn-level in production so self-hosted deployments
+            // don't silently lose async ingestion.
+            if (process.env.NODE_ENV === "production") {
+              log.warn("upload_register_qstash_unavailable_falling_back", {
+                err: errForLog,
+              });
+            } else {
               log.debug("upload_register_qstash_unavailable_falling_back", {
-                err:
-                  err instanceof Error
-                    ? {
-                        name: err.name,
-                        ...(typeof (err as unknown as { code?: unknown })
-                          .code === "string"
-                          ? { code: (err as unknown as { code: string }).code }
-                          : {}),
-                      }
-                    : { kind: typeof err },
+                err: errForLog,
               });
             }
           }

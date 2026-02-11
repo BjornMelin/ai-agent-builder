@@ -577,7 +577,7 @@ export function ProjectChatClient(
             ? error.message
             : "Failed to upload attachments.";
         setComposerError(messageText);
-        throw new Error(messageText);
+        return;
       } finally {
         setIsUploadingAttachments(false);
       }

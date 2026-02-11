@@ -80,7 +80,6 @@ function getOnBeforeGenerateToken(): HandleUploadCall["onBeforeGenerateToken"] {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.resetModules();
 
   state.budgets.maxUploadBytes = 1024;
   state.requireAppUserApi.mockResolvedValue({ id: "user" });

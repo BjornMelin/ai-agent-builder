@@ -13,6 +13,11 @@ type RegisteredProjectFile = Readonly<{
   storageKey: string;
 }>;
 
+function truncateForError(value: string, max: number): string {
+  if (value.length <= max) return value;
+  return `${value.slice(0, Math.max(0, max - 1))}\u2026`;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -64,6 +69,11 @@ async function mapWithConcurrency<T, R>(
   const workers = Array.from({ length: Math.min(limit, items.length) }, () =>
     worker(),
   );
+  // Note: If one worker throws, Promise.all rejects while other in-flight workers
+  // may still finish. In this upload flow, any orphaned blobs are tolerated
+  // because the register route's SHA256 dedup prevents duplicate records on
+  // re-upload. If we need stronger guarantees, add cooperative cancellation
+  // (e.g. AbortSignal) and have `fn` honor it.
   await Promise.all(workers);
   return results;
 }
@@ -136,8 +146,36 @@ export async function uploadProjectFilesFromFiles(
     throw new Error(message);
   }
 
-  const json = await response.json().catch(() => null);
-  const registered = parseRegisterResponse(json);
+  let json: unknown;
+  try {
+    json = await response.json();
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown JSON parse error.";
+    throw new Error(
+      `Failed to parse upload register response (malformed JSON): ${message}`,
+    );
+  }
+
+  let registered: RegisteredProjectFile[];
+  try {
+    registered = parseRegisterResponse(json);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error.";
+    const payloadPreview = truncateForError(
+      (() => {
+        try {
+          return JSON.stringify(json);
+        } catch {
+          return String(json);
+        }
+      })(),
+      500,
+    );
+    throw new Error(
+      `Failed to parse upload register response via parseRegisterResponse: ${message}. payload=${payloadPreview}`,
+    );
+  }
 
   return registered.map(
     (file): FileUIPart => ({

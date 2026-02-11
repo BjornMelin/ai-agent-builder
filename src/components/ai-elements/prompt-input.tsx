@@ -447,7 +447,7 @@ export const PromptInputActionAddAttachments = (
 export interface PromptInputMessage {
   text: string;
   files: FileUIPart[];
-  /** Original File objects for upload; only populated when File references are available. */
+  /** Original File objects for upload; empty when File references are unavailable. */
   rawFiles: File[];
 }
 

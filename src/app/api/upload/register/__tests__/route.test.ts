@@ -284,6 +284,10 @@ describe("POST /api/upload/register", () => {
     const body = await res.json();
     expect(body.files).toEqual([existing]);
     expect(state.del).toHaveBeenCalledTimes(1);
+    expect(state.del).toHaveBeenCalledWith(
+      blob.url,
+      expect.objectContaining({ token: "blob-token" }),
+    );
     expect(state.upsertProjectFile).not.toHaveBeenCalled();
     expect(state.ingestFile).not.toHaveBeenCalled();
     expect(state.revalidateTag).not.toHaveBeenCalled();
