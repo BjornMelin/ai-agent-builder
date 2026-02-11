@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.13](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.12...ai-agent-builder-v0.1.13) (2026-02-11)
+
+
+### Features
+
+* ai chat attachments and file uploads + Vercel blob handling ([8abf722](https://github.com/BjornMelin/ai-agent-builder/commit/8abf7227148257ca6df21acb3e3b9e63e2e895e6))
+* **chat:** add document attachments support in Project Chat ([e114e27](https://github.com/BjornMelin/ai-agent-builder/commit/e114e27aa9c082a64b80be4f08b9b4a52ffd1c3a))
+* **chat:** enhance file upload configuration ([4a51f5c](https://github.com/BjornMelin/ai-agent-builder/commit/4a51f5cfd6f1e535d56ca1b6f1f5615a26338e07))
+* **chat:** enhance file upload validation and error handling ([d5f1151](https://github.com/BjornMelin/ai-agent-builder/commit/d5f115144cbd6844074fba1bf3b42373220c7ba6))
+* **upload:** enhance upload path validation and error handling ([94de85d](https://github.com/BjornMelin/ai-agent-builder/commit/94de85dc664bff5a0ea437db8f631945581ceb27))
+* **uploads:** blob client uploads + register/ingest endpoint ([bdfdb61](https://github.com/BjornMelin/ai-agent-builder/commit/bdfdb61e0223414c7424b1c4baea2fc805e8a8e8))
+
+
+### Bug Fixes
+
+* **attachments:** address PR review feedback ([dc30240](https://github.com/BjornMelin/ai-agent-builder/commit/dc3024043f9e2d03e315bde77a2eb68e62461cc2))
+* **chat:** avoid duplicate composer error surfacing ([77a3939](https://github.com/BjornMelin/ai-agent-builder/commit/77a3939f0971524d3e93af56789d0c12f6c719bc))
+* **chat:** validate marker file parts before rebuilding user message ([fad2b83](https://github.com/BjornMelin/ai-agent-builder/commit/fad2b831c4de905f9f38a777bdf75335d2ebeba7))
+* **prompt-input:** prefer source File for data-url conversion ([332af5d](https://github.com/BjornMelin/ai-agent-builder/commit/332af5d333d8b80ed24109a0a28c148ea39660af))
+* **upload:** address review nits ([c613d8c](https://github.com/BjornMelin/ai-agent-builder/commit/c613d8c5bbf3c961e8bacf93c52e5a2a46c48c9a))
+* **uploads:** address PR review feedback ([58533e6](https://github.com/BjornMelin/ai-agent-builder/commit/58533e697a721f0da6c740a6b78d1367bb4be019))
+
+
+### Performance Improvements
+
+* **upload:** parallelize register and reduce revalidation ([cf77484](https://github.com/BjornMelin/ai-agent-builder/commit/cf77484f9bfe16261e733576bfe5e779281b2c05))
+
 ## [0.1.12](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.11...ai-agent-builder-v0.1.12) (2026-02-10)
 
 
