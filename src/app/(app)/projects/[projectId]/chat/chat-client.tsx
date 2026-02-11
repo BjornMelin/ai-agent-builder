@@ -249,7 +249,7 @@ function reconstructMessages(
 /**
  * Streaming multi-turn chat client for a project.
  *
- * @param props - Props for rendering a chat thread transcript and starting new sessions.
+ * @param props - Configuration including projectId, threads, initialThread, initialMessages, enabledModes, defaultModeId, and maxAttachmentBytes.
  * @returns The chat UI for the project.
  */
 export function ProjectChatClient(
