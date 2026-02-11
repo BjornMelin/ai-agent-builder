@@ -144,6 +144,8 @@ export async function POST(
     const results: (ProjectFileDto &
       Readonly<{ ingest?: { chunksIndexed: number } }>)[] = [];
 
+    // Intentionally process sequentially to cap peak memory usage (we buffer each
+    // file to compute sha256) and avoid saturating the upstream Blob fetch path.
     for (const blob of parsed.blobs) {
       const contentType = blob.contentType.trim();
       if (!allowedUploadMimeTypeSet.has(contentType)) {
@@ -287,7 +289,6 @@ export async function POST(
         name: safeName,
         projectId: parsed.projectId,
       });
-      revalidateTag(tagUploadsIndex(parsed.projectId), "max");
 
       results.push({
         ...dbFile,

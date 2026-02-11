@@ -196,7 +196,7 @@ describe("POST /api/upload/register", () => {
     const body = await res.json();
     expect(body.files[0].ingest?.chunksIndexed).toBe(2);
     expect(state.ingestFile).toHaveBeenCalledTimes(1);
-    expect(state.revalidateTag).toHaveBeenCalledTimes(2);
+    expect(state.revalidateTag).toHaveBeenCalledTimes(1);
     debugSpy.mockRestore();
   });
 

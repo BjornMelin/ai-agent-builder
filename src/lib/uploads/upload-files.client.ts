@@ -92,7 +92,8 @@ export async function uploadProjectFilesFromFiles(
   for (const file of input.files) {
     const mimeType = file.type || "application/octet-stream";
     if (!allowedUploadMimeTypeSet.has(mimeType)) {
-      throw new Error(`Unsupported file type: ${mimeType}`);
+      const name = file.name?.trim() || "unnamed file";
+      throw new Error(`Unsupported file type for "${name}": ${mimeType}`);
     }
   }
 
