@@ -168,7 +168,8 @@ flowchart LR
   WF --> VECTOR[(Upstash Vector)]
   WF --> REDIS[(Upstash Redis)]
 
-  Upload[POST /api/upload<br/>enqueue to QStash] --> Q[QStash<br/>POST /api/jobs/ingest-file]
+  UploadToken[POST /api/upload<br/>Blob token exchange] --> Register[POST /api/upload/register<br/>register + ingest (or enqueue)]
+  Register --> Q[QStash<br/>POST /api/jobs/ingest-file]
   Q --> Ingest[POST /api/jobs/ingest-file]
   Ingest --> DB
   Ingest --> VECTOR

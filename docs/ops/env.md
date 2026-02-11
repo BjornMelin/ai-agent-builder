@@ -27,7 +27,7 @@ This project centralizes environment access in `src/lib/env.ts`.
 
 - `APP_BASE_URL` (required for `env.app`)
   - Canonical app URL used for server-to-server callbacks (QStash worker URLs).
-  - Used by: upload→ingest QStash publish (`src/app/api/upload/route.ts`).
+  - Used by: upload→ingest QStash publish (`src/app/api/upload/register/route.ts`).
   - Must match the deployed host and be HTTPS in production.
   - For Vercel Preview branches, this repo can auto-manage a branch-scoped value
     via `.github/workflows/vercel-preview-env-sync.yml` by resolving the READY

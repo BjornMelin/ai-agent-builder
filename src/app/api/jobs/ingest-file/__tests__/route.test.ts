@@ -198,13 +198,14 @@ describe("POST /api/jobs/ingest-file", () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
-  it("rejects blob paths that do not match the file sha256 prefix", async () => {
+  it("rejects when the blob content does not match the stored sha256", async () => {
     const POST = await loadRoute();
-    state.getProjectFileById.mockResolvedValueOnce({
-      ...baseFile,
-      storageKey:
-        "https://store.public.blob.vercel-storage.com/projects/proj_123/uploads/other-alpha.txt",
-    });
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        new Response(new Uint8Array([1, 2, 3]), { status: 200 }),
+      );
+    globalThis.fetch = fetchMock;
 
     const res = await POST(
       new Request("http://localhost/api/jobs/ingest-file", {
@@ -217,10 +218,10 @@ describe("POST /api/jobs/ingest-file", () => {
     await expect(res.json()).resolves.toMatchObject({
       error: {
         code: "blob_fetch_failed",
-        message: "Blob path/file mismatch.",
+        message: "Blob content mismatch.",
       },
     });
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(state.ingestFile).not.toHaveBeenCalled();
   });
 
   it("rejects blob paths that contain dot-dot traversal segments", async () => {
@@ -303,6 +304,16 @@ describe("POST /api/jobs/ingest-file", () => {
         new Response(new Uint8Array([1, 2, 3]), { status: 200 }),
       );
     globalThis.fetch = fetchMock;
+
+    const crypto = await import("node:crypto");
+    const digest = crypto
+      .createHash("sha256")
+      .update(Buffer.from([1, 2, 3]))
+      .digest("hex");
+    state.getProjectFileById.mockResolvedValueOnce({
+      ...baseFile,
+      sha256: digest,
+    });
 
     const res = await POST(
       new Request("http://localhost/api/jobs/ingest-file", {

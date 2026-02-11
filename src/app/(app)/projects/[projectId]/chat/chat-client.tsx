@@ -2,11 +2,24 @@
 
 import { useChat } from "@ai-sdk/react";
 import { WorkflowChatTransport } from "@workflow/ai";
-import type { ChatTransport, UIDataTypes, UIMessage, UITools } from "ai";
+import type {
+  ChatTransport,
+  FileUIPart,
+  UIDataTypes,
+  UIMessage,
+  UITools,
+} from "ai";
 import { getToolName, isToolUIPart } from "ai";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  Attachment,
+  AttachmentInfo,
+  AttachmentPreview,
+  AttachmentRemove,
+  Attachments,
+} from "@/components/ai-elements/attachments";
 import {
   Conversation,
   ConversationContent,
@@ -20,10 +33,17 @@ import {
 } from "@/components/ai-elements/message";
 import {
   PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
   PromptInputBody,
+  PromptInputFooter,
   type PromptInputMessage,
   PromptInputSubmit,
   PromptInputTextarea,
+  PromptInputTools,
+  usePromptInputAttachments,
 } from "@/components/ai-elements/prompt-input";
 import {
   Reasoning,
@@ -47,15 +67,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toChatTitle } from "@/lib/chat/title";
+import { parseApiErrorMessage } from "@/lib/net/parse-api-error-message";
+import { uploadProjectFilesFromFiles } from "@/lib/uploads/upload-files.client";
 import {
   type ChatThreadStatus,
   resolveRunStatusAfterChatEnd,
 } from "./run-status";
 
+const CHAT_ATTACHMENT_ACCEPT =
+  ".pdf,.docx,.pptx,.xlsx,.txt,.md," +
+  "application/pdf,text/plain,text/markdown," +
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document," +
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation," +
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+const CHAT_MAX_ATTACHMENT_FILES = 5;
+
 type UserMessageMarker = Readonly<{
   type: "user-message";
   id: string;
   content: string;
+  files?: readonly FileUIPart[] | undefined;
   timestamp: number;
 }>;
 
@@ -103,11 +135,39 @@ function replaceThreadIdInUrl(threadId: string | null) {
 function isUserMessageMarker(data: unknown): data is UserMessageMarker {
   if (!data || typeof data !== "object") return false;
   const value = data as Partial<UserMessageMarker>;
+  const hasValidFiles = value.files === undefined || Array.isArray(value.files);
   return (
     value.type === "user-message" &&
     typeof value.id === "string" &&
     typeof value.content === "string" &&
+    hasValidFiles &&
     typeof value.timestamp === "number"
+  );
+}
+
+function ChatComposerAttachments() {
+  const attachments = usePromptInputAttachments();
+
+  if (attachments.files.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="w-full border-b px-3 py-2">
+      <Attachments className="w-full" variant="inline">
+        {attachments.files.map((file) => (
+          <Attachment
+            data={file}
+            key={file.id}
+            onRemove={() => attachments.remove(file.id)}
+          >
+            <AttachmentPreview />
+            <AttachmentInfo />
+            <AttachmentRemove />
+          </Attachment>
+        ))}
+      </Attachments>
+    </div>
   );
 }
 
@@ -152,9 +212,18 @@ function reconstructMessages(
 
           if (!seenUserMessageIds.has(marker.id)) {
             seenUserMessageIds.add(marker.id);
+            const markerParts: AppUIMessage["parts"] = [
+              ...(marker.files ?? []),
+              ...(marker.content.length > 0
+                ? [{ text: marker.content, type: "text" as const }]
+                : []),
+            ];
+            if (markerParts.length === 0) {
+              continue;
+            }
             result.push({
               id: marker.id,
-              parts: [{ text: marker.content, type: "text" }],
+              parts: markerParts,
               role: "user",
             });
           }
@@ -191,6 +260,7 @@ export function ProjectChatClient(
     initialMessages: readonly PersistedUiMessage[];
     enabledModes: readonly EnabledAgentModeOption[];
     defaultModeId: string;
+    maxAttachmentBytes: number;
   }>,
 ) {
   const projectIdRef = useRef(props.projectId);
@@ -235,6 +305,7 @@ export function ProjectChatClient(
     props.enabledModes.find((m) => m.modeId === props.defaultModeId)?.modeId ??
     props.enabledModes.at(0)?.modeId ??
     props.defaultModeId;
+
   const [selectedModeId, setSelectedModeId] = useState<string>(() => {
     const fromThread = props.initialThread?.mode;
     if (!fromThread) return selectedModeFallback;
@@ -292,7 +363,7 @@ export function ProjectChatClient(
         .slice()
         .reverse()
         .find((msg) => msg.role === "user");
-      const title = lastUserMessage ? toChatTitle(lastUserMessage) : "New chat";
+      const title = lastUserMessage ? toChatTitle(lastUserMessage) : "New Chat";
       const mode = selectedModeIdRef.current;
       const nextThread: ChatThreadSummary = {
         createdAt: now,
@@ -334,7 +405,7 @@ export function ProjectChatClient(
     [],
   );
 
-  // eslint-disable-next-line react-hooks/refs -- The transport constructor stores callbacks; it does not read ref values during render.
+  // The transport constructor stores callbacks; it does not read ref values during render.
   const [transport] = useState(() => {
     const workflowTransport = new WorkflowChatTransport<AppUIMessage>({
       api: "/api/chat",
@@ -385,7 +456,12 @@ export function ProjectChatClient(
   const composerErrorId = `project-chat-composer-error-${props.projectId}`;
   const composerInputId = `project-chat-composer-${props.projectId}`;
   const composerLabelId = `${composerInputId}-label`;
-  const messages = reconstructMessages(rawMessages);
+  // Reconstructing message order is O(n) over streamed parts; memoize so
+  // unrelated state changes (e.g. input errors) don't re-run the projection.
+  const messages = useMemo(
+    () => reconstructMessages(rawMessages),
+    [rawMessages],
+  );
   const hasMessages = messages.length > 0;
   const hasActiveSession = Boolean(runId) && !isTerminalStatus(runStatus);
   const modeSelectorDisabled = hasActiveSession;
@@ -396,19 +472,41 @@ export function ProjectChatClient(
     (m) => m.modeId === modeForDisplay,
   );
 
-  async function sendFollowUp(text: string): Promise<boolean> {
-    if (!runId) return false;
+  const [isUploadingAttachments, setIsUploadingAttachments] = useState(false);
+
+  type FollowUpSendResult =
+    | Readonly<{ status: "ok" }>
+    | Readonly<{ status: "session-ended" }>
+    | Readonly<{ status: "failed"; message: string }>;
+
+  async function sendFollowUp(input: {
+    text?: string | undefined;
+    files?: readonly FileUIPart[] | undefined;
+  }): Promise<FollowUpSendResult> {
+    if (!runId) {
+      return { message: "No active session.", status: "failed" };
+    }
+
+    const text = input.text?.trim() ?? "";
+    const files = input.files ?? [];
+    const hasText = text.length > 0;
+    const hasFiles = files.length > 0;
+    if (!hasText && !hasFiles) return { status: "ok" };
 
     const messageId =
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `user-${Date.now()}`;
     const optimisticId = messageId;
+    const optimisticParts: AppUIMessage["parts"] = [
+      ...files,
+      ...(hasText ? [{ text, type: "text" as const }] : []),
+    ];
     setMessages((prev) =>
       prev.concat([
         {
           id: optimisticId,
-          parts: [{ text, type: "text" }],
+          parts: optimisticParts,
           role: "user",
         },
       ]),
@@ -416,53 +514,74 @@ export function ProjectChatClient(
 
     try {
       const response = await fetch(`/api/chat/${runId}`, {
-        body: JSON.stringify({ message: text, messageId }),
+        body: JSON.stringify({
+          ...(hasFiles ? { files } : {}),
+          ...(hasText ? { message: text } : {}),
+          messageId,
+        }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
 
       if (!response.ok) {
-        let errorMessage = "Failed to send message.";
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          // Fallback to default message
-        }
+        const errorMessage = await parseApiErrorMessage(
+          response,
+          "Failed to send message.",
+        );
         setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
-        setComposerError(errorMessage);
         if (response.status === 404 || response.status === 409) {
           setRunStatus(null);
           setRunId(null);
+          setComposerError(null);
+          return { status: "session-ended" };
         }
-        return false;
+        setComposerError(errorMessage);
+        return { message: errorMessage, status: "failed" };
       }
 
       setRunStatus("waiting");
       setComposerError(null);
-      return true;
+      return { status: "ok" };
     } catch (error) {
       if (process.env.NODE_ENV !== "production") {
         console.error("Follow-up error:", error);
       }
-      setComposerError(
-        error instanceof Error ? error.message : "Something went wrong.",
-      );
-      return false;
+      const message =
+        error instanceof Error ? error.message : "Something went wrong.";
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
+      setComposerError(message);
+      return { message, status: "failed" };
     }
   }
 
   async function sendMessage(message: PromptInputMessage) {
     const text = message.text.trim();
-    if (text.length === 0) return;
+    const hasText = text.length > 0;
+    const rawFiles = message.rawFiles;
+    const hasFiles = rawFiles.length > 0;
+    if (!hasText && !hasFiles) return;
 
     setComposerError(null);
 
-    if (message.files.length > 0) {
-      setComposerError(
-        "Attach files via Uploads. Chat currently supports text only.",
-      );
-      return;
+    let uploadedFiles: FileUIPart[] = [];
+    if (hasFiles) {
+      setIsUploadingAttachments(true);
+      try {
+        uploadedFiles = await uploadProjectFilesFromFiles({
+          asyncIngest: false,
+          files: rawFiles,
+          projectId: projectIdRef.current,
+        });
+      } catch (error) {
+        const messageText =
+          error instanceof Error
+            ? error.message
+            : "Failed to upload attachments.";
+        setComposerError(messageText);
+        throw new Error(messageText);
+      } finally {
+        setIsUploadingAttachments(false);
+      }
     }
 
     if (
@@ -471,29 +590,49 @@ export function ProjectChatClient(
       runStatus !== "failed" &&
       runStatus !== "canceled"
     ) {
-      const ok = await sendFollowUp(text);
-      if (ok) {
+      const followUpResult = await sendFollowUp({
+        ...(hasText ? { text } : {}),
+        ...(uploadedFiles.length > 0 ? { files: uploadedFiles } : {}),
+      });
+      if (followUpResult.status === "ok") {
         return;
+      }
+      if (followUpResult.status === "failed") {
+        throw new Error(followUpResult.message);
       }
 
       // Session may have ended; start a new session using the current transcript as context.
       try {
         setComposerError(null);
-        await baseSendMessage({ text });
+        if (uploadedFiles.length > 0) {
+          await baseSendMessage(
+            hasText ? { files: uploadedFiles, text } : { files: uploadedFiles },
+          );
+        } else {
+          await baseSendMessage({ text });
+        }
       } catch (error) {
-        setComposerError(
-          error instanceof Error ? error.message : "Failed to send message.",
-        );
+        const messageText =
+          error instanceof Error ? error.message : "Failed to send message.";
+        setComposerError(messageText);
+        throw new Error(messageText);
       }
       return;
     }
 
     try {
-      await baseSendMessage({ text });
+      if (uploadedFiles.length > 0) {
+        await baseSendMessage(
+          hasText ? { files: uploadedFiles, text } : { files: uploadedFiles },
+        );
+      } else {
+        await baseSendMessage({ text });
+      }
     } catch (error) {
-      setComposerError(
-        error instanceof Error ? error.message : "Failed to send message.",
-      );
+      const messageText =
+        error instanceof Error ? error.message : "Failed to send message.";
+      setComposerError(messageText);
+      throw new Error(messageText);
     }
   }
 
@@ -563,11 +702,11 @@ export function ProjectChatClient(
     <div className="flex h-[calc(100dvh-4rem)] flex-col gap-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 space-y-2">
-          <p className="text-muted-foreground text-sm">Project chat</p>
+          <h2 className="text-muted-foreground text-sm">Project Chat</h2>
           <p className="truncate font-medium text-sm">
             {activeThread
               ? `${activeThread.title} · ${activeThread.status}`
-              : "New chat"}
+              : "New Chat"}
           </p>
           <p className="truncate text-muted-foreground text-xs">
             Mode: {modeOptionForDisplay?.displayName ?? modeForDisplay}
@@ -599,7 +738,7 @@ export function ProjectChatClient(
                   type="button"
                   variant={activeThread ? "outline" : "secondary"}
                 >
-                  New chat
+                  New Chat
                 </Button>
               </li>
               {threads.map((t) => {
@@ -674,56 +813,111 @@ export function ProjectChatClient(
             type="button"
             variant="outline"
           >
-            {hasActiveSession ? "End session" : "Clear chat"}
+            {hasActiveSession ? "End Session" : "Clear Chat"}
           </Button>
         </div>
       </div>
 
       <div className="relative flex flex-1 flex-col overflow-hidden rounded-md border">
         <Conversation className="bg-card">
-          <ConversationContent>
+          <ConversationContent
+            style={
+              messages.length > 50
+                ? { containIntrinsicSize: "800px", contentVisibility: "auto" }
+                : undefined
+            }
+          >
             {messages.length === 0 ? (
               <ConversationEmptyState
                 description="Ask about your uploaded sources (or start by uploading a file)."
-                title="No messages yet"
+                title="No Messages Yet"
               />
             ) : (
-              messages.map((msg) => (
-                <Message from={msg.role} key={msg.id}>
-                  <MessageContent>
-                    {msg.parts.map((part, i) => {
-                      if (part.type === "text") {
-                        return (
-                          <MessageResponse key={`${msg.id}-text-${i}`}>
-                            {part.text}
-                          </MessageResponse>
-                        );
-                      }
+              messages.map((msg) => {
+                const fileParts = msg.parts.filter(
+                  (part): part is FileUIPart => part.type === "file",
+                );
+                const attachments = fileParts.map((file, index) => ({
+                  ...file,
+                  id: `${msg.id}-file-${index}`,
+                }));
 
-                      if (part.type === "reasoning") {
-                        return (
-                          <Reasoning
-                            state={
-                              part.state === "streaming" ? "streaming" : "idle"
-                            }
-                            key={`${msg.id}-reason-${i}`}
-                          >
-                            <ReasoningTrigger />
-                            <ReasoningContent>{part.text}</ReasoningContent>
-                          </Reasoning>
-                        );
-                      }
+                return (
+                  <Message from={msg.role} key={msg.id}>
+                    <MessageContent>
+                      {attachments.length > 0 ? (
+                        <Attachments className="w-full" variant="inline">
+                          {attachments.map((file) => (
+                            <Attachment data={file} key={file.id}>
+                              <AttachmentPreview />
+                              <AttachmentInfo />
+                            </Attachment>
+                          ))}
+                        </Attachments>
+                      ) : null}
 
-                      if (isToolUIPart(part as AppUIMessagePart)) {
-                        const tool = part as ToolPart;
-                        const output =
-                          "output" in tool ? tool.output : undefined;
-                        const errorText =
-                          "errorText" in tool ? tool.errorText : undefined;
-                        const input = "input" in tool ? tool.input : undefined;
-                        const toolName = getToolName(tool);
+                      {msg.parts.map((part, i) => {
+                        if (part.type === "file") {
+                          return null;
+                        }
 
-                        if (tool.type === "dynamic-tool") {
+                        if (part.type === "text") {
+                          return (
+                            <MessageResponse key={`${msg.id}-text-${i}`}>
+                              {part.text}
+                            </MessageResponse>
+                          );
+                        }
+
+                        if (part.type === "reasoning") {
+                          return (
+                            <Reasoning
+                              state={
+                                part.state === "streaming"
+                                  ? "streaming"
+                                  : "idle"
+                              }
+                              key={`${msg.id}-reason-${i}`}
+                            >
+                              <ReasoningTrigger />
+                              <ReasoningContent>{part.text}</ReasoningContent>
+                            </Reasoning>
+                          );
+                        }
+
+                        if (isToolUIPart(part as AppUIMessagePart)) {
+                          const tool = part as ToolPart;
+                          const output =
+                            "output" in tool ? tool.output : undefined;
+                          const errorText =
+                            "errorText" in tool ? tool.errorText : undefined;
+                          const input =
+                            "input" in tool ? tool.input : undefined;
+                          const toolName = getToolName(tool);
+
+                          if (tool.type === "dynamic-tool") {
+                            return (
+                              <Tool
+                                defaultOpen={false}
+                                key={`${msg.id}-tool-${i}`}
+                              >
+                                <ToolHeader
+                                  state={tool.state}
+                                  title={toolName}
+                                  toolName={tool.toolName}
+                                  type="dynamic-tool"
+                                />
+                                <ToolContent>
+                                  <ToolInput input={input} />
+                                  <ToolOutput
+                                    errorText={errorText}
+                                    output={output}
+                                  />
+                                </ToolContent>
+                              </Tool>
+                            );
+                          }
+
                           return (
                             <Tool
                               defaultOpen={false}
@@ -732,8 +926,7 @@ export function ProjectChatClient(
                               <ToolHeader
                                 state={tool.state}
                                 title={toolName}
-                                toolName={tool.toolName}
-                                type="dynamic-tool"
+                                type={tool.type}
                               />
                               <ToolContent>
                                 <ToolInput input={input} />
@@ -746,34 +939,17 @@ export function ProjectChatClient(
                           );
                         }
 
-                        return (
-                          <Tool defaultOpen={false} key={`${msg.id}-tool-${i}`}>
-                            <ToolHeader
-                              state={tool.state}
-                              title={toolName}
-                              type={tool.type}
-                            />
-                            <ToolContent>
-                              <ToolInput input={input} />
-                              <ToolOutput
-                                errorText={errorText}
-                                output={output}
-                              />
-                            </ToolContent>
-                          </Tool>
-                        );
-                      }
+                        if (part.type === "data-workflow") {
+                          // Internal marker: handled by reconstruction.
+                          return null;
+                        }
 
-                      if (part.type === "data-workflow") {
-                        // Internal marker: handled by reconstruction.
                         return null;
-                      }
-
-                      return null;
-                    })}
-                  </MessageContent>
-                </Message>
-              ))
+                      })}
+                    </MessageContent>
+                  </Message>
+                );
+              })
             )}
           </ConversationContent>
           <ConversationScrollButton />
@@ -782,19 +958,26 @@ export function ProjectChatClient(
 
       <div className="flex flex-col gap-2">
         {composerError ? (
-          <p
-            className="text-destructive text-sm"
+          <output
+            className="block text-destructive text-sm"
             id={composerErrorId}
-            role="alert"
+            aria-live="polite"
+            aria-atomic="true"
           >
             {composerError}
-          </p>
+          </output>
         ) : null}
 
         <PromptInput
+          accept={CHAT_ATTACHMENT_ACCEPT}
           onSubmit={sendMessage}
           className="rounded-md border bg-card"
+          dropMode="global"
+          fileUrlMode="preserve"
+          maxFileSize={props.maxAttachmentBytes}
+          maxFiles={CHAT_MAX_ATTACHMENT_FILES}
         >
+          <ChatComposerAttachments />
           <PromptInputBody>
             <label
               className="sr-only"
@@ -814,9 +997,23 @@ export function ProjectChatClient(
               className="min-h-[120px]"
             />
           </PromptInputBody>
-          <div className="flex items-center justify-end gap-2 px-3 pb-3">
-            <PromptInputSubmit onStop={cancelSession} status={status} />
-          </div>
+          <PromptInputFooter>
+            <PromptInputTools>
+              <PromptInputActionMenu>
+                <PromptInputActionMenuTrigger
+                  disabled={isUploadingAttachments}
+                />
+                <PromptInputActionMenuContent>
+                  <PromptInputActionAddAttachments />
+                </PromptInputActionMenuContent>
+              </PromptInputActionMenu>
+            </PromptInputTools>
+            <PromptInputSubmit
+              disabled={isUploadingAttachments}
+              onStop={cancelSession}
+              status={status}
+            />
+          </PromptInputFooter>
         </PromptInput>
       </div>
     </div>

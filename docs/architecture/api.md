@@ -22,9 +22,12 @@ See:
 ## Upload & ingestion (background jobs via QStash)
 
 - `POST /api/upload`
-  - stores originals in Vercel Blob
-  - writes metadata in Neon Postgres
-  - may enqueue async ingestion jobs via Upstash QStash (`async=true`)
+  - Vercel Blob client upload token exchange (`@vercel/blob/client upload()` `handleUploadUrl`)
+  - issues scoped client tokens after authenticating and authorizing the project
+- `POST /api/upload/register`
+  - registers already-uploaded blobs for a project
+  - writes metadata in Neon Postgres (idempotent by sha256)
+  - ingests inline by default; may enqueue async ingestion jobs via Upstash QStash (`async=true`)
 - `POST /api/jobs/ingest-file` (QStash-signed)
   - executes extract → chunk → embed → index asynchronously
   - validates `storageKey` is an HTTPS Vercel Blob URL under

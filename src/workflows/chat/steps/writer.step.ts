@@ -1,4 +1,4 @@
-import type { UIMessageChunk } from "ai";
+import type { FileUIPart, UIMessageChunk } from "ai";
 
 /**
  * Write a `data-workflow` chunk to mark a user message in a multi-turn stream.
@@ -14,6 +14,7 @@ export async function writeUserMessageMarker(
   writable: WritableStream<UIMessageChunk>,
   input: Readonly<{
     content: string;
+    files?: readonly FileUIPart[] | undefined;
     messageId: string;
   }>,
 ): Promise<void> {
@@ -25,6 +26,9 @@ export async function writeUserMessageMarker(
     const markerChunk: UIMessageChunk = {
       data: {
         content: input.content,
+        ...(input.files && input.files.length > 0
+          ? { files: input.files }
+          : {}),
         id: input.messageId,
         timestamp,
         type: "user-message",

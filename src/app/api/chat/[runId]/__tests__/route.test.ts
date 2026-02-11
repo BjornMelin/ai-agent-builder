@@ -54,6 +54,7 @@ beforeEach(() => {
   state.appendChatMessages.mockResolvedValue(undefined);
   state.resume.mockResolvedValue(undefined);
   state.getChatThreadByWorkflowRunId.mockResolvedValue({
+    id: "thread_1",
     projectId: "proj_1",
     status: "running",
   });
@@ -159,6 +160,53 @@ describe("POST /api/chat/:runId", () => {
         status: "running",
       },
     );
+  });
+
+  it("resumes the workflow hook with attachments when provided", async () => {
+    const POST = await loadRoute();
+
+    const files = [
+      {
+        filename: "report.pdf",
+        mediaType: "application/pdf",
+        type: "file",
+        url: "https://example.com/report.pdf",
+      },
+    ] as const;
+
+    const res = await POST(
+      new Request("http://localhost/api/chat/run_1", {
+        body: JSON.stringify({ files, message: "hello", messageId: "msg_1" }),
+        method: "POST",
+      }),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({ ok: true });
+    expect(state.appendChatMessages).toHaveBeenCalledWith({
+      messages: [
+        {
+          id: "msg_1",
+          parts: [
+            {
+              filename: "report.pdf",
+              mediaType: "application/pdf",
+              type: "file",
+              url: "https://example.com/report.pdf",
+            },
+            { text: "hello", type: "text" },
+          ],
+          role: "user",
+        },
+      ],
+      threadId: "thread_1",
+    });
+    expect(state.resume).toHaveBeenCalledWith("run_1", {
+      files,
+      message: "hello",
+      messageId: "msg_1",
+    });
   });
 
   it("sets status to waiting when the message is /done", async () => {

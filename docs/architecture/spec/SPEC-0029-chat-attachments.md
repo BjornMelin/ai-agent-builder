@@ -8,7 +8,7 @@ status: Implemented
 related_requirements: ["FR-003", "FR-008", "FR-019", "PR-001", "NFR-008", "NFR-010", "IR-006"]
 related_adrs: ["ADR-0030", "ADR-0011", "ADR-0009", "ADR-0026"]
 related_specs: ["SPEC-0003", "SPEC-0004", "SPEC-0022", "SPEC-0023", "SPEC-0024"]
-notes: "Adds first-class document attachments to Project Chat using vendored AI Elements components and the existing /api/upload ingestion pipeline."
+notes: "Adds first-class document attachments to Project Chat using vendored AI Elements components and a Vercel Blob client upload-before-send pipeline."
 ---
 
 ## Summary
@@ -16,7 +16,7 @@ notes: "Adds first-class document attachments to Project Chat using vendored AI 
 Project Chat supports **document attachments** (PDF/DOCX/PPTX/XLSX/TXT/MD) end-to-end:
 
 - Composer UI uses AI Elements `PromptInput` + `Attachments` (inline variant).[^ai-elements-attachments]
-- Attachments are **uploaded before send** via the existing `POST /api/upload` pipeline (sync ingest by default).
+- Attachments are **uploaded before send** using Vercel Blob client uploads (`@vercel/blob/client upload()`), then registered/ingested via `POST /api/upload/register` (sync ingest by default).
 - The durable multi-turn follow-up endpoint `POST /api/chat/:runId` accepts attachments in addition to text.
 - Attachments persist in UI message history (DB) and are included in stream markers so resumes/replays can reconstruct user messages correctly.
 
@@ -25,7 +25,7 @@ Project Chat supports **document attachments** (PDF/DOCX/PPTX/XLSX/TXT/MD) end-t
 ### In scope
 
 - Document attachments in `/projects/[projectId]/chat`.
-- Upload-before-send using `POST /api/upload` (no new storage pipeline).
+- Upload-before-send using Vercel Blob client uploads (supports files larger than Vercel server request limits).
 - Multi-turn follow-ups with attachments via `POST /api/chat/:runId`.
 - Resume-safe rendering: attachments appear for persisted messages and for user-message markers emitted in the assistant stream.
 
@@ -63,17 +63,18 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 ### UI: Composer + transcript
 
 - Composer is built on `PromptInput` and keeps attachment state as `FileUIPart[]` (plus local `id` for UI list keys).[^ai-sdk-fileuipart]
+- Composer also keeps the original `File` objects for upload-before-send (`rawFiles`) so we never re-read `blob:` URLs via `fetch(blob:)`.
 - Composer renders `Attachments` with `variant="inline"` for a compact row above the textarea.[^ai-elements-attachments]
-- Composer enforces basic client-side limits: `maxFileSize = budgets.maxUploadBytes` (mirrors `/api/upload`) and `maxFiles = 5` per message (defense-in-depth UX guardrail).
+- Composer enforces basic client-side limits: `maxFileSize = budgets.maxUploadBytes` and `maxFiles = 5` per message (defense-in-depth UX guardrail).
 - Transcript rendering groups `part.type === "file"` and renders them as inline chips above the message text.
 
 ### Client upload-before-send (hosted URLs)
 
 1. PromptInput creates attachment parts with `url: blob:<object-url>`.
 2. Before sending the chat message, the client:
-   - converts blob URLs to `File` objects (`fetch(blobUrl)` → `Blob` → `File`)
-   - uploads them to `POST /api/upload` as `multipart/form-data`
-3. The upload response is mapped back to `FileUIPart[]` where:
+   - uploads the original `File` objects to Vercel Blob using `@vercel/blob/client upload()` with `handleUploadUrl: "/api/upload"`
+   - registers the uploaded blobs with `POST /api/upload/register` (which persists metadata and ingests)
+3. The register response is mapped back to `FileUIPart[]` where:
    - `url` is the hosted Blob URL (no base64/data URL payloads)
    - `filename` and `mediaType` are preserved
 
@@ -140,14 +141,24 @@ Client reconstruction:
 
 ### API contracts
 
-#### `POST /api/upload` (existing)
+#### `POST /api/upload` (token exchange)
 
-Used for chat attachments in upload-before-send mode. Inputs:
+Used by Vercel Blob client uploads to exchange for a scoped client token. Inputs:
 
-- `multipart/form-data`
-  - `projectId: string`
-  - `file: File` (repeated)
-  - omit `async` for sync ingest (default)
+- JSON event (from `@vercel/blob/client upload()`):
+  - `type: "blob.generate-client-token"`
+  - `payload.pathname`
+  - `payload.clientPayload` (JSON string containing `{projectId}`)
+
+Outputs:
+
+- `200 { clientToken: string }`
+
+#### `POST /api/upload/register`
+
+Used after Vercel Blob client uploads complete. Inputs:
+
+- JSON body `{ projectId: string, async?: boolean, blobs: [{ url, originalName, contentType, size }] }`
 
 Outputs:
 
@@ -188,7 +199,7 @@ Validation rule: at least one of `message` or `files` must be provided.
 - Upload fails: surface composer error; do not clear text/attachments.
 - Ingest slow: composer shows “uploading” state; if this becomes a UX issue, migrate to a hybrid or async ingest path (future).
 - Run ended mid-follow-up: follow-up endpoint returns `404/409`; client clears `runId` and starts a new session on next send.
-- Duplicate file uploads: `/api/upload` dedupes by content hash (sha256) and returns the existing DB record (SPEC-0003).
+- Duplicate file uploads: `/api/upload/register` dedupes by content hash (sha256) and returns the existing DB record (SPEC-0003) while best-effort deleting the newly uploaded blob.
 
 ## Testing
 

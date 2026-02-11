@@ -3,7 +3,7 @@
 import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from "ai";
 import {
   CornerDownLeftIcon,
-  ImageIcon,
+  PaperclipIcon,
   PlusIcon,
   SquareIcon,
   XIcon,
@@ -142,7 +142,7 @@ const subscribeToGlobalDrop = (handler: GlobalDropHandler) => {
 
 /** Context for managing file attachments in the prompt input. */
 export interface AttachmentsContext {
-  files: (FileUIPart & { id: string })[];
+  files: (FileUIPart & { id: string; file?: File | undefined })[];
   add: (files: File[] | FileList) => void;
   remove: (id: string) => void;
   clear: () => void;
@@ -249,7 +249,7 @@ export function PromptInputProvider(props: PromptInputProviderProps) {
 
   // ----- attachments state (global when wrapped)
   const [attachmentFiles, setAttachmentFiles] = useState<
-    (FileUIPart & { id: string })[]
+    (FileUIPart & { id: string; file?: File | undefined })[]
   >([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const openRef = useRef<() => void>(() => undefined);
@@ -263,6 +263,7 @@ export function PromptInputProvider(props: PromptInputProviderProps) {
     setAttachmentFiles((prev) =>
       prev.concat(
         incoming.map((file) => ({
+          file,
           filename: file.name,
           id: nanoid(),
           mediaType: file.type,
@@ -426,7 +427,7 @@ export type PromptInputActionAddAttachmentsProps = ComponentProps<
 export const PromptInputActionAddAttachments = (
   props: PromptInputActionAddAttachmentsProps,
 ) => {
-  const { label = "Add photos or files…", ...rest } = props;
+  const { label = "Add attachments…", ...rest } = props;
   const attachments = usePromptInputAttachments();
 
   return (
@@ -437,7 +438,7 @@ export const PromptInputActionAddAttachments = (
         attachments.openFileDialog();
       }}
     >
-      <ImageIcon aria-hidden="true" className="mr-2 size-4" /> {label}
+      <PaperclipIcon aria-hidden="true" className="mr-2 size-4" /> {label}
     </DropdownMenuItem>
   );
 };
@@ -446,6 +447,7 @@ export const PromptInputActionAddAttachments = (
 export interface PromptInputMessage {
   text: string;
   files: FileUIPart[];
+  rawFiles: File[];
 }
 
 /**
@@ -459,6 +461,17 @@ export type PromptInputProps = Omit<
   "onSubmit" | "onError"
 > & {
   accept?: string; // e.g., "image/*" or leave undefined for any
+  /**
+   * Controls how file URLs are normalized before calling `onSubmit`.
+   *
+   * @remarks
+   * - `"preserve"` keeps `blob:` URLs as-is (default). Use this when you plan to
+   *   upload the files separately (recommended for production to avoid large
+   *   request payloads).
+   * - `"data-url"` converts `blob:` URLs to `data:` URLs before submit (useful
+   *   for demos or when sending small files directly in the chat request).
+   */
+  fileUrlMode?: "preserve" | "data-url";
   selection?: "single" | "multiple";
   // Accept drops on the document or just the form (default: local).
   dropMode?: "local" | "global";
@@ -487,6 +500,7 @@ export const PromptInput = (props: PromptInputProps) => {
   const {
     className,
     accept,
+    fileUrlMode = "preserve",
     selection = "multiple",
     dropMode = "local",
     hiddenInputSync = "off",
@@ -506,7 +520,9 @@ export const PromptInput = (props: PromptInputProps) => {
   const formRef = useRef<HTMLFormElement | null>(null);
 
   // ----- Local attachments (only used when no provider)
-  const [items, setItems] = useState<(FileUIPart & { id: string })[]>([]);
+  const [items, setItems] = useState<
+    (FileUIPart & { id: string; file?: File | undefined })[]
+  >([]);
   const files = usingProvider ? controller.attachments.files : items;
 
   // ----- Local referenced sources (always local to PromptInput)
@@ -609,9 +625,10 @@ export const PromptInput = (props: PromptInputProps) => {
       if (capped.length === 0) {
         return prev;
       }
-      const next: (FileUIPart & { id: string })[] = [];
+      const next: (FileUIPart & { id: string; file?: File | undefined })[] = [];
       for (const file of capped) {
         next.push({
+          file,
           filename: file.name,
           id: nanoid(),
           mediaType: file.type,
@@ -781,7 +798,7 @@ export const PromptInput = (props: PromptInputProps) => {
     add,
     clear: clearAttachments,
     fileInputRef: inputRef,
-    files: files.map((item) => ({ ...item, id: item.id })),
+    files,
     openFileDialog,
     remove,
   };
@@ -813,21 +830,28 @@ export const PromptInput = (props: PromptInputProps) => {
 
     // Convert blob URLs to data URLs asynchronously before submission.
     try {
-      const convertedFiles: FileUIPart[] = await Promise.all(
-        files.map(async ({ id: _id, ...item }) => {
-          if (item.url?.startsWith("blob:")) {
-            const dataUrl = await convertBlobUrlToDataUrl(item.url);
-            // If conversion failed, keep the original blob URL
-            return {
-              ...item,
-              url: dataUrl ?? item.url,
-            };
-          }
-          return item;
-        }),
-      );
+      const convertedFiles: FileUIPart[] =
+        fileUrlMode === "data-url"
+          ? await Promise.all(
+              files.map(async ({ file: _file, id: _id, ...item }) => {
+                if (item.url?.startsWith("blob:")) {
+                  const dataUrl = await convertBlobUrlToDataUrl(item.url);
+                  // If conversion failed, keep the original blob URL.
+                  return {
+                    ...item,
+                    url: dataUrl ?? item.url,
+                  };
+                }
+                return item;
+              }),
+            )
+          : files.map(({ file: _file, id: _id, ...item }) => item);
 
-      await onSubmit({ files: convertedFiles, text }, event);
+      const rawFiles = files
+        .map((f) => f.file)
+        .filter((f): f is File => f instanceof File);
+
+      await onSubmit({ files: convertedFiles, rawFiles, text }, event);
       clear();
       if (usingProvider) {
         controller.textInput.clear();
@@ -933,7 +957,7 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
     id,
     labelId,
     "aria-labelledby": ariaLabelledBy,
-    placeholder = "What would you like to know… e.g., summarize the attached article",
+    placeholder = "What would you like to know… e.g., summarize the attached article…",
     ...rest
   } = props;
   const controller = useOptionalPromptInputController();
@@ -1022,10 +1046,15 @@ export const PromptInputTextarea = (props: PromptInputTextareaProps) => {
       };
 
   const resolvedAriaLabelledBy = ariaLabelledBy ?? labelId;
+  const resolvedAriaLabel =
+    resolvedAriaLabelledBy !== undefined
+      ? undefined
+      : (rest["aria-label"] ?? "Message");
 
   return (
     <InputGroupTextarea
       autoComplete="off"
+      aria-label={resolvedAriaLabel}
       aria-labelledby={resolvedAriaLabelledBy}
       className={cn("field-sizing-content max-h-48 min-h-16", className)}
       name="message"

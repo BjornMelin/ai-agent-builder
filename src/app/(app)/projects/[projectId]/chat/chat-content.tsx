@@ -6,6 +6,7 @@ import {
   listEnabledAgentModes,
 } from "@/lib/ai/agents/registry.server";
 import { requireAppUser } from "@/lib/auth/require-app-user";
+import { budgets } from "@/lib/config/budgets.server";
 import {
   getChatThreadById,
   getLatestChatThreadByProjectId,
@@ -75,6 +76,7 @@ export async function ChatContent(
       }))}
       initialMessages={initialMessages}
       initialThread={activeThread}
+      maxAttachmentBytes={budgets.maxUploadBytes}
       projectId={project.id}
       threads={threads}
     />

@@ -19,7 +19,8 @@ for the cross-cutting “finalization” plan that integrates ingestion with
 durable runs, retrieval, and the workspace UI.
 
 See [SPEC-0029](./SPEC-0029-chat-attachments.md) for the Project Chat document
-attachments flow that reuses `POST /api/upload` as the ingestion entrypoint.
+attachments flow that uses Vercel Blob client uploads and registers/ingests via
+`POST /api/upload/register`.
 
 ## Context
 
@@ -92,8 +93,9 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ### Architecture overview
 
-- Upload route stores file in Blob and writes metadata in Neon.
-- Upload route processes independent files in parallel; async ingestion enqueues
+- Upload registration route writes metadata in Neon and ingests from Blob.
+- Upload registration processes independent files sequentially (bounded memory);
+  async ingestion enqueues
   QStash jobs with per-file deduplication ids and labels.
   ([QStash deduplication](https://upstash.com/docs/qstash/features/deduplication),
   [QStash publish API](https://upstash.com/docs/qstash/api-refence/messages/publish-a-message))
@@ -108,8 +110,9 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ### File-level contracts
 
-- `src/app/api/upload/route.ts`: accepts uploads, stores originals, writes DB metadata.
-- `src/app/(app)/projects/[projectId]/chat/chat-client.tsx`: uploads chat attachments via `POST /api/upload` (upload-before-send; see SPEC-0029).
+- `src/app/api/upload/route.ts`: Vercel Blob client upload token exchange (scoped client tokens).
+- `src/app/api/upload/register/route.ts`: registers uploaded blobs, writes DB metadata, and ingests (or enqueues async ingest).
+- `src/app/(app)/projects/[projectId]/chat/chat-client.tsx`: uploads chat attachments via Vercel Blob client uploads + `POST /api/upload/register` (see SPEC-0029).
 - `src/app/api/jobs/ingest-file/route.ts`: QStash-signed async ingestion worker (optional; used for larger inputs).
 - `src/lib/ingest/extract/*`: extraction adapters per file type; must preserve stable refs.
 - `src/lib/ingest/chunk/*`: deterministic chunking rules (stable chunk ids).
@@ -134,7 +137,7 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 ## Testing
 
 - Unit: chunking determinism and hashing
-- Unit: request-level route handler tests for `/api/upload` and
+- Unit: request-level route handler tests for `/api/upload`, `/api/upload/register`, and
   `/api/jobs/ingest-file` error handling and async ingestion fallbacks.
 - Integration: upload → extract → index → query
 
@@ -151,6 +154,7 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 ## Key files
 
 - `src/app/api/upload/route.ts`
+- `src/app/api/upload/register/route.ts`
 - `src/app/api/jobs/ingest-file/route.ts`
 - `src/lib/ingest/extract`
 - `src/lib/ingest/chunk`

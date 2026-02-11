@@ -1,6 +1,6 @@
 ---
 ADR: 0030
-Title: Chat attachments reuse /api/upload pipeline (hosted URLs + inline AI Elements)
+Title: Chat attachments via Vercel Blob client uploads + /api/upload/register (hosted URLs + inline AI Elements)
 Status: Implemented
 Version: 0.1
 Date: 2026-02-10
@@ -37,7 +37,9 @@ We need first-class **document attachments** in chat so users can:
 
 ## Decision Drivers
 
-- Reuse the existing, validated upload + ingestion pipeline (`POST /api/upload`).
+- Reuse the existing, validated upload + ingestion pipeline:
+  - `POST /api/upload` for Vercel Blob client upload token exchange
+  - `POST /api/upload/register` for registration, dedupe, and ingestion
 - Avoid base64/data URL message payloads for performance and reliability.
 - Preserve resume-safe chat history (stream markers + persisted UI messages).
 - Keep model prompts clean; rely on ingestion + retrieval for documents.
@@ -67,7 +69,7 @@ Cons:
 - Duplicates the existing allowlist/ingest/dedupe pipeline.
 - Adds long-term maintenance surface area for minimal value.
 
-### C. Reuse `POST /api/upload` and send hosted file URLs as `FileUIPart` (**Chosen**)
+### C. Use Vercel Blob client uploads + `POST /api/upload/register` and send hosted file URLs as `FileUIPart` (**Chosen**)
 
 Pros:
 
@@ -105,7 +107,7 @@ Weights:
 | --- | ---: | ---: | ---: | ---: | ---: |
 | A. Data URLs in chat | 6.8 | 7.4 | 5.8 | 7.2 | 6.79 |
 | B. Dedicated chat upload endpoint | 7.2 | 8.1 | 7.0 | 8.0 | 7.46 |
-| C. Reuse `/api/upload` + hosted URLs | 9.4 | 9.2 | 8.9 | 9.0 | **9.19** |
+| C. Blob client uploads + `/api/upload/register` + hosted URLs | 9.4 | 9.2 | 8.9 | 9.0 | **9.19** |
 | D. Multipart streaming upload | 6.4 | 8.0 | 4.2 | 8.6 | 6.63 |
 
 ## Decision
@@ -113,11 +115,12 @@ Weights:
 Implement chat attachments as:
 
 1. Composer uses vendored AI Elements `PromptInput` attachments + `Attachments` inline UI.[^ai-elements-attachments]
-2. Client uploads attachments before send via `POST /api/upload` (sync ingest).
-3. Client sends the chat message using hosted file URLs (no data URLs) as `FileUIPart[]` alongside text.
-4. Extend durable follow-ups: `POST /api/chat/:runId` accepts `files?: FileUIPart[]` and resumes the workflow hook with attachments.
-5. Persist file parts in UI message history and include them in `data-workflow` user-message markers for resume-safe replay.
-6. Do not pass document file parts to the model directly; strip file parts when building model messages and append a filename note, relying on ingestion + retrieval (SPEC-0004).
+2. Client uploads attachment bytes via `@vercel/blob/client upload()` using `POST /api/upload` as the token exchange endpoint.
+3. Client registers and ingests the uploaded blobs via `POST /api/upload/register` (sync ingest by default).
+4. Client sends the chat message using hosted file URLs (no data URLs) as `FileUIPart[]` alongside text.
+5. Extend durable follow-ups: `POST /api/chat/:runId` accepts `files?: FileUIPart[]` and resumes the workflow hook with attachments.
+6. Persist file parts in UI message history and include them in `data-workflow` user-message markers for resume-safe replay.
+7. Do not pass document file parts to the model directly; strip file parts when building model messages and append a filename note, relying on ingestion + retrieval (SPEC-0004).
 
 Implementation details and contracts are specified in:
 

@@ -13,13 +13,32 @@ import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
 
-const bodySchema = z.strictObject({
-  message: z.string().min(1),
-  messageId: z.string().min(1),
+const filePartSchema = z.strictObject({
+  filename: z.string().min(1).optional(),
+  mediaType: z.string().min(1),
+  type: z.literal("file"),
+  url: z.string().min(1),
 });
 
+const bodySchema = z
+  .strictObject({
+    files: z.array(filePartSchema).min(1).optional(),
+    message: z.string().trim().min(1).optional(),
+    messageId: z.string().min(1),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.message && !value.files) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Provide either message or files.",
+        path: ["message"],
+      });
+    }
+  });
+
 /**
- * Resume an in-flight multi-turn chat run by injecting a follow-up message.
+ * Resume an in-flight multi-turn chat run by injecting a follow-up user message
+ * with optional attachments.
  *
  * @param req - HTTP request.
  * @param context - Route params.
@@ -66,7 +85,10 @@ export async function POST(
       messages: [
         {
           id: parsed.messageId,
-          parts: [{ text: parsed.message, type: "text" }],
+          parts: [
+            ...(parsed.files ?? []),
+            ...(parsed.message ? [{ text: parsed.message, type: "text" }] : []),
+          ],
           role: "user",
         },
       ],
@@ -74,7 +96,8 @@ export async function POST(
     });
 
     await chatMessageHook.resume(params.runId, {
-      message: parsed.message,
+      ...(parsed.files?.length ? { files: parsed.files } : {}),
+      ...(parsed.message ? { message: parsed.message } : {}),
       messageId: parsed.messageId,
     });
 
