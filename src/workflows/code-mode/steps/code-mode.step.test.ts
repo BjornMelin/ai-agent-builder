@@ -423,7 +423,7 @@ describe("runCodeModeSession", () => {
 
     expect(state.startSandboxJobSession).toHaveBeenCalledWith(
       expect.objectContaining({
-        networkPolicy: { type: "no-access" },
+        networkPolicy: "deny-all",
         runtime: "node24",
       }),
     );

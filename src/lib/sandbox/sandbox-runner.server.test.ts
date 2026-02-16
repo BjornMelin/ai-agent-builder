@@ -48,7 +48,7 @@ describe("startSandboxJobSession", () => {
     const session = await startSandboxJobSession(
       {
         jobType: "code_mode",
-        networkPolicy: { type: "no-access" },
+        networkPolicy: "deny-all",
         projectId: "proj_test",
         runId: "run_test",
         timeoutMs: 60_000,
@@ -134,7 +134,7 @@ describe("startSandboxJobSession", () => {
     const session = await startSandboxJobSession(
       {
         jobType: "code_mode",
-        networkPolicy: { type: "no-access" },
+        networkPolicy: "deny-all",
         projectId: "proj_test",
         runId: "run_test",
         timeoutMs: 60_000,

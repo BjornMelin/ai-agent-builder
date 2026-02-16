@@ -2,10 +2,10 @@ import "server-only";
 
 import type { NetworkPolicy } from "@vercel/sandbox";
 
-export const SANDBOX_NETWORK_POLICY_NONE: NetworkPolicy = { type: "no-access" };
+export const SANDBOX_NETWORK_POLICY_NONE: NetworkPolicy = "deny-all";
 
 export const SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT: NetworkPolicy = {
-  allowedDomains: [
+  allow: [
     "*.github.com",
     "*.githubusercontent.com",
     "*.npmjs.org",
@@ -15,11 +15,10 @@ export const SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT: NetworkPolicy = {
     "raw.githubusercontent.com",
     "registry.npmjs.org",
   ],
-  type: "restricted",
 };
 
 export const SANDBOX_NETWORK_POLICY_RESTRICTED_PYTHON_DEFAULT: NetworkPolicy = {
-  allowedDomains: [
+  allow: [
     "*.github.com",
     "*.githubusercontent.com",
     "api.github.com",
@@ -29,5 +28,4 @@ export const SANDBOX_NETWORK_POLICY_RESTRICTED_PYTHON_DEFAULT: NetworkPolicy = {
     "pypi.org",
     "raw.githubusercontent.com",
   ],
-  type: "restricted",
 };

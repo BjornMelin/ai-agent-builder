@@ -11,7 +11,7 @@
     "auth:create:local": "bun scripts/neon-auth-local.ts create",
     "auth:repair:local": "bun scripts/neon-auth-local.ts repair",
     "auth:smoke:local": "bun scripts/neon-auth-local.ts smoke",
-    "build": "bun --bun next build",
+    "build": "node node_modules/next/dist/bin/next build",
     "build:vercel": "bun run db:migrate && bun run build",
     "ci": "bun run lint && bun run typecheck && bun run test:coverage && bun run build",
     "db:generate": "drizzle-kit generate",
