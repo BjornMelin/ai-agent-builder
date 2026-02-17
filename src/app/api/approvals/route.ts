@@ -109,6 +109,7 @@ export async function POST(req: Request) {
           approvalId: updated.id,
           approvedAt: updated.approvedAt,
           approvedBy: updated.approvedBy ?? approvedBy,
+          schemaVersion: 2,
           scope: updated.scope,
         });
       }

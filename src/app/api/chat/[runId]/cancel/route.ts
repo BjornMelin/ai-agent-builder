@@ -1,5 +1,3 @@
-import { getRun } from "workflow/api";
-
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
@@ -9,6 +7,7 @@ import {
 } from "@/lib/data/chat.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
+import { getRun } from "@/workflows/_shared/workflow-runtime.server";
 
 /**
  * Cancel an in-flight chat session workflow run.

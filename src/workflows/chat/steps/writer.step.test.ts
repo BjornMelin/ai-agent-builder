@@ -25,9 +25,11 @@ describe("chat writer steps", () => {
       expect(written[0]).toMatchObject({
         data: {
           content: "hi",
+          domain: "chat",
           id: "m1",
           timestamp: 123,
           type: "user-message",
+          version: 2,
         },
         type: "data-workflow",
       });
@@ -62,6 +64,7 @@ describe("chat writer steps", () => {
       expect(written[0]).toMatchObject({
         data: {
           content: "",
+          domain: "chat",
           files: [
             {
               mediaType: "application/pdf",
@@ -72,6 +75,7 @@ describe("chat writer steps", () => {
           id: "m2",
           timestamp: 456,
           type: "user-message",
+          version: 2,
         },
         type: "data-workflow",
       });
@@ -100,9 +104,11 @@ describe("chat writer steps", () => {
       expect(written[0]).toMatchObject({
         data: {
           content: "hi",
+          domain: "chat",
           id: "m3",
           timestamp: 789,
           type: "user-message",
+          version: 2,
         },
         type: "data-workflow",
       });

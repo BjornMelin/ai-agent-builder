@@ -1,4 +1,5 @@
 import type { FileUIPart, UIMessageChunk } from "ai";
+import { createChatUserMessageMarker } from "@/workflows/_shared/workflow-stream-events";
 
 /**
  * Write a `data-workflow` chunk to mark a user message in a multi-turn stream.
@@ -24,15 +25,15 @@ export async function writeUserMessageMarker(
   const writer = writable.getWriter();
   try {
     const markerChunk: UIMessageChunk = {
-      data: {
+      data: createChatUserMessageMarker({
         content: input.content,
         ...(input.files && input.files.length > 0
-          ? { files: input.files }
+          ? { files: [...input.files] }
           : {}),
         id: input.messageId,
         timestamp,
         type: "user-message",
-      },
+      }),
       type: "data-workflow",
     };
     await writer.write(markerChunk);

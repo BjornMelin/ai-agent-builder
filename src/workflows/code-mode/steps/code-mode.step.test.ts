@@ -2,11 +2,11 @@ import { createWritableCollector } from "@tests/utils/streams";
 import type { stepCountIs, Tool, UIMessageChunk } from "ai";
 import { mockValues } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CodeModeStreamEvent } from "@/lib/runs/code-mode-stream";
 import {
   SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT,
   SANDBOX_NETWORK_POLICY_RESTRICTED_PYTHON_DEFAULT,
 } from "@/lib/sandbox/network-policy.server";
+import type { CodeModeStreamEvent } from "@/workflows/_shared/workflow-stream-events";
 
 type RunCommandResult = Readonly<{
   exitCode: number;
@@ -350,14 +350,19 @@ describe("runCodeModeSession", () => {
 
     // Stream events should include status + assistant deltas + exit.
     type CodeModeDataChunk = Readonly<{
-      type: "data-code-mode";
+      type: "data-workflow";
       data: CodeModeStreamEvent;
       id?: string;
       transient?: boolean;
     }>;
 
     const dataChunks = writes.filter(
-      (c): c is CodeModeDataChunk => c.type === "data-code-mode",
+      (c): c is CodeModeDataChunk =>
+        c.type === "data-workflow" &&
+        typeof c.data === "object" &&
+        c.data !== null &&
+        "domain" in c.data &&
+        c.data.domain === "code-mode",
     );
     expect(dataChunks.some((c) => c.data.type === "status")).toBe(true);
     expect(dataChunks.some((c) => c.data.type === "assistant-delta")).toBe(
@@ -436,9 +441,14 @@ describe("runCodeModeSession", () => {
     );
 
     const dataChunks = writes.filter(
-      (c) => c.type === "data-code-mode",
+      (c) =>
+        c.type === "data-workflow" &&
+        typeof c.data === "object" &&
+        c.data !== null &&
+        "domain" in c.data &&
+        c.data.domain === "code-mode",
     ) as Array<{
-      type: "data-code-mode";
+      type: "data-workflow";
       data: CodeModeStreamEvent;
     }>;
     expect(

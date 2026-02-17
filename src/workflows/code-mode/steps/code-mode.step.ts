@@ -21,7 +21,6 @@ import {
   detectGitHubRepoRuntimeKind,
   type RepoRuntimeKind,
 } from "@/lib/repo/repo-kind.server";
-import type { CodeModeStreamEvent } from "@/lib/runs/code-mode-stream";
 import type { VercelSandboxLike } from "@/lib/sandbox/ctxzip.server";
 import { compactToolResults } from "@/lib/sandbox/ctxzip-compactor.server";
 import {
@@ -32,6 +31,10 @@ import {
 import { redactSandboxLog } from "@/lib/sandbox/redaction.server";
 import { startSandboxJobSession } from "@/lib/sandbox/sandbox-runner.server";
 import { nowTimestamp } from "@/workflows/_shared/workflow-run-utils";
+import {
+  type CodeModeStreamEventInput,
+  createCodeModeStreamEvent,
+} from "@/workflows/_shared/workflow-stream-events";
 import { chatToolSkillMetadataSchema } from "@/workflows/chat/tool-context";
 import { enableCtxZipRuntime } from "@/workflows/code-mode/steps/code-mode/ctxzip-runtime";
 import {
@@ -87,8 +90,11 @@ export async function runCodeModeSession(
   const timeoutMs = budgets.timeoutMs ?? 10 * 60_000;
 
   const writer = input.writable.getWriter();
-  const writeEvent = async (event: CodeModeStreamEvent) => {
-    const chunk: UIMessageChunk = { data: event, type: "data-code-mode" };
+  const writeEvent = async (event: CodeModeStreamEventInput) => {
+    const chunk: UIMessageChunk = {
+      data: createCodeModeStreamEvent(event),
+      type: "data-workflow",
+    };
     await writer.write(chunk);
   };
 

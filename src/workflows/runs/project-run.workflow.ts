@@ -1,11 +1,11 @@
 import type { UIMessageChunk } from "ai";
 import { getWorkflowMetadata, getWritable } from "workflow";
 import { AppError } from "@/lib/core/errors";
-import type { RunStreamEvent } from "@/lib/runs/run-stream";
 import {
   nowTimestamp,
   toStepErrorPayload,
 } from "@/workflows/_shared/workflow-run-utils";
+import type { RunStreamEventInput } from "@/workflows/_shared/workflow-stream-events";
 import { approvalHook } from "@/workflows/approvals/hooks/approval";
 import { ensureApprovalRequest } from "@/workflows/runs/steps/approvals.step";
 import {
@@ -80,7 +80,7 @@ export async function projectRun(
   try {
     const runInfo = await getRunInfo(runId);
 
-    const startedEvent: RunStreamEvent = {
+    const startedEvent: RunStreamEventInput = {
       kind: runInfo.kind,
       runId,
       timestamp: nowTimestamp(),

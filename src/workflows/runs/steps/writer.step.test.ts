@@ -24,10 +24,12 @@ describe("run writer steps", () => {
     expect(written).toEqual([
       {
         data: {
+          domain: "run",
           runId: "run_1",
           status: "running",
           timestamp: 0,
           type: "run-finished",
+          version: 2,
         },
         type: "data-workflow",
       },

@@ -48,10 +48,12 @@ describe("RunStreamClient", () => {
     const fetchMock = vi.fn(async () => {
       const eventChunk = {
         data: {
+          domain: "run",
           kind: "research",
           runId: "run_1",
           timestamp: 0,
           type: "run-started",
+          version: 2,
           workflowRunId: "wf_1",
         },
         type: "data-workflow",
@@ -92,10 +94,12 @@ describe("RunStreamClient", () => {
     fetchMock.mockImplementationOnce(async () => {
       const eventChunk = {
         data: {
+          domain: "run",
           kind: "research",
           runId: "run_1",
           timestamp: 0,
           type: "run-started",
+          version: 2,
           workflowRunId: "wf_1",
         },
         type: "data-workflow",

@@ -1,5 +1,3 @@
-import { cancelRun, getWorld } from "@workflow/core/runtime";
-import { start } from "workflow/api";
 import { z } from "zod";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
@@ -9,6 +7,11 @@ import { recordProjectSkillRegistryInstall } from "@/lib/data/project-skill-regi
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
+import {
+  cancelRun,
+  getWorld,
+  start,
+} from "@/workflows/_shared/workflow-runtime.server";
 import { installProjectSkillFromRegistry } from "@/workflows/skills-registry/project-skill-registry.workflow";
 
 const bodySchema = z.strictObject({

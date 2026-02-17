@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   experimental: {
     optimizePackageImports: ["radix-ui", "lucide-react"],
+    // Keep build filesystem cache explicitly disabled until we gather stable
+    // CI/Vercel benchmark data for this project.
+    turbopackFileSystemCacheForBuild: false,
   },
   images: {
     contentDispositionType: "attachment",

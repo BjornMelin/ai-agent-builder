@@ -3,7 +3,6 @@ import {
   safeValidateUIMessages,
   type UIMessage,
 } from "ai";
-import { getRun, start } from "workflow/api";
 import { z } from "zod";
 import {
   getEnabledAgentMode,
@@ -21,6 +20,7 @@ import {
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError } from "@/lib/next/responses";
+import { getRun, start } from "@/workflows/_shared/workflow-runtime.server";
 import { projectChat } from "@/workflows/chat/project-chat.workflow";
 
 type ProjectChatUIMessage = UIMessage;

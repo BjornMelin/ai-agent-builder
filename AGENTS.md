@@ -16,7 +16,8 @@ This repo is optimized for agent-driven development (Codex + local automation).
 ```bash
 bun install                    # Install dependencies
 bun run dev                    # Start development server
-bun run build                  # Build for production
+bun run build                  # Build for production (Bun-first, Node fallback on known transient Bun/Turbopack failures)
+bun run build:strict-bun       # Bun-only production build (canary signal)
 bun run format                 # Format code with Biome
 bun run lint                   # Run Biome and ESLint
 bun run typecheck              # Run TypeScript compiler checks

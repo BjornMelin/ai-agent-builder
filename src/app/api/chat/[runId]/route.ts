@@ -129,6 +129,7 @@ export async function POST(
       ...(safeFiles?.length ? { files: safeFiles } : {}),
       ...(parsed.message ? { message: parsed.message } : {}),
       messageId: parsed.messageId,
+      schemaVersion: 2,
     });
 
     const now = new Date();

@@ -1,6 +1,9 @@
 import type { UIMessageChunk } from "ai";
 
-import type { RunStreamEvent } from "@/lib/runs/run-stream";
+import {
+  createRunStreamEvent,
+  type RunStreamEventInput,
+} from "@/workflows/_shared/workflow-stream-events";
 
 /**
  * Write a run stream event to the workflow output stream.
@@ -10,13 +13,16 @@ import type { RunStreamEvent } from "@/lib/runs/run-stream";
  */
 export async function writeRunEvent(
   writable: WritableStream<UIMessageChunk>,
-  event: RunStreamEvent,
+  event: RunStreamEventInput,
 ): Promise<void> {
   "use step";
 
   const writer = writable.getWriter();
   try {
-    const chunk: UIMessageChunk = { data: event, type: "data-workflow" };
+    const chunk: UIMessageChunk = {
+      data: createRunStreamEvent(event),
+      type: "data-workflow",
+    };
     await writer.write(chunk);
   } finally {
     writer.releaseLock();

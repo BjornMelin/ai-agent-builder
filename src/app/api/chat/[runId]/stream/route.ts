@@ -1,10 +1,10 @@
 import { createUIMessageStreamResponse } from "ai";
-import { getRun } from "workflow/api";
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { getChatThreadByWorkflowRunId } from "@/lib/data/chat.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { jsonError } from "@/lib/next/responses";
+import { getRun } from "@/workflows/_shared/workflow-runtime.server";
 
 const START_INDEX_PATTERN = /^\d+$/;
 

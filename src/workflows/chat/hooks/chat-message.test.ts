@@ -28,9 +28,10 @@ describe("chatMessageHook", () => {
     const schema = arg.schema as {
       safeParse: (value: unknown) => { success: boolean };
     };
-    expect(schema.safeParse({ message: "hi", messageId: "m1" }).success).toBe(
-      true,
-    );
+    expect(
+      schema.safeParse({ message: "hi", messageId: "m1", schemaVersion: 2 })
+        .success,
+    ).toBe(true);
     expect(
       schema.safeParse({
         files: [
@@ -41,11 +42,18 @@ describe("chatMessageHook", () => {
           },
         ],
         messageId: "m1",
+        schemaVersion: 2,
       }).success,
     ).toBe(true);
-    expect(schema.safeParse({ message: "", messageId: "m1" }).success).toBe(
+    expect(
+      schema.safeParse({ message: "", messageId: "m1", schemaVersion: 2 })
+        .success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({ messageId: "m1", schemaVersion: 2 }).success,
+    ).toBe(false);
+    expect(schema.safeParse({ message: "hi", messageId: "m1" }).success).toBe(
       false,
     );
-    expect(schema.safeParse({ messageId: "m1" }).success).toBe(false);
   });
 });

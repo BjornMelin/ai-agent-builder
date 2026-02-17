@@ -200,6 +200,7 @@ describe("POST /api/approvals", () => {
       expect.objectContaining({
         approvalId: "approval_1",
         approvedBy: "a@example.com",
+        schemaVersion: 2,
         scope: "repo.merge",
       }),
     );

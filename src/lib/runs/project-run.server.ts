@@ -1,7 +1,5 @@
 import "server-only";
 
-import { getRun, start } from "workflow/api";
-
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
@@ -13,6 +11,7 @@ import {
   setRunWorkflowRunId,
   updateRunStatus,
 } from "@/lib/data/runs.server";
+import { getRun, start } from "@/workflows/_shared/workflow-runtime.server";
 import { projectRun } from "@/workflows/runs/project-run.workflow";
 
 /**

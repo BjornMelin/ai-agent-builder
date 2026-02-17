@@ -1,4 +1,4 @@
-import { WorkflowRunCancelledError } from "workflow/internal/errors";
+import { WorkflowRunCancelledError } from "@workflow/errors";
 
 /**
  * Detect Workflow DevKit cancellations.

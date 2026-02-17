@@ -93,11 +93,13 @@ const CHAT_MAX_ATTACHMENT_FILES =
     : defaultUploadMaxFiles;
 
 type UserMessageMarker = Readonly<{
-  type: "user-message";
-  id: string;
   content: string;
+  domain: "chat";
   files?: readonly FileUIPart[] | undefined;
+  id: string;
   timestamp: number;
+  type: "user-message";
+  version: 2;
 }>;
 
 type AppUIMessage = UIMessage<unknown, UIDataTypes, UITools>;
@@ -146,7 +148,9 @@ function isUserMessageMarker(data: unknown): data is UserMessageMarker {
   const value = data as Partial<UserMessageMarker>;
   const hasValidFiles = value.files === undefined || Array.isArray(value.files);
   return (
+    value.domain === "chat" &&
     value.type === "user-message" &&
+    value.version === 2 &&
     typeof value.id === "string" &&
     typeof value.content === "string" &&
     hasValidFiles &&

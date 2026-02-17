@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import {
   type RunStreamEvent,
   runStreamEventSchema,
-} from "@/lib/runs/run-stream";
+} from "@/workflows/_shared/workflow-stream-events";
 
 type StreamStatus = "idle" | "streaming" | "done" | "error";
 const STREAM_EVENT_FLUSH_MS = 16;
@@ -96,7 +96,7 @@ function persistStartIndex(storageKey: string, startIndex: number): void {
  * @returns Stream UI.
  */
 export function RunStreamClient(props: Readonly<{ runId: string }>) {
-  const storageKey = `workflow:runs:v1:${props.runId}:startIndex`;
+  const storageKey = `workflow:runs:v2:${props.runId}:startIndex`;
   const [events, setEvents] = useState<RunStreamEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<StreamStatus>("idle");

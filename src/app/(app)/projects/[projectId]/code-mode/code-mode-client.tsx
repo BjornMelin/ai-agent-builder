@@ -31,6 +31,7 @@ const uiMessageChunkSchema = z.looseObject({
 
 const codeModeEventSchema = z.looseObject({
   data: z.optional(z.string()),
+  domain: z.literal("code-mode"),
   exitCode: z.optional(z.number()),
   input: z.optional(z.unknown()),
   message: z.optional(z.string()),
@@ -47,6 +48,7 @@ const codeModeEventSchema = z.looseObject({
     "tool-call",
     "tool-result",
   ]),
+  version: z.literal(2),
 });
 
 const MAX_OUTPUT_CHARS = 200_000;
@@ -197,7 +199,7 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
 
     try {
       window.sessionStorage.removeItem(
-        `workflow:code-mode:v1:${parsedRunId}:startIndex`,
+        `workflow:code-mode:v2:${parsedRunId}:startIndex`,
       );
     } catch {
       // Ignore.
@@ -212,7 +214,7 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
     if (!abort) return;
 
     const currentRunId = runId;
-    const storageKey = `workflow:code-mode:v1:${currentRunId}:startIndex`;
+    const storageKey = `workflow:code-mode:v2:${currentRunId}:startIndex`;
 
     let startIndex = readStartIndex(storageKey);
     const autoReconnectDelaysMs = [250, 750, 1500] as const;
@@ -312,7 +314,7 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
 
               const chunkParsed = uiMessageChunkSchema.safeParse(jsonUnknown);
               if (!chunkParsed.success) continue;
-              if (chunkParsed.data.type !== "data-code-mode") continue;
+              if (chunkParsed.data.type !== "data-workflow") continue;
 
               const eventParsed = codeModeEventSchema.safeParse(
                 chunkParsed.data.data,

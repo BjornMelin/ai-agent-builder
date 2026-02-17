@@ -17,6 +17,7 @@ const chatMessageSchema = z
     files: z.array(filePartSchema).min(1).optional(),
     message: z.string().trim().min(1).optional(),
     messageId: z.string().min(1),
+    schemaVersion: z.literal(2),
   })
   .superRefine((value, ctx) => {
     if (!value.message && !value.files) {

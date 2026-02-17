@@ -152,6 +152,7 @@ describe("POST /api/chat/:runId", () => {
     expect(state.resume).toHaveBeenCalledWith("run_1", {
       message: "hello",
       messageId: "msg_1",
+      schemaVersion: 2,
     });
     expect(state.updateChatThreadByWorkflowRunId).toHaveBeenCalledWith(
       "run_1",
@@ -206,6 +207,7 @@ describe("POST /api/chat/:runId", () => {
       files,
       message: "hello",
       messageId: "msg_1",
+      schemaVersion: 2,
     });
   });
 
@@ -312,6 +314,7 @@ describe("POST /api/chat/:runId", () => {
     expect(state.resume).toHaveBeenCalledWith("run_1", {
       message: "/done",
       messageId: "msg_1",
+      schemaVersion: 2,
     });
     expect(state.updateChatThreadByWorkflowRunId).toHaveBeenCalledWith(
       "run_1",
@@ -341,6 +344,7 @@ describe("POST /api/chat/:runId", () => {
     expect(state.resume).toHaveBeenCalledWith("run_1", {
       message: "hello",
       messageId: "msg_1",
+      schemaVersion: 2,
     });
   });
 });
