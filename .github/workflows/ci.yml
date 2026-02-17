@@ -22,7 +22,7 @@ jobs:
     runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 1
 
@@ -161,7 +161,7 @@ jobs:
 
       - name: Upload strict Bun build logs
         if: ${{ always() && !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: build-bun-strict-log
           path: .artifacts/build-bun-strict.log

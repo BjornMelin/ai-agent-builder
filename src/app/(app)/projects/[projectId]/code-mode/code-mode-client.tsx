@@ -88,6 +88,52 @@ function readStartIndex(storageKey: string): number {
   }
 }
 
+function getStartIndexStorageKeys(runId: string): Readonly<{
+  legacy: string;
+  v2: string;
+}> {
+  return {
+    legacy: `workflow:code-mode:${runId}:startIndex`,
+    v2: `workflow:code-mode:v2:${runId}:startIndex`,
+  };
+}
+
+function migrateStartIndexStorage(runId: string): number {
+  const keys = getStartIndexStorageKeys(runId);
+  try {
+    const v2Raw = window.sessionStorage.getItem(keys.v2);
+    if (v2Raw !== null) {
+      window.sessionStorage.removeItem(keys.legacy);
+      return readStartIndex(keys.v2);
+    }
+
+    const legacyRaw = window.sessionStorage.getItem(keys.legacy);
+    if (legacyRaw === null) return 0;
+
+    const parsedLegacy = Number.parseInt(legacyRaw, 10);
+    const normalizedLegacy =
+      Number.isSafeInteger(parsedLegacy) && parsedLegacy >= 0
+        ? parsedLegacy
+        : 0;
+
+    window.sessionStorage.setItem(keys.v2, String(normalizedLegacy));
+    window.sessionStorage.removeItem(keys.legacy);
+    return normalizedLegacy;
+  } catch {
+    return readStartIndex(keys.v2);
+  }
+}
+
+function clearStartIndexStorage(runId: string): void {
+  const keys = getStartIndexStorageKeys(runId);
+  try {
+    window.sessionStorage.removeItem(keys.v2);
+    window.sessionStorage.removeItem(keys.legacy);
+  } catch {
+    // Ignore storage failures (private mode, quota, etc.).
+  }
+}
+
 function persistStartIndex(storageKey: string, startIndex: number): void {
   try {
     window.sessionStorage.setItem(storageKey, String(startIndex));
@@ -197,13 +243,7 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
     setRunId(parsedRunId);
     setWorkflowRunId(parsedWorkflowRunId);
 
-    try {
-      window.sessionStorage.removeItem(
-        `workflow:code-mode:v2:${parsedRunId}:startIndex`,
-      );
-    } catch {
-      // Ignore.
-    }
+    void migrateStartIndexStorage(parsedRunId);
   };
 
   useEffect(() => {
@@ -214,9 +254,9 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
     if (!abort) return;
 
     const currentRunId = runId;
-    const storageKey = `workflow:code-mode:v2:${currentRunId}:startIndex`;
-
-    let startIndex = readStartIndex(storageKey);
+    const storageKeys = getStartIndexStorageKeys(currentRunId);
+    const storageKey = storageKeys.v2;
+    let startIndex = migrateStartIndexStorage(currentRunId);
     const autoReconnectDelaysMs = [250, 750, 1500] as const;
 
     async function openAndReadOnce(
@@ -412,11 +452,7 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
           setStatus("done");
           setWasInterrupted(false);
           if (startIndex > 0) {
-            try {
-              window.sessionStorage.removeItem(storageKey);
-            } catch {
-              // Ignore.
-            }
+            clearStartIndexStorage(currentRunId);
           }
           return;
         }

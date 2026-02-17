@@ -15,6 +15,11 @@ builds.
 - `bun run build:strict-bun`
   - Runs `bun --bun next build --webpack`.
 
+`bun run build` is the default local/general entrypoint. `bun run build:strict-bun`
+is the CI/strict alias used for canary visibility and future divergence; it is
+intentionally equivalent today for reproducibility, but reserved for stricter
+environment enforcement or flags without changing developer defaults.
+
 ## CI policy
 
 - Primary CI build job runs `bun run build`.
