@@ -314,7 +314,12 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
 
               const chunkParsed = uiMessageChunkSchema.safeParse(jsonUnknown);
               if (!chunkParsed.success) continue;
-              if (chunkParsed.data.type !== "data-workflow") continue;
+              if (
+                chunkParsed.data.type !== "data-workflow" &&
+                chunkParsed.data.type !== "data-code-mode"
+              ) {
+                continue;
+              }
 
               const eventParsed = codeModeEventSchema.safeParse(
                 chunkParsed.data.data,
