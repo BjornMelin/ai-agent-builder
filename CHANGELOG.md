@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.14](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.13...ai-agent-builder-v0.1.14) (2026-07-13)
+
+
+### Features
+
+* **runtime:** adopt AI SDK 7 and durable workflows ([0355d90](https://github.com/BjornMelin/ai-agent-builder/commit/0355d90c5cd31c1e3701bac111ee1d3a4f4269b0))
+* **runtime:** upgrade to AI SDK 7 and durable native workflows ([cfcbdb7](https://github.com/BjornMelin/ai-agent-builder/commit/cfcbdb7db55a39ce33852bbf3218d43d4dd61b21))
+
+
+### Bug Fixes
+
+* **ci:** address PR 41 unresolved review threads ([e12f0c9](https://github.com/BjornMelin/ai-agent-builder/commit/e12f0c94b82fb46e46658cb6db868928c9898f60))
+* **code-mode:** reconcile rejected and legacy starts ([f3ab372](https://github.com/BjornMelin/ai-agent-builder/commit/f3ab372dd54eb4ca427965a303516fb4db6007a1))
+* **review:** resolve hosted review findings ([1269d01](https://github.com/BjornMelin/ai-agent-builder/commit/1269d0192dfbbdba8512b26e342e144207b48c45))
+
 ## [0.1.13](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.12...ai-agent-builder-v0.1.13) (2026-02-11)
 
 
