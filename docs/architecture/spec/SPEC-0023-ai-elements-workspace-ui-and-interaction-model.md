@@ -114,12 +114,12 @@ Reference: [Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-
 
 The project chat client combines `useChat` with `WorkflowChatTransport` from `@ai-sdk/workflow`:
 
-- Create the transport exactly once via `useState(() => new WorkflowChatTransport(...))`
-- Keep current project, mode, and run IDs in refs because the transport stores callbacks.
-- Reconnect with the latest workflow run ID and `/api/chat/:runId/stream`.
+- Create the transport exactly once via `useState(() => new WorkflowChatTransport(...))` (FR-008, PR-004).
+- Keep current project, mode, and run IDs in refs because the transport stores callbacks (FR-008, PR-004).
+- Reconnect with the latest workflow run ID and `/api/chat/:runId/stream` (FR-008, PR-004).
 - Keep the small exact-optional adapter at the `ChatTransport` boundary until upstream `@ai-sdk/workflow` and AI SDK signatures converge.
-- Reconstruct persisted and streamed message order with `useMemo`; the projection is linear in the number of message parts.
-- Treat the persisted chat thread and the `threadId` URL query parameter as canonical. Do not add local-storage session ownership.
+- Reconstruct persisted and streamed message order with `useMemo`; the projection is linear in the number of message parts (FR-008, NFR-003).
+- Treat the persisted chat thread and the `threadId` URL query parameter as canonical. Do not add local-storage session ownership (FR-008, PR-005).
 
 Transport reference: [AI SDK Workflow package](https://github.com/vercel/ai/tree/main/packages/workflow)
 

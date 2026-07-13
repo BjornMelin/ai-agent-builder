@@ -93,6 +93,7 @@ async function findMessage(tx: DbClient, threadId: string, messageId: string) {
  *
  * @param input - Persisted thread, message ID, and normalized payload.
  * @returns Whether the ID is unused, an exact retry, or a payload conflict.
+ * @throws unknown - Re-throws database failures; missing-schema failures are wrapped as AppError.
  */
 export async function inspectChatFollowUp(
   input: Readonly<{
@@ -140,6 +141,10 @@ function createUserMessage(
  *
  * @param input - Hook payload plus the waiting-generation timestamp observed by the route.
  * @returns Whether this delivery was accepted or must be skipped.
+ * @throws AppError - With code "invalid_message" for a reserved ID or invalid generation.
+ * @throws AppError - With code "not_found" when the chat thread does not exist.
+ * @throws AppError - With code "conflict" when acceptance loses an insert race.
+ * @throws unknown - Re-throws database failures; missing-schema failures are wrapped as AppError.
  */
 export async function acceptChatFollowUp(
   input: Readonly<{

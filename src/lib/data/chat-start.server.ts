@@ -73,6 +73,10 @@ function startIntentReceipt(input: ChatStartIntent) {
  *
  * @param input - Authenticated immutable chat start request.
  * @returns Canonical start state.
+ * @throws AppError - With code "bad_request" when the initial message is invalid.
+ * @throws AppError - With code "db_insert_failed" when persistence cannot be confirmed.
+ * @throws AppError - With code "chat_start_conflict" when the ID has another payload.
+ * @throws unknown - Re-throws database failures; missing-schema failures are wrapped as AppError.
  */
 export async function ensureChatStartIntent(
   input: ChatStartIntent,
@@ -182,6 +186,7 @@ export async function ensureChatStartIntent(
  * @param threadId - Client-generated canonical thread UUID.
  * @param workflowRunId - Native Workflow execution attempting ownership.
  * @returns Whether this Workflow owns the nonterminal thread.
+ * @throws unknown - Re-throws database failures; missing-schema failures are wrapped as AppError.
  */
 export async function claimChatWorkflow(
   threadId: string,
@@ -228,6 +233,7 @@ export async function claimChatWorkflow(
  *
  * @param threadId - Client-known chat thread UUID.
  * @returns Current state or `null`.
+ * @throws unknown - Re-throws database failures; missing-schema failures are wrapped as AppError.
  */
 export async function getChatStartState(
   threadId: string,

@@ -525,6 +525,7 @@ export async function runCodeModeSession(
               : "sandbox_job_not_active",
             409,
             `Sandbox job ended as ${finalized.job.status}.`,
+            executionFailed ? failure : undefined,
           );
         } else {
           finalizedJobId = finalized.job.id;

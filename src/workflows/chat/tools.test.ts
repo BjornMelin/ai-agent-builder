@@ -50,6 +50,12 @@ describe("chatTools", () => {
         query: "x",
       }),
     ).resolves.toMatchObject({ success: false });
+    await expect(
+      validate(chatTools["web.search"].inputSchema, {
+        endPublishedDate: "2026-02-31",
+        query: "x",
+      }),
+    ).resolves.toMatchObject({ success: false });
   });
 
   it("validates web.extract input", async () => {

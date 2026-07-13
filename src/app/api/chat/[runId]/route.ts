@@ -47,6 +47,8 @@ const bodySchema = z
  * @param _req - HTTP request.
  * @param context - Route params.
  * @returns Authenticated chat identity and lifecycle state.
+ * @throws AppError - With code "not_found" when the chat session does not exist.
+ * @throws AppError - With code "forbidden" when its project is inaccessible.
  */
 export async function GET(
   _req: Request,

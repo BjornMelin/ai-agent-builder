@@ -177,6 +177,7 @@ async function releaseClaimAfterFailure(
  *
  * @param input - Durable ownership and optional already-resolved sandbox.
  * @param deps - Dependency overrides for tests.
+ * @throws SandboxStopBusyError - When another caller holds the stop lease.
  */
 export async function stopRunOwnedSandbox(
   input: Readonly<{ runId: string; sandboxId: string; sandbox?: Sandbox }>,
@@ -225,6 +226,7 @@ export async function stopRunOwnedSandbox(
  *
  * @param sandboxId - Provider sandbox ID.
  * @param deps - Dependency overrides for tests.
+ * @throws AppError - With code "sandbox_ownership_not_found" when ownership is absent.
  */
 export async function stopOwnedSandboxById(
   sandboxId: string,
@@ -253,6 +255,7 @@ export async function stopOwnedSandboxById(
  *
  * @param input - Provisioned sandbox and its durable ownership identity.
  * @param deps - Dependency overrides for tests.
+ * @throws AppError - With code "sandbox_cleanup_failed" when direct recovery fails.
  */
 export async function cancelProvisionedSandboxJob(
   input: Readonly<{ jobId: string; runId: string; sandbox: Sandbox }>,

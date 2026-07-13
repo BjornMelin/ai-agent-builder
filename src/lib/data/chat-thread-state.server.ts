@@ -130,6 +130,8 @@ export async function transitionChatThreadStateTx(
  *
  * @param input - Requested transition and optional compare-and-swap predicates.
  * @returns The authoritative persisted state after the transition attempt.
+ * @throws AppError - When the chat thread does not exist.
+ * @throws unknown - Re-throws database failures; missing-schema failures are wrapped as AppError.
  */
 export async function transitionChatThreadState(
   input: ChatThreadTransitionInput,

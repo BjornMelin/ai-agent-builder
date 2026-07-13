@@ -104,6 +104,7 @@ export async function startProjectRun(
  * otherwise it remains fenced and retryable by the canonical cancel path.
  *
  * @param input - App run and already-started Workflow IDs.
+ * @throws AppError - With code "workflow_cancel_failed" when cleanup cannot be confirmed.
  */
 export async function compensateStartedProjectRun(
   input: Readonly<{ runId: string; workflowRunId: string }>,

@@ -8,6 +8,7 @@ import { AppError } from "@/lib/core/errors";
 
 const TERMINAL_RUN_STATUSES = ["canceled", "failed", "succeeded"] as const;
 
+/** Immutable authenticated input for starting a Code Mode run. */
 export type CodeModeStartInput = Readonly<{
   budgets?: Readonly<{ maxSteps?: number; timeoutMs?: number }> | undefined;
   networkAccess?: "none" | "restricted" | undefined;
@@ -67,6 +68,8 @@ function matchesStartInput(
  * request.
  *
  * @param input - Authenticated immutable start input and client run UUID.
+ * @throws AppError - With code "not_found" when the project does not exist.
+ * @throws AppError - With code "conflict" when the run identity differs or another run is active.
  */
 export async function ensureCodeModeRun(
   input: CodeModeStartInput,

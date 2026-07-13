@@ -288,6 +288,8 @@ export async function getArtifactByIdempotencyKey(
  *
  * @param input - Stable artifact contents and run-specific identity.
  * @returns The inserted or concurrently existing version-one artifact.
+ * @throws AppError - With code "db_insert_failed" when insertion cannot be confirmed.
+ * @throws AppError - With code "conflict" when the identity belongs to another run.
  */
 export async function createArtifactVersionOnce(
   input: Readonly<{

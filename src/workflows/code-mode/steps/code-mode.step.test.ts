@@ -621,6 +621,21 @@ describe("runCodeModeSession", () => {
     );
   });
 
+  it("retains the execution failure when finalization also fails", async () => {
+    state.loopShouldThrow = true;
+    state.finalizedJobStatus = "canceled";
+
+    const { runCodeModeSession } = await import("./code-mode.step");
+    const { writable } = createWritableCollector<UIMessageChunk>();
+
+    await expect(
+      runCodeModeSession({ runId: "run_1", workflowRunId: "wf_1", writable }),
+    ).rejects.toMatchObject({
+      cause: expect.objectContaining({ message: "agent failed" }),
+      code: "sandbox_job_canceled",
+    });
+  });
+
   it("finalizes when setup fails after the sandbox is provisioned", async () => {
     state.getDefaultChatModel.mockImplementationOnce(() => {
       throw new Error("model setup failed");

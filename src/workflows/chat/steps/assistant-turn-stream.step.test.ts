@@ -75,6 +75,38 @@ describe("buildAssistantTurnMessageStep", () => {
       }),
     ).rejects.toThrow("without an assistant message");
   });
+
+  it("preserves failed tool results as UI errors", async () => {
+    const message = await buildAssistantTurnMessageStep({
+      assistantMessageId: "assistant:run-1:1",
+      steps: [
+        {
+          text: "",
+          toolCalls: [
+            {
+              input: { query: "failure" },
+              toolCallId: "call-1",
+              toolName: "searchWeb",
+            },
+          ],
+        },
+      ],
+      toolResults: [
+        {
+          output: { type: "error-json", value: { message: "upstream failed" } },
+          toolCallId: "call-1",
+        },
+      ],
+    });
+
+    expect(message.parts).toContainEqual({
+      errorText: '{"message":"upstream failed"}',
+      input: { query: "failure" },
+      state: "output-error",
+      toolCallId: "call-1",
+      type: "tool-searchWeb",
+    });
+  });
 });
 
 describe("publishAssistantTurnStep", () => {

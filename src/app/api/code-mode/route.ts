@@ -28,12 +28,12 @@ const startCodeModeSchema = z.strictObject({
   network: z.enum(["none", "restricted"]).optional(),
   projectId: z.string().min(1),
   prompt: z.string().min(1),
-  runId: z.string().uuid(),
+  runId: z.uuid(),
 });
 
 const discoverCodeModeSchema = z.strictObject({
   projectId: z.string().min(1),
-  runId: z.string().uuid().optional(),
+  runId: z.uuid().optional(),
 });
 
 function toRunPayload(run: RunDto) {
@@ -97,6 +97,8 @@ export async function POST(req: Request): Promise<Response> {
  *
  * @param req - HTTP request containing project and optional run IDs.
  * @returns Authenticated run payload or JSON error.
+ * @throws AppError - With code "bad_request" when query validation fails.
+ * @throws AppError - With code "not_found" when a run belongs to another project.
  */
 export async function GET(req: Request): Promise<Response> {
   try {

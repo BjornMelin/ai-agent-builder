@@ -205,6 +205,7 @@ export async function createSandboxJob(
  *
  * @param input - Stable provisioning identity and provider lifetime bounds.
  * @returns The existing job and the action the caller may safely take.
+ * @throws AppError - When the run is missing or terminal, or persistence fails.
  */
 export async function claimSandboxJobProvisioning(
   input: Readonly<{
@@ -345,6 +346,7 @@ export async function claimSandboxJobProvisioning(
  * @param jobId - Sandbox job ID.
  * @param input - Provisioned sandbox identity and runtime metadata.
  * @returns Current durable job state.
+ * @throws AppError - When the job is missing, ownership conflicts, or persistence fails.
  */
 export async function activateSandboxJob(
   jobId: string,
@@ -419,6 +421,7 @@ export async function activateSandboxJob(
  * @param jobId - Durable sandbox job ID.
  * @param sandboxId - Provider sandbox ID.
  * @returns Current durable job state.
+ * @throws AppError - When the job is missing, ownership conflicts, or persistence fails.
  */
 export async function publishSandboxJobOwnership(
   jobId: string,
@@ -475,6 +478,7 @@ export async function publishSandboxJobOwnership(
  * @param sandboxId - Provider sandbox ID.
  * @param stoppedAt - Confirmed stop timestamp.
  * @returns Updated durable job state.
+ * @throws AppError - When the job is missing, ownership conflicts, or persistence fails.
  */
 export async function recordSandboxStoppedForJob(
   jobId: string,
@@ -575,6 +579,7 @@ export const listSandboxJobsByRun = cache(
  *
  * @param sandboxId - Provider sandbox ID.
  * @returns Owning run ID or null when ownership was never published.
+ * @throws AppError - When the database read fails.
  */
 export async function getSandboxOwnerRunId(
   sandboxId: string,
@@ -602,6 +607,7 @@ export async function getSandboxOwnerRunId(
  * @param runId - Run ID.
  * @returns Every job owned by the run, including terminal jobs that may still
  * own a shared sandbox.
+ * @throws AppError - When the run is missing or the database transaction fails.
  */
 export async function claimSandboxJobsForCancellation(
   runId: string,
@@ -685,6 +691,7 @@ export async function claimSandboxJobsForCancellation(
  * @param leaseMs - Duration before an abandoned claim may be replaced.
  * @returns Whether this caller owns the stop, another caller owns it, or the
  * sandbox was already confirmed stopped.
+ * @throws AppError - When ownership or the database clock is unavailable.
  */
 export async function claimSandboxStopForRun(
   runId: string,
@@ -759,6 +766,7 @@ export async function claimSandboxStopForRun(
  * @param runId - Run ID.
  * @param sandboxId - Sandbox ID.
  * @param claimedAt - Exact claim timestamp owned by this caller.
+ * @throws AppError - When the database update fails.
  */
 export async function releaseSandboxStopForRun(
   runId: string,
@@ -792,6 +800,7 @@ export async function releaseSandboxStopForRun(
  * @param runId - Run ID.
  * @param sandboxId - Confirmed stopped sandbox ID.
  * @param stoppedAt - Confirmation timestamp.
+ * @throws AppError - When the database transaction fails.
  */
 export async function confirmSandboxStoppedForRun(
   runId: string,
@@ -836,6 +845,7 @@ export async function confirmSandboxStoppedForRun(
  *
  * @param jobIds - Claimed sandbox job IDs.
  * @param endedAt - Timestamp after external sandbox shutdown completed.
+ * @throws AppError - When the database update fails.
  */
 export async function completeSandboxJobCancellation(
   jobIds: readonly string[],

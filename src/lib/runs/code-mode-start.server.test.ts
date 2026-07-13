@@ -162,3 +162,19 @@ describe("claimCodeModeWorkflow", () => {
     );
   });
 });
+
+describe("getActiveCodeModeRunId", () => {
+  it.each([
+    [{ id: input.runId }, input.runId],
+    [null, null],
+  ])("returns the active run ID or null", async (row, expected) => {
+    const findFirst = vi.fn().mockResolvedValue(row);
+    state.db = { query: { runsTable: { findFirst } } };
+    const { getActiveCodeModeRunId } = await import("./code-mode-start.server");
+
+    await expect(
+      getActiveCodeModeRunId(input.projectId, input.userId),
+    ).resolves.toBe(expected);
+    expect(findFirst).toHaveBeenCalledOnce();
+  });
+});

@@ -25,10 +25,7 @@ const retrieveProjectChunksInput = z.strictObject({
 });
 
 const webSearchInput = z.strictObject({
-  endPublishedDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
+  endPublishedDate: z.iso.date().optional(),
   excludeDomains: z.array(z.string().min(1)).max(20).optional(),
   includeDomains: z.array(z.string().min(1)).max(20).optional(),
   numResults: z
@@ -38,10 +35,7 @@ const webSearchInput = z.strictObject({
     .max(budgets.maxWebSearchResults)
     .optional(),
   query: z.string().min(1),
-  startPublishedDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
+  startPublishedDate: z.iso.date().optional(),
 });
 
 const webExtractInput = z.strictObject({

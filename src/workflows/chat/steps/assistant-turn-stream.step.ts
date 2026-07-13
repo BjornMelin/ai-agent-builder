@@ -30,6 +30,7 @@ export type BufferedToolResult = Readonly<{
 
 type BufferedToolOutput =
   | Readonly<{ kind: "denied" }>
+  | Readonly<{ errorText: string; kind: "error" }>
   | Readonly<{ kind: "output"; value: unknown }>;
 
 function unwrapToolOutput(output: unknown): BufferedToolOutput {
@@ -43,10 +44,17 @@ function unwrapToolOutput(output: unknown): BufferedToolOutput {
     value?: unknown;
   };
   if (typed.type === "execution-denied") return { kind: "denied" };
+  if (typed.type === "error-json" || typed.type === "error-text") {
+    return {
+      errorText:
+        typeof typed.value === "string"
+          ? typed.value
+          : (JSON.stringify(typed.value) ?? "Tool execution failed."),
+      kind: "error",
+    };
+  }
   if (
     typed.type === "content" ||
-    typed.type === "error-json" ||
-    typed.type === "error-text" ||
     typed.type === "json" ||
     typed.type === "text"
   ) {
@@ -66,6 +74,7 @@ function unwrapToolOutput(output: unknown): BufferedToolOutput {
  *
  * @param input - Completed model steps, tool results, and deterministic ID.
  * @returns The canonical assistant message to persist.
+ * @throws Error - When no assistant message parts can be constructed.
  */
 export async function buildAssistantTurnMessageStep(
   input: Readonly<{
@@ -113,11 +122,17 @@ export async function buildAssistantTurnMessageStep(
               approval: { approved: false, id: call.toolCallId },
               state: "output-denied",
             } as const)
-          : ({
-              ...common,
-              output: result.value,
-              state: "output-available",
-            } as const)
+          : result.kind === "error"
+            ? ({
+                ...common,
+                errorText: result.errorText,
+                state: "output-error",
+              } as const)
+            : ({
+                ...common,
+                output: result.value,
+                state: "output-available",
+              } as const)
         : ({ ...common, state: "input-available" } as const);
 
       parts.push(

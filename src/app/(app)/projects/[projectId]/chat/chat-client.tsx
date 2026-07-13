@@ -757,6 +757,7 @@ export function ProjectChatClient(
           : error.message,
       );
       if (workflowRunId) {
+        // Safe to detach: reconciliation handles failures by returning null.
         void reconcileChatLifecycle(workflowRunId);
       }
     },
@@ -951,6 +952,7 @@ export function ProjectChatClient(
       return;
     }
     startRecoveryAttemptedRef.current = true;
+    // Safe to detach: dispatchInitialStart reports through its rejection sink.
     void dispatchInitialStart(
       initialStartRecovery.pending,
       initialStartRecovery.parts,
