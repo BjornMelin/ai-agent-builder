@@ -11,20 +11,18 @@ builds.
 ## Build entrypoints
 
 - `bun run build`
-  - Runs `bun --bun next build --webpack`.
-- `bun run build:strict-bun`
-  - Runs `bun --bun next build --webpack`.
+  - Runs `bun --bun next build` through the native Next.js and Workflow integration.
+- `bun run build:vercel`
+  - Applies database migrations, then runs `bun run build`.
 
-`bun run build` is the default local/general entrypoint. `bun run build:strict-bun`
-is the CI/strict alias used for canary visibility and future divergence; it is
-intentionally equivalent today for reproducibility, but reserved for stricter
-environment enforcement or flags without changing developer defaults.
+`next.config.ts` is wrapped with `withWorkflow`. Do not add Workflow-specific webpack loaders, loader-removal rules, or a second build alias.
 
 ## CI policy
 
-- Primary CI build job runs `bun run build`.
-- A separate non-blocking canary job runs `bun run build:strict-bun` and uploads
-  logs as an artifact.
+- CI runs separate lint, Knip, typecheck, and sharded Vitest jobs.
+- The build job runs `bun run build` after those jobs pass.
+- Custom runners selected through `ACTIONS_RUNNER_LABELS` must run Actions
+  Runner 2.327.1 or newer because the pinned actions use the Node.js 24 runtime.
 
 ## Vercel policy
 

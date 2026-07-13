@@ -84,17 +84,44 @@ Chat sessions are durable workflow runs. The API uses AI SDK UI message streams
 and supports stream resumption via a `startIndex` cursor.
 
 - `POST /api/chat`
-  - body: `{ projectId: string, messages: UIMessage[] }`
+  - body:
+    `{ projectId: string, threadId: UUID, message: UIMessage, modeId?: string }`
+  - `message` must be exactly one user message containing only text/file parts
+    and at least one meaningful text or file; initial assistant/system/history
+    payloads are rejected, as are IDs over 128 characters or in server-owned
+    namespaces
+  - commits the client-known thread and immutable initial user message before
+    Workflow dispatch; exact retries reuse the canonical run and conflicting
+    payloads return `409 chat_start_conflict`
+  - a persisted pending start is retried automatically with the same identities
+    after a page reload
   - response:
     - streaming UI message event stream
     - header `x-workflow-run-id` (the durable run ID used to resume the stream)
+    - header `x-chat-thread-id` (persisted before the response is returned)
+- `GET /api/chat/:runId`
+  - returns the authenticated authoritative thread identity and lifecycle state
+    for EOF/error reconciliation
 - `POST /api/chat/:runId`
-  - body: `{ message: string }` (inject a follow-up message into the in-flight session)
-  - response: `{ ok: true }`
+  - body: `{ messageId: string, message?: string, files?: FileUIPart[] }`
+  - requires at least one of `message` or `files`; `assistant:*` IDs are reserved
+  - queued response (`202`): `{ ok: true, status: "queued" }`; the client keeps
+    its draft until the workflow emits a matching user marker
+  - committed retry response (`200`): `{ ok: true, status: "duplicate" }`
+  - conflicts use stable codes: `chat_message_id_conflict`,
+    `chat_session_busy`, `chat_session_terminal`, or `chat_hook_unavailable`
 - `POST /api/chat/:runId/cancel`
-  - cancels the workflow run and marks the persisted chat thread as `canceled`
+  - persists the terminal state, cancels the workflow, closes every run stream,
+    and returns the immutable authoritative terminal state
+  - response: `{ ok: true, status: "canceled" | "failed" | "succeeded" }`
 - `GET /api/chat/:runId/stream?startIndex=N`
   - resumes an existing stream; rejects invalid `startIndex`
+  - returns `x-chat-thread-status`; after the native tail, a terminal session
+    emits a synthetic terminal marker and final `finish`
+
+Assistant turns are buffered to one canonical message, persisted, and only then
+published with deterministic turn/sequence envelopes. The client unwraps each
+semantic chunk once across at-least-once publish retries and reconnects.
 
 See:
 
@@ -137,7 +164,7 @@ via a `startIndex` cursor.
 See:
 
 - [SPEC-0009](./spec/SPEC-0009-sandbox-code-mode.md)
-- [ADR-0010](./adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md)
+- [ADR-0010](./adr/ADR-0010-safe-execution-vercel-sandbox-native-tools.md)
 
 ## RepoOps (target repo connections)
 

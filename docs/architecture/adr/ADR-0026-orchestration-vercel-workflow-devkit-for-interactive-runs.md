@@ -2,8 +2,8 @@
 ADR: 0026
 Title: Orchestration: Vercel Workflow DevKit for interactive runs (QStash for background jobs)
 Status: Implemented
-Version: 0.1
-Date: 2026-02-03
+Version: 0.2
+Date: 2026-07-13
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0005, ADR-0006, ADR-0011, ADR-0021, ADR-0030]
@@ -13,7 +13,7 @@ References:
   - [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
   - [Workflow DevKit: Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)
   - [Workflow DevKit: Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling)
-  - [Workflow DevKit: WorkflowChatTransport](https://useworkflow.dev/docs/api-reference/workflow-ai/workflow-chat-transport)
+  - [AI SDK Workflow package](https://github.com/vercel/ai/tree/main/packages/workflow)
   - [Upstash Workflow: AI SDK integration](https://upstash.com/docs/workflow/integrations/aisdk)
   - [Upstash Workflow: Next.js quickstart](https://upstash.com/docs/workflow/quickstarts/vercel-nextjs)
   - [Upstash QStash: Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
@@ -22,10 +22,11 @@ References:
 ## Status
 
 Implemented — 2026-02-05.
+Updated — 2026-07-13: migrated AI integration to AI SDK 7 `@ai-sdk/workflow` and the native Workflow build path.
 
 ## Description
 
-Use **Vercel Workflow DevKit** (`workflow` + `@workflow/ai`) for the app’s *interactive* agent workloads:
+Use **Vercel Workflow DevKit** (`workflow` + `@ai-sdk/workflow`) for the app's interactive agent workloads:
 
 - multi-turn chat sessions
 - durable runs
@@ -115,7 +116,7 @@ Cons:
 ### Decision Framework
 
 Scoring includes maintainability and UX constraints from this repo (strict TS,
-no `useMemo`/`useCallback`, no barrel imports, Next App Router).
+measured memoization, no barrel imports, Next App Router).
 
 | Criterion | Weight | A Raw | A Weighted | B Raw | B Weighted | C Raw | C Weighted | D Raw | D Weighted |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -135,7 +136,7 @@ no `useMemo`/`useCallback`, no barrel imports, Next App Router).
 
 We will:
 
-1. Adopt **Vercel Workflow DevKit** (`workflow` + `@workflow/ai`) for:
+1. Adopt **Vercel Workflow DevKit** (`workflow` + `@ai-sdk/workflow`) for:
    - chat sessions (multi-turn, resumable streams)
    - durable runs / step orchestration on the interactive path
 2. Keep **Upstash QStash** for:
@@ -146,8 +147,8 @@ We will:
 
 - Workflow DevKit requires:
   - wrapping `next.config.ts` with `withWorkflow(…)` to enable directives. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
+  - using the native `next build` path; do not add Workflow-specific webpack loaders or loader-removal rules.
   - excluding `.well-known/workflow/` from the Next.js `proxy.ts` matcher to avoid blocking internal workflow routes. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
-  - setting `workflows.dirs` in `next.config.ts` (inside `withWorkflow(…)`) to narrowly scope scanned workflow directories (for example `workflows/` or `src/workflows/`) and avoid out-of-memory build failures from broad filesystem scans. [Workflow DevKit: Next.js setup](https://useworkflow.dev/docs/getting-started/next)
 - QStash endpoints must verify signatures (and be idempotent) for ingestion workers. [Upstash QStash: Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)
 - Memoization follows `$vercel-react-best-practices`: prefer refs/effects for transient mutable values; use `useMemo`/`useCallback` only for genuinely expensive work or to prevent costly re-renders (`rerender-memo`), and avoid memo for cheap primitives (`rerender-simple-expression-in-memo`).
 

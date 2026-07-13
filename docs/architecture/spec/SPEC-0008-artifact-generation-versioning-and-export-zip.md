@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0008
 title: Artifact generation, versioning, and export zip
-version: 0.3.2
-date: 2026-02-09
+version: 0.4.0
+date: 2026-07-13
 owners: ["Bjorn Melin"]
 status: Partially implemented
 related_requirements: ["FR-014", "FR-015", "FR-017", "FR-034", "NFR-005", "NFR-015"]
@@ -102,6 +102,9 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 - Artifacts are stored in Neon with `kind`, `logical_key`, `version`, and JSON
   `content` (`format: "markdown"` for Markdown artifacts).
+- Retryable producers may supply a nullable `idempotency_key`. A project-scoped
+  unique index selects one canonical artifact while preserving monotonic
+  versions by logical key.
 - Citations are stored in Neon in the `citations` table and associated to an
   `artifact_id` for auditability.
 - Upstash Vector stores embeddings for **latest** artifact versions to support
@@ -144,7 +147,10 @@ Implementation artifacts:
 - `src/app/api/export/[projectId]/route.ts`: loads latest artifact versions +
   citations, builds deterministic manifest, streams ZIP.
 - `src/lib/data/artifacts.server.ts`: artifact versioning + persistence
-  helpers (monotonic versions).
+  helpers (monotonic versions and idempotent producer recovery).
+- Research-report Workflow steps use `getStepMetadata().stepId` as the stable
+  producer key. A post-commit retry recovers the artifact before repeating web
+  search, extraction, or model generation.
 - `src/lib/data/citations.server.ts`: citation persistence helpers.
 - `src/lib/export/zip.server.ts`: deterministic ZIP builder
   (stable order + fixed timestamps + fixed compression level).
@@ -173,6 +179,8 @@ Implementation artifacts:
 - Unit: zip-slip sanitization and reserved/duplicate path detection
 - Unit: manifest parity (`manifest.json` equals returned manifest and paths exist in ZIP)
 - Unit: stream vs bytes output parity
+- Unit: concurrent artifact idempotency-key winner and post-commit research
+  producer recovery
 - Integration: export for a small project matches expected manifest
 
 ## Operational notes
@@ -191,10 +199,6 @@ Implementation artifacts:
 - `src/app/api/export/[projectId]/route.ts`
 - `src/lib/export/zip.server.ts`
 - `src/lib/export/zip.test.ts`
-
-## References
-
-- [ctx-zip](https://ai-sdk.dev/tools-registry/ctx-zip)
 
 ## Changelog
 

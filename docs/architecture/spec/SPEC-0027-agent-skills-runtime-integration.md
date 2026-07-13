@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0027
 title: Agent Skills runtime integration (progressive disclosure)
-version: 0.2.0
-date: 2026-02-09
+version: 0.3.0
+date: 2026-07-13
 owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements: ["FR-035", "FR-036", "FR-037", "NFR-006", "NFR-013", "NFR-014", "NFR-016"]
@@ -34,7 +34,7 @@ Skill sources:
 - Project-scoped overrides in Postgres (per-project CRUD).
 - Tool contract: `skills.load` + `skills.readFile` (read-only).
 - Wiring into:
-  - project chat (`@workflow/ai` DurableAgent)
+  - project chat (`@ai-sdk/workflow` `WorkflowAgent`)
   - Code Mode (sandboxed `ToolLoopAgent`)
   - implementation planning step (`ToolLoopAgent` structured output)
 - Cache Components integration (`"use cache"` + cache tags) for stable reads.
@@ -151,7 +151,8 @@ Integration points:
 - Chat workflow (`src/workflows/chat/project-chat.workflow.ts`):
   - resolves skills via a workflow step
   - appends skills prompt to mode system prompt
-  - passes skill metadata via `experimental_context`
+  - passes immutable `{ projectId }` scope through AI SDK 7 `toolsContext`
+  - validates skill-tool scope with the shared `contextSchema`
 - Code Mode (`src/workflows/code-mode/steps/code-mode.step.ts`):
   - injects skills prompt via `prepareCall`
   - exposes tools `skills.load` and `skills.readFile` (read-only)
@@ -207,3 +208,4 @@ implemented in `next.config.ts` via:
 
 - **0.1 (2026-02-09)**: Initial version.
 - **0.2 (2026-02-09)**: Added support for DB skills with bundled resources.
+- **0.3 (2026-07-13)**: Migrated project chat to AI SDK 7 `WorkflowAgent`, `toolsContext`, and schema-validated skill-tool scope.

@@ -76,13 +76,8 @@ See [repository baseline](./repository-baseline.md).
 
 - **Runtime/toolchain:** Bun for installs and scripts; Bun runtime on Vercel.
   ([Vercel Bun runtime](https://vercel.com/docs/functions/runtimes/bun))
-- **Agents:** AI SDK v6 + Workflow DevKit `DurableAgent`, streaming responses via
-  AI SDK UI message streams (`createUIMessageStreamResponse`).
-  ([AI SDK agents](https://ai-sdk.dev/docs/agents/overview),
-  [createUIMessageStreamResponse](https://ai-sdk.dev/docs/reference/ai-sdk-ui/create-ui-message-stream-response),
-  [Workflow DevKit: DurableAgent](https://useworkflow.dev/docs/api-reference/workflow-ai/durable-agent))
-- **Dynamic tools:** runtime tool injection via `dynamicTool()`.
-  ([dynamicTool()](https://ai-sdk.dev/docs/reference/ai-sdk-core/dynamic-tool))
+- **Agents:** AI SDK 7, with `@ai-sdk/workflow` `WorkflowAgent` for durable project chat and AI SDK `ToolLoopAgent` for Code Mode and implementation planning. Project chat converts private `ModelCallStreamPart` streams to one resumable `UIMessageChunk` stream with the native workflow transform. ([AI SDK agents](https://ai-sdk.dev/docs/agents/overview), [Vercel Workflow](https://vercel.com/docs/workflow))
+- **Mode-scoped tools:** static AI SDK `tool()` contracts narrowed by the agent-mode allowlist and `activeTools`; Context7 uses the AI SDK MCP client behind those contracts. ([AI SDK tools](https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling))
 - **Model routing:** Vercel AI Gateway exclusively.
   ([AI Gateway](https://vercel.com/docs/ai-gateway))
 - **Authentication:** Neon Auth + allowlist access control.

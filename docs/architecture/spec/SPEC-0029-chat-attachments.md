@@ -1,7 +1,7 @@
 ---
 spec: SPEC-0029
 title: Project chat document attachments (AI Elements inline + upload-before-send)
-version: 0.1.0
+version: 0.2.0
 date: 2026-02-10
 owners: ["Bjorn Melin"]
 status: Implemented
@@ -167,8 +167,9 @@ Outputs:
 
 #### `POST /api/chat` (start session)
 
-Chat start already accepts UI messages that may include `FileUIPart` parts.
-The client uploads blobs first and sends hosted URLs as `FileUIPart.url`.
+Chat start accepts one user `UIMessage` that may include `FileUIPart` parts.
+The client uploads blobs first and sends hosted URLs as `FileUIPart.url`; it
+does not send prior assistant/system/history messages in the start request.
 
 #### `POST /api/chat/:runId` (resume session)
 

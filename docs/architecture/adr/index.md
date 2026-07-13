@@ -5,13 +5,13 @@
 - [ADR-0003](./ADR-0003-database-neon-postgres-drizzle-orm.md) — Database: Neon Postgres + Drizzle ORM
 - [ADR-0004](./ADR-0004-retrieval-upstash-vector-for-semantic-search.md) — Retrieval: Upstash Vector for semantic search
 - [ADR-0005](./ADR-0005-orchestration-upstash-qstash-for-durable-workflows.md) — Orchestration: Upstash QStash for background jobs (ingestion + fanout)
-- [ADR-0006](./ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md) — Agent runtime: AI SDK v6 agents + streaming UI responses (Workflow DevKit durable sessions)
+- [ADR-0006](./ADR-0006-agent-runtime-ai-sdk-v7-workflowagent-durable-ui-streams.md) — Agent runtime: AI SDK v7 WorkflowAgent + durable UI streams
 - [ADR-0007](./ADR-0007-model-access-vercel-ai-gateway-exclusively.md) — Model access: Vercel AI Gateway exclusively
 - [ADR-0008](./ADR-0008-web-research-exa-firecrawl-with-citations.md) — Web research: Exa + Firecrawl with citations
 - [ADR-0009](./ADR-0009-file-storage-vercel-blob-for-uploads-originals.md) — File storage: Vercel Blob for uploads/originals
-- [ADR-0010](./ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md) — Safe execution: Vercel Sandbox + bash-tool + code-execution + ctx-zip
+- [ADR-0010](./ADR-0010-safe-execution-vercel-sandbox-native-tools.md) — Safe execution: Vercel Sandbox + native tools
 - [ADR-0011](./ADR-0011-ui-ai-elements-streamdown-shadcn-ui-tailwind-v4.md) — UI: AI Elements + Streamdown + shadcn/ui + Tailwind v4
-- [ADR-0012](./ADR-0012-mcp-dynamic-tools-context7-via-mcp-dynamictool.md) — MCP + dynamic tools: Context7 via MCP + dynamicTool
+- [ADR-0012](./ADR-0012-mcp-context7-mode-scoped-tools.md) — MCP tools: Context7 via mode-scoped AI SDK tools
 - [ADR-0013](./ADR-0013-caching-cost-controls-next-js-caching-upstash-redis-budgets.md) — Caching + cost controls: Next.js caching + Upstash Redis + budgets (Implemented)
 - [ADR-0014](./ADR-0014-testing-strategy-vitest-playwright-contract-tests.md) — Testing strategy: Vitest + Playwright + contract tests
 - [ADR-0015](./ADR-0015-runtime-and-package-manager-bun-local-ci-vercel.md) — Runtime + package manager: Bun (local/CI/Vercel)

@@ -1,9 +1,9 @@
 ---
 ADR: 0010
-Title: Safe execution: Vercel Sandbox + bash-tool + code-execution + ctx-zip
+Title: Safe execution: Vercel Sandbox + native tools
 Status: Implemented
-Version: 0.4
-Date: 2026-02-09
+Version: 0.5
+Date: 2026-07-13
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0005, ADR-0006, ADR-0024]
@@ -13,16 +13,13 @@ References:
   - [Vercel Sandbox authentication](https://vercel.com/docs/vercel-sandbox/concepts/authentication)
   - [Vercel Sandbox quickstart](https://vercel.com/docs/vercel-sandbox/quickstart)
   - [Vercel Sandbox system specs](https://vercel.com/docs/vercel-sandbox/system-specifications)
-  - [bash-tool](https://ai-sdk.dev/tools-registry/bash-tool)
-  - [code-execution tool](https://ai-sdk.dev/tools-registry/code-execution)
-  - [ctx-zip tool](https://ai-sdk.dev/tools-registry/ctx-zip)
 ---
 
 ## Status
 
-Accepted — 2026-01-30.  
-Implemented — 2026-02-01 (implementation verification jobs).  
-Updated — 2026-02-09 (sandbox module layout + auth contract + ctx-zip binding).
+Accepted — 2026-01-30.
+Implemented — 2026-02-01 (implementation verification jobs).
+Updated — 2026-07-13 (native exploration tools + AI SDK message pruning).
 
 ## Description
 
@@ -41,8 +38,9 @@ Some steps require code execution (e.g., data analysis, parsing unusual formats,
 validating generated artifacts, running repo verification).
 
 Running arbitrary code in server functions is unsafe. Vercel Sandbox provides
-isolated execution environments with time and resource controls, and AI SDK tools
-reduce the need to build custom exec infrastructure.
+isolated execution environments with time and resource controls. The existing
+sandbox runner owns command policy, workspace confinement, transcript capture,
+and redaction.
 
 ## Decision Drivers
 
@@ -73,11 +71,11 @@ reduce the need to build custom exec infrastructure.
 We will use **Vercel Sandbox** as the canonical execution environment for any
 command/code execution in the product.
 
-Use AI SDK tools where it reduces implementation effort:
-
-- `bash-tool` for shell commands
-- `ai-sdk-tool-code-execution` for Python execution
-- `ctx-zip` for context packaging and summarization of large directories
+Expose the existing sandbox runner through one generic allowlisted command tool
+and four focused read-only exploration tools: `sandbox_ls`, `sandbox_cat`,
+`sandbox_grep`, and `sandbox_find`. Use AI SDK `pruneMessages` to remove older
+tool payloads from model context; the persisted sandbox transcript remains the
+canonical execution record.
 
 ## Constraints
 
@@ -137,8 +135,8 @@ Key modules:
   before persistence/display.
 - `src/lib/sandbox/network-policy.server.ts`: NetworkPolicy presets per job type.
 - `src/lib/sandbox/transcript.server.ts`: Bounded transcript collection utilities.
-- `src/lib/sandbox/ctxzip.server.ts`: ctx-zip integration backed by the sandbox
-  client wrapper (avoids OIDC-only helpers).
+- `src/workflows/code-mode/steps/code-mode.step.ts`: AI SDK tools backed directly
+  by the sandbox job session.
 
 ### Implementation Details
 
@@ -147,7 +145,7 @@ Key modules:
   outside `/vercel/sandbox`.
 - Package execution tools (`npx`, `bunx`) must be restricted to an explicit
   allowlist to avoid arbitrary download/execute flows.
-- Provide `ctx-zip` to compress context artifacts deterministically.
+- Prune older tool payloads from model context with AI SDK `pruneMessages`.
 - Persist execution logs in `run_steps`.
 
 ### Configuration
@@ -178,9 +176,8 @@ Key modules:
 ## Implementation Notes
 
 - Prefer using Sandbox for CPU-bound transformations and parsing edge cases.
-- Bind `ctx-zip` to a sandbox created via the repo env contract (OIDC preferred;
-  access-token fallback supported) to avoid helper APIs that force OIDC-only
-  flows.
+- Keep exploration tools bound to the same sandbox job session so allowlists,
+  redaction, transcript capture, and finalization have one owner.
 - For implementation runs, treat verification as first-class sandbox jobs
   (see
   [SPEC-0019](../spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)).
@@ -204,11 +201,12 @@ Key modules:
 
 ### Dependencies
 
-- **Added**: @vercel/sandbox, bash-tool, code-execution, ctx-zip
+- **Required**: `@vercel/sandbox`, `ai`
 
 ## Changelog
 
 - **0.1 (2026-01-29)**: Initial version.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-01)**: Updated for implementation verification jobs.
-- **0.4 (2026-02-09)**: Clarified sandbox module layout, auth env contract, and ctx-zip binding approach.
+- **0.4 (2026-02-09)**: Clarified sandbox module layout and auth env contract.
+- **0.5 (2026-07-13)**: Replaced third-party execution and compaction wrappers with native sandbox tools and AI SDK message pruning.

@@ -1,9 +1,9 @@
 ---
 ADR: 0012
-Title: MCP + dynamic tools: Context7 via MCP + dynamicTool
+Title: MCP tools: Context7 via mode-scoped AI SDK tools
 Status: Implemented
-Version: 0.4
-Date: 2026-02-07
+Version: 0.5
+Date: 2026-07-13
 Supersedes: []
 Superseded-by: []
 Related: [ADR-0006, ADR-0008, ADR-0013]
@@ -17,14 +17,15 @@ References:
 ## Status
 
 Implemented — 2026-02-07.
+Updated — 2026-07-13: aligned Context7 with AI SDK 7 static tool contracts and factory-owned turn budgets.
 
 ## Description
 
-Use MCP to query up-to-date library documentation on demand, injected as dynamic tools.
+Use MCP to query current library documentation on demand through mode-scoped AI SDK tools.
 
 ## Context
 
-Library APIs change quickly. Instead of hardcoding doc content into prompts, we can query official library docs via Context7 MCP tools. Dynamic tool injection prevents bloating the agent context window.
+Library APIs change quickly. Instead of hardcoding documentation into prompts, query Context7 through the AI SDK MCP client. The agent-mode allowlist and `activeTools` keep unrelated tool definitions out of each model call.
 
 ## Decision Drivers
 
@@ -35,9 +36,9 @@ Library APIs change quickly. Instead of hardcoding doc content into prompts, we 
 
 ## Alternatives
 
-- A: MCP + dynamicTool — Pros: fresh docs; minimal context. Cons: tool integration.
-- B: Static docs snapshot — Pros: simple. Cons: quickly outdated.
-- C: Rely on model memory — Pros: no tooling. Cons: unreliable.
+- A: MCP client behind mode-scoped `tool()` definitions: current docs and bounded access; external tool integration.
+- B: Static docs snapshot: no network dependency; quickly outdated.
+- C: Model memory: no tooling; unreliable for current APIs.
 
 ### Decision Framework
 
@@ -101,8 +102,9 @@ flowchart LR
   - Budget: `budgets.context7TimeoutMs` in `src/lib/config/budgets.server.ts`
   - Enforcement: AbortController timeout in `src/lib/ai/tools/mcp-context7.server.ts`
   - Propagation: `options.abortSignal` is passed from `ToolExecutionOptions.abortSignal` in `src/workflows/chat/steps/context7.step.ts`
-- `src/lib/ai/tools/factory.server.ts` injects Context7 tools only for allowlisted modes.
-- `src/workflows/chat/steps/context7.step.ts` enforces per-turn budgets for Context7 calls.
+- `src/lib/ai/tools/factory.server.ts` exposes Context7 only for allowlisted modes and owns the fresh per-turn counter.
+- `src/workflows/chat/tools.ts` defines the Context7 input schemas and step bindings.
+- `src/workflows/chat/steps/context7.step.ts` delegates to the bounded MCP wrapper.
 
 ## Testing
 
@@ -139,3 +141,4 @@ flowchart LR
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-07)**: Implemented with mode-scoped tool injection, Redis caching, and budgets.
 - **0.4 (2026-02-07)**: Documented abortable, time-bounded MCP calls (`context7TimeoutMs`) and the workflow abort propagation path.
+- **0.5 (2026-07-13)**: Replaced dynamic-tool claims with AI SDK 7 static tool contracts, mode scoping, and factory-owned turn budgets.
