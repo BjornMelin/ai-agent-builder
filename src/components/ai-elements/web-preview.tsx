@@ -353,7 +353,10 @@ export const WebPreviewConsole = (props: WebPreviewConsoleProps) => {
                   log.level === "warn" && "text-yellow-600",
                   log.level === "log" && "text-foreground",
                 )}
-                key={`${log.timestamp.getTime()}-${index}`}
+                key={
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Console entries have no ID and are displayed in append-only order.
+                  `${log.timestamp.getTime()}-${index}`
+                }
               >
                 <span className="text-muted-foreground">
                   {mounted ? log.timestamp.toLocaleTimeString() : "--:--:--"}

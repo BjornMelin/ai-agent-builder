@@ -485,7 +485,10 @@ export const StackTraceFrames = memo((props: StackTraceFramesProps) => {
               ? "text-muted-foreground/50"
               : "text-foreground/90",
           )}
-          key={`${frame.raw}-${index}`}
+          key={
+            // biome-ignore lint/suspicious/noArrayIndexKey: Duplicate stack frames are valid and parsed frame order is immutable.
+            `${frame.raw}-${index}`
+          }
         >
           <span className="text-muted-foreground">at </span>
           {frame.functionName ? (
