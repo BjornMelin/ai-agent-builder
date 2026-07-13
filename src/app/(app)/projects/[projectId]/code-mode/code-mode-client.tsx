@@ -21,7 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { tryReadJsonErrorMessage } from "@/lib/core/errors";
+import {
+  AppError,
+  isAppError,
+  tryReadJsonErrorMessage,
+} from "@/lib/core/errors";
 import {
   CODE_MODE_RUN_STATUS_HEADER,
   type CodeModeStreamEvent,
@@ -253,7 +257,11 @@ async function requestCodeModeStart(
   });
   if (!res.ok) {
     const fromServer = await tryReadJsonErrorMessage(res);
-    throw new Error(fromServer ?? `Failed to start Code Mode (${res.status}).`);
+    throw new AppError(
+      "code_mode_start_rejected",
+      res.status,
+      fromServer ?? `Failed to start Code Mode (${res.status}).`,
+    );
   }
 
   const jsonUnknown: unknown = await res.json();
@@ -565,8 +573,23 @@ export function CodeModeClient(props: Readonly<{ projectId: string }>) {
       const identity = toActiveRunIdentity(started);
       persistActiveRunIdentity(identity);
       setWorkflowRunId(identity.workflowRunId);
-    } catch {
+    } catch (startError) {
       if (startController.signal.aborted) return;
+      if (
+        isAppError(startError) &&
+        startError.status >= 400 &&
+        startError.status < 500
+      ) {
+        clearActiveRunIdentity(props.projectId, pendingIdentity.runId);
+        activeRunIdRef.current = null;
+        setRunId(null);
+        setWorkflowRunId(null);
+        setHasActiveRun(false);
+        setStatus("error");
+        setWasInterrupted(false);
+        setError(startError.message);
+        return;
+      }
       try {
         let recovered = await discoverCodeModeRun(
           props.projectId,

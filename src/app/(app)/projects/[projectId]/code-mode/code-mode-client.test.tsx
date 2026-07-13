@@ -447,6 +447,42 @@ describe("CodeModeClient lifecycle", () => {
     await unmountClient(mounted);
   });
 
+  it("clears a pending identity after a definite start rejection", async () => {
+    const fetchMock = vi.fn(
+      async (
+        input: Parameters<typeof fetch>[0],
+        init?: Parameters<typeof fetch>[1],
+      ) => {
+        if (init?.method === "POST") {
+          return Response.json(
+            { error: { code: "bad_request", message: "Prompt is required." } },
+            { status: 400 },
+          );
+        }
+        if (String(input).includes("/api/code-mode?")) {
+          return Response.json({ run: null });
+        }
+        throw new Error(`Unexpected request: ${String(input)}`);
+      },
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const mounted = await mountClient();
+    await act(async () => {
+      getButton(mounted.container, "Start Code Mode").click();
+      await flushMicrotasks();
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(window.sessionStorage.getItem(ACTIVE_RUN_STORAGE_KEY)).toBeNull();
+    expect(getButton(mounted.container, "Start Code Mode").disabled).toBe(
+      false,
+    );
+    expect(mounted.container.textContent).toContain("Prompt is required.");
+
+    await unmountClient(mounted);
+  });
+
   it("recovers a client-known pending run after a lost response and reload", async () => {
     window.sessionStorage.setItem(
       ACTIVE_RUN_STORAGE_KEY,
