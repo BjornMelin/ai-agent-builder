@@ -231,7 +231,7 @@ function extractEndpointId(neonAuthBaseUrl: string): string {
     throw new Error("NEON_AUTH_BASE_URL must not include query or hash.");
   }
   const hostPart = url.hostname.split(".")[0];
-  if (!hostPart || !hostPart.startsWith("ep-")) {
+  if (!hostPart?.startsWith("ep-")) {
     throw new Error(
       `Unable to parse endpoint id from NEON_AUTH_BASE_URL host: ${url.hostname}`,
     );

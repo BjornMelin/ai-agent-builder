@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ fromJSON(vars.ACTIONS_RUNNER_LABELS || '["ubuntu-latest"]') }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.0
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4.8.2
+        uses: actions/dependency-review-action@v5.0.0
