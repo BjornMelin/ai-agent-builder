@@ -150,4 +150,32 @@ describe("verifyImplementationRun", () => {
       typecheckTool: "pyright",
     });
   });
+
+  it("stops through the durable session owner when verification fails", async () => {
+    const session = makeScriptedSession([
+      {
+        match: matchCmd("which", ["bun"]),
+        result: ok({ stdout: "/usr/bin/bun\n" }),
+      },
+      { match: matchCmd("bun", ["lint"]), result: { ...ok(), exitCode: 1 } },
+    ]);
+
+    state.attachSandboxJobSession.mockResolvedValueOnce(session);
+
+    const { verifyImplementationRun } = await import("./verify.step");
+    await expect(
+      verifyImplementationRun({
+        projectId: "proj_1",
+        repoKind: "node",
+        repoPath: "/vercel/sandbox",
+        runId: "run_1",
+        sandboxId: "sb_1",
+      }),
+    ).rejects.toMatchObject({ code: "bad_gateway", status: 502 });
+
+    expect(session.finalize).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "failed" }),
+    );
+    expect(session.stop).toHaveBeenCalled();
+  });
 });

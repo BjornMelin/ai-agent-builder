@@ -14,7 +14,10 @@ import type {
   SkillReadFileResult,
 } from "@/lib/ai/skills/types";
 import { AppError } from "@/lib/core/errors";
-import { parseChatToolContext } from "@/workflows/chat/tool-context";
+import {
+  type ProjectToolContext,
+  projectToolContextSchema,
+} from "@/workflows/chat/tool-context";
 
 const loadInputSchema = z.object({
   name: z.string().min(1),
@@ -33,7 +36,7 @@ const loadInputSchema = z.object({
  */
 export async function skillsLoadStep(
   input: Readonly<{ name: string }>,
-  options: ToolExecutionOptions,
+  options: ToolExecutionOptions<ProjectToolContext>,
 ): Promise<SkillLoadResult> {
   "use step";
 
@@ -47,21 +50,19 @@ export async function skillsLoadStep(
     );
   }
 
-  let ctx: ReturnType<typeof parseChatToolContext>;
-  try {
-    ctx = parseChatToolContext(options.experimental_context);
-  } catch (error) {
+  const context = projectToolContextSchema.safeParse(options.context);
+  if (!context.success) {
     throw new AppError(
       "bad_request",
       400,
       "Missing project context for skills.load.",
-      error,
+      context.error,
     );
   }
 
   return await loadSkillForProject({
     name: parsed.data.name,
-    projectId: ctx.projectId,
+    projectId: context.data.projectId,
   });
 }
 
@@ -83,7 +84,7 @@ const readFileInputSchema = z.object({
  */
 export async function skillsReadFileStep(
   input: Readonly<{ name: string; path: string }>,
-  options: ToolExecutionOptions,
+  options: ToolExecutionOptions<ProjectToolContext>,
 ): Promise<SkillReadFileResult> {
   "use step";
 
@@ -97,22 +98,20 @@ export async function skillsReadFileStep(
     );
   }
 
-  let ctx: ReturnType<typeof parseChatToolContext>;
-  try {
-    ctx = parseChatToolContext(options.experimental_context);
-  } catch (error) {
+  const context = projectToolContextSchema.safeParse(options.context);
+  if (!context.success) {
     throw new AppError(
       "bad_request",
       400,
       "Missing project context for skills.readFile.",
-      error,
+      context.error,
     );
   }
 
   return await readSkillFileForProject({
     name: parsed.data.name,
     path: parsed.data.path,
-    projectId: ctx.projectId,
+    projectId: context.data.projectId,
   });
 }
 

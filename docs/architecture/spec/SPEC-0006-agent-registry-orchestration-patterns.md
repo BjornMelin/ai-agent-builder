@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0006
 title: Agent registry & orchestration patterns
-version: 0.4.0
-date: 2026-02-07
+version: 0.5.0
+date: 2026-07-13
 owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements: ["FR-009", "FR-033", "NFR-011", "NFR-013", "NFR-015"]
@@ -18,8 +18,7 @@ Defines:
 - which tools each mode can access (least privilege)
 - orchestration patterns for multi-agent workflows
 
-The system uses AI SDK v6 agents and tool allowlisting to reduce context bloat
-(see [AI SDK Agents](https://ai-sdk.dev/docs/agents/overview)).
+The system uses AI SDK 7 agents and tool allowlisting to reduce context bloat (see [AI SDK Agents](https://ai-sdk.dev/docs/agents/overview)). Project chat uses `WorkflowAgent`; Code Mode and implementation planning use `ToolLoopAgent`.
 
 ## Context
 
@@ -91,13 +90,13 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 - `src/lib/ai/agents/registry.ts`: canonical registry mapping modeId → mode definition.
 - `src/lib/ai/agents/registry.server.ts`: server-facing registry (env gates + enabled modes).
 - `src/lib/ai/tools/tool-ids.ts`: canonical tool IDs for allowlists.
-- `src/lib/ai/tools/factory.server.ts`: tool factory enforcing allowlists (default deny).
+- `src/lib/ai/tools/factory.server.ts`: tool factory enforcing allowlists and per-turn budgets (default deny).
 
 ### Configuration
 
 - Tool allowlists must be enforced at agent construction time (not by “prompt
   instructions” alone).
-- Dynamic tools (MCP/Context7) must be guarded and bounded by budgets.
+- MCP and web tools must be guarded and bounded by budgets.
 
 ## Agent modes
 
@@ -125,7 +124,7 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ## Tool allowlists (high-level)
 
-Tools are provided via AI SDK `tool()` and `dynamicTool()` and/or MCP.
+Tools are defined with AI SDK `tool()`. Project chat narrows the catalog by mode allowlist and `activeTools`; Context7 calls use the AI SDK MCP client behind those static tool contracts.
 
 - **Web tools**: Exa search, Firecrawl extract (research-only).
 - **Docs MCP**: Context7 query (allowed in research + implementation).
@@ -193,7 +192,7 @@ Only after approval is the tool call executed.
 ## Testing
 
 - Unit tests: tool schemas validate inputs; allowlists enforced per mode.
-- Integration tests: dynamicTool/Context7 requests are bounded and logged.
+- Integration tests: Context7 requests are bounded and logged.
 - E2E (later): run a multi-agent implementation flow and verify approvals.
 
 ## Operational notes
@@ -211,17 +210,18 @@ Only after approval is the tool call executed.
 ## Key files
 
 - [docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md](/docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md)
-- [docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md](/docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md)
-- [docs/architecture/adr/ADR-0012-mcp-dynamic-tools-context7-via-mcp-dynamictool.md](/docs/architecture/adr/ADR-0012-mcp-dynamic-tools-context7-via-mcp-dynamictool.md)
+- [docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v7-workflowagent-durable-ui-streams.md](/docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v7-workflowagent-durable-ui-streams.md)
+- [docs/architecture/adr/ADR-0012-mcp-context7-mode-scoped-tools.md](/docs/architecture/adr/ADR-0012-mcp-context7-mode-scoped-tools.md)
 
 ## References
 
 - [AI SDK Agents](https://ai-sdk.dev/docs/agents/overview)
 - [ToolLoopAgent](https://ai-sdk.dev/docs/reference/ai-sdk-core/tool-loop-agent)
-- [dynamicTool](https://ai-sdk.dev/docs/reference/ai-sdk-core/dynamic-tool)
+- [AI SDK tools](https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling)
 
 ## Changelog
 
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-01-30)**: Updated for current repo baseline (Bun, `src/` layout, CI).
 - **0.3 (2026-02-01)**: Updated for implementation/deploy phase modes.
+- **0.5 (2026-07-13)**: Aligned agent and tool contracts with AI SDK 7, `WorkflowAgent`, static `tool()` definitions, and per-turn budget ownership.

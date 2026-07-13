@@ -1,5 +1,5 @@
+import { WorkflowRunCancelledError } from "@workflow/errors";
 import { describe, expect, it } from "vitest";
-import { WorkflowRunCancelledError } from "workflow/internal/errors";
 
 import { isWorkflowRunCancelledError } from "./workflow-errors";
 

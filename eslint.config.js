@@ -2,7 +2,6 @@ const js = require("@eslint/js");
 const globals = require("globals");
 const jsdoc = require("eslint-plugin-jsdoc");
 const tsdoc = require("eslint-plugin-tsdoc");
-const tseslint = require("@typescript-eslint/eslint-plugin");
 const tsParser = require("@typescript-eslint/parser");
 const nextCoreWebVitals = require("eslint-config-next/core-web-vitals");
 const drizzle = require("eslint-plugin-drizzle");
@@ -53,7 +52,6 @@ module.exports = [
       },
     },
     plugins: {
-      "@typescript-eslint": tseslint,
       drizzle,
       jsdoc,
       tsdoc,

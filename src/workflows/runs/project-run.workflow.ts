@@ -1,11 +1,11 @@
 import type { UIMessageChunk } from "ai";
 import { getWorkflowMetadata, getWritable } from "workflow";
 import { AppError } from "@/lib/core/errors";
-import type { RunStreamEvent } from "@/lib/runs/run-stream";
 import {
   nowTimestamp,
   toStepErrorPayload,
 } from "@/workflows/_shared/workflow-run-utils";
+import type { RunStreamEventInput } from "@/workflows/_shared/workflow-stream-events";
 import { approvalHook } from "@/workflows/approvals/hooks/approval";
 import { ensureApprovalRequest } from "@/workflows/runs/steps/approvals.step";
 import {
@@ -80,7 +80,7 @@ export async function projectRun(
   try {
     const runInfo = await getRunInfo(runId);
 
-    const startedEvent: RunStreamEvent = {
+    const startedEvent: RunStreamEventInput = {
       kind: runInfo.kind,
       runId,
       timestamp: nowTimestamp(),
@@ -279,15 +279,20 @@ export async function projectRun(
           stepKind: "sandbox",
           stepName: "Sandbox checkout",
         },
-        async () =>
-          await sandboxCheckoutImplementationRepo({
+        async () => {
+          const provisioned = await sandboxCheckoutImplementationRepo({
             branchName: repo.branchName,
             cloneUrl: repo.cloneUrl,
             defaultBranch: repo.defaultBranch,
             projectId: runInfo.projectId,
             repoKind: repo.repoKind,
             runId,
-          }),
+          });
+          // Register ownership before outer step persistence or stream writes can
+          // fail, so the workflow catch always has a cleanup handle.
+          activeSandboxId = provisioned.sandboxId;
+          return provisioned;
+        },
         (value) => ({
           baseBranch: value.baseBranch,
           branchName: value.branchName,
@@ -298,7 +303,6 @@ export async function projectRun(
           transcriptTruncated: value.transcriptTruncated,
         }),
       );
-      activeSandboxId = checkout.sandboxId;
 
       await runPersistedStep(
         {
@@ -639,8 +643,20 @@ export async function projectRun(
 
     if (activeSandboxId !== null) {
       const sandboxId = activeSandboxId;
-      activeSandboxId = null;
-      await bestEffort(async () => await stopImplementationSandbox(sandboxId));
+      try {
+        await stopImplementationSandbox(sandboxId);
+        activeSandboxId = null;
+      } catch (cleanupError) {
+        throw new AppError(
+          "sandbox_cleanup_failed",
+          502,
+          "Implementation sandbox cleanup was not confirmed.",
+          new AggregateError(
+            [error, cleanupError],
+            "Run execution and sandbox cleanup both failed.",
+          ),
+        );
+      }
     }
 
     if (cancelled) {

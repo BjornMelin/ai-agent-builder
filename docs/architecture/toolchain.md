@@ -45,7 +45,7 @@ Use `bunx` for ephemeral CLI execution, e.g.:
 
 AGENTS.md defines repo invariants that are treated as policy:
 
-- No `useMemo` / `useCallback` (React Compiler handles memoization).
+- Use `useMemo` / `useCallback` only for expensive work or to prevent costly re-renders; React Compiler handles the common case.
 - Strict TS: no `any`.
 - TSDoc/JSDoc required for exported APIs.
 

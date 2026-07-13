@@ -56,7 +56,7 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 ## Constraints
 
-- Do not add `useMemo`/`useCallback` without documented exception
+- Use `useMemo`/`useCallback` only for expensive work or to prevent costly re-renders
 - Do not remove typegen from CI scripts
 
 ## Decision Framework Score (must be ≥ 9.0)

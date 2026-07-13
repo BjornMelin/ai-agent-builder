@@ -198,6 +198,28 @@ function createFakeDb() {
   };
 }
 
+function seedThread(overrides: Partial<ThreadRow> = {}): ThreadRow {
+  const now = new Date();
+  const row: ThreadRow = {
+    createdAt: now,
+    endedAt: null,
+    id: `thread_${state.nextThreadId++}`,
+    lastActivityAt: now,
+    mode: "chat-assistant",
+    projectId: "proj_1",
+    status: "running",
+    title: "Test thread",
+    updatedAt: now,
+    workflowRunId: "run_1",
+    ...overrides,
+  };
+  state.threadsById.set(row.id, row);
+  if (row.workflowRunId) {
+    state.threadsByWorkflowRunId.set(row.workflowRunId, row);
+  }
+  return row;
+}
+
 vi.mock("@/db/client", () => ({
   getDb: () => state.db,
 }));
@@ -238,100 +260,10 @@ beforeEach(() => {
 });
 
 describe("chat DAL", () => {
-  it("persists thread mode when ensuring a thread for a workflow run", async () => {
-    const { ensureChatThreadForWorkflowRun } = await loadChatDal();
-
-    const thread = await ensureChatThreadForWorkflowRun({
-      mode: "researcher",
-      projectId: "proj_1",
-      title: "Test thread",
-      workflowRunId: "run_1",
-    });
-
-    expect(thread.mode).toBe("researcher");
-    expect(thread.workflowRunId).toBe("run_1");
-  });
-
-  it("falls back to selecting an existing thread when insert is a no-op", async () => {
-    const { ensureChatThreadForWorkflowRun } = await loadChatDal();
-
-    const first = await ensureChatThreadForWorkflowRun({
-      mode: "chat-assistant",
-      projectId: "proj_1",
-      title: "Test thread",
-      workflowRunId: "run_1",
-    });
-
-    const second = await ensureChatThreadForWorkflowRun({
-      mode: "chat-assistant",
-      projectId: "proj_1",
-      title: "Test thread",
-      workflowRunId: "run_1",
-    });
-
-    expect(second.id).toBe(first.id);
-    expect(second.workflowRunId).toBe("run_1");
-  });
-
-  it("throws db_insert_failed when insert is a no-op and no existing thread is found", async () => {
-    const { ensureChatThreadForWorkflowRun } = await loadChatDal();
-
-    // Seed an existing run to force insert to return []...
-    await ensureChatThreadForWorkflowRun({
-      mode: "chat-assistant",
-      projectId: "proj_1",
-      title: "Test thread",
-      workflowRunId: "run_1",
-    });
-    // ...but then force the subsequent select to return null.
-    state.threadFindFirstQueue.push(null);
-
-    await expect(
-      ensureChatThreadForWorkflowRun({
-        mode: "chat-assistant",
-        projectId: "proj_1",
-        title: "Test thread",
-        workflowRunId: "run_1",
-      }),
-    ).rejects.toMatchObject({
-      code: "db_insert_failed",
-      status: 500,
-    } satisfies Partial<AppError>);
-  });
-
-  it("wraps undefined-table insert errors as db_not_migrated", async () => {
-    const { ensureChatThreadForWorkflowRun } = await loadChatDal();
-
-    const err = Object.assign(new Error("missing table"), { code: "42P01" });
-    state.threadInsertError = err;
-
-    await expect(
-      ensureChatThreadForWorkflowRun({
-        mode: "chat-assistant",
-        projectId: "proj_1",
-        title: "Test thread",
-        workflowRunId: "run_1",
-      }),
-    ).rejects.toMatchObject({
-      cause: err,
-      code: "db_not_migrated",
-      status: 500,
-    } satisfies Partial<AppError>);
-  });
-
   it("dedupes messages by (threadId, messageUid)", async () => {
-    const {
-      appendChatMessages,
-      ensureChatThreadForWorkflowRun,
-      listChatMessagesByThreadId,
-    } = await loadChatDal();
-
-    const thread = await ensureChatThreadForWorkflowRun({
-      mode: "chat-assistant",
-      projectId: "proj_1",
-      title: "Test thread",
-      workflowRunId: "run_1",
-    });
+    const { appendChatMessages, listChatMessagesByThreadId } =
+      await loadChatDal();
+    const thread = seedThread();
 
     await appendChatMessages({
       messages: [
@@ -353,18 +285,9 @@ describe("chat DAL", () => {
   });
 
   it("extracts only text parts and sets null when there is no text content", async () => {
-    const {
-      appendChatMessages,
-      ensureChatThreadForWorkflowRun,
-      listChatMessagesByThreadId,
-    } = await loadChatDal();
-
-    const thread = await ensureChatThreadForWorkflowRun({
-      mode: "chat-assistant",
-      projectId: "proj_1",
-      title: "Test thread",
-      workflowRunId: "run_1",
-    });
+    const { appendChatMessages, listChatMessagesByThreadId } =
+      await loadChatDal();
+    const thread = seedThread();
 
     await appendChatMessages({
       messages: [
@@ -421,18 +344,9 @@ describe("chat DAL", () => {
   });
 
   it("lists messages oldest-first", async () => {
-    const {
-      appendChatMessages,
-      ensureChatThreadForWorkflowRun,
-      listChatMessagesByThreadId,
-    } = await loadChatDal();
-
-    const thread = await ensureChatThreadForWorkflowRun({
-      mode: "chat-assistant",
-      projectId: "proj_1",
-      title: "Test thread",
-      workflowRunId: "run_1",
-    });
+    const { appendChatMessages, listChatMessagesByThreadId } =
+      await loadChatDal();
+    const thread = seedThread();
 
     await appendChatMessages({
       messages: [
@@ -459,18 +373,9 @@ describe("chat DAL", () => {
   });
 
   it("clamps thread and message list limits", async () => {
-    const {
-      ensureChatThreadForWorkflowRun,
-      listChatMessagesByThreadId,
-      listChatThreadsByProjectId,
-    } = await loadChatDal();
-
-    const thread = await ensureChatThreadForWorkflowRun({
-      mode: "chat-assistant",
-      projectId: "proj_1",
-      title: "Test thread",
-      workflowRunId: "run_1",
-    });
+    const { listChatMessagesByThreadId, listChatThreadsByProjectId } =
+      await loadChatDal();
+    const thread = seedThread();
 
     await listChatThreadsByProjectId("proj_1", "user_1", 0);
     expect(state.lastChatThreadsFindManyLimit).toBe(1);
@@ -510,17 +415,5 @@ describe("chat DAL", () => {
         status: 404,
       } satisfies Partial<AppError>,
     );
-  });
-
-  it("updates only provided fields when updating by workflow run id", async () => {
-    const { updateChatThreadByWorkflowRunId } = await loadChatDal();
-
-    await updateChatThreadByWorkflowRunId("run_1", { title: "New title" });
-    expect(state.lastUpdateSetValues).toMatchObject({ title: "New title" });
-    expect(state.lastUpdateSetValues).not.toHaveProperty("status");
-    expect(state.lastUpdateSetValues).not.toHaveProperty("endedAt");
-
-    await updateChatThreadByWorkflowRunId("run_1", { endedAt: null });
-    expect(state.lastUpdateSetValues).toMatchObject({ endedAt: null });
   });
 });

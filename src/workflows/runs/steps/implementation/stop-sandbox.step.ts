@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getVercelSandbox } from "@/lib/sandbox/sandbox-client.server";
+import { stopOwnedSandboxById } from "@/lib/sandbox/sandbox-cancellation.server";
 
 /**
  * Stop a sandbox after implementation steps complete.
@@ -14,11 +14,5 @@ export async function stopImplementationSandbox(
 ): Promise<void> {
   "use step";
 
-  const sandbox = await getVercelSandbox(sandboxId).catch(() => null);
-  if (!sandbox) return;
-  try {
-    await sandbox.stop();
-  } catch {
-    // Best effort: sandbox may have already timed out or been stopped elsewhere.
-  }
+  await stopOwnedSandboxById(sandboxId);
 }

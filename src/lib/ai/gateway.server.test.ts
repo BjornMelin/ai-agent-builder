@@ -1,8 +1,8 @@
 import {
-  createMockEmbeddingModelV3,
-  createMockLanguageModelV3Text,
+  createMockEmbeddingModelV4,
+  createMockLanguageModelV4Text,
 } from "@tests/utils/ai-sdk";
-import { MockProviderV3 } from "ai/test";
+import { MockProviderV4 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppError } from "@/lib/core/errors";
 
@@ -28,19 +28,19 @@ vi.mock("@/lib/env", () => ({
   env: state.env,
 }));
 
-let provider: MockProviderV3;
-let chatModel: ReturnType<typeof createMockLanguageModelV3Text>;
-let embeddingModel: ReturnType<typeof createMockEmbeddingModelV3>;
+let provider: MockProviderV4;
+let chatModel: ReturnType<typeof createMockLanguageModelV4Text>;
+let embeddingModel: ReturnType<typeof createMockEmbeddingModelV4>;
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
 
-  chatModel = createMockLanguageModelV3Text("hi");
-  embeddingModel = createMockEmbeddingModelV3({
+  chatModel = createMockLanguageModelV4Text("hi");
+  embeddingModel = createMockEmbeddingModelV4({
     modelId: state.env.aiGateway.embeddingModel,
   });
-  provider = new MockProviderV3({
+  provider = new MockProviderV4({
     embeddingModels: {
       [state.env.aiGateway.embeddingModel]: embeddingModel,
     },

@@ -334,7 +334,7 @@ export async function verifyImplementationRun(
       // Best effort only.
     }
     try {
-      await session.sandbox.stop();
+      await session.stop();
     } catch {
       // Best effort only.
     }

@@ -54,9 +54,11 @@ export async function ChatContent(
     activeThread?.status === "succeeded" ||
     activeThread?.status === "failed" ||
     activeThread?.status === "canceled";
+  const needsStartRecovery =
+    activeThread?.status === "pending" && activeThread.workflowRunId === null;
 
   const initialMessages =
-    activeThread && isTerminal
+    activeThread && (isTerminal || needsStartRecovery)
       ? await listChatMessagesByThreadId(activeThread.id, user.id).then(
           (rows) =>
             rows

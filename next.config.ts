@@ -1,4 +1,3 @@
-import path from "node:path";
 import type { NextConfig } from "next";
 import { withWorkflow } from "workflow/next";
 
@@ -32,9 +31,6 @@ const nextConfig: NextConfig = {
     "/*": [".agents/skills/**/*", ".codex/skills/**/*"],
   },
   reactCompiler: true,
-  turbopack: {
-    root: path.resolve(__dirname),
-  },
 };
 
 /** Next.js config enhanced with Workflow route/build integration. */

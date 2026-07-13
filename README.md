@@ -48,7 +48,7 @@ flowchart LR
 - Web: Next.js 16 (App Router), React 19
 - Styling/UI: TailwindCSS v4, shadcn/ui, Lucide
 - Auth: Neon Auth (managed auth + UI components)
-- AI: Vercel AI SDK v6 + AI Gateway
+- AI: Vercel AI SDK 7 + `@ai-sdk/workflow` + AI Gateway
 - DB: Neon Postgres + Drizzle ORM
 - Orchestration: Vercel Workflow DevKit (interactive chat + runs), Upstash QStash (background ingestion)
 - DB connectivity (Vercel): Postgres TCP + connection pooling (`pg`) with

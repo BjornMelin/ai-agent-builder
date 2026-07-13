@@ -125,7 +125,7 @@ export async function retrieveProjectChunks(
 
   const hits: RetrievalHit[] = results.flatMap((r) => {
     const meta = r.metadata;
-    if (!meta || meta.type !== "chunk") return [];
+    if (meta?.type !== "chunk") return [];
 
     const provenance: RetrievalHit["provenance"] = {
       chunkIndex: meta.chunkIndex,
@@ -219,7 +219,7 @@ export async function retrieveProjectArtifacts(
 
   const candidates: ArtifactHitCandidate[] = results.flatMap((r) => {
     const meta = r.metadata;
-    if (!meta || meta.type !== "artifact") return [];
+    if (meta?.type !== "artifact") return [];
 
     if (r.id === null || r.id === undefined) return [];
 

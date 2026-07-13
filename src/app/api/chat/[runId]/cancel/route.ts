@@ -1,24 +1,29 @@
 import { getRun } from "workflow/api";
-
+import { getWorld } from "workflow/runtime";
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
-import { log } from "@/lib/core/log";
-import {
-  getChatThreadByWorkflowRunId,
-  updateChatThreadByWorkflowRunId,
-} from "@/lib/data/chat.server";
+import { getChatThreadByWorkflowRunId } from "@/lib/data/chat.server";
+import { transitionChatThreadState } from "@/lib/data/chat-thread-state.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
+
+async function closeWorkflowRunStreams(runId: string): Promise<void> {
+  const world = getWorld();
+  const streamNames = await world.listStreamsByRunId(runId);
+  await Promise.all(
+    streamNames.map(async (name) => await world.closeStream(name, runId)),
+  );
+}
 
 /**
  * Cancel an in-flight chat session workflow run.
  *
  * @param _req - HTTP request.
  * @param context - Route params.
- * @returns JSON ok or JSON error.
+ * @returns The authoritative terminal status or a JSON error.
  * @throws AppError - With code "not_found" when the chat session cannot be found.
  * @throws AppError - With code "not_found" when the workflow run cannot be found.
- * @throws AppError - With code "conflict" when the session is no longer active.
+ * @throws AppError - With code "conflict" when cancellation does not reach a terminal state.
  * @throws AppError - With code "forbidden" when the session's project is not accessible.
  */
 export async function POST(
@@ -35,17 +40,13 @@ export async function POST(
       throw new AppError("not_found", 404, "Chat session not found.");
     }
 
-    if (
-      thread.status === "succeeded" ||
-      thread.status === "failed" ||
-      thread.status === "canceled"
-    ) {
-      throw new AppError("conflict", 409, "Chat session is no longer active.");
-    }
-
     const project = await getProjectByIdForUser(thread.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
+    }
+
+    if (thread.status === "succeeded" || thread.status === "failed") {
+      return jsonOk({ ok: true, status: thread.status });
     }
 
     const run = getRun(params.runId);
@@ -53,24 +54,34 @@ export async function POST(
       throw new AppError("not_found", 404, "Run not found.");
     }
 
-    await run.cancel();
+    const terminalStatus =
+      thread.status === "canceled"
+        ? "canceled"
+        : (
+            await transitionChatThreadState({
+              status: "canceled",
+              workflowRunId: params.runId,
+            })
+          ).status;
 
-    const now = new Date();
-    try {
-      await updateChatThreadByWorkflowRunId(params.runId, {
-        endedAt: now,
-        lastActivityAt: now,
-        status: "canceled",
-      });
-    } catch (updateError) {
-      log.error("chat_cancel_state_update_failed", {
-        err: updateError,
-        operation: "cancel run state update",
-        runId: params.runId,
-      });
+    if (
+      terminalStatus !== "succeeded" &&
+      terminalStatus !== "failed" &&
+      terminalStatus !== "canceled"
+    ) {
+      throw new AppError(
+        "conflict",
+        409,
+        "Chat cancellation has not reached a terminal state.",
+      );
     }
 
-    return jsonOk({ ok: true });
+    if (terminalStatus === "canceled") {
+      await run.cancel();
+      await closeWorkflowRunStreams(params.runId);
+    }
+
+    return jsonOk({ ok: true, status: terminalStatus });
   } catch (err) {
     return jsonError(err);
   }

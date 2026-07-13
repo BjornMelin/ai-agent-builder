@@ -1,4 +1,4 @@
-import { createMockEmbeddingModelV3 } from "@tests/utils/ai-sdk";
+import { createMockEmbeddingModelV4 } from "@tests/utils/ai-sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
@@ -23,7 +23,7 @@ beforeEach(() => {
 
 describe("embeddings helpers", () => {
   it("embedText uses the default embedding model by default", async () => {
-    const defaultModel = createMockEmbeddingModelV3();
+    const defaultModel = createMockEmbeddingModelV4();
     state.getDefaultEmbeddingModel.mockReturnValue(defaultModel);
 
     const { embedText } = await import("@/lib/ai/embeddings.server");
@@ -38,8 +38,8 @@ describe("embeddings helpers", () => {
   });
 
   it("embedText uses an explicit model override when provided", async () => {
-    const defaultModel = createMockEmbeddingModelV3();
-    const overrideModel = createMockEmbeddingModelV3({
+    const defaultModel = createMockEmbeddingModelV4();
+    const overrideModel = createMockEmbeddingModelV4({
       embedForValues: (values) => values.map((v, idx) => [v.length + 100, idx]),
       modelId: "override-model",
     });
@@ -64,7 +64,7 @@ describe("embeddings helpers", () => {
   });
 
   it("embedTexts returns [] for empty inputs and does not call the model", async () => {
-    const defaultModel = createMockEmbeddingModelV3();
+    const defaultModel = createMockEmbeddingModelV4();
     state.getDefaultEmbeddingModel.mockReturnValue(defaultModel);
 
     const { embedTexts } = await import("@/lib/ai/embeddings.server");
@@ -75,7 +75,7 @@ describe("embeddings helpers", () => {
   });
 
   it("embedTexts embeds all values in input order", async () => {
-    const defaultModel = createMockEmbeddingModelV3();
+    const defaultModel = createMockEmbeddingModelV4();
     state.getDefaultEmbeddingModel.mockReturnValue(defaultModel);
 
     const { embedTexts } = await import("@/lib/ai/embeddings.server");
@@ -92,7 +92,7 @@ describe("embeddings helpers", () => {
   });
 
   it("embedTexts remains deterministic with maxParallelCalls override", async () => {
-    const defaultModel = createMockEmbeddingModelV3();
+    const defaultModel = createMockEmbeddingModelV4();
     state.getDefaultEmbeddingModel.mockReturnValue(defaultModel);
 
     const { embedTexts } = await import("@/lib/ai/embeddings.server");

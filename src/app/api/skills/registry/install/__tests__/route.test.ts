@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  cancelRun: vi.fn(),
   getProjectByIdForUser: vi.fn(),
   getWorld: vi.fn(),
   recordProjectSkillRegistryInstall: vi.fn(),
   requireAppUserApi: vi.fn(),
   start: vi.fn(),
+  workflowCancel: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/require-app-user-api.server", () => ({
@@ -23,8 +23,7 @@ vi.mock("@/lib/data/project-skill-registry-installs.server", () => ({
     state.recordProjectSkillRegistryInstall(...args),
 }));
 
-vi.mock("@workflow/core/runtime", () => ({
-  cancelRun: (...args: unknown[]) => state.cancelRun(...args),
+vi.mock("workflow/runtime", () => ({
   getWorld: (...args: unknown[]) => state.getWorld(...args),
 }));
 
@@ -44,14 +43,17 @@ beforeEach(() => {
   state.getWorld.mockReturnValue({ id: "world_1" });
   state.requireAppUserApi.mockResolvedValue({ id: "user_1" });
   state.getProjectByIdForUser.mockResolvedValue({ id: "proj_1" });
-  state.start.mockResolvedValue({ runId: "wf_1" });
+  state.start.mockResolvedValue({
+    cancel: state.workflowCancel,
+    runId: "wf_1",
+  });
   state.recordProjectSkillRegistryInstall.mockResolvedValue({
     id: "map_1",
     projectId: "proj_1",
     registryId: "vercel-labs/skills/find-skills",
     workflowRunId: "wf_1",
   });
-  state.cancelRun.mockResolvedValue(undefined);
+  state.workflowCancel.mockResolvedValue(undefined);
 });
 
 describe("POST /api/skills/registry/install", () => {
@@ -89,7 +91,6 @@ describe("POST /api/skills/registry/install", () => {
 
   it("cancels the run when the install mapping cannot be recorded", async () => {
     const { POST } = await loadRoute();
-    const world = state.getWorld();
     state.recordProjectSkillRegistryInstall.mockRejectedValueOnce(
       new Error("db down"),
     );
@@ -110,6 +111,6 @@ describe("POST /api/skills/registry/install", () => {
       error: { code: "internal_error" },
     });
     expect(state.start).toHaveBeenCalled();
-    expect(state.cancelRun).toHaveBeenCalledWith(world, "wf_1");
+    expect(state.workflowCancel).toHaveBeenCalledTimes(1);
   });
 });

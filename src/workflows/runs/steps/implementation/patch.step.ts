@@ -257,7 +257,7 @@ export async function applyImplementationPatch(
     }
     try {
       // If patching fails, stop the sandbox to avoid leaking resources.
-      await session.sandbox.stop();
+      await session.stop();
     } catch {
       // Best effort only.
     }

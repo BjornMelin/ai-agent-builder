@@ -223,7 +223,7 @@ If OAuth is disabled on Preview, use **email OTP** or **magic link** auth flows:
   - confirm the implementation run includes a succeeded `impl.repo.index` step
     (bounded indexing into Upstash Vector under `project:{projectId}:repo:{repoId}`)
   - note: the interactive chat toolset focuses on uploaded chunks today; Code
-    Mode provides sandbox-backed codebase inspection tools (`sandbox_ls`,
+    Mode provides native sandbox-backed inspection tools (`sandbox_ls`,
     `sandbox_cat`, `sandbox_grep`, `sandbox_find`) for on-demand retrieval.
 
 ## Rotating secrets

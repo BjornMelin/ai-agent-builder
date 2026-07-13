@@ -3,16 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { budgets } from "@/lib/config/budgets.server";
 import type { AppError } from "@/lib/core/errors";
 import { createResearchReportStep } from "@/workflows/chat/steps/research-report.step";
-import { createChatToolContext } from "@/workflows/chat/tool-context";
 
-const state = vi.hoisted(() => ({
-  createResearchReportArtifact: vi.fn(),
-}));
-
+const state = vi.hoisted(() => ({ createResearchReportArtifact: vi.fn() }));
 let previousAiGatewayApiKey: string | undefined;
 
 vi.mock("@/lib/research/research-report.server", () => ({
   createResearchReportArtifact: state.createResearchReportArtifact,
+}));
+
+vi.mock("workflow", () => ({
+  getStepMetadata: () => ({ stepId: "workflow-step-research-1" }),
 }));
 
 beforeEach(() => {
@@ -37,47 +37,37 @@ afterEach(() => {
 });
 
 describe("createResearchReportStep", () => {
-  it("enforces the web search call budget", async () => {
-    const ctx = createChatToolContext("proj_1", "researcher");
-    ctx.toolBudget.webSearchCalls = budgets.maxWebSearchCallsPerTurn;
-
+  it("requires immutable project and mode context", async () => {
     await expect(
-      createResearchReportStep({ query: "test" }, makeToolOptions({ ctx })),
+      createResearchReportStep(
+        { query: "test" },
+        makeToolOptions({ ctx: { modeId: "", projectId: "proj_1" } }),
+      ),
     ).rejects.toMatchObject({
-      code: "conflict",
-      status: 409,
+      code: "bad_request",
+      status: 400,
     } satisfies Partial<AppError>);
   });
 
-  it("enforces the web extract call budget", async () => {
-    const ctx = createChatToolContext("proj_1", "researcher");
-    ctx.toolBudget.webExtractCalls = budgets.maxWebExtractCallsPerTurn;
-
-    await expect(
-      createResearchReportStep({ query: "test" }, makeToolOptions({ ctx })),
-    ).rejects.toMatchObject({
-      code: "conflict",
-      status: 409,
-    } satisfies Partial<AppError>);
-  });
-
-  it("reserves remaining extract budget and forwards maxExtractUrls to artifact creation", async () => {
-    const ctx = createChatToolContext("proj_1", "researcher");
-    ctx.toolBudget.webExtractCalls = budgets.maxWebExtractCallsPerTurn - 1;
-
-    await createResearchReportStep({ query: "test" }, makeToolOptions({ ctx }));
+  it("forwards the configured compound research allowance", async () => {
+    const controller = new AbortController();
+    await createResearchReportStep(
+      { query: "test" },
+      makeToolOptions({
+        ctx: { modeId: "researcher", projectId: "proj_1" },
+        signal: controller.signal,
+      }),
+    );
 
     expect(state.createResearchReportArtifact).toHaveBeenCalledWith(
       expect.objectContaining({
-        maxExtractUrls: 1,
+        abortSignal: controller.signal,
+        idempotencyKey: "workflow-step-research-1",
+        maxExtractUrls: Math.min(3, budgets.maxWebExtractCallsPerTurn),
         modelId: expect.any(String),
         projectId: "proj_1",
         query: "test",
       }),
-    );
-    expect(ctx.toolBudget.webSearchCalls).toBe(1);
-    expect(ctx.toolBudget.webExtractCalls).toBe(
-      budgets.maxWebExtractCallsPerTurn,
     );
   });
 });

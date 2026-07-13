@@ -54,6 +54,18 @@ describe("createVercelSandbox", () => {
     expect(arg).not.toMatchObject({ token: expect.anything() });
   });
 
+  it("passes native cancellation through sandbox creation", async () => {
+    const signal = AbortSignal.timeout(1_000);
+    const { createVercelSandbox } = await import(
+      "@/lib/sandbox/sandbox-client.server"
+    );
+
+    await createVercelSandbox({ signal, timeoutMs: 1_000 });
+    expect(state.sandboxCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ signal }),
+    );
+  });
+
   it("requires teamId for access-token auth", async () => {
     state.env.sandbox.auth = "token";
     state.env.sandbox.teamId = "";
@@ -102,6 +114,19 @@ describe("getVercelSandbox", () => {
     });
 
     expect(state.sandboxGet).toHaveBeenCalledWith({ sandboxId: "sb_1" });
+  });
+
+  it("passes native cancellation through sandbox lookup", async () => {
+    const signal = AbortSignal.timeout(1_000);
+    const { getVercelSandbox } = await import(
+      "@/lib/sandbox/sandbox-client.server"
+    );
+
+    await getVercelSandbox("sb_1", { signal });
+    expect(state.sandboxGet).toHaveBeenCalledWith({
+      sandboxId: "sb_1",
+      signal,
+    });
   });
 
   it("passes teamId/token/projectId when using access-token auth", async () => {

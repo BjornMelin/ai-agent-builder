@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0019
 title: Sandbox build/test/verification execution
-version: 0.2.0
-date: 2026-02-09
+version: 0.6.0
+date: 2026-07-13
 owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements:
@@ -95,6 +95,7 @@ Sandbox jobs provide a single interface for:
 - repo checkout + patch application
 - verification commands
 - transcript capture + redaction
+- durable sandbox ownership and shutdown confirmation
 
 ### Data contracts (if applicable)
 
@@ -103,10 +104,69 @@ Sandbox jobs provide a single interface for:
 - Sandbox job result (conceptual):
   - `exitCode`, `artifacts[]`, `stdoutTail`, `stderrTail`, `timings`
 
+#### Cancellation lifecycle
+
+- `runs.cancel_requested_at` is the durable cancellation fence. Persist it before
+  canceling the workflow or stopping sandboxes.
+- Cancellation bypasses request memoization to reread the Workflow ID after the
+  fence commits, and an already-canceled app run retries its known Workflow
+  cancellation before declaring cleanup complete.
+- Sandbox job creation locks its parent run row. It rejects fenced and terminal
+  runs before provisioning starts.
+- Provisioning jobs persist the native Workflow step ID as
+  `provisioning_key`. `(run_id, provisioning_key)` is unique, so every retry
+  reuses one durable job and any already-published sandbox.
+- `provisioning_claimed_at` and `provisioning_expires_at` bound an unknown
+  provider response using the database clock. Creation passes a native
+  `AbortSignal`, but Vercel Sandbox exposes no server idempotency key; after a
+  lost response, no replacement may start until the create deadline plus the
+  configured sandbox TTL guarantees that the unknown resource has expired.
+- A live unknown-resource window raises Workflow's native retryable error with
+  `retryAfter` set to the persisted expiry instead of consuming immediate retries.
+- Active jobs transition from `pending|running` to `canceling`, then to
+  `canceled` after resource cleanup.
+- A database lifecycle trigger protects rolling deployments: it rejects legacy
+  inserts after the run fence, promotes late metadata `sandboxId` values into
+  first-class ownership, preserves cancellation and terminal states, and gives
+  legacy no-ID writes the conservative 31-minute reconciliation window.
+- `canceling` is a durable, retryable claim. A concurrent activation publishes
+  its `sandbox_id` but cannot restore `running` or publish success.
+- `sandbox_jobs.sandbox_id` records resource ownership independently from job
+  metadata. `sandbox_stopped_at` records confirmed cleanup.
+- Cancellation immediately terminalizes an active job whose run-owned sandbox
+  already has a durable `sandbox_stopped_at` confirmation.
+- `sandbox_stop_claimed_at` is an expiring stop lease. It prevents concurrent
+  cancellation requests from issuing duplicate provider stop calls.
+- Cancellation scans every job, including terminal jobs. A succeeded job may
+  still own a shared sandbox when `stopOnFinalize` is false.
+- A claimed job without a sandbox ID remains `canceling` until its provisioning
+  window expires. A cancellation retry then completes it without provider I/O,
+  preventing a permanent no-ID cancellation wedge.
+- One deadline covers sandbox lookup, blocking stop, provider confirmation, and
+  persistence of `sandbox_stopped_at`. `stopped|failed|aborted` states and a
+  `404` lookup confirm idempotent cleanup.
+- Activation failures first publish the known sandbox ID. If that write is
+  unavailable, the runner directly stops the returned Sandbox object and then
+  atomically records ownership plus stop confirmation. Cleanup failures remain
+  non-terminal and are never swallowed.
+- Successful finalization and explicit Implementation Run shutdown use the same
+  leased stop owner. A job cannot persist success until shutdown is confirmed.
+- Checkout failure stops its newly provisioned sandbox before persisting a
+  terminal job state. If cleanup or terminal persistence fails, the Workflow
+  step remains retryable instead of hiding an orphan behind a failed job.
+- The parent records checkout sandbox ownership before outer step persistence
+  or stream emission, so failures in either wrapper still enter cleanup.
+- The parent Implementation Run catch does not persist terminal step or run
+  state while shutdown of its active sandbox remains unconfirmed.
+- Each confirmed sandbox stop persists independently. One failed stop does not
+  discard confirmations for other sandboxes.
+- The parent run becomes `canceled` only after workflow cancellation and all
+  run-owned sandbox shutdowns are confirmed.
+
 ### File-level contracts
 
 - [docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md](/docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md): canonical job taxonomy and contracts.
-- [docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md](/docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md): sandbox decision and tool selection.
+- [docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-native-tools.md](/docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-native-tools.md): sandbox decision and tool selection.
 
 ### Configuration
 
@@ -262,11 +322,25 @@ Persist:
 - Verification jobs run fully in Sandbox and never in the app runtime.
 - Logs are persisted with redaction and include sufficient data for debugging.
 - Jobs are bounded by timeouts, concurrency limits, and run budgets.
+- A durable cancellation fence prevents new sandbox jobs and provisioning.
+- Cancellation stops sandbox IDs from active and terminal jobs.
+- A run remains non-terminal while any sandbox stop or no-ID provisioning race
+  needs a retry.
+- Successful sandbox stops remain recorded when another stop fails.
+- Workflow retries reuse the same provisioning job and cannot create a second
+  sandbox during the recorded unknown-resource window.
 
 ## Testing
 
 - Unit tests: allowlist enforcement and redaction.
 - Integration tests: run a minimal verification job and assert transcript capture.
+- Cancellation tests cover creation/fence serialization, activation/claim races,
+  stable retry keys, activation-write failpoints, shared terminal-job sandboxes,
+  and no-ID provisioning expiry races.
+- SDK shutdown tests cover deadlines, partial failures, terminal states, and
+  missing sandboxes, lookup timeouts, and stop-confirmation persistence.
+- Concurrency tests verify that a fresh stop lease blocks duplicate provider
+  calls and that failed attempts release their lease for retry.
 - Tooling note: exclude generated Workflow routes under `src/app/.well-known/workflow/**`
   from Zod audits and lint rules that target app-authored code.
 
@@ -279,19 +353,28 @@ Persist:
 
 - Job timeout → persist partial logs and mark as retryable when safe.
 - Sandbox unavailability → fall back to CI-only verification and pause the run.
+- Stop timeout or provider error → keep the job `canceling` and retry cleanup.
+- Provisioning race without a sandbox ID → keep the job `canceling` through the
+  recorded provider TTL window, then complete it on the next cancellation retry.
+- Partial shutdown failure → retain each successful `sandbox_stopped_at` marker
+  and retry only unconfirmed sandbox IDs.
 
 ## Key files
 
 - [docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md](/docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
 - [docs/architecture/spec/SPEC-0009-sandbox-code-mode.md](/docs/architecture/spec/SPEC-0009-sandbox-code-mode.md)
-- [docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md](/docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md)
-
-## References
+- [docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-native-tools.md](/docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-native-tools.md)
 
 ## Changelog
 
 - **0.1 (2026-02-01)**: Initial version.
 - **0.2 (2026-02-09)**: Added Python (`uv`) verification patterns and explicit sandbox command policy constraints.
+- **0.3 (2026-07-13)**: Added retryable sandbox job cancellation and blocking shutdown confirmation.
+- **0.4 (2026-07-13)**: Added the run fence, first-class sandbox ownership, expiring stop leases, race-safe activation, per-resource shutdown persistence, and bounded idempotent cleanup.
+- **0.5 (2026-07-13)**: Added stable Workflow provisioning keys, database-clock unknown-resource windows, native create cancellation, activation-write recovery, and stop-confirmed finalization.
+- **0.6 (2026-07-13)**: Made checkout and parent-run failure paths cleanup-first, refreshed Workflow ownership after fencing, and protected late legacy sandbox writes during rolling deployment.
+
+## References
 
 - [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)
 - [Vercel Sandbox system specs](https://vercel.com/docs/vercel-sandbox/system-specifications)

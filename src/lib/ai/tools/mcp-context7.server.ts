@@ -5,7 +5,6 @@ import {
   type MCPClient,
   type MCPClientConfig,
 } from "@ai-sdk/mcp";
-import type { ToolExecutionOptions } from "@ai-sdk/provider-utils";
 
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
@@ -128,9 +127,10 @@ async function callContext7Tool(
 
       const toolResult = await tool.execute(args, {
         abortSignal: controller.signal,
+        context: undefined,
         messages: [],
         toolCallId: `context7:${toolName}`,
-      } satisfies ToolExecutionOptions);
+      });
       assertMaxBytes(toolResult);
       return toolResult;
     });

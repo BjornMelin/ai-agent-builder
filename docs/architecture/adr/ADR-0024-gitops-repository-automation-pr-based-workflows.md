@@ -17,7 +17,7 @@ References:
   - [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox)
   - [AI SDK Agents](https://ai-sdk.dev/docs/agents/overview)
   - [ToolLoopAgent](https://ai-sdk.dev/docs/reference/ai-sdk-core/tool-loop-agent)
-  - [dynamicTool](https://ai-sdk.dev/docs/reference/ai-sdk-core/dynamic-tool)
+  - [AI SDK tools](https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling)
 ---
 
 ## Status

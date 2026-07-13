@@ -121,7 +121,7 @@ flowchart LR
 
 ## Implementation Notes
 
-- Install via Bun and keep versions aligned with AI SDK v6.
+- Install via Bun and keep AI Elements compatible with AI SDK 7.
 
 ## Consequences
 

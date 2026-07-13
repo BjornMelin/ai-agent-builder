@@ -1,7 +1,6 @@
-import { cancelRun, getWorld } from "@workflow/core/runtime";
 import { start } from "workflow/api";
+import { getWorld } from "workflow/runtime";
 import { z } from "zod";
-
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
@@ -65,7 +64,7 @@ export async function POST(req: Request): Promise<Response> {
       });
     } catch (err) {
       // Prevent orphaned runs that can't be status-polled due to ownership enforcement.
-      await cancelRun(world, run.runId).catch(() => undefined);
+      await run.cancel().catch(() => undefined);
       throw err;
     }
 

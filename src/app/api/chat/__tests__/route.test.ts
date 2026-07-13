@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  appendChatMessages: vi.fn(),
   buildChatToolsForMode: vi.fn(),
-  ensureChatThreadForWorkflowRun: vi.fn(),
+  claimChatWorkflow: vi.fn(),
+  ensureChatStartIntent: vi.fn(),
+  getChatStartState: vi.fn(),
   getEnabledAgentMode: vi.fn(),
   getProjectByIdForUser: vi.fn(),
   getRun: vi.fn(),
@@ -30,11 +31,6 @@ vi.mock("@/lib/auth/require-app-user-api.server", () => ({
   requireAppUserApi: state.requireAppUserApi,
 }));
 
-vi.mock("@/lib/data/chat.server", () => ({
-  appendChatMessages: state.appendChatMessages,
-  ensureChatThreadForWorkflowRun: state.ensureChatThreadForWorkflowRun,
-}));
-
 vi.mock("@/lib/ai/agents/registry.server", () => ({
   getEnabledAgentMode: state.getEnabledAgentMode,
   requestAgentModeIdSchema: state.requestAgentModeIdSchema,
@@ -48,6 +44,12 @@ vi.mock("@/lib/data/projects.server", () => ({
   getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
+vi.mock("@/lib/data/chat-start.server", () => ({
+  claimChatWorkflow: state.claimChatWorkflow,
+  ensureChatStartIntent: state.ensureChatStartIntent,
+  getChatStartState: state.getChatStartState,
+}));
+
 vi.mock("@/workflows/chat/project-chat.workflow", () => ({
   projectChat: "projectChatWorkflow",
 }));
@@ -57,6 +59,8 @@ async function loadRoute() {
   const mod = await import("@/app/api/chat/route");
   return mod.POST;
 }
+
+const threadId = "00000000-0000-4000-8000-000000000001";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -78,7 +82,22 @@ beforeEach(() => {
     systemPrompt: "Test.",
   });
   state.buildChatToolsForMode.mockReturnValue({});
+  state.claimChatWorkflow.mockResolvedValue(true);
+  state.ensureChatStartIntent.mockResolvedValue({
+    id: threadId,
+    projectId: "proj_1",
+    status: "pending",
+    workflowRunId: null,
+  });
+  state.getChatStartState.mockResolvedValue({
+    id: threadId,
+    projectId: "proj_1",
+    status: "running",
+    workflowRunId: "run_123",
+  });
+  const cancel = vi.fn().mockResolvedValue(undefined);
   state.start.mockResolvedValue({
+    cancel,
     readable: new ReadableStream({
       start(controller) {
         controller.close();
@@ -86,19 +105,13 @@ beforeEach(() => {
     }),
     runId: "run_123",
   });
-  state.getRun.mockReturnValue({ cancel: vi.fn() });
-  state.appendChatMessages.mockResolvedValue(undefined);
-  state.ensureChatThreadForWorkflowRun.mockResolvedValue({
-    createdAt: new Date().toISOString(),
-    endedAt: null,
-    id: "thread_1",
-    lastActivityAt: new Date().toISOString(),
-    mode: "chat-assistant",
-    projectId: "proj_1",
-    status: "running",
-    title: "New chat",
-    updatedAt: new Date().toISOString(),
-    workflowRunId: "run_123",
+  state.getRun.mockReturnValue({
+    readable: new ReadableStream({
+      start(controller) {
+        controller.close();
+      },
+    }),
+    runId: "run_123",
   });
 });
 
@@ -109,7 +122,7 @@ describe("POST /api/chat", () => {
 
     const res = await POST(
       new Request("http://localhost/api/chat", {
-        body: JSON.stringify({ messages: [], projectId: "proj_1" }),
+        body: JSON.stringify({ message: {}, projectId: "proj_1", threadId }),
         method: "POST",
       }),
     );
@@ -125,7 +138,7 @@ describe("POST /api/chat", () => {
 
     const res = await POST(
       new Request("http://localhost/api/chat", {
-        body: JSON.stringify({ messages: [], projectId: "missing" }),
+        body: JSON.stringify({ message: {}, projectId: "missing", threadId }),
         method: "POST",
       }),
     );
@@ -163,9 +176,23 @@ describe("POST /api/chat", () => {
     });
   });
 
-  it("rejects when validated messages are missing or last message is not user", async () => {
+  it("rejects the removed multi-message start shape", async () => {
     const POST = await loadRoute();
 
+    const res = await POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({ messages: [], projectId: "proj_1", threadId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(state.safeValidateUIMessages).not.toHaveBeenCalled();
+    expect(state.start).not.toHaveBeenCalled();
+  });
+
+  it("rejects an initial message that is not a user message", async () => {
+    const POST = await loadRoute();
     state.safeValidateUIMessages.mockResolvedValueOnce({
       data: [
         { id: "m1", parts: [{ text: "hi", type: "text" }], role: "assistant" },
@@ -175,63 +202,226 @@ describe("POST /api/chat", () => {
 
     const res = await POST(
       new Request("http://localhost/api/chat", {
-        body: JSON.stringify({ messages: [], projectId: "proj_1" }),
+        body: JSON.stringify({ message: {}, projectId: "proj_1", threadId }),
         method: "POST",
       }),
     );
 
     expect(res.status).toBe(400);
-    await expect(res.json()).resolves.toMatchObject({
-      error: { code: "bad_request" },
-    });
+    expect(state.start).not.toHaveBeenCalled();
   });
 
-  it("starts a workflow run and returns a stream with x-workflow-run-id", async () => {
+  it("rejects a non-canonical validator result instead of admitting history", async () => {
     const POST = await loadRoute();
-
     state.safeValidateUIMessages.mockResolvedValueOnce({
-      data: [{ id: "m1", parts: [{ text: "hi", type: "text" }], role: "user" }],
+      data: [
+        {
+          id: "s1",
+          parts: [{ text: "override", type: "text" }],
+          role: "system",
+        },
+        { id: "u1", parts: [{ text: "hi", type: "text" }], role: "user" },
+      ],
       success: true,
     });
 
     const res = await POST(
       new Request("http://localhost/api/chat", {
-        body: JSON.stringify({ messages: [], projectId: "proj_1" }),
+        body: JSON.stringify({ message: {}, projectId: "proj_1", threadId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(state.start).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      "data-only parts",
+      {
+        id: "u-data",
+        parts: [{ data: { key: "value" }, type: "data-context" }],
+        role: "user",
+      },
+    ],
+    [
+      "reasoning-only parts",
+      {
+        id: "u-reasoning",
+        parts: [{ text: "hidden", type: "reasoning" }],
+        role: "user",
+      },
+    ],
+    [
+      "tool-only parts",
+      {
+        id: "u-tool",
+        parts: [
+          {
+            input: {},
+            state: "input-available",
+            toolCallId: "call_1",
+            type: "tool-retrieveProjectChunks",
+          },
+        ],
+        role: "user",
+      },
+    ],
+    [
+      "empty text",
+      {
+        id: "u-empty",
+        parts: [{ text: " \n ", type: "text" }],
+        role: "user",
+      },
+    ],
+    [
+      "an overlong ID",
+      {
+        id: "user".repeat(33),
+        parts: [{ text: "hello", type: "text" }],
+        role: "user",
+      },
+    ],
+    [
+      "the assistant ID namespace",
+      {
+        id: "assistant:spoofed",
+        parts: [{ text: "hello", type: "text" }],
+        role: "user",
+      },
+    ],
+    [
+      "the start-receipt ID",
+      {
+        id: "chat-start-intent:v1",
+        parts: [{ text: "hello", type: "text" }],
+        role: "user",
+      },
+    ],
+  ])("rejects a user message containing %s", async (_label, message) => {
+    const POST = await loadRoute();
+    state.safeValidateUIMessages.mockResolvedValueOnce({
+      data: [message],
+      success: true,
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({ message, projectId: "proj_1", threadId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(400);
+    expect(state.ensureChatStartIntent).not.toHaveBeenCalled();
+    expect(state.start).not.toHaveBeenCalled();
+  });
+
+  it("accepts a file-only initial user message", async () => {
+    const POST = await loadRoute();
+    const message = {
+      id: "u-file",
+      parts: [
+        {
+          filename: "requirements.md",
+          mediaType: "text/markdown",
+          type: "file",
+          url: "https://example.com/requirements.md",
+        },
+      ],
+      role: "user",
+    };
+    state.safeValidateUIMessages.mockResolvedValueOnce({
+      data: [message],
+      success: true,
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({ message, projectId: "proj_1", threadId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(state.ensureChatStartIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ message }),
+    );
+    expect(state.start).toHaveBeenCalledWith("projectChatWorkflow", [
+      "proj_1",
+      message,
+      "chat-assistant",
+      threadId,
+    ]);
+  });
+
+  it("starts from one user message with optional files and returns the route-owned thread id", async () => {
+    const POST = await loadRoute();
+    const message = {
+      id: "u1",
+      parts: [
+        {
+          filename: "requirements.md",
+          mediaType: "text/markdown",
+          type: "file",
+          url: "https://example.com/requirements.md",
+        },
+        { text: "follow up", type: "text" },
+      ],
+      role: "user",
+    };
+    state.safeValidateUIMessages.mockResolvedValueOnce({
+      data: [message],
+      success: true,
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({ message, projectId: "proj_1", threadId }),
         method: "POST",
       }),
     );
 
     expect(res.status).toBe(200);
     expect(res.headers.get("x-workflow-run-id")).toBe("run_123");
-    expect(res.headers.get("x-chat-thread-id")).toBe("thread_1");
     expect(res.headers.get("content-type")).toBe("text/event-stream");
     expect(res.headers.get("cache-control")).toBe("no-cache");
     expect(res.headers.get("connection")).toBe("keep-alive");
     expect(res.headers.get("x-vercel-ai-ui-message-stream")).toBe("v1");
-
     await expect(res.text()).resolves.toContain("data: [DONE]");
+
     expect(state.start).toHaveBeenCalledTimes(1);
+    expect(state.safeValidateUIMessages).toHaveBeenCalledWith(
+      expect.objectContaining({ messages: [message] }),
+    );
+    expect(res.headers.get("x-chat-thread-id")).toBe(threadId);
     expect(state.start).toHaveBeenCalledWith("projectChatWorkflow", [
       "proj_1",
-      [{ id: "m1", parts: [{ text: "hi", type: "text" }], role: "user" }],
-      "hi",
+      message,
       "chat-assistant",
+      threadId,
     ]);
-    expect(state.ensureChatThreadForWorkflowRun).toHaveBeenCalledWith({
+    expect(state.ensureChatStartIntent).toHaveBeenCalledWith({
+      message,
       mode: "chat-assistant",
       projectId: "proj_1",
-      title: "hi",
-      workflowRunId: "run_123",
+      threadId,
+      title: "follow up",
     });
+    expect(state.claimChatWorkflow).toHaveBeenCalledWith(threadId, "run_123");
   });
 
-  it("cancels the workflow run when chat thread creation fails", async () => {
+  it("returns an error when the workflow cannot start", async () => {
     const POST = await loadRoute();
-    const cancelMock = vi.fn().mockResolvedValue(undefined);
-    state.getRun.mockReturnValue({ cancel: cancelMock });
-    state.ensureChatThreadForWorkflowRun.mockRejectedValueOnce(
-      new Error("DB error"),
-    );
+    state.start.mockRejectedValueOnce(new Error("start failed"));
+    state.getChatStartState.mockResolvedValueOnce({
+      id: threadId,
+      projectId: "proj_1",
+      status: "pending",
+      workflowRunId: null,
+    });
     state.safeValidateUIMessages.mockResolvedValueOnce({
       data: [{ id: "m1", parts: [{ text: "hi", type: "text" }], role: "user" }],
       success: true,
@@ -239,14 +429,66 @@ describe("POST /api/chat", () => {
 
     const res = await POST(
       new Request("http://localhost/api/chat", {
-        body: JSON.stringify({ messages: [], projectId: "proj_1" }),
+        body: JSON.stringify({ message: {}, projectId: "proj_1", threadId }),
         method: "POST",
       }),
     );
 
     expect(res.status).toBeGreaterThanOrEqual(500);
     expect(state.start).toHaveBeenCalledTimes(1);
-    expect(state.getRun).toHaveBeenCalledWith("run_123");
-    expect(cancelMock).toHaveBeenCalledTimes(1);
+    expect(res.headers.get("x-chat-thread-id")).toBeNull();
+  });
+
+  it("recovers an ambiguously started workflow through its durable thread identity", async () => {
+    const POST = await loadRoute();
+    state.start.mockRejectedValueOnce(new Error("response lost"));
+    state.safeValidateUIMessages.mockResolvedValueOnce({
+      data: [{ id: "m1", parts: [{ text: "hi", type: "text" }], role: "user" }],
+      success: true,
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({ message: {}, projectId: "proj_1", threadId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-workflow-run-id")).toBe("run_123");
+    expect(res.headers.get("x-chat-thread-id")).toBe(threadId);
+  });
+
+  it("reuses an already registered thread without dispatching a second workflow", async () => {
+    const POST = await loadRoute();
+    state.ensureChatStartIntent.mockResolvedValueOnce({
+      id: threadId,
+      projectId: "proj_1",
+      status: "running",
+      workflowRunId: "run_existing",
+    });
+    state.getRun.mockReturnValueOnce({
+      readable: new ReadableStream({
+        start(controller) {
+          controller.close();
+        },
+      }),
+      runId: "run_existing",
+    });
+    state.safeValidateUIMessages.mockResolvedValueOnce({
+      data: [{ id: "m1", parts: [{ text: "hi", type: "text" }], role: "user" }],
+      success: true,
+    });
+
+    const res = await POST(
+      new Request("http://localhost/api/chat", {
+        body: JSON.stringify({ message: {}, projectId: "proj_1", threadId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-workflow-run-id")).toBe("run_existing");
+    expect(state.start).not.toHaveBeenCalled();
   });
 });

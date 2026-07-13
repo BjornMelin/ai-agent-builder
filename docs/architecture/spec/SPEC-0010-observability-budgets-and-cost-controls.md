@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0010
 title: Observability, budgets, and cost controls
-version: 0.4.0
-date: 2026-02-09
+version: 0.5.0
+date: 2026-07-13
 owners: ["Bjorn Melin"]
 status: Partially Implemented
 related_requirements: ["FR-011", "NFR-004", "NFR-006", "NFR-015", "PR-007"]
@@ -24,7 +24,8 @@ Budgets prevent runaway spend and enforce predictable execution.
 Implemented today:
 
 - Central budget constants: `src/lib/config/budgets.server.ts`
-- Per-tool budgets + caching for web research + Context7 calls: `src/workflows/chat/tools.ts`, `src/lib/research/research-report.server.ts`
+- Per-turn tool budgets: `src/lib/ai/tools/factory.server.ts`
+- Web research and Context7 caching/timeouts: `src/lib/ai/tools/*.server.ts`, `src/lib/research/research-report.server.ts`
 - Sandbox job transcript persistence + redaction: `src/lib/sandbox/sandbox-runner.server.ts`, `src/lib/sandbox/redaction.server.ts`
 
 Not yet complete:
@@ -118,7 +119,7 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 - per-run max tokens (input + output)
 - per-step max tokens
-- max tool call steps (`maxSteps`)
+- max tool call steps (`isStepCount(mode.budgets.maxStepsPerTurn)`)
 
 ### Web research budgets
 
@@ -132,6 +133,7 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 
 Enforcement (project chat workflow):
 
+- `src/lib/ai/tools/factory.server.ts` (synchronous per-turn reservation before tool execution)
 - `src/workflows/chat/steps/web-search.step.ts`
 - `src/workflows/chat/steps/web-extract.step.ts`
 - `src/workflows/chat/steps/research-report.step.ts`
@@ -148,6 +150,7 @@ Enforcement (project chat workflow):
 
 Enforcement (project chat workflow):
 
+- `src/lib/ai/tools/factory.server.ts` (fresh counter for each `WorkflowAgent.stream()` turn)
 - `src/workflows/chat/steps/context7.step.ts`
 - `src/lib/ai/tools/mcp-context7.server.ts` (AbortController + timeout budget)
 
@@ -174,7 +177,8 @@ Enforcement (project chat workflow):
 
 ## Controls
 
-- enforce budgets in orchestrator before calling tools
+- reserve project-chat tool costs synchronously in the fresh per-turn toolset before calling tools
+- reserve the research-report search and extract allowance atomically before invoking its step
 - hard-stop when exceeded; require explicit user override to continue
 - cache retrieval and web research aggressively
 
@@ -242,3 +246,4 @@ Enforcement (project chat workflow):
 - **0.3 (2026-02-01)**: Updated for implementation/deploy workflows and sandbox budgets.
 - **0.3.1 (2026-02-03)**: Updated file path references to match current repo structure.
 - **0.3.2 (2026-02-07)**: Documented upstream timeout budgets and enforcement points for web research and Context7 MCP.
+- **0.5.0 (2026-07-13)**: Aligned AI SDK 7 step limits and fresh per-turn budget ownership with `factory.server.ts`.

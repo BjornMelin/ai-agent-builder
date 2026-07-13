@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, notInArray } from "drizzle-orm";
 import { cache } from "react";
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
@@ -56,6 +56,8 @@ export type RunStepDto = Readonly<{
 
 type RunRow = typeof schema.runsTable.$inferSelect;
 type RunStepRow = typeof schema.runStepsTable.$inferSelect;
+
+const TERMINAL_RUN_STATUSES = ["canceled", "failed", "succeeded"] as const;
 
 function toRunDto(row: RunRow): RunDto {
   return {
@@ -142,7 +144,13 @@ export async function setRunWorkflowRunId(
     [row] = await db
       .update(schema.runsTable)
       .set({ updatedAt: new Date(), workflowRunId })
-      .where(eq(schema.runsTable.id, runId))
+      .where(
+        and(
+          eq(schema.runsTable.id, runId),
+          isNull(schema.runsTable.cancelRequestedAt),
+          notInArray(schema.runsTable.status, [...TERMINAL_RUN_STATUSES]),
+        ),
+      )
       .returning();
   } catch (error) {
     throw new AppError(
@@ -154,7 +162,18 @@ export async function setRunWorkflowRunId(
   }
 
   if (!row) {
-    throw new AppError("not_found", 404, "Run not found.");
+    const existing = await db.query.runsTable.findFirst({
+      columns: { id: true },
+      where: eq(schema.runsTable.id, runId),
+    });
+    if (!existing) {
+      throw new AppError("not_found", 404, "Run not found.");
+    }
+    throw new AppError(
+      "run_not_active",
+      409,
+      "Run was canceled before workflow startup completed.",
+    );
   }
 
   return toRunDto(row);
@@ -201,19 +220,35 @@ export async function listRunsByProject(
   return listRunsByProjectCached(projectId, limit, offset);
 }
 
+async function queryRunById(id: string): Promise<RunDto | null> {
+  const db = getDb();
+  const row = await db.query.runsTable.findFirst({
+    where: eq(schema.runsTable.id, id),
+  });
+  return row ? toRunDto(row) : null;
+}
+
 /**
  * Get a run by ID (cached per request).
  *
  * @param id - Run ID.
  * @returns Run DTO or null.
  */
-export const getRunById = cache(async (id: string): Promise<RunDto | null> => {
-  const db = getDb();
-  const row = await db.query.runsTable.findFirst({
-    where: eq(schema.runsTable.id, id),
-  });
-  return row ? toRunDto(row) : null;
-});
+export const getRunById = cache(queryRunById);
+
+/**
+ * Get the current committed run state without React request memoization.
+ *
+ * @remarks
+ * Use this after a write or fence when correctness requires read-after-write
+ * consistency within the same request.
+ *
+ * @param id - Run ID.
+ * @returns Current run DTO or null.
+ */
+export async function getRunByIdUncached(id: string): Promise<RunDto | null> {
+  return queryRunById(id);
+}
 
 /**
  * Ensure a run step exists (idempotent per runId+stepId).
@@ -306,7 +341,13 @@ export async function updateRunStatus(
   await db
     .update(schema.runsTable)
     .set({ status, updatedAt: new Date() })
-    .where(eq(schema.runsTable.id, runId));
+    .where(
+      and(
+        eq(schema.runsTable.id, runId),
+        isNull(schema.runsTable.cancelRequestedAt),
+        notInArray(schema.runsTable.status, [...TERMINAL_RUN_STATUSES]),
+      ),
+    );
 }
 
 /**
@@ -333,35 +374,65 @@ export async function updateRunStepStatus(
     );
 }
 
-const IMMUTABLE_TERMINAL_RUN_STATUSES: ReadonlySet<RunDto["status"]> = new Set([
-  "failed",
-  "succeeded",
-]);
+/**
+ * Persist the durable fence that prevents new run-owned sandbox work.
+ *
+ * @param runId - Run ID.
+ * @returns Whether this request created the fence, reused it, or found a
+ * terminal run.
+ * @throws AppError - With code "not_found" when the run does not exist.
+ */
+export async function requestRunCancellation(
+  runId: string,
+): Promise<"requested" | "already_requested" | "terminal"> {
+  const db = getDb();
+  const now = new Date();
+  const [requested] = await db
+    .update(schema.runsTable)
+    .set({ cancelRequestedAt: now, updatedAt: now })
+    .where(
+      and(
+        eq(schema.runsTable.id, runId),
+        isNull(schema.runsTable.cancelRequestedAt),
+        notInArray(schema.runsTable.status, [...TERMINAL_RUN_STATUSES]),
+      ),
+    )
+    .returning({ id: schema.runsTable.id });
+
+  if (requested) return "requested";
+
+  const existing = await db.query.runsTable.findFirst({
+    columns: { cancelRequestedAt: true, status: true },
+    where: eq(schema.runsTable.id, runId),
+  });
+  if (!existing) {
+    throw new AppError("not_found", 404, "Run not found.");
+  }
+  if (TERMINAL_RUN_STATUSES.some((status) => status === existing.status)) {
+    return "terminal";
+  }
+  if (existing.cancelRequestedAt) return "already_requested";
+
+  throw new AppError(
+    "db_update_failed",
+    500,
+    "Failed to request run cancellation.",
+  );
+}
 
 /**
- * Cancel a run and mark any non-terminal steps as canceled.
+ * Complete a fenced run cancellation and cancel non-terminal steps.
  *
  * @param runId - Run ID.
  * @throws AppError - With code "not_found" (404) when the run cannot be found.
+ * @throws AppError - With code "run_cancellation_not_requested" (409) when a
+ * non-terminal run has not been fenced.
  */
-export async function cancelRun(runId: string): Promise<void> {
+export async function completeRunCancellation(runId: string): Promise<void> {
   const db = getDb();
   const now = new Date();
 
   await db.transaction(async (tx) => {
-    const existing = await tx.query.runsTable.findFirst({
-      columns: { status: true },
-      where: eq(schema.runsTable.id, runId),
-    });
-
-    if (!existing) {
-      throw new AppError("not_found", 404, "Run not found.");
-    }
-
-    if (IMMUTABLE_TERMINAL_RUN_STATUSES.has(existing.status)) {
-      return;
-    }
-
     await cancelRunAndStepsTx(tx, { now, runId });
   });
 }

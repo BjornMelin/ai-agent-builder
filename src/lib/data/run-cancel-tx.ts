@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq, isNotNull, notInArray } from "drizzle-orm";
 
 import type { DbClient } from "@/db/client";
 import * as schema from "@/db/schema";
@@ -12,8 +12,8 @@ const NON_CANCELABLE_STATUSES = ["canceled", "failed", "succeeded"] as const;
  * Cancel a run and mark any non-terminal steps as canceled (transaction helper).
  *
  * @remarks
- * This is safe to call multiple times. It does not overwrite immutable terminal
- * run statuses (`succeeded`, `failed`).
+ * This is safe to call multiple times. A non-terminal run must already carry
+ * the durable cancellation fence; terminal runs remain immutable.
  *
  * @param tx - Drizzle transaction handle.
  * @param input - Cancel payload.
@@ -25,7 +25,7 @@ export async function cancelRunAndStepsTx(
   input: Readonly<{ runId: string; now: Date }>,
 ): Promise<void> {
   const existing = await tx.query.runsTable.findFirst({
-    columns: { status: true },
+    columns: { cancelRequestedAt: true, status: true },
     where: eq(schema.runsTable.id, input.runId),
   });
 
@@ -41,12 +41,21 @@ export async function cancelRunAndStepsTx(
     return;
   }
 
+  if (!existing.cancelRequestedAt) {
+    throw new AppError(
+      "run_cancellation_not_requested",
+      409,
+      "Run cancellation was not requested.",
+    );
+  }
+
   await tx
     .update(schema.runsTable)
     .set({ status: "canceled", updatedAt: input.now })
     .where(
       and(
         eq(schema.runsTable.id, input.runId),
+        isNotNull(schema.runsTable.cancelRequestedAt),
         notInArray(schema.runsTable.status, [...NON_CANCELABLE_STATUSES]),
       ),
     );

@@ -10,17 +10,17 @@ import type { ToolExecutionOptions } from "ai";
  * @param input - Context and optional signal/toolCallId overrides.
  * @returns A minimal `ToolExecutionOptions` object for step execution.
  */
-export function makeToolOptions(
+export function makeToolOptions<const Context>(
   input: Readonly<{
-    ctx: unknown;
+    ctx: Context;
     signal?: AbortSignal;
     toolCallId?: string;
   }>,
-): ToolExecutionOptions {
+): ToolExecutionOptions<Context> {
   return {
-    abortSignal: input.signal,
-    experimental_context: input.ctx,
+    ...(input.signal ? { abortSignal: input.signal } : {}),
+    context: input.ctx,
     messages: [],
     toolCallId: input.toolCallId ?? "test",
-  } as unknown as ToolExecutionOptions;
+  };
 }

@@ -1,4 +1,4 @@
-import type { ToolExecutionOptions } from "ai";
+import { makeToolOptions } from "@tests/utils/tool-execution-options";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
@@ -28,9 +28,10 @@ describe("skills tool steps", () => {
     );
 
     await expect(
-      skillsLoadStep({ name: "" }, {
-        experimental_context: { projectId: "proj_1" },
-      } as unknown as ToolExecutionOptions),
+      skillsLoadStep(
+        { name: "" },
+        makeToolOptions({ ctx: { projectId: "proj_1" } }),
+      ),
     ).rejects.toMatchObject({ code: "bad_request", status: 400 });
   });
 
@@ -40,9 +41,10 @@ describe("skills tool steps", () => {
     );
 
     await expect(
-      skillsLoadStep({ name: "sandbox" }, {
-        experimental_context: null,
-      } as unknown as ToolExecutionOptions),
+      skillsLoadStep(
+        { name: "sandbox" },
+        makeToolOptions({ ctx: { projectId: "" } }),
+      ),
     ).rejects.toMatchObject({ code: "bad_request", status: 400 });
   });
 
@@ -59,9 +61,10 @@ describe("skills tool steps", () => {
       "@/workflows/chat/steps/skills.step"
     );
     await expect(
-      skillsLoadStep({ name: "sandbox" }, {
-        experimental_context: { projectId: "proj_1" },
-      } as unknown as ToolExecutionOptions),
+      skillsLoadStep(
+        { name: "sandbox" },
+        makeToolOptions({ ctx: { projectId: "proj_1" } }),
+      ),
     ).resolves.toMatchObject({ ok: true, source: "db" });
 
     expect(state.loadSkillForProject).toHaveBeenCalledWith({
@@ -76,9 +79,10 @@ describe("skills tool steps", () => {
     );
 
     await expect(
-      skillsReadFileStep({ name: "sandbox", path: "" }, {
-        experimental_context: { projectId: "proj_1" },
-      } as unknown as ToolExecutionOptions),
+      skillsReadFileStep(
+        { name: "sandbox", path: "" },
+        makeToolOptions({ ctx: { projectId: "proj_1" } }),
+      ),
     ).rejects.toMatchObject({ code: "bad_request", status: 400 });
   });
 
@@ -88,9 +92,10 @@ describe("skills tool steps", () => {
     );
 
     await expect(
-      skillsReadFileStep({ name: "sandbox", path: "references/example.md" }, {
-        experimental_context: null,
-      } as unknown as ToolExecutionOptions),
+      skillsReadFileStep(
+        { name: "sandbox", path: "references/example.md" },
+        makeToolOptions({ ctx: { projectId: "" } }),
+      ),
     ).rejects.toMatchObject({ code: "bad_request", status: 400 });
   });
 
@@ -106,9 +111,10 @@ describe("skills tool steps", () => {
       "@/workflows/chat/steps/skills.step"
     );
     await expect(
-      skillsReadFileStep({ name: "sandbox", path: "references/example.md" }, {
-        experimental_context: { projectId: "proj_1" },
-      } as unknown as ToolExecutionOptions),
+      skillsReadFileStep(
+        { name: "sandbox", path: "references/example.md" },
+        makeToolOptions({ ctx: { projectId: "proj_1" } }),
+      ),
     ).resolves.toEqual({
       content: "hello",
       name: "sandbox",

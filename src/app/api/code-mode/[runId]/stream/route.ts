@@ -1,10 +1,10 @@
 import { createUIMessageStreamResponse } from "ai";
 import { getRun } from "workflow/api";
-
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { jsonError } from "@/lib/next/responses";
 import { getCodeModeRun } from "@/lib/runs/code-mode.server";
+import { CODE_MODE_RUN_STATUS_HEADER } from "@/workflows/_shared/workflow-stream-events";
 
 const START_INDEX_PATTERN = /^\d+$/;
 
@@ -60,7 +60,10 @@ export async function GET(
       ...(startIndex === undefined ? {} : { startIndex }),
     });
 
-    return createUIMessageStreamResponse({ stream });
+    return createUIMessageStreamResponse({
+      headers: { [CODE_MODE_RUN_STATUS_HEADER]: run.status },
+      stream,
+    });
   } catch (err) {
     return jsonError(err);
   }

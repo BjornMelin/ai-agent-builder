@@ -14,7 +14,7 @@ beforeEach(() => {
 });
 
 describe("chatMessageHook", () => {
-  it("defines a hook with a zod schema requiring messageId and at least one of message/files", async () => {
+  it("requires a waiting generation, client message id, and message or files", async () => {
     state.defineHook.mockImplementation((input: unknown) => input);
 
     await import("@/workflows/chat/hooks/chat-message");
@@ -28,9 +28,14 @@ describe("chatMessageHook", () => {
     const schema = arg.schema as {
       safeParse: (value: unknown) => { success: boolean };
     };
-    expect(schema.safeParse({ message: "hi", messageId: "m1" }).success).toBe(
-      true,
-    );
+    expect(
+      schema.safeParse({
+        message: "hi",
+        messageId: "m1",
+        schemaVersion: 2,
+        waitingSince: "2026-07-13T00:00:00.000Z",
+      }).success,
+    ).toBe(true);
     expect(
       schema.safeParse({
         files: [
@@ -41,11 +46,39 @@ describe("chatMessageHook", () => {
           },
         ],
         messageId: "m1",
+        schemaVersion: 2,
+        waitingSince: "2026-07-13T00:00:00.000Z",
       }).success,
     ).toBe(true);
-    expect(schema.safeParse({ message: "", messageId: "m1" }).success).toBe(
-      false,
-    );
-    expect(schema.safeParse({ messageId: "m1" }).success).toBe(false);
+    expect(
+      schema.safeParse({
+        message: "",
+        messageId: "m1",
+        schemaVersion: 2,
+        waitingSince: "2026-07-13T00:00:00.000Z",
+      }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        messageId: "m1",
+        schemaVersion: 2,
+        waitingSince: "2026-07-13T00:00:00.000Z",
+      }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        message: "hi",
+        messageId: "m1",
+        waitingSince: "2026-07-13T00:00:00.000Z",
+      }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        message: "hi",
+        messageId: "assistant:run_1:2",
+        schemaVersion: 2,
+        waitingSince: "2026-07-13T00:00:00.000Z",
+      }).success,
+    ).toBe(false);
   });
 });

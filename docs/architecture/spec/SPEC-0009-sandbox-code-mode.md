@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0009
 title: Sandbox “Code Mode”
-version: 0.3.0
-date: 2026-02-09
+version: 0.6.0
+date: 2026-07-13
 owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements: ["FR-018", "FR-031", "NFR-014", "NFR-016", "IR-009"]
@@ -97,6 +97,9 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 - UI triggers a sandbox session for an explicit user-invoked action.
 - The server coordinates sandbox creation and streams logs/output back to the UI.
 - Transcripts and outputs are persisted as artifacts for auditability.
+- The sandbox step emits progress events but never owns terminal run state.
+- The outer workflow emits one structured terminal event only after it reads
+  back the authoritative terminal database state.
 
 ### Data contracts (if applicable)
 
@@ -104,12 +107,32 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
   - `projectId`, `command`/`script`, `inputs[]`, `timeoutSeconds`
 - Code Mode result (conceptual):
   - `exitCode`, `stdoutTail`, `stderrTail`, `artifacts[]`
+- Code Mode stream events use the strict versioned `data-workflow` contract.
+  Progress events include status, logs, assistant deltas, and tool activity.
+  The outer workflow emits `terminal` with `succeeded|failed|canceled`.
+- A transport `[DONE]` marker closes one stream connection. It does not prove
+  that the Code Mode run reached a terminal state.
+- Authenticated stream responses expose the persisted run status through
+  `x-code-mode-run-status`. A client that misses the best-effort terminal event
+  reconciles this status on reconnect.
+- The client creates and stores the app run UUID before `POST /api/code-mode`.
+  That UUID is the request idempotency key and the canonical `runs.id`.
+- Every accepted Workflow envelope receives that app run UUID. Its first durable
+  step atomically registers `getWorkflowMetadata().workflowRunId`; only the
+  registered winner may emit progress, provision a sandbox, or create artifacts.
+  Duplicate envelopes exit without side effects.
+- Authenticated `GET /api/code-mode` discovery recovers either the client-known
+  run or the user's active project run after a lost response or local state.
 
 ### File-level contracts
 
 - `src/app/api/code-mode/*`: Route Handlers for starting and streaming Code Mode jobs.
+- `src/app/(app)/projects/[projectId]/code-mode/code-mode-client.tsx`: active
+  run identity, resumable cursor, stream state, and cancellation UI.
 - `src/lib/sandbox/*`: Sandbox client wrapper, allowlists, log capture/redaction.
 - `src/lib/runs/*`: persistence of transcripts/output as run step artifacts.
+- `src/workflows/code-mode/*`: sandbox execution, artifact ordering, durable
+  terminal state, and stream ownership.
 
 ### Configuration
 
@@ -148,11 +171,34 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 - Allowlists prevent destructive operations and obvious exfiltration paths.
 - Code Mode sandbox commands cannot read/write outside `/vercel/sandbox` and
   cannot execute arbitrary `npx`/`bunx` packages.
+- Every failure after sandbox provisioning finalizes the sandbox session once.
+- Workflow retries pass `getStepMetadata().stepId` as the sandbox provisioning
+  key, so retries reuse or reclaim one durable sandbox job.
+- The Code Mode summary is version one of a run-specific logical artifact key;
+  retries return the same artifact and indexing deduplication identity.
+- The client restores a validated, versioned active run identity after refresh
+  and clears it only after a structured terminal event or authenticated
+  persisted-terminal reconciliation.
+- While that identity is active, the client keeps new starts locked and keeps
+  cancellation available across transport interruptions.
+- A terminal-less reconnect reconciles the authenticated persisted run status
+  before retaining an interruption state.
+- A rejected cancellation request leaves the active stream connected and lets
+  the reader retry cancellation or continue receiving output.
+- An accepted cancellation request starts a fresh authenticated reconciliation,
+  even when the prior stream already exhausted its automatic reconnect budget.
+- A persisted cancellation fence prevents sandbox provisioning before the
+  sandbox runner's transactional job-creation backstop.
 
 ## Testing
 
-- Unit tests: allowlist enforcement and log redaction.
-- Integration tests: sandbox job produces persisted transcript artifacts.
+- Unit tests: allowlist enforcement, log redaction, post-provision cleanup, and
+  strict stream event validation.
+- Workflow tests: artifacts and terminal database state precede terminal success.
+- Start tests: same-tick submissions issue one request, lost responses recover by
+  client-known run ID, and duplicate Workflow envelopes stop before side effects.
+- Component tests: refresh recovery, cursor reconnect, terminal cleanup, and
+  cancellation rejection behavior.
 
 ## Operational notes
 
@@ -162,12 +208,15 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 ## Failure modes and mitigation
 
 - Sandbox creation fails → surface actionable error and fallback instructions.
-- Command times out → persist partial logs and mark step retryable.
+- Session setup or execution fails after provisioning → finalize the sandbox,
+  persist failure, and emit terminal failure from the outer workflow.
+- Stream closes without a terminal event → reconnect, reconcile persisted
+  status, and retain the active identity only while the run remains non-terminal.
 
 ## Key files
 
 - [docs/architecture/spec/SPEC-0009-sandbox-code-mode.md](/docs/architecture/spec/SPEC-0009-sandbox-code-mode.md)
-- [docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md](/docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md)
+- [docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-native-tools.md](/docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-native-tools.md)
 - [docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md](/docs/architecture/spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
 
 ## Changelog
@@ -175,3 +224,9 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 - **0.1 (2026-01-29)**: Initial draft.
 - **0.2 (2026-02-01)**: Updated for Sandbox auth modes and Implementation Run reuse.
 - **0.3 (2026-02-09)**: Documented workspace confinement and package-exec allowlists.
+- **0.4 (2026-07-13)**: Made the outer workflow the sole terminal event owner,
+  added post-provision cleanup, and documented refresh-safe client identity.
+- **0.5 (2026-07-13)**: Added authoritative terminal-status reconciliation and
+  locked active identities against replacement after stream interruptions.
+- **0.6 (2026-07-13)**: Added client-known start identity, first-step Workflow
+  ownership registration, stable sandbox provisioning, and retry-safe artifacts.

@@ -5,7 +5,11 @@ import {
   toStepErrorPayload,
 } from "@/workflows/_shared/workflow-run-utils";
 import { createCodeModeSummaryArtifact } from "@/workflows/code-mode/steps/artifacts.step";
-import { runCodeModeSession } from "@/workflows/code-mode/steps/code-mode.step";
+import {
+  getCodeModeRunStatus,
+  runCodeModeSession,
+} from "@/workflows/code-mode/steps/code-mode.step";
+import { registerCodeModeWorkflow } from "@/workflows/code-mode/steps/register-workflow.step";
 import {
   closeCodeModeStream,
   writeCodeModeEvent,
@@ -20,6 +24,32 @@ import {
   markRunTerminal,
 } from "@/workflows/runs/steps/persist.step";
 import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
+
+type CodeModeTerminalStatus = "succeeded" | "failed" | "canceled";
+
+function isTerminalStatus(status: string): status is CodeModeTerminalStatus {
+  return status === "succeeded" || status === "failed" || status === "canceled";
+}
+
+function isSandboxJobCanceledError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "sandbox_job_canceled"
+  );
+}
+
+function getTerminalMessage(status: CodeModeTerminalStatus): string {
+  switch (status) {
+    case "succeeded":
+      return "Code Mode completed.";
+    case "failed":
+      return "Code Mode failed.";
+    case "canceled":
+      return "Code Mode canceled.";
+  }
+}
 
 /**
  * Durable Code Mode workflow (Workflow DevKit).
@@ -37,6 +67,9 @@ export async function projectCodeMode(
   "use workflow";
 
   const { workflowRunId } = getWorkflowMetadata();
+  const ownsRun = await registerCodeModeWorkflow(runId, workflowRunId);
+  if (!ownsRun) return { ok: true };
+
   const writable = getWritable<UIMessageChunk>();
   let activeStepId: string | null = null;
 
@@ -46,6 +79,23 @@ export async function projectCodeMode(
     } catch {
       // Best effort only.
     }
+  }
+
+  async function emitTerminal(status: CodeModeTerminalStatus): Promise<void> {
+    await bestEffort(async () => {
+      await writeCodeModeEvent(writable, {
+        message: getTerminalMessage(status),
+        timestamp: nowTimestamp(),
+        type: "status",
+      });
+    });
+    await bestEffort(async () => {
+      await writeCodeModeEvent(writable, {
+        status,
+        timestamp: nowTimestamp(),
+        type: "terminal",
+      });
+    });
   }
 
   try {
@@ -135,29 +185,21 @@ export async function projectCodeMode(
     );
 
     await markRunTerminal(runId, "succeeded");
-    await writeCodeModeEvent(writable, {
-      message: "Code Mode completed.",
-      timestamp: nowTimestamp(),
-      type: "status",
-    });
+    const persistedStatus = await getCodeModeRunStatus(runId);
+    if (persistedStatus !== "succeeded") {
+      throw new Error(
+        `Code Mode success lost the terminal-state race to ${persistedStatus}.`,
+      );
+    }
+    await emitTerminal(persistedStatus);
 
     return { ok: true };
   } catch (error) {
-    const cancelled = isWorkflowRunCancelledError(error);
+    const cancelled =
+      isWorkflowRunCancelledError(error) || isSandboxJobCanceledError(error);
 
-    async function finishActiveStepTerminal(
-      status: "failed" | "canceled",
-    ): Promise<void> {
+    async function finishActiveStepFailed(): Promise<void> {
       if (activeStepId === null) return;
-
-      if (status === "canceled") {
-        await finishRunStep({
-          runId,
-          status: "canceled",
-          stepId: activeStepId,
-        });
-        return;
-      }
 
       const stepError = toStepErrorPayload(error);
       await finishRunStep({
@@ -168,28 +210,24 @@ export async function projectCodeMode(
       });
     }
 
-    if (cancelled) {
-      await bestEffort(async () => await finishActiveStepTerminal("canceled"));
-      await bestEffort(async () => {
-        await writeCodeModeEvent(writable, {
-          message: "Code Mode canceled.",
-          timestamp: nowTimestamp(),
-          type: "status",
-        });
-      });
-      await bestEffort(async () => await cancelRunAndSteps(runId));
-      throw error;
+    let persistedStatus: CodeModeTerminalStatus | null = null;
+    try {
+      if (cancelled) {
+        await cancelRunAndSteps(runId);
+      } else {
+        await finishActiveStepFailed();
+        await markRunTerminal(runId, "failed");
+      }
+
+      const status = await getCodeModeRunStatus(runId);
+      if (isTerminalStatus(status)) {
+        persistedStatus = status;
+      }
+    } catch {
+      // Never emit a terminal event that was not confirmed in durable state.
     }
 
-    await bestEffort(async () => await finishActiveStepTerminal("failed"));
-    await bestEffort(async () => await markRunTerminal(runId, "failed"));
-    await bestEffort(async () => {
-      await writeCodeModeEvent(writable, {
-        message: "Code Mode failed.",
-        timestamp: nowTimestamp(),
-        type: "status",
-      });
-    });
+    if (persistedStatus) await emitTerminal(persistedStatus);
     throw error;
   } finally {
     await bestEffort(async () => await closeCodeModeStream(writable));

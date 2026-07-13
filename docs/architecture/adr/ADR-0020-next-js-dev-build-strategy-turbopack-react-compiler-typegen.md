@@ -24,12 +24,12 @@ Enable React Compiler and Turbopack, and use `next typegen` as a build-independe
 
 ## Context
 
-The bootstrapped repo already enables `reactCompiler: true` and a Turbopack root in `next.config.ts`. It also runs `next typegen` as part of `test` and `typecheck` scripts. This ADR makes these choices explicit so future work does not regress.
+The repo enables `reactCompiler: true` and uses Next.js's native Turbopack defaults. It also runs `next typegen` as part of `test` and `typecheck` scripts. This ADR makes these choices explicit so future work does not regress.
 
 ## Decision Drivers
 
 - Faster dev builds
-- Avoid manual memoization
+- Avoid unnecessary manual memoization
 - Consistent typings
 - Agent-friendly rules
 
@@ -56,7 +56,7 @@ We will keep **React Compiler** enabled, use **Turbopack** for dev/build where s
 
 ## Constraints
 
-- Do not add manual memoization without explicit justification.
+- Use manual memoization only for expensive work or to prevent costly re-renders.
 - CI must run `next typegen` for stable types.
 - Keep `next.config.ts` minimal and aligned with Next 16.
 
@@ -79,7 +79,7 @@ flowchart LR
 
 ### Non-Functional Requirements
 
-- **NFR-011:** agent-first DX (no useMemo/useCallback).
+- **NFR-011:** agent-first DX with measured, justified memoization.
 - **NFR-010:** CI enforces typing gates.
 
 ### Performance Requirements
@@ -94,7 +94,7 @@ flowchart LR
 
 ### Architecture Overview
 
-- `next.config.ts`: `reactCompiler: true`, `turbopack.root` set, and `cacheComponents: true`.
+- `next.config.ts`: `reactCompiler: true`, native Turbopack defaults, and `cacheComponents: true`.
 - `package.json` scripts run `bun --bun next typegen`.
 
 ### Implementation Details
@@ -105,11 +105,11 @@ flowchart LR
 ## Testing
 
 - CI already runs typegen before tests/typecheck.
-- Add a regression test to fail on accidental `useMemo` usage if desired.
+- Review manual memoization against the repository's React performance policy.
 
 ## Implementation Notes
 
-- If Turbopack issues arise, document fallback to stable bundler in ops runbook.
+- Keep the single native Next.js build path; document any upstream blocker before changing it.
 
 ## Consequences
 

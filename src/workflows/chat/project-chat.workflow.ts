@@ -1,7 +1,8 @@
-import { DurableAgent } from "@workflow/ai/agent";
+import { WorkflowAgent } from "@ai-sdk/workflow";
 import {
   convertToModelMessages,
   type FileUIPart,
+  isStepCount,
   type ModelMessage,
   type UIMessage,
   type UIMessageChunk,
@@ -9,18 +10,33 @@ import {
 import { getWorkflowMetadata, getWritable } from "workflow";
 
 import { getEnabledAgentMode } from "@/lib/ai/agents/registry.server";
+import { getChatModelById } from "@/lib/ai/gateway.server";
 import { buildSkillsPrompt } from "@/lib/ai/skills/prompt";
-import { buildChatToolsForMode } from "@/lib/ai/tools/factory.server";
-import { getWorkflowChatModel } from "@/workflows/ai/gateway-models.step";
+import {
+  buildChatToolsContext,
+  buildChatToolsForMode,
+} from "@/lib/ai/tools/factory.server";
+import { isCanonicalInitialUserMessage } from "@/lib/chat/persisted-message";
 import { chatMessageHook } from "@/workflows/chat/hooks/chat-message";
+import {
+  buildAssistantTurnMessageStep,
+  collectBufferedToolResults,
+  publishAssistantTurnStep,
+} from "@/workflows/chat/steps/assistant-turn-stream.step";
+import { acceptChatFollowUpStep } from "@/workflows/chat/steps/chat-follow-up.step";
 import { persistChatMessagesForWorkflowRun } from "@/workflows/chat/steps/chat-messages.step";
-import { touchChatThreadState } from "@/workflows/chat/steps/chat-thread-state.step";
+import {
+  registerChatWorkflowStep,
+  transitionChatThreadStateStep,
+} from "@/workflows/chat/steps/chat-thread-state.step";
 import { listProjectSkillsStep } from "@/workflows/chat/steps/skills.step";
 import {
+  writeChatFollowUpDisposition,
+  writeChatSessionStatus,
+  writeChatTerminalAndClose,
   writeStreamClose,
   writeUserMessageMarker,
 } from "@/workflows/chat/steps/writer.step";
-import { createChatToolContext } from "@/workflows/chat/tool-context";
 import { isWorkflowRunCancelledError } from "@/workflows/runs/workflow-errors";
 
 function formatAttachedFilesNote(files: readonly FileUIPart[]): string {
@@ -52,9 +68,7 @@ function formatAttachedFilesNote(files: readonly FileUIPart[]): string {
   return `Attached files: ${preview}${suffix}.`;
 }
 
-function normalizeUiUserMessageForModel(message: UIMessage): UIMessage {
-  if (message.role !== "user") return message;
-
+function normalizeInitialUserMessageForModel(message: UIMessage): UIMessage {
   const fileParts = message.parts.filter(
     (part): part is FileUIPart => part.type === "file",
   );
@@ -80,111 +94,210 @@ function normalizeUiUserMessageForModel(message: UIMessage): UIMessage {
  * registry integration behavior.
  *
  * @param projectId - Project scope for retrieval and persistence.
- * @param initialMessages - Initial UI messages (must end with a user message).
- * @param threadTitle - Thread title used when lifecycle persistence needs to create the row.
+ * @param initialMessage - The single initial user UI message.
  * @param modeId - Agent mode identifier (system prompt + tool allowlist).
+ * @param threadId - Route-generated stable thread identity returned to the client.
  * @returns Final conversation messages.
  * @throws Error - Propagates workflow execution or finalization failures.
  */
 export async function projectChat(
   projectId: string,
-  initialMessages: UIMessage[],
-  threadTitle: string,
+  initialMessage: UIMessage,
   modeId: string,
+  threadId: string,
 ): Promise<Readonly<{ messages: ModelMessage[] }>> {
   "use workflow";
 
+  if (!isCanonicalInitialUserMessage(initialMessage)) {
+    throw new Error(
+      "Project chat requires one meaningful text/file user message.",
+    );
+  }
+
   const { workflowRunId: runId } = getWorkflowMetadata();
+  const ownsThread = await registerChatWorkflowStep(threadId, runId);
+  if (!ownsThread) return { messages: [] };
+
   const writable = getWritable<UIMessageChunk>();
   let finishedStatus: "succeeded" | "failed" | "canceled" | null = null;
   let thrownError: unknown = null;
   const messages: ModelMessage[] = [];
   const mode = getEnabledAgentMode(modeId);
-  const tools = buildChatToolsForMode(modeId);
   let skills: Awaited<ReturnType<typeof listProjectSkillsStep>> = [];
-  const threadStateInput = {
-    mode: mode.modeId,
-    projectId,
-    title: threadTitle,
-    workflowRunId: runId,
-  } as const;
-
   try {
+    await persistChatMessagesForWorkflowRun({
+      messages: [initialMessage],
+      workflowRunId: runId,
+    });
+
     skills = await listProjectSkillsStep({ projectId });
+    const initialTools = buildChatToolsForMode(modeId);
     messages.push(
       ...(await convertToModelMessages(
-        initialMessages.map(normalizeUiUserMessageForModel),
+        [normalizeInitialUserMessageForModel(initialMessage)],
         {
-          tools,
+          tools: initialTools,
         },
       )),
     );
 
-    await touchChatThreadState({ ...threadStateInput, status: "running" });
-
-    // Write markers for initial user messages so replay can reconstruct order.
-    for (const msg of initialMessages) {
-      if (msg.role !== "user") continue;
-      const text = msg.parts
-        .filter((p) => p.type === "text")
-        .map((p) => p.text)
-        .join("");
-      const files = msg.parts.filter(
-        (part): part is FileUIPart => part.type === "file",
-      );
-      if (!text && files.length === 0) continue;
-
+    const initialText = initialMessage.parts
+      .filter((part) => part.type === "text")
+      .map((part) => part.text)
+      .join("");
+    const initialFiles = initialMessage.parts.filter(
+      (part): part is FileUIPart => part.type === "file",
+    );
+    if (initialText || initialFiles.length > 0) {
       await writeUserMessageMarker(writable, {
-        content: text,
-        ...(files.length > 0 ? { files } : {}),
-        messageId: msg.id,
+        content: initialText,
+        ...(initialFiles.length > 0 ? { files: initialFiles } : {}),
+        messageId: initialMessage.id,
       });
     }
 
-    const agent = new DurableAgent({
-      model: () => getWorkflowChatModel(mode.defaultModel),
-      system: [mode.systemPrompt, buildSkillsPrompt(skills)].join("\n\n"),
-      tools,
-    });
-
     const hook = chatMessageHook.create({ token: runId });
+    const hookConflict = await hook.getConflict();
+    if (hookConflict) {
+      throw new Error(
+        `Chat hook token is already owned by run ${hookConflict.runId}.`,
+      );
+    }
     let turnNumber = 0;
 
     while (true) {
       turnNumber += 1;
 
-      await touchChatThreadState({ ...threadStateInput, status: "running" });
-
-      const result = await agent.stream({
-        activeTools: [...mode.allowedTools],
-        collectUIMessages: true,
-        experimental_context: createChatToolContext(projectId, modeId, skills),
-        maxSteps: mode.budgets.maxStepsPerTurn,
-        messages,
-        preventClose: true,
-        sendFinish: false,
-        sendStart: turnNumber === 1,
-        writable,
+      // A fresh toolset is the single budget owner for this outer turn.
+      const tools = buildChatToolsForMode(modeId);
+      const agent = new WorkflowAgent({
+        instructions: [mode.systemPrompt, buildSkillsPrompt(skills)].join(
+          "\n\n",
+        ),
+        model: getChatModelById(mode.defaultModel),
+        tools,
       });
-      messages.push(...result.messages.slice(messages.length));
-      if (result.uiMessages) {
-        await persistChatMessagesForWorkflowRun({
-          messages: result.uiMessages,
+      const assistantMessageId = `assistant:${runId}:${turnNumber}`;
+      const priorMessageCount = messages.length;
+      const agentOutcome = await agent.stream({
+        activeTools: [...mode.allowedTools],
+        messages,
+        stopWhen: isStepCount(mode.budgets.maxStepsPerTurn),
+        toolsContext: buildChatToolsContext(
+          mode.allowedTools,
+          projectId,
+          modeId,
+        ),
+      });
+      // WorkflowAgent's returned prompt includes its constructor instructions
+      // as a system message. Keep those instructions owned by the agent and
+      // retain only conversation messages for the next outer user turn.
+      const conversationMessages = agentOutcome.messages.filter(
+        (message) => message.role !== "system",
+      );
+      const assistantMessage = await buildAssistantTurnMessageStep({
+        assistantMessageId,
+        steps: agentOutcome.steps.map((step) => ({
+          reasoningText: step.reasoningText,
+          text: step.text,
+          toolCalls: step.toolCalls.map((call) => ({
+            dynamic: "dynamic" in call ? call.dynamic : undefined,
+            input: call.input,
+            providerExecuted: call.providerExecuted,
+            toolCallId: call.toolCallId,
+            toolName: call.toolName,
+          })),
+        })),
+        toolResults: collectBufferedToolResults(
+          conversationMessages.slice(priorMessageCount),
+        ),
+      });
+
+      await persistChatMessagesForWorkflowRun({
+        messages: [assistantMessage],
+        workflowRunId: runId,
+      });
+      await publishAssistantTurnStep({
+        includeStart: turnNumber === 1,
+        message: assistantMessage,
+      });
+      messages.splice(0, messages.length, ...conversationMessages);
+
+      const waitingState = await transitionChatThreadStateStep({
+        status: "waiting",
+        workflowRunId: runId,
+      });
+      if (
+        waitingState.status === "canceled" ||
+        waitingState.status === "failed" ||
+        waitingState.status === "succeeded"
+      ) {
+        throw new Error(`Chat thread became ${waitingState.status}.`);
+      }
+      await writeChatSessionStatus(writable, "waiting");
+
+      let acceptedFollowUp: Readonly<{
+        files: FileUIPart[] | undefined;
+        followUp: string | undefined;
+        kind: "command" | "user";
+        messageId: string;
+      }> | null = null;
+
+      while (!acceptedFollowUp) {
+        const {
+          files: rawFiles,
+          message: followUp,
+          messageId,
+          waitingSince,
+        } = await hook;
+        const files: FileUIPart[] | undefined =
+          rawFiles && rawFiles.length > 0
+            ? rawFiles.map(({ filename, ...rest }) =>
+                filename === undefined ? rest : { ...rest, filename },
+              )
+            : undefined;
+        const payload = {
+          ...(files && files.length > 0 ? { files } : {}),
+          ...(followUp ? { message: followUp } : {}),
+        };
+        const acceptance = await acceptChatFollowUpStep({
+          messageId,
+          payload,
+          waitingSince,
           workflowRunId: runId,
         });
+
+        if (acceptance.status === "terminal") {
+          throw new Error("Chat thread became terminal.");
+        }
+        if (
+          acceptance.status !== "accepted" &&
+          acceptance.status !== "resume_committed"
+        ) {
+          await writeChatFollowUpDisposition(writable, {
+            messageId,
+            outcome:
+              acceptance.status === "already_committed"
+                ? "duplicate"
+                : "rejected",
+            reason: acceptance.status,
+          });
+          await writeChatSessionStatus(writable, "waiting");
+          continue;
+        }
+
+        acceptedFollowUp = {
+          files,
+          followUp,
+          kind: acceptance.kind,
+          messageId,
+        };
       }
 
-      await touchChatThreadState({ ...threadStateInput, status: "waiting" });
+      const { files, followUp, kind, messageId } = acceptedFollowUp;
+      if (kind === "command") break;
 
-      const { files: rawFiles, message: followUp, messageId } = await hook;
-      if (followUp === "/done") break;
-
-      const files: FileUIPart[] | undefined =
-        rawFiles && rawFiles.length > 0
-          ? rawFiles.map(({ filename, ...rest }) =>
-              filename === undefined ? rest : { ...rest, filename },
-            )
-          : undefined;
+      await writeChatSessionStatus(writable, "running");
 
       await writeUserMessageMarker(writable, {
         content: followUp ?? "",
@@ -210,23 +323,58 @@ export async function projectChat(
     finishedStatus = isWorkflowRunCancelledError(error) ? "canceled" : "failed";
     thrownError = error;
   } finally {
-    const finalizationTasks: Promise<unknown>[] = [writeStreamClose(writable)];
-    if (finishedStatus) {
-      finalizationTasks.push(
-        touchChatThreadState({
-          ...threadStateInput,
+    let finalizationError: unknown = null;
+    let terminalState: Awaited<
+      ReturnType<typeof transitionChatThreadStateStep>
+    > | null = null;
+
+    if (!finishedStatus) {
+      finalizationError = new Error(
+        "Chat workflow ended without a terminal status.",
+      );
+    } else {
+      try {
+        terminalState = await transitionChatThreadStateStep({
           endedAt: new Date(),
           status: finishedStatus,
-        }),
-      );
+          workflowRunId: runId,
+        });
+      } catch (error) {
+        finalizationError = error;
+      }
     }
 
-    const finalizationResults = await Promise.allSettled(finalizationTasks);
-    const finalizationError = finalizationResults.find(
-      (result) => result.status === "rejected",
-    );
-    if (!thrownError && finalizationError?.status === "rejected") {
-      thrownError = finalizationError.reason;
+    if (terminalState) {
+      if (
+        terminalState.status !== "canceled" &&
+        terminalState.status !== "failed" &&
+        terminalState.status !== "succeeded"
+      ) {
+        finalizationError = new Error("Chat terminal state was not persisted.");
+      } else {
+        try {
+          await writeChatTerminalAndClose(
+            writable,
+            terminalState.status,
+            terminalState.status === "failed"
+              ? "Chat session failed."
+              : undefined,
+          );
+        } catch (error) {
+          finalizationError = error;
+        }
+      }
+    }
+
+    if (finalizationError) {
+      try {
+        await writeStreamClose(writable, "Chat session finalization failed.");
+      } catch {
+        // The terminal writer may already have closed the stream.
+      }
+      if (!thrownError) {
+        thrownError = finalizationError;
+      }
     }
   }
 

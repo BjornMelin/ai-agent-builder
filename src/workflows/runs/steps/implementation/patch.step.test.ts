@@ -78,7 +78,7 @@ describe("applyImplementationPatch", () => {
       }),
     ).rejects.toMatchObject({ code: "bad_gateway", status: 502 });
 
-    expect(session.sandbox.stop).toHaveBeenCalled();
+    expect(session.stop).toHaveBeenCalled();
   });
 
   it("stops the sandbox on command failures (best effort) and rethrows", async () => {
@@ -107,6 +107,6 @@ describe("applyImplementationPatch", () => {
     expect(session.finalize).toHaveBeenCalledWith(
       expect.objectContaining({ status: "failed" }),
     );
-    expect(session.sandbox.stop).toHaveBeenCalled();
+    expect(session.stop).toHaveBeenCalled();
   });
 });

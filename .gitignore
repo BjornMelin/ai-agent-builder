@@ -125,3 +125,4 @@ config/mcporter.json
 
 # Firecrawl tool artifacts (local research cache)
 .firecrawl/
+/.swc

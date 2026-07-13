@@ -8,6 +8,7 @@ const approvalResumeSchema = z.object({
   approvalId: z.string().min(1),
   approvedAt: z.string().min(1).nullable(),
   approvedBy: z.string().min(1),
+  schemaVersion: z.literal(2),
   scope: z.string().min(1).optional(),
 });
 

@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0023
 title: AI Elements workspace UI and interaction model
-version: 0.1.1
-date: 2026-02-10
+version: 0.2.0
+date: 2026-07-13
 owners: ["Bjorn Melin"]
 status: Partially Implemented
 related_requirements:
@@ -110,19 +110,18 @@ We use Workflow DevKit multi-turn chat session modeling:
 
 Reference: [Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling) and [Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams).
 
-### Client implementation constraints (no useMemo/useCallback)
+### Client implementation constraints
 
-We implement a client hook that wraps `useChat` + `WorkflowChatTransport` while respecting repo constraints:
+The project chat client combines `useChat` with `WorkflowChatTransport` from `@ai-sdk/workflow`:
 
-- Create the transport exactly once via `useState(() => new WorkflowChatTransport(...))`
-- Use `useEffect` to:
-  - load a stored `runId` from localStorage (if present)
-  - persist new `runId` when returned in `x-workflow-run-id`
-- Derive the “renderable message list” directly during render (no memoization):
-  - parse assistant message parts
-  - when encountering `data-workflow` user-message markers, insert synthetic user messages for correct replay ordering
+- Create the transport exactly once via `useState(() => new WorkflowChatTransport(...))` (FR-008, PR-004).
+- Keep current project, mode, and run IDs in refs because the transport stores callbacks (FR-008, PR-004).
+- Reconnect with the latest workflow run ID and `/api/chat/:runId/stream` (FR-008, PR-004).
+- Keep the small exact-optional adapter at the `ChatTransport` boundary until upstream `@ai-sdk/workflow` and AI SDK signatures converge.
+- Reconstruct persisted and streamed message order with `useMemo`; the projection is linear in the number of message parts (FR-008, NFR-003).
+- Treat the persisted chat thread and the `threadId` URL query parameter as canonical. Do not add local-storage session ownership (FR-008, PR-005).
 
-Transport reference: [WorkflowChatTransport](https://useworkflow.dev/docs/api-reference/workflow-ai/workflow-chat-transport)
+Transport reference: [AI SDK Workflow package](https://github.com/vercel/ai/tree/main/packages/workflow)
 
 ### Rendering with AI Elements
 

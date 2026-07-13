@@ -6,6 +6,7 @@ const state = vi.hoisted(() => ({
   getProjectByIdForUser: vi.fn(),
   getReadable: vi.fn(),
   getRun: vi.fn(),
+  getTailIndex: vi.fn(),
   requireAppUserApi: vi.fn(),
 }));
 
@@ -40,9 +41,15 @@ beforeEach(() => {
   });
   state.getChatThreadByWorkflowRunId.mockResolvedValue({
     projectId: "proj_1",
+    status: "running",
   });
 
-  state.getReadable.mockReturnValue(simulateReadableStream({ chunks: [] }));
+  state.getTailIndex.mockResolvedValue(-1);
+  state.getReadable.mockImplementation(() =>
+    Object.assign(simulateReadableStream({ chunks: [] }), {
+      getTailIndex: state.getTailIndex,
+    }),
+  );
   state.getRun.mockReturnValue({ getReadable: state.getReadable });
 });
 
@@ -158,7 +165,46 @@ describe("GET /api/chat/:runId/stream", () => {
     expect(res.headers.get("cache-control")).toBe("no-cache");
     expect(res.headers.get("connection")).toBe("keep-alive");
     expect(res.headers.get("x-vercel-ai-ui-message-stream")).toBe("v1");
+    expect(res.headers.get("x-chat-thread-status")).toBe("running");
 
     await expect(res.text()).resolves.toContain("data: [DONE]");
+  });
+
+  it("emits terminal reconciliation after the native stream tail is consumed", async () => {
+    const GET = await loadRoute();
+    state.getChatThreadByWorkflowRunId.mockResolvedValueOnce({
+      projectId: "proj_1",
+      status: "canceled",
+    });
+    state.getTailIndex.mockResolvedValueOnce(4);
+
+    const res = await GET(
+      new Request("http://localhost/api/chat/run_1/stream?startIndex=5"),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+    const body = await res.text();
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-chat-thread-status")).toBe("canceled");
+    expect(body).toContain('"type":"terminal"');
+    expect(body).toContain('"status":"canceled"');
+    expect(body).toContain('"type":"finish"');
+  });
+
+  it("serves remaining native chunks before terminal reconciliation", async () => {
+    const GET = await loadRoute();
+    state.getChatThreadByWorkflowRunId.mockResolvedValueOnce({
+      projectId: "proj_1",
+      status: "canceled",
+    });
+    state.getTailIndex.mockResolvedValueOnce(4);
+
+    const res = await GET(
+      new Request("http://localhost/api/chat/run_1/stream?startIndex=4"),
+      { params: Promise.resolve({ runId: "run_1" }) },
+    );
+
+    expect(state.getReadable).toHaveBeenCalledWith({ startIndex: 4 });
+    await expect(res.text()).resolves.not.toContain('"type":"terminal"');
   });
 });

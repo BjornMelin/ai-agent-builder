@@ -6,81 +6,127 @@ const state = vi.hoisted(() => ({
   findFirst: vi.fn(),
   findMany: vi.fn(),
   insertReturning: vi.fn(),
+  insertValues: vi.fn(),
+  selectRows: vi.fn(),
   updateReturning: vi.fn(),
   updateSet: vi.fn(),
 }));
 
 vi.mock("@/db/client", () => ({
-  getDb: () => ({
-    insert: () => ({
-      values: () => ({
-        returning: state.insertReturning,
+  getDb: () => {
+    const db = {
+      insert: () => ({
+        values: (values: unknown) => {
+          state.insertValues(values);
+          return { returning: state.insertReturning };
+        },
       }),
-    }),
-    query: {
-      sandboxJobsTable: {
-        findFirst: state.findFirst,
-        findMany: state.findMany,
+      query: {
+        sandboxJobsTable: {
+          findFirst: state.findFirst,
+          findMany: state.findMany,
+        },
       },
-    },
-    update: () => ({
-      set: (values: unknown) => {
-        state.updateSet(values);
-        return {
+      select: () => ({
+        from: () => ({
           where: () => ({
-            returning: state.updateReturning,
+            for: state.selectRows,
+            orderBy: state.selectRows,
           }),
-        };
-      },
-    }),
-  }),
+        }),
+      }),
+      transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
+        await fn(db),
+      update: () => ({
+        set: (values: unknown) => {
+          state.updateSet(values);
+          return {
+            where: () => ({ returning: state.updateReturning }),
+          };
+        },
+      }),
+    };
+    return db;
+  },
 }));
+
+function createRow(status = "pending") {
+  const now = new Date(0);
+  return {
+    createdAt: now,
+    endedAt: null,
+    exitCode: null,
+    id: "job_1",
+    jobType: "code_mode",
+    metadata: {},
+    projectId: "proj_1",
+    provisioningClaimedAt: null,
+    provisioningExpiresAt: null,
+    provisioningKey: null,
+    runId: "run_1",
+    sandboxId: null,
+    sandboxStopClaimedAt: null,
+    sandboxStoppedAt: null,
+    startedAt: null,
+    status,
+    stepId: null,
+    transcriptBlobRef: null,
+    updatedAt: now,
+  };
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
   vi.resetModules();
+  state.selectRows.mockResolvedValue([
+    {
+      cancelRequestedAt: null,
+      databaseNow: new Date(0),
+      status: "running",
+    },
+  ]);
 });
 
 describe("sandbox-jobs DAL", () => {
-  it("createSandboxJob returns a DTO and throws when returning is empty", async () => {
-    const now = new Date(0);
-    state.insertReturning.mockResolvedValueOnce([
-      {
-        createdAt: now,
-        endedAt: null,
-        exitCode: null,
-        id: "job_1",
-        jobType: "code_mode",
-        metadata: { hello: "world" },
-        projectId: "proj_1",
-        runId: "run_1",
-        startedAt: null,
-        status: "pending",
-        stepId: null,
-        transcriptBlobRef: null,
-        updatedAt: now,
-      },
-    ]);
-
+  it("creates a job only while its run accepts sandbox work", async () => {
+    state.insertReturning.mockResolvedValueOnce([createRow()]);
     const { createSandboxJob } = await import("@/lib/data/sandbox-jobs.server");
-    const dto = await createSandboxJob({
-      jobType: "code_mode",
-      projectId: "proj_1",
-      runId: "run_1",
-      status: "pending",
-    });
 
-    expect(dto).toEqual(
-      expect.objectContaining({
-        id: "job_1",
+    await expect(
+      createSandboxJob({
         jobType: "code_mode",
         projectId: "proj_1",
         runId: "run_1",
         status: "pending",
       }),
-    );
+    ).resolves.toMatchObject({
+      id: "job_1",
+      sandboxId: null,
+      sandboxStoppedAt: null,
+      status: "pending",
+    });
 
+    state.selectRows.mockResolvedValueOnce([
+      { cancelRequestedAt: new Date(0), status: "running" },
+    ]);
+    await expect(
+      createSandboxJob({
+        jobType: "code_mode",
+        projectId: "proj_1",
+        runId: "run_1",
+        status: "pending",
+      }),
+    ).rejects.toMatchObject({
+      code: "sandbox_job_canceled",
+      status: 409,
+    } satisfies Partial<AppError>);
+    expect(state.insertReturning).toHaveBeenCalledOnce();
+  });
+
+  it("throws when insert returning is empty", async () => {
     state.insertReturning.mockResolvedValueOnce([]);
+    const { createSandboxJob } = await import("@/lib/data/sandbox-jobs.server");
+
     await expect(
       createSandboxJob({
         jobType: "code_mode",
@@ -98,8 +144,8 @@ describe("sandbox-jobs DAL", () => {
     state.insertReturning.mockRejectedValueOnce(
       Object.assign(new Error("missing table"), { code: "42P01" }),
     );
-
     const { createSandboxJob } = await import("@/lib/data/sandbox-jobs.server");
+
     await expect(
       createSandboxJob({
         jobType: "code_mode",
@@ -113,104 +159,305 @@ describe("sandbox-jobs DAL", () => {
     } satisfies Partial<AppError>);
   });
 
-  it("getSandboxJobById returns null when missing and maps DTO when present", async () => {
-    state.findFirst.mockResolvedValueOnce(null);
-
-    const { getSandboxJobById } = await import(
+  it("creates one stable provisioning job with a database-clock TTL window", async () => {
+    const created = {
+      ...createRow(),
+      provisioningClaimedAt: new Date(0),
+      provisioningExpiresAt: new Date(80_000),
+      provisioningKey: "workflow-step-1",
+    };
+    state.findFirst.mockResolvedValueOnce(undefined);
+    state.insertReturning.mockResolvedValueOnce([created]);
+    const { claimSandboxJobProvisioning } = await import(
       "@/lib/data/sandbox-jobs.server"
     );
-    await expect(getSandboxJobById("job_missing")).resolves.toBeNull();
 
-    const now = new Date(0);
-    state.findFirst.mockResolvedValueOnce({
-      createdAt: now,
-      endedAt: null,
-      exitCode: null,
-      id: "job_2",
-      jobType: "index_repo",
-      metadata: {},
+    await expect(
+      claimSandboxJobProvisioning({
+        createTimeoutMs: 20_000,
+        jobType: "code_mode",
+        projectId: "proj_1",
+        provisioningKey: "workflow-step-1",
+        runId: "run_1",
+        timeoutMs: 60_000,
+      }),
+    ).resolves.toMatchObject({
+      job: { id: "job_1", provisioningKey: "workflow-step-1" },
+      state: "provision",
+    });
+    expect(state.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provisioningClaimedAt: new Date(0),
+        provisioningExpiresAt: new Date(80_000),
+        provisioningKey: "workflow-step-1",
+      }),
+    );
+  });
+
+  it("waits for a live attempt then reclaims the same job after expiry", async () => {
+    const existing = {
+      ...createRow(),
+      provisioningClaimedAt: new Date(0),
+      provisioningExpiresAt: new Date(80_000),
+      provisioningKey: "workflow-step-1",
+    };
+    const reclaimed = {
+      ...existing,
+      provisioningClaimedAt: new Date(100_000),
+      provisioningExpiresAt: new Date(180_000),
+      updatedAt: new Date(100_000),
+    };
+    state.findFirst.mockResolvedValueOnce(existing);
+    const { claimSandboxJobProvisioning } = await import(
+      "@/lib/data/sandbox-jobs.server"
+    );
+    const input = {
+      createTimeoutMs: 20_000,
+      jobType: "code_mode",
       projectId: "proj_1",
+      provisioningKey: "workflow-step-1",
       runId: "run_1",
-      startedAt: now,
-      status: "running",
-      stepId: "step_1",
-      transcriptBlobRef: null,
+      timeoutMs: 60_000,
+    };
+
+    await expect(claimSandboxJobProvisioning(input)).resolves.toMatchObject({
+      job: { id: "job_1" },
+      state: "pending",
+    });
+
+    state.findFirst.mockResolvedValueOnce(existing);
+    state.selectRows.mockResolvedValueOnce([
+      {
+        cancelRequestedAt: null,
+        databaseNow: new Date(100_000),
+        status: "running",
+      },
+    ]);
+    state.updateReturning.mockResolvedValueOnce([reclaimed]);
+    await expect(claimSandboxJobProvisioning(input)).resolves.toMatchObject({
+      job: { id: "job_1" },
+      state: "provision",
+    });
+    expect(state.insertReturning).not.toHaveBeenCalled();
+    expect(state.updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provisioningClaimedAt: new Date(100_000),
+        provisioningExpiresAt: new Date(180_000),
+      }),
+    );
+  });
+
+  it("publishes the sandbox ID without overwriting a cancellation claim", async () => {
+    const canceling = { ...createRow("canceling"), sandboxId: null };
+    const published = { ...canceling, sandboxId: "sandbox_1" };
+    state.selectRows.mockResolvedValueOnce([canceling]);
+    state.updateReturning.mockResolvedValueOnce([published]);
+    const { activateSandboxJob } = await import(
+      "@/lib/data/sandbox-jobs.server"
+    );
+
+    await expect(
+      activateSandboxJob("job_1", {
+        sandboxId: "sandbox_1",
+        startedAt: new Date(0),
+      }),
+    ).resolves.toMatchObject({
+      sandboxId: "sandbox_1",
+      status: "canceling",
+    });
+    expect(state.updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sandboxId: "sandbox_1",
+        status: "canceling",
+      }),
+    );
+  });
+
+  it("publishes ownership without mutating terminal status", async () => {
+    const failed = createRow("failed");
+    const published = { ...failed, sandboxId: "sandbox_1" };
+    state.selectRows.mockResolvedValueOnce([failed]);
+    state.updateReturning.mockResolvedValueOnce([published]);
+    const { publishSandboxJobOwnership } = await import(
+      "@/lib/data/sandbox-jobs.server"
+    );
+
+    await expect(
+      publishSandboxJobOwnership("job_1", "sandbox_1"),
+    ).resolves.toMatchObject({ sandboxId: "sandbox_1", status: "failed" });
+    expect(state.updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ sandboxId: "sandbox_1" }),
+    );
+    expect(state.updateSet.mock.calls[0]?.[0]).not.toHaveProperty("status");
+  });
+
+  it("gets and lists JSON-safe DTOs", async () => {
+    const row = {
+      ...createRow("running"),
+      sandboxId: "sandbox_1",
+      sandboxStoppedAt: new Date(1),
+    };
+    state.findFirst.mockResolvedValueOnce(row);
+    state.findMany.mockResolvedValueOnce([row]);
+    const { getSandboxJobById, listSandboxJobsByRun } = await import(
+      "@/lib/data/sandbox-jobs.server"
+    );
+
+    await expect(getSandboxJobById("job_1")).resolves.toMatchObject({
+      sandboxId: "sandbox_1",
+      sandboxStoppedAt: new Date(1).toISOString(),
+    });
+    await expect(listSandboxJobsByRun("run_1")).resolves.toHaveLength(1);
+  });
+
+  it("claims active jobs and returns terminal resource owners too", async () => {
+    const now = new Date(0);
+    const rows = [
+      { ...createRow("canceling"), sandboxId: "sandbox_1" },
+      { ...createRow("succeeded"), id: "job_2", sandboxId: "sandbox_1" },
+    ];
+    state.selectRows
+      .mockResolvedValueOnce([{ databaseNow: now }])
+      .mockResolvedValueOnce(rows);
+    const { claimSandboxJobsForCancellation } = await import(
+      "@/lib/data/sandbox-jobs.server"
+    );
+
+    await expect(
+      claimSandboxJobsForCancellation("run_1"),
+    ).resolves.toHaveLength(2);
+    expect(state.updateSet).toHaveBeenNthCalledWith(1, {
+      status: "canceling",
       updatedAt: now,
     });
-    await expect(getSandboxJobById("job_2")).resolves.toMatchObject({
-      id: "job_2",
-      startedAt: now.toISOString(),
+    expect(state.updateSet).toHaveBeenNthCalledWith(2, {
+      endedAt: now,
+      status: "canceled",
+      updatedAt: now,
+    });
+    expect(state.updateSet).toHaveBeenNthCalledWith(3, {
+      endedAt: now,
+      status: "canceled",
+      updatedAt: now,
     });
   });
 
-  it("listSandboxJobsByRun maps DTOs ordered by creation time", async () => {
+  it("terminalizes cancellation claims whose sandbox was already confirmed stopped", async () => {
     const now = new Date(0);
-    state.findMany.mockResolvedValueOnce([
+    const rows = [
       {
-        createdAt: now,
-        endedAt: null,
-        exitCode: null,
-        id: "job_1",
-        jobType: "code_mode",
-        metadata: {},
-        projectId: "proj_1",
-        runId: "run_1",
-        startedAt: null,
-        status: "pending",
-        stepId: null,
-        transcriptBlobRef: null,
-        updatedAt: now,
+        ...createRow("canceled"),
+        endedAt: now,
+        sandboxId: "sandbox_1",
+        sandboxStoppedAt: now,
       },
-    ]);
-
-    const { listSandboxJobsByRun } = await import(
+    ];
+    state.selectRows
+      .mockResolvedValueOnce([{ databaseNow: now }])
+      .mockResolvedValueOnce(rows);
+    const { claimSandboxJobsForCancellation } = await import(
       "@/lib/data/sandbox-jobs.server"
     );
-    await expect(listSandboxJobsByRun("run_1")).resolves.toEqual([
-      expect.objectContaining({ createdAt: now.toISOString(), id: "job_1" }),
-    ]);
-  });
 
-  it("updateSandboxJob merges metadata and throws not_found when missing", async () => {
-    const now = new Date(0);
-    state.findFirst
-      .mockResolvedValueOnce({ metadata: { a: 1 } })
-      .mockResolvedValueOnce(null);
-    state.updateReturning.mockResolvedValueOnce([
+    await expect(
+      claimSandboxJobsForCancellation("run_1"),
+    ).resolves.toMatchObject([
       {
-        createdAt: now,
-        endedAt: null,
-        exitCode: 0,
-        id: "job_1",
-        jobType: "code_mode",
-        metadata: { a: 1, b: 2 },
-        projectId: "proj_1",
-        runId: "run_1",
-        startedAt: now,
-        status: "succeeded",
-        stepId: null,
-        transcriptBlobRef:
-          "projects/proj_1/runs/run_1/sandbox/job_1.log-abc123",
-        updatedAt: now,
+        sandboxId: "sandbox_1",
+        sandboxStoppedAt: now.toISOString(),
+        status: "canceled",
       },
     ]);
-
-    const { updateSandboxJob } = await import("@/lib/data/sandbox-jobs.server");
-    const dto = await updateSandboxJob("job_1", {
-      exitCode: 0,
-      metadata: { b: 2 },
-      status: "succeeded",
-      transcriptBlobRef: "projects/proj_1/runs/run_1/sandbox/job_1.log-abc123",
+    expect(state.updateSet).toHaveBeenNthCalledWith(2, {
+      endedAt: now,
+      status: "canceled",
+      updatedAt: now,
     });
+  });
 
-    expect(dto.metadata).toEqual({ a: 1, b: 2 });
-    expect(state.updateSet).toHaveBeenCalledWith(
-      expect.objectContaining({ metadata: { a: 1, b: 2 } }),
+  it("persists per-sandbox stop confirmation before job completion", async () => {
+    const now = new Date(0);
+    const { confirmSandboxStoppedForRun } = await import(
+      "@/lib/data/sandbox-jobs.server"
     );
 
-    await expect(updateSandboxJob("job_missing", {})).rejects.toMatchObject({
-      code: "not_found",
-      status: 404,
-    } satisfies Partial<AppError>);
+    await confirmSandboxStoppedForRun("run_1", "sandbox_1", now);
+    expect(state.updateSet).toHaveBeenNthCalledWith(1, {
+      sandboxStopClaimedAt: null,
+      sandboxStoppedAt: now,
+      updatedAt: now,
+    });
+    expect(state.updateSet).toHaveBeenNthCalledWith(2, {
+      endedAt: now,
+      status: "canceled",
+      updatedAt: now,
+    });
+  });
+
+  it("serializes external sandbox stops with an expiring claim", async () => {
+    const now = new Date(10_000);
+    state.selectRows.mockResolvedValueOnce([
+      {
+        databaseNow: now,
+        sandboxStopClaimedAt: null,
+        sandboxStoppedAt: null,
+      },
+    ]);
+    const { claimSandboxStopForRun } = await import(
+      "@/lib/data/sandbox-jobs.server"
+    );
+
+    await expect(
+      claimSandboxStopForRun("run_1", "sandbox_1", 30_000),
+    ).resolves.toEqual({ claimedAt: now, state: "claimed" });
+    expect(state.updateSet).toHaveBeenCalledWith({
+      sandboxStopClaimedAt: now,
+      updatedAt: now,
+    });
+
+    state.updateSet.mockClear();
+    state.selectRows.mockResolvedValueOnce([
+      {
+        databaseNow: new Date(now.getTime() + 1),
+        sandboxStopClaimedAt: now,
+        sandboxStoppedAt: null,
+      },
+    ]);
+    await expect(
+      claimSandboxStopForRun("run_1", "sandbox_1", 30_000),
+    ).resolves.toEqual({ state: "busy" });
+    expect(state.updateSet).not.toHaveBeenCalled();
+  });
+
+  it("completes a claimed no-resource job", async () => {
+    const now = new Date(0);
+    const { completeSandboxJobCancellation } = await import(
+      "@/lib/data/sandbox-jobs.server"
+    );
+
+    await completeSandboxJobCancellation(["job_1"], now);
+    expect(state.updateSet).toHaveBeenCalledWith({
+      endedAt: now,
+      status: "canceled",
+      updatedAt: now,
+    });
+  });
+
+  it("merges metadata but never overwrites a cancellation claim", async () => {
+    const existing = { ...createRow("running"), metadata: { a: 1 } };
+    state.findFirst.mockResolvedValueOnce(existing);
+    state.updateReturning.mockResolvedValueOnce([
+      { ...existing, metadata: { a: 1, b: 2 }, status: "succeeded" },
+    ]);
+    const { updateSandboxJob } = await import("@/lib/data/sandbox-jobs.server");
+
+    await expect(
+      updateSandboxJob("job_1", { metadata: { b: 2 }, status: "succeeded" }),
+    ).resolves.toMatchObject({ metadata: { a: 1, b: 2 } });
+
+    state.findFirst.mockResolvedValueOnce(createRow("canceling"));
+    await expect(
+      updateSandboxJob("job_1", { status: "running" }),
+    ).resolves.toMatchObject({ status: "canceling" });
   });
 });

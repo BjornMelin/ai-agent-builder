@@ -1,8 +1,8 @@
 ---
 spec: SPEC-0021
 title: Full-stack finalization (Fluid Compute + Neon/Drizzle + Upstash + AI Gateway + AI Elements UI)
-version: 0.1.5
-date: 2026-02-10
+version: 0.1.6
+date: 2026-07-13
 owners: ["Bjorn Melin"]
 status: Implemented
 related_requirements:
@@ -63,7 +63,7 @@ This spec is the “stitching document” that finalizes the end-to-end system:
 - **Ingestion**: Blob → extract → chunk → embed → Upstash Vector, with idempotency and bounded costs.
 - **Retrieval**: project-scoped search and retrieval tool(s), with Redis caching.
 - **Durable orchestration**:
-  - **Interactive runs + chat**: Vercel Workflow DevKit (`workflow` + `@workflow/ai`) with resumable streams ([Vercel Workflow](https://vercel.com/docs/workflow), [Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)).
+  - **Interactive runs + chat**: Vercel Workflow DevKit (`workflow` + `@ai-sdk/workflow`) with resumable streams ([Vercel Workflow](https://vercel.com/docs/workflow), [Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams)).
   - **Background jobs** (ingestion + fanout): Upstash QStash-signed route handlers ([QStash Next.js quickstart](https://upstash.com/docs/qstash/quickstarts/vercel-nextjs)).
 - **UI**: Next.js App Router workspace that uses **AI Elements** (chat/streaming/workflow UI) + shadcn/ui (everything else).
 
@@ -89,7 +89,7 @@ This spec explicitly documents:
 
 ## Current Implementation Snapshot (Repo Truth)
 
-This section is the authoritative snapshot of the current repository state as of **2026-02-06**.
+This section preserves the broader repository snapshot from **2026-02-06**. The AI and Workflow sections were revalidated on **2026-07-13**.
 
 ### Database (Neon + Drizzle)
 
@@ -143,7 +143,7 @@ This section is the authoritative snapshot of the current repository state as of
 
 We evaluated **Upstash Workflow** (`@upstash/workflow`) as an alternative durable engine for interactive chat/runs. Upstash Workflow’s AI SDK integration guide focuses on durability by routing model HTTP calls through `context.call` via a custom `fetch` implementation ([Upstash Workflow AI SDK integration](https://upstash.com/docs/workflow/integrations/aisdk)).
 
-For this app, the primary UX requirement is **streaming-first, resumable UI** (AI Elements). Workflow DevKit provides a native pattern for resumable streams (run id + `startIndex` cursor) and a transport helper (`WorkflowChatTransport`) that is aligned with AI SDK `useChat` ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams), [WorkflowChatTransport](https://useworkflow.dev/docs/api-reference/workflow-ai/workflow-chat-transport)).
+For this app, the primary UX requirement is **streaming-first, resumable UI** (AI Elements). Workflow DevKit provides resumable streams with a run ID and `startIndex` cursor. `@ai-sdk/workflow` provides the `WorkflowAgent` and `WorkflowChatTransport` integration used with AI SDK `useChat` ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams), [AI SDK Workflow package](https://github.com/vercel/ai/tree/main/packages/workflow)).
 
 ### UI (Implemented - Initial Workspace)
 
@@ -455,7 +455,8 @@ Implementation locations:
   - `src/app/api/chat/[runId]/route.ts`
   - `src/app/api/chat/[runId]/stream/route.ts`
 - Workflow:
-  - `src/workflows/chat/project-chat.workflow.ts` (`DurableAgent`, hooks, resumable stream markers)
+  - `src/workflows/chat/project-chat.workflow.ts` (`WorkflowAgent`, hooks, namespaced model streams, resumable user markers)
+  - `src/workflows/chat/steps/assistant-turn-stream.step.ts` (native model-to-UI transform, exact assistant persistence, outer-stream forwarding)
   - `src/workflows/chat/hooks/chat-message.ts`
   - `src/workflows/chat/steps/writer.step.ts`
   - `src/workflows/chat/steps/retrieve-project-chunks.step.ts`
@@ -465,7 +466,8 @@ Implementation locations:
 
 ADR sources:
 
-- [AI SDK ToolLoopAgent](https://ai-sdk.dev/docs/reference/ai-sdk-core/tool-loop-agent)
+- [AI SDK agents](https://ai-sdk.dev/docs/agents/overview)
+- [AI SDK Workflow package](https://github.com/vercel/ai/tree/main/packages/workflow)
 - [Streaming UI responses](https://ai-sdk.dev/docs/reference/ai-sdk-core/create-agent-ui-stream-response)
 
 ## UI/UX Finalization (AI Elements + shadcn/ui)
@@ -572,7 +574,7 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
    - `src/app/(app)/projects/[projectId]/search/page.tsx`
 4. Implement a minimal settings surface for budgets and integrations status.
 
-### Phase 2 — Chat Route Handler + ToolLoopAgent wiring
+### Phase 2 — Chat Route Handler + WorkflowAgent wiring
 
 1. Integrate Vercel Workflow DevKit (**done**):
    - Wrap `next.config.ts` with `withWorkflow(...)` ([Workflow DevKit Next.js getting started](https://useworkflow.dev/docs/getting-started/next)).
@@ -582,8 +584,8 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
    - `POST /api/chat/[runId]` (resume hook for follow-ups) ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling))
    - `GET /api/chat/[runId]/stream?startIndex=` (resume stream) ([Resumable streams](https://useworkflow.dev/docs/ai/resumable-streams))
 3. Implement workflow (**done**):
-   - `src/workflows/chat/*` (multi-turn loop; user-message stream markers; hook definition) ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling)).
-4. Replace client chat transport with `WorkflowChatTransport` (no `useMemo`/`useCallback`; use `useEffect` + inline functions) ([WorkflowChatTransport](https://useworkflow.dev/docs/api-reference/workflow-ai/workflow-chat-transport)).
+   - `src/workflows/chat/*` (multi-turn loop, user-message markers, namespaced raw model streams, native UI chunk conversion, hook definition) ([Chat session modeling](https://useworkflow.dev/docs/ai/chat-session-modeling)).
+4. Use `@ai-sdk/workflow` `WorkflowChatTransport` with a stable `useState` instance and ref-backed session callbacks ([AI SDK Workflow package](https://github.com/vercel/ai/tree/main/packages/workflow)).
 5. Add message persistence to DB (thread + messages tables) or explicitly document the deferred plan if schema is not yet present.
 
 ### Phase 3 — Runs engine (real graph) + workflow UI
@@ -625,3 +627,4 @@ This plan enumerates all remaining work to reach “finalized” status. It is w
 - **0.1.2 (2026-02-06)**: Implemented Cache Components, `'use cache'` read-path migration with tag invalidation, global search page, shared search UI, and expanded `/api/search` contract.
 - **0.1.3 (2026-02-06)**: Implemented ownership-scoped project access (`projects.owner_user_id`), Zod-hardened `/api/search`, Upstash rate limiting for search, and docs/ADR alignment.
 - **0.1.4 (2026-02-06)**: Hardened async ingestion by validating trusted Blob URL host/protocol/path in `POST /api/jobs/ingest-file` before fetch.
+- **0.1.6 (2026-07-13)**: Aligned project chat with AI SDK 7 `WorkflowAgent`, native model-to-UI stream conversion, exact assistant persistence, and the current transport contract.

@@ -45,7 +45,7 @@ Run** subsystem (plan → code → verify → deploy) described in:
 ### Group 2 — Sandbox verification jobs (implemented)
 
 - Sandbox job runner + transcripts + redaction:
-  - [ADR-0010](./adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md)
+  - [ADR-0010](./adr/ADR-0010-safe-execution-vercel-sandbox-native-tools.md)
   - [SPEC-0019](./spec/SPEC-0019-sandbox-build-test-and-ci-execution.md)
   - [SPEC-0009](./spec/SPEC-0009-sandbox-code-mode.md) (shared execution model)
 - Verification wiring:

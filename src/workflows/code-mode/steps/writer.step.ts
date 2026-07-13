@@ -1,6 +1,9 @@
 import type { UIMessageChunk } from "ai";
 
-import type { CodeModeStreamEvent } from "@/lib/runs/code-mode-stream";
+import {
+  type CodeModeStreamEventInput,
+  createCodeModeStreamEvent,
+} from "@/workflows/_shared/workflow-stream-events";
 
 /**
  * Write a Code Mode stream event to the workflow output stream.
@@ -10,13 +13,16 @@ import type { CodeModeStreamEvent } from "@/lib/runs/code-mode-stream";
  */
 export async function writeCodeModeEvent(
   writable: WritableStream<UIMessageChunk>,
-  event: CodeModeStreamEvent,
+  event: CodeModeStreamEventInput,
 ): Promise<void> {
   "use step";
 
   const writer = writable.getWriter();
   try {
-    const chunk: UIMessageChunk = { data: event, type: "data-code-mode" };
+    const chunk: UIMessageChunk = {
+      data: createCodeModeStreamEvent(event),
+      type: "data-workflow",
+    };
     await writer.write(chunk);
   } finally {
     writer.releaseLock();

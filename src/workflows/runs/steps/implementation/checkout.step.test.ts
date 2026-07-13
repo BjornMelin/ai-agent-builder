@@ -6,6 +6,10 @@ import {
 } from "@tests/utils/scripted-sandbox-session";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("workflow", () => ({
+  getStepMetadata: () => ({ stepId: "workflow-step-checkout" }),
+}));
+
 const harness = installImplementationRunHarness();
 const { state } = harness;
 
@@ -55,6 +59,11 @@ describe("sandboxCheckoutImplementationRepo", () => {
       expect.objectContaining({
         args: ["install", "--frozen-lockfile"],
         cmd: "bun",
+      }),
+    );
+    expect(state.startSandboxJobSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provisioningKey: "workflow-step-checkout",
       }),
     );
   });
@@ -205,6 +214,40 @@ describe("sandboxCheckoutImplementationRepo", () => {
     expect(session.finalize).toHaveBeenCalledWith(
       expect.objectContaining({ status: "failed" }),
     );
-    expect(session.sandbox.stop).toHaveBeenCalled();
+    expect(session.stop).toHaveBeenCalled();
+    expect(vi.mocked(session.stop).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(session.finalize).mock.invocationCallOrder[0] ??
+        Number.POSITIVE_INFINITY,
+    );
+  });
+
+  it("keeps the job nonterminal when checkout cleanup is unconfirmed", async () => {
+    const session = makeScriptedSession([
+      {
+        match: matchCmd("git", ["checkout"]),
+        result: {
+          exitCode: 1,
+          transcript: { combined: "", stderr: "boom", stdout: "" },
+        },
+      },
+    ]);
+    vi.mocked(session.stop).mockRejectedValueOnce(new Error("stop failed"));
+    state.startSandboxJobSession.mockResolvedValueOnce(session);
+
+    const { sandboxCheckoutImplementationRepo } = await import(
+      "./checkout.step"
+    );
+    await expect(
+      sandboxCheckoutImplementationRepo({
+        branchName: "agent/project/run_1",
+        cloneUrl: "https://example.com/repo.git",
+        defaultBranch: "main",
+        projectId: "proj_1",
+        repoKind: "node",
+        runId: "run_1",
+      }),
+    ).rejects.toMatchObject({ code: "sandbox_cleanup_failed", status: 502 });
+
+    expect(session.finalize).not.toHaveBeenCalled();
   });
 });

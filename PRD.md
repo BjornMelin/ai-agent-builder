@@ -136,7 +136,7 @@ Primary spec/ADR references:
 Primary spec/ADR references:
 
 - [`docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md`](./docs/architecture/spec/SPEC-0004-chat-retrieval-augmentation.md)
-- [`docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md`](./docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v6-toolloopagent-streaming-ui-responses.md)
+- [`docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v7-workflowagent-durable-ui-streams.md`](./docs/architecture/adr/ADR-0006-agent-runtime-ai-sdk-v7-workflowagent-durable-ui-streams.md)
 
 ### Epic 4b: Agent Skills (progressive disclosure)
 
@@ -192,7 +192,7 @@ Primary spec/ADR references:
 Primary spec/ADR references:
 
 - [`docs/architecture/spec/SPEC-0009-sandbox-code-mode.md`](./docs/architecture/spec/SPEC-0009-sandbox-code-mode.md)
-- [`docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md`](./docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-bash-tool-code-execution-ctx-zip.md)
+- [`docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-native-tools.md`](./docs/architecture/adr/ADR-0010-safe-execution-vercel-sandbox-native-tools.md)
 
 ### Epic 9: Observability, budgets, and cost controls
 

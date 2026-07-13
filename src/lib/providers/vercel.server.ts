@@ -131,12 +131,7 @@ export type VercelEnvTarget = "production" | "preview" | "development";
 /**
  * Vercel env var storage type.
  */
-export type VercelEnvVarType =
-  | "system"
-  | "secret"
-  | "encrypted"
-  | "plain"
-  | "sensitive";
+export type VercelEnvVarType = "system" | "encrypted" | "plain" | "sensitive";
 
 /**
  * Input for upserting Vercel project env vars.
@@ -368,6 +363,7 @@ export async function upsertEnvVars(
 
   const requestBody = input.envVars.map((v) => ({
     comment: v.comment,
+    customEnvironmentIds: [],
     gitBranch: v.gitBranch,
     key: toNonEmptyTrimmed(v.key),
     target: [...v.targets],
