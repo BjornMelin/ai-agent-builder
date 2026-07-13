@@ -1,24 +1,15 @@
 import "server-only";
 
-import {
-  createGateway,
-  type GatewayModelId,
-  Output,
-  stepCountIs,
-  type ToolExecutionOptions,
-  ToolLoopAgent,
-  type ToolSet,
-  tool,
-} from "ai";
+import { isStepCount, Output, ToolLoopAgent, tool } from "ai";
 import { z } from "zod";
 
+import { getChatModelById } from "@/lib/ai/gateway.server";
 import {
   listAvailableSkillsForProject,
   loadSkillForProject,
   readSkillFileForProject,
 } from "@/lib/ai/skills/index.server";
 import { buildSkillsPrompt } from "@/lib/ai/skills/prompt";
-import type { SkillMetadata } from "@/lib/ai/skills/types";
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
 import { env } from "@/lib/env";
@@ -39,32 +30,21 @@ const skillMetadataSchema = z.strictObject({
 });
 
 const callOptionsSchema = z.strictObject({
-  projectId: z.string().min(1),
   skills: z.array(skillMetadataSchema),
 });
 
-const plannerContextSchema = z.strictObject({
-  context7Calls: z.number().int().min(0).default(0),
-  projectId: z.string().min(1),
-  skills: z.array(skillMetadataSchema).default([]),
-});
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-type PlannerContext = {
-  projectId: string;
-  skills: SkillMetadata[];
-  context7Calls: number;
-};
+const plannerToolContextSchema = z
+  .strictObject({
+    projectId: z.string().min(1),
+  })
+  .readonly();
 
 /**
  * Generate a minimal implementation plan via AI Gateway.
  *
  * @param input - Context used to ground the planning prompt.
  * @returns Plan metadata used for PR and patch application.
- * @throws AppError - When planning context is missing/invalid or the Context7 budget is exceeded.
+ * @throws AppError - When the Context7 call budget is exceeded.
  * @see docs/architecture/spec/SPEC-0027-agent-skills-runtime-integration.md
  */
 export async function planImplementationRun(
@@ -79,14 +59,7 @@ export async function planImplementationRun(
 ): Promise<ImplementationPlan> {
   "use step";
 
-  const provider = createGateway({
-    apiKey: env.aiGateway.apiKey,
-    baseURL: env.aiGateway.baseUrl,
-  });
-
-  const model = provider.languageModel(
-    env.aiGateway.chatModel as GatewayModelId,
-  );
+  const model = getChatModelById(env.aiGateway.chatModel);
 
   const availableSkills = await listAvailableSkillsForProject(input.projectId);
 
@@ -98,35 +71,14 @@ export async function planImplementationRun(
     }
   })();
 
-  function parsePlannerContext(value: unknown): PlannerContext {
-    const parsed = plannerContextSchema.safeParse(value);
-    if (parsed.success) {
-      // Preserve reference so tools can mutate budget counters.
-      if (isRecord(value)) {
-        value.projectId = parsed.data.projectId;
-        value.skills = parsed.data.skills;
-        value.context7Calls = parsed.data.context7Calls;
-        return value as unknown as PlannerContext;
-      }
-      return parsed.data as unknown as PlannerContext;
-    }
-
-    throw new AppError(
-      "bad_request",
-      400,
-      "Missing planning context for tool execution.",
-      parsed.error,
-    );
-  }
-
   const skillsLoadTool = tool({
+    contextSchema: plannerToolContextSchema,
     description: "Load a skill to get specialized instructions.",
-    async execute(
-      { name }: Readonly<{ name: string }>,
-      options: ToolExecutionOptions,
-    ) {
-      const ctx = parsePlannerContext(options.experimental_context);
-      return await loadSkillForProject({ name, projectId: ctx.projectId });
+    async execute({ name }, { context }) {
+      return await loadSkillForProject({
+        name,
+        projectId: context.projectId,
+      });
     },
     inputSchema: z.strictObject({
       name: z.string().min(1),
@@ -134,17 +86,14 @@ export async function planImplementationRun(
   });
 
   const skillsReadFileTool = tool({
+    contextSchema: plannerToolContextSchema,
     description:
       "Read a file referenced by a skill (repo-bundled directory or bundled ZIP). Path must be relative to the skill directory.",
-    async execute(
-      { name, path }: Readonly<{ name: string; path: string }>,
-      options: ToolExecutionOptions,
-    ) {
-      const ctx = parsePlannerContext(options.experimental_context);
+    async execute({ name, path }, { context }) {
       return await readSkillFileForProject({
         name,
         path,
-        projectId: ctx.projectId,
+        projectId: context.projectId,
       });
     },
     inputSchema: z.strictObject({
@@ -153,80 +102,64 @@ export async function planImplementationRun(
     }),
   });
 
-  let tools: ToolSet = {
+  let context7Calls = 0;
+  function consumeContext7Call(): void {
+    if (context7Calls >= budgets.maxContext7CallsPerTurn) {
+      throw new AppError(
+        "conflict",
+        409,
+        "Context7 budget exceeded for this turn.",
+      );
+    }
+    context7Calls += 1;
+  }
+
+  const context7Tools = context7Configured
+    ? await (async () => {
+        // Load only when configured so disabled environments avoid the MCP module.
+        const { context7QueryDocs, context7ResolveLibraryId } = await import(
+          "@/lib/ai/tools/mcp-context7.server"
+        );
+
+        return {
+          "context7.query-docs": tool({
+            description: "Query Context7 docs for a libraryId.",
+            async execute({ libraryId, query }, { abortSignal }) {
+              consumeContext7Call();
+              return await context7QueryDocs(
+                { libraryId, query },
+                { abortSignal },
+              );
+            },
+            inputSchema: z.strictObject({
+              libraryId: z.string().min(1),
+              query: z.string().min(1),
+            }),
+          }),
+          "context7.resolve-library-id": tool({
+            description:
+              "Resolve a library/package name to a Context7 libraryId for documentation lookup.",
+            async execute({ libraryName, query }, { abortSignal }) {
+              consumeContext7Call();
+              return await context7ResolveLibraryId(
+                { libraryName, query },
+                { abortSignal },
+              );
+            },
+            inputSchema: z.strictObject({
+              libraryName: z.string().min(1),
+              query: z.string().min(1),
+            }),
+          }),
+        };
+      })()
+    : {};
+
+  const tools = {
+    ...context7Tools,
     "skills.load": skillsLoadTool,
     "skills.readFile": skillsReadFileTool,
   };
-
-  if (context7Configured) {
-    // Optional dependency: load only when Context7 is configured to reduce the
-    // module graph in environments where Context7 is disabled.
-    const { context7QueryDocs, context7ResolveLibraryId } = await import(
-      "@/lib/ai/tools/mcp-context7.server"
-    );
-
-    const context7ResolveTool = tool({
-      description:
-        "Resolve a library/package name to a Context7 libraryId for documentation lookup.",
-      async execute(
-        {
-          libraryName,
-          query,
-        }: Readonly<{ libraryName: string; query: string }>,
-        options: ToolExecutionOptions,
-      ) {
-        const ctx = parsePlannerContext(options.experimental_context);
-        if (ctx.context7Calls >= budgets.maxContext7CallsPerTurn) {
-          throw new AppError(
-            "conflict",
-            409,
-            "Context7 budget exceeded for this turn.",
-          );
-        }
-        ctx.context7Calls += 1;
-        return await context7ResolveLibraryId(
-          { libraryName, query },
-          { abortSignal: options.abortSignal },
-        );
-      },
-      inputSchema: z.strictObject({
-        libraryName: z.string().min(1),
-        query: z.string().min(1),
-      }),
-    });
-
-    const context7QueryTool = tool({
-      description: "Query Context7 docs for a libraryId.",
-      async execute(
-        { libraryId, query }: Readonly<{ libraryId: string; query: string }>,
-        options: ToolExecutionOptions,
-      ) {
-        const ctx = parsePlannerContext(options.experimental_context);
-        if (ctx.context7Calls >= budgets.maxContext7CallsPerTurn) {
-          throw new AppError(
-            "conflict",
-            409,
-            "Context7 budget exceeded for this turn.",
-          );
-        }
-        ctx.context7Calls += 1;
-        return await context7QueryDocs(
-          { libraryId, query },
-          { abortSignal: options.abortSignal },
-        );
-      },
-      inputSchema: z.strictObject({
-        libraryId: z.string().min(1),
-        query: z.string().min(1),
-      }),
-    });
-
-    tools = {
-      ...tools,
-      "context7.query-docs": context7QueryTool,
-      "context7.resolve-library-id": context7ResolveTool,
-    };
-  }
 
   const agent = new ToolLoopAgent({
     callOptionsSchema,
@@ -245,24 +178,22 @@ export async function planImplementationRun(
     output: Output.object({ schema: implementationPlanSchema }),
     prepareCall: ({ options, ...settings }) => ({
       ...settings,
-      experimental_context: {
-        context7Calls: 0,
-        projectId: options.projectId,
-        skills: options.skills,
-      },
       instructions: [
         settings.instructions,
         buildSkillsPrompt(options.skills),
       ].join("\n\n"),
     }),
-    stopWhen: stepCountIs(10),
+    stopWhen: isStepCount(10),
     temperature: 0.2,
     tools,
+    toolsContext: {
+      "skills.load": { projectId: input.projectId },
+      "skills.readFile": { projectId: input.projectId },
+    },
   });
 
   const result = await agent.generate({
     options: {
-      projectId: input.projectId,
       skills: availableSkills,
     },
     prompt: [

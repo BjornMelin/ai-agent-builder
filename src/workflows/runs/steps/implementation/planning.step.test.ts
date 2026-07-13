@@ -1,5 +1,5 @@
-import { createMockLanguageModelV3Text } from "@tests/utils/ai-sdk";
-import type { MockLanguageModelV3 } from "ai/test";
+import { createMockLanguageModelV4Text } from "@tests/utils/ai-sdk";
+import { MockLanguageModelV4 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type PlanInput = Readonly<{
@@ -38,8 +38,8 @@ function makeEnv(overrides?: Partial<EnvShape>): EnvShape {
   };
 }
 
-type LanguageModelV3GenerateResult = Awaited<
-  ReturnType<NonNullable<MockLanguageModelV3["doGenerate"]>>
+type LanguageModelV4GenerateResult = Awaited<
+  ReturnType<MockLanguageModelV4["doGenerate"]>
 >;
 
 function makeToolCallGenerateResult(
@@ -48,7 +48,7 @@ function makeToolCallGenerateResult(
     toolName: string;
     toolInput: unknown;
   }>,
-): LanguageModelV3GenerateResult {
+): LanguageModelV4GenerateResult {
   return {
     content: [
       {
@@ -73,7 +73,28 @@ function makeToolCallGenerateResult(
       },
     },
     warnings: [],
-  } satisfies LanguageModelV3GenerateResult;
+  } satisfies LanguageModelV4GenerateResult;
+}
+
+function makeTextGenerateResult(text: string): LanguageModelV4GenerateResult {
+  return {
+    content: [{ text, type: "text" }],
+    finishReason: { raw: undefined, unified: "stop" },
+    usage: {
+      inputTokens: {
+        cacheRead: undefined,
+        cacheWrite: undefined,
+        noCache: 3,
+        total: 3,
+      },
+      outputTokens: {
+        reasoning: undefined,
+        text: 10,
+        total: 10,
+      },
+    },
+    warnings: [],
+  };
 }
 
 beforeEach(() => {
@@ -82,7 +103,7 @@ beforeEach(() => {
 });
 
 describe("planImplementationRun (Context7 conditional loading)", () => {
-  it("does not import the Context7 module when env.context7 is not configured", async () => {
+  it("passes immutable project context to skills without importing Context7", async () => {
     const plan = {
       commitMessage: "feat: plan",
       planMarkdown: "## Plan",
@@ -90,9 +111,23 @@ describe("planImplementationRun (Context7 conditional loading)", () => {
       prTitle: "title",
     };
 
-    const model: MockLanguageModelV3 = createMockLanguageModelV3Text(
-      JSON.stringify(plan),
-    );
+    const model = new MockLanguageModelV4({
+      doGenerate: [
+        makeToolCallGenerateResult({
+          toolCallId: "call_1",
+          toolInput: { name: "clean-code" },
+          toolName: "skills.load",
+        }),
+        makeTextGenerateResult(JSON.stringify(plan)),
+      ],
+    });
+    const loadSkillForProject = vi.fn(async () => ({
+      content: "instructions",
+      name: "clean-code",
+      ok: true,
+      skillDirectory: "skills/clean-code",
+      source: "fs",
+    }));
 
     vi.doMock("@/lib/env", () => ({
       env: makeEnv(),
@@ -104,7 +139,7 @@ describe("planImplementationRun (Context7 conditional loading)", () => {
 
     vi.doMock("@/lib/ai/skills/index.server", () => ({
       listAvailableSkillsForProject: async () => [],
-      loadSkillForProject: async () => ({ error: "unavailable", ok: false }),
+      loadSkillForProject,
       readSkillFileForProject: async () => ({
         error: "unavailable",
         ok: false,
@@ -127,6 +162,10 @@ describe("planImplementationRun (Context7 conditional loading)", () => {
 
     const { planImplementationRun } = await import("./planning.step");
     await expect(planImplementationRun(makePlanInput())).resolves.toEqual(plan);
+    expect(loadSkillForProject).toHaveBeenCalledWith({
+      name: "clean-code",
+      projectId: "proj_1",
+    });
   });
 
   it("imports the Context7 module when env.context7 is configured", async () => {
@@ -137,7 +176,7 @@ describe("planImplementationRun (Context7 conditional loading)", () => {
       prTitle: "title",
     };
 
-    const model: MockLanguageModelV3 = createMockLanguageModelV3Text(
+    const model: MockLanguageModelV4 = createMockLanguageModelV4Text(
       JSON.stringify(plan),
     );
 
@@ -206,14 +245,13 @@ describe("planImplementationRun (Context7 conditional loading)", () => {
       context7ResolveLibraryId: async () => ({ ok: true }),
     }));
 
-    const { MockLanguageModelV3 } = await import("ai/test");
     const plan = {
       commitMessage: "feat: plan",
       planMarkdown: "## Plan",
       prBody: "body",
       prTitle: "title",
     };
-    const generateResults: LanguageModelV3GenerateResult[] = [
+    const generateResults: LanguageModelV4GenerateResult[] = [
       makeToolCallGenerateResult({
         toolCallId: "call_1",
         toolInput: { libraryName: "react", query: "hooks" },
@@ -236,10 +274,10 @@ describe("planImplementationRun (Context7 conditional loading)", () => {
           },
         },
         warnings: [],
-      } satisfies LanguageModelV3GenerateResult,
+      } satisfies LanguageModelV4GenerateResult,
     ];
     let generateIndex = 0;
-    const model = new MockLanguageModelV3({
+    const model = new MockLanguageModelV4({
       doGenerate: async () => {
         const res = generateResults[generateIndex];
         generateIndex += 1;
@@ -296,14 +334,13 @@ describe("planImplementationRun (Context7 conditional loading)", () => {
       context7ResolveLibraryId: context7Spies.resolve,
     }));
 
-    const { MockLanguageModelV3 } = await import("ai/test");
     const plan = {
       commitMessage: "feat: plan",
       planMarkdown: "## Plan",
       prBody: "body",
       prTitle: "title",
     };
-    const generateResults: LanguageModelV3GenerateResult[] = [
+    const generateResults: LanguageModelV4GenerateResult[] = [
       makeToolCallGenerateResult({
         toolCallId: "call_1",
         toolInput: { libraryName: "react", query: "hooks" },
@@ -326,10 +363,10 @@ describe("planImplementationRun (Context7 conditional loading)", () => {
           },
         },
         warnings: [],
-      } satisfies LanguageModelV3GenerateResult,
+      } satisfies LanguageModelV4GenerateResult,
     ];
     let generateIndex = 0;
-    const model = new MockLanguageModelV3({
+    const model = new MockLanguageModelV4({
       doGenerate: async () => {
         const res = generateResults[generateIndex];
         generateIndex += 1;
@@ -351,7 +388,7 @@ describe("planImplementationRun (Context7 conditional loading)", () => {
               },
             },
             warnings: [],
-          } satisfies LanguageModelV3GenerateResult;
+          } satisfies LanguageModelV4GenerateResult;
         }
         return res;
       },

@@ -25,6 +25,20 @@ export type ArtifactDto = Readonly<{
 
 type ArtifactRow = typeof schema.artifactsTable.$inferSelect;
 
+type CreateArtifactVersionInput = Readonly<{
+  projectId: string;
+  runId?: string | null;
+  kind: string;
+  logicalKey: string;
+  idempotencyKey?: string | undefined;
+  content: Record<string, unknown>;
+  citations?: readonly Readonly<{
+    sourceType: string;
+    sourceRef: string;
+    payload?: Record<string, unknown>;
+  }>[];
+}>;
+
 function toArtifactDto(row: ArtifactRow): ArtifactDto {
   return {
     content: row.content,
@@ -63,6 +77,98 @@ async function maxArtifactVersionTx(
   return row?.maxVersion ?? 0;
 }
 
+async function artifactByIdempotencyKeyTx(
+  tx: DbClient,
+  projectId: string,
+  idempotencyKey: string,
+): Promise<ArtifactRow | undefined> {
+  return await tx.query.artifactsTable.findFirst({
+    where: and(
+      eq(schema.artifactsTable.projectId, projectId),
+      eq(schema.artifactsTable.idempotencyKey, idempotencyKey),
+    ),
+  });
+}
+
+function validateIdempotentArtifact(
+  row: ArtifactRow,
+  input: CreateArtifactVersionInput & { idempotencyKey: string },
+): ArtifactDto {
+  if (
+    row.kind !== input.kind ||
+    row.logicalKey !== input.logicalKey ||
+    (row.runId ?? null) !== (input.runId ?? null)
+  ) {
+    throw new AppError(
+      "conflict",
+      409,
+      "Artifact idempotency key is bound to different input.",
+    );
+  }
+  return toArtifactDto(row);
+}
+
+async function createIdempotentArtifactVersionTx(
+  tx: DbClient,
+  input: CreateArtifactVersionInput & { idempotencyKey: string },
+): Promise<ArtifactDto> {
+  if (input.idempotencyKey.length === 0) {
+    throw new AppError(
+      "bad_request",
+      400,
+      "Artifact idempotency key must be non-empty.",
+    );
+  }
+
+  const recovered = await artifactByIdempotencyKeyTx(
+    tx,
+    input.projectId,
+    input.idempotencyKey,
+  );
+  if (recovered) return validateIdempotentArtifact(recovered, input);
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const nextVersion =
+      (await maxArtifactVersionTx(tx, {
+        kind: input.kind,
+        logicalKey: input.logicalKey,
+        projectId: input.projectId,
+      })) + 1;
+    const [created] = await tx
+      .insert(schema.artifactsTable)
+      .values({
+        content: input.content,
+        idempotencyKey: input.idempotencyKey,
+        kind: input.kind,
+        logicalKey: input.logicalKey,
+        projectId: input.projectId,
+        runId: input.runId ?? null,
+        version: nextVersion,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (created) {
+      await insertArtifactCitationsTx(tx, {
+        artifactId: created.id,
+        citations: input.citations ?? [],
+        projectId: input.projectId,
+      });
+      return toArtifactDto(created);
+    }
+
+    const winner = await artifactByIdempotencyKeyTx(
+      tx,
+      input.projectId,
+      input.idempotencyKey,
+    );
+    if (winner) return validateIdempotentArtifact(winner, input);
+    // A concurrent writer claimed the next logical version. Recompute it.
+  }
+
+  throw new AppError("db_insert_failed", 500, "Failed to create artifact.");
+}
+
 /**
  * Create the next monotonic version of an artifact (atomic with citations).
  *
@@ -77,19 +183,15 @@ async function maxArtifactVersionTx(
  */
 export async function createArtifactVersionTx(
   tx: DbClient,
-  input: Readonly<{
-    projectId: string;
-    runId?: string | null;
-    kind: string;
-    logicalKey: string;
-    content: Record<string, unknown>;
-    citations?: readonly Readonly<{
-      sourceType: string;
-      sourceRef: string;
-      payload?: Record<string, unknown>;
-    }>[];
-  }>,
+  input: CreateArtifactVersionInput,
 ): Promise<ArtifactDto> {
+  if (input.idempotencyKey !== undefined) {
+    return await createIdempotentArtifactVersionTx(tx, {
+      ...input,
+      idempotencyKey: input.idempotencyKey,
+    });
+  }
+
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const nextVersion =
       (await maxArtifactVersionTx(tx, {
@@ -152,6 +254,87 @@ export async function createArtifactVersion(
   const artifact = await db.transaction(
     async (tx) => await createArtifactVersionTx(tx, input),
   );
+  revalidateTag(tagArtifactsIndex(artifact.projectId), "max");
+  return artifact;
+}
+
+/**
+ * Recover a previously committed artifact from a stable producer identity.
+ *
+ * @param projectId - Owning project.
+ * @param idempotencyKey - Stable workflow step identity.
+ * @returns The canonical artifact, or null before its first commit.
+ */
+export async function getArtifactByIdempotencyKey(
+  projectId: string,
+  idempotencyKey: string,
+): Promise<ArtifactDto | null> {
+  const row = await artifactByIdempotencyKeyTx(
+    getDb() as DbClient,
+    projectId,
+    idempotencyKey,
+  );
+  return row ? toArtifactDto(row) : null;
+}
+
+/**
+ * Create version one of an artifact key, or return the existing version one.
+ *
+ * @remarks
+ * Use this for retryable Workflow steps whose logical output is one-per-run.
+ * The database unique key is the concurrency boundary; callers receive the
+ * same artifact identity after retries and therefore enqueue the same indexing
+ * deduplication key.
+ *
+ * @param input - Stable artifact contents and run-specific identity.
+ * @returns The inserted or concurrently existing version-one artifact.
+ */
+export async function createArtifactVersionOnce(
+  input: Readonly<{
+    content: Record<string, unknown>;
+    kind: string;
+    logicalKey: string;
+    projectId: string;
+    runId: string;
+  }>,
+): Promise<ArtifactDto> {
+  const db = getDb();
+  const artifact = await db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(schema.artifactsTable)
+      .values({ ...input, version: 1 })
+      .onConflictDoNothing({
+        target: [
+          schema.artifactsTable.projectId,
+          schema.artifactsTable.kind,
+          schema.artifactsTable.logicalKey,
+          schema.artifactsTable.version,
+        ],
+      })
+      .returning();
+    if (created) return toArtifactDto(created);
+
+    const existing = await tx.query.artifactsTable.findFirst({
+      where: and(
+        eq(schema.artifactsTable.projectId, input.projectId),
+        eq(schema.artifactsTable.kind, input.kind),
+        eq(schema.artifactsTable.logicalKey, input.logicalKey),
+        eq(schema.artifactsTable.version, 1),
+      ),
+    });
+    if (!existing) {
+      throw new AppError("db_insert_failed", 500, "Failed to create artifact.");
+    }
+    if (existing.runId !== input.runId) {
+      throw new AppError(
+        "conflict",
+        409,
+        "Artifact identity belongs to another run.",
+      );
+    }
+    return toArtifactDto(existing);
+  });
+
   revalidateTag(tagArtifactsIndex(artifact.projectId), "max");
   return artifact;
 }

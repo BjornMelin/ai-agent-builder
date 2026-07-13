@@ -26,6 +26,29 @@ describe("code mode writer steps", () => {
     });
   });
 
+  it("writes the canonical structured terminal event", async () => {
+    const { writable, writes } = createWritableCollector<UIMessageChunk>();
+
+    await writeCodeModeEvent(writable, {
+      status: "failed",
+      timestamp: 1,
+      type: "terminal",
+    });
+
+    expect(writes).toEqual([
+      {
+        data: {
+          domain: "code-mode",
+          status: "failed",
+          timestamp: 1,
+          type: "terminal",
+          version: 2,
+        },
+        type: "data-workflow",
+      },
+    ]);
+  });
+
   it("closeCodeModeStream writes finish then closes", async () => {
     const { writable, writes } = createWritableCollector<UIMessageChunk>();
 

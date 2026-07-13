@@ -1,5 +1,7 @@
 import "server-only";
 
+import { getStepMetadata } from "workflow";
+
 import { AppError } from "@/lib/core/errors";
 import { env } from "@/lib/env";
 import type { RepoRuntimeKind } from "@/lib/repo/repo-kind.server";
@@ -40,6 +42,7 @@ export async function sandboxCheckoutImplementationRepo(
   "use step";
 
   const token = assertGitHubToken(env.github.token ?? "");
+  const provisioningKey = getStepMetadata().stepId;
 
   const networkPolicy =
     input.repoKind === "python"
@@ -56,6 +59,7 @@ export async function sandboxCheckoutImplementationRepo(
     },
     networkPolicy,
     projectId: input.projectId,
+    provisioningKey,
     runId: input.runId,
     runtime,
     source: {
@@ -206,14 +210,31 @@ export async function sandboxCheckoutImplementationRepo(
     };
   } catch (err) {
     try {
-      await session.finalize({ exitCode, status: "failed" });
-    } catch {
-      // Best effort only.
+      await session.stop();
+    } catch (cleanupError) {
+      throw new AppError(
+        "sandbox_cleanup_failed",
+        502,
+        "Checkout sandbox cleanup was not confirmed.",
+        new AggregateError(
+          [err, cleanupError],
+          "Checkout execution and sandbox cleanup both failed.",
+        ),
+      );
     }
+
     try {
-      await session.sandbox.stop();
-    } catch {
-      // Best effort only.
+      await session.finalize({ exitCode, status: "failed" });
+    } catch (persistenceError) {
+      throw new AppError(
+        "sandbox_job_persistence_failed",
+        500,
+        "Checkout cleanup succeeded but failure persistence failed.",
+        new AggregateError(
+          [err, persistenceError],
+          "Checkout execution and failure persistence both failed.",
+        ),
+      );
     }
     throw err;
   }

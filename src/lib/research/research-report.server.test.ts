@@ -1,5 +1,5 @@
-import { createMockLanguageModelV3Text } from "@tests/utils/ai-sdk";
-import type { MockLanguageModelV3 } from "ai/test";
+import { createMockLanguageModelV4Text } from "@tests/utils/ai-sdk";
+import type { MockLanguageModelV4 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppError } from "@/lib/core/errors";
 import { createResearchReportArtifact } from "@/lib/research/research-report.server";
@@ -7,6 +7,7 @@ import { createResearchReportArtifact } from "@/lib/research/research-report.ser
 const state = vi.hoisted(() => ({
   createArtifactVersion: vi.fn(),
   extractWebPage: vi.fn(),
+  getArtifactByIdempotencyKey: vi.fn(),
   getChatModelById: vi.fn(),
   searchWeb: vi.fn(),
 }));
@@ -25,17 +26,19 @@ vi.mock("@/lib/ai/tools/web-extract.server", () => ({
 
 vi.mock("@/lib/data/artifacts.server", () => ({
   createArtifactVersion: state.createArtifactVersion,
+  getArtifactByIdempotencyKey: state.getArtifactByIdempotencyKey,
 }));
 
-let model: MockLanguageModelV3;
+let model: MockLanguageModelV4;
 
 beforeEach(() => {
   vi.clearAllMocks();
 
-  model = createMockLanguageModelV3Text(
+  model = createMockLanguageModelV4Text(
     "# Research report\n\nHello [[1]](citation:1)",
   );
   state.getChatModelById.mockReturnValue(model);
+  state.getArtifactByIdempotencyKey.mockResolvedValue(null);
 
   state.searchWeb.mockResolvedValue({
     requestId: "req_1",
@@ -70,6 +73,7 @@ describe("createResearchReportArtifact", () => {
   it("rejects empty queries", async () => {
     await expect(
       createResearchReportArtifact({
+        idempotencyKey: "step-empty",
         modelId: "openai/gpt-4.1",
         projectId: "proj_1",
         query: " ",
@@ -82,6 +86,7 @@ describe("createResearchReportArtifact", () => {
 
   it("creates a markdown artifact with normalized citations", async () => {
     const result = await createResearchReportArtifact({
+      idempotencyKey: "step-report-1",
       maxExtractUrls: 2,
       modelId: "openai/gpt-4.1",
       projectId: "proj_1",
@@ -156,6 +161,7 @@ describe("createResearchReportArtifact", () => {
             }),
           ],
         }),
+        idempotencyKey: "step-report-1",
         kind: "RESEARCH_REPORT",
         logicalKey: expect.stringMatching(/^research-report:[0-9a-f]{64}$/),
         projectId: "proj_1",
@@ -166,6 +172,7 @@ describe("createResearchReportArtifact", () => {
 
   it("respects maxExtractUrls", async () => {
     await createResearchReportArtifact({
+      idempotencyKey: "step-report-2",
       maxExtractUrls: 1,
       modelId: "openai/gpt-4.1",
       projectId: "proj_1",
@@ -176,5 +183,35 @@ describe("createResearchReportArtifact", () => {
     expect(state.extractWebPage).toHaveBeenCalledWith({
       url: "https://example.com/a",
     });
+  });
+
+  it("recovers a post-commit retry before repeating external producer work", async () => {
+    state.getArtifactByIdempotencyKey.mockResolvedValueOnce({
+      content: { format: "markdown", markdown: "committed" },
+      createdAt: new Date(0).toISOString(),
+      id: "artifact_committed",
+      kind: "RESEARCH_REPORT",
+      logicalKey:
+        "research-report:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      projectId: "proj_1",
+      runId: null,
+      version: 3,
+    });
+
+    const result = await createResearchReportArtifact({
+      idempotencyKey: "step-replayed-after-commit",
+      modelId: "openai/gpt-4.1",
+      projectId: "proj_1",
+      query: "test",
+    });
+
+    expect(result).toMatchObject({
+      artifactId: "artifact_committed",
+      version: 3,
+    });
+    expect(state.searchWeb).not.toHaveBeenCalled();
+    expect(state.extractWebPage).not.toHaveBeenCalled();
+    expect(model.doGenerateCalls).toHaveLength(0);
+    expect(state.createArtifactVersion).not.toHaveBeenCalled();
   });
 });

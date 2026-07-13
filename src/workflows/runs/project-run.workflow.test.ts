@@ -454,7 +454,7 @@ describe("projectRun", () => {
     );
   });
 
-  it("best-effort stops the sandbox when a non-cancel error occurs after checkout", async () => {
+  it("stops the sandbox before terminalizing a non-cancel failure", async () => {
     persistMocks.getRunInfo.mockResolvedValueOnce({
       kind: "implementation",
       projectId: "project_1",
@@ -473,6 +473,84 @@ describe("projectRun", () => {
     expect(persistMocks.markRunTerminal).toHaveBeenCalledWith(
       "run_1",
       "failed",
+    );
+  });
+
+  it("retains sandbox ownership when checkout result persistence fails", async () => {
+    persistMocks.getRunInfo.mockResolvedValueOnce({
+      kind: "implementation",
+      projectId: "project_1",
+    });
+    persistMocks.finishRunStep.mockImplementation(async (input: unknown) => {
+      const step = input as { status?: unknown; stepId?: unknown };
+      if (
+        step.status === "succeeded" &&
+        step.stepId === "impl.sandbox.checkout"
+      ) {
+        throw new Error("checkout persistence failed");
+      }
+    });
+    implementationStepMocks.stopImplementationSandbox.mockRejectedValueOnce(
+      new Error("stop unconfirmed"),
+    );
+
+    await expect(projectRun("run_1")).rejects.toMatchObject({
+      code: "sandbox_cleanup_failed",
+      status: 502,
+    });
+
+    expect(
+      implementationStepMocks.stopImplementationSandbox,
+    ).toHaveBeenCalledWith("sbx_1");
+    expect(persistMocks.markRunTerminal).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { cancelled: false, terminalStatus: "failed" },
+    { cancelled: true, terminalStatus: "canceled" },
+  ])("keeps the run nonterminal when $terminalStatus sandbox cleanup is unconfirmed", async ({
+    cancelled,
+    terminalStatus,
+  }) => {
+    persistMocks.getRunInfo.mockResolvedValueOnce({
+      kind: "implementation",
+      projectId: "project_1",
+    });
+
+    const executionError = new Error(`${terminalStatus} execution`);
+    const cleanupError = new Error("stop unconfirmed");
+    implementationStepMocks.verifyImplementationRun.mockRejectedValueOnce(
+      executionError,
+    );
+    implementationStepMocks.stopImplementationSandbox.mockRejectedValueOnce(
+      cleanupError,
+    );
+    workflowErrorMocks.isWorkflowRunCancelledError.mockReturnValueOnce(
+      cancelled,
+    );
+
+    await expect(projectRun("run_1")).rejects.toMatchObject({
+      code: "sandbox_cleanup_failed",
+      status: 502,
+    });
+
+    expect(
+      implementationStepMocks.stopImplementationSandbox,
+    ).toHaveBeenCalledWith("sbx_1");
+    expect(persistMocks.finishRunStep).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: terminalStatus,
+        stepId: "impl.verify",
+      }),
+    );
+    expect(persistMocks.markRunTerminal).not.toHaveBeenCalled();
+    expect(persistMocks.cancelRunAndSteps).not.toHaveBeenCalled();
+    expect(writerMocks.writeRunEvent).not.toHaveBeenCalledWith(
+      state.writable,
+      expect.objectContaining({
+        status: terminalStatus,
+        type: "run-finished",
+      }),
     );
   });
 

@@ -1,18 +1,18 @@
 import "server-only";
 
+import { start } from "workflow/api";
 import { AppError } from "@/lib/core/errors";
-import { log } from "@/lib/core/log";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import { getRunById, type RunDto } from "@/lib/data/runs.server";
 import {
-  createRun,
-  getRunById,
-  type RunDto,
-  setRunWorkflowRunId,
-  updateRunStatus,
-} from "@/lib/data/runs.server";
+  claimCodeModeWorkflow,
+  ensureCodeModeRun,
+  getActiveCodeModeRunId,
+} from "@/lib/runs/code-mode-start.server";
 import { cancelProjectRun } from "@/lib/runs/project-run.server";
-import { getRun, start } from "@/workflows/_shared/workflow-runtime.server";
 import { projectCodeMode } from "@/workflows/code-mode/project-code-mode.workflow";
+
+const TERMINAL_RUN_STATUSES = ["canceled", "failed", "succeeded"] as const;
 
 /**
  * Start a Code Mode session as a durable workflow run.
@@ -23,9 +23,10 @@ import { projectCodeMode } from "@/workflows/code-mode/project-code-mode.workflo
  * streaming + cancellation.
  *
  * @param input - Start inputs.
- * @returns Persisted run DTO with `workflowRunId` set.
+ * @returns Canonical persisted run DTO. Terminal pre-start cancellations may
+ * return without a Workflow ID.
  * @throws AppError - When the project does not exist or is not accessible.
- * @throws Error - When starting the workflow or persisting the workflowRunId fails.
+ * @throws Error - When Workflow dispatch fails before self-registration.
  */
 export async function startProjectCodeMode(
   input: Readonly<{
@@ -34,6 +35,7 @@ export async function startProjectCodeMode(
     prompt: string;
     budgets?: Readonly<{ maxSteps?: number; timeoutMs?: number }> | undefined;
     networkAccess?: "none" | "restricted" | undefined;
+    runId: string;
   }>,
 ): Promise<RunDto> {
   const project = await getProjectByIdForUser(input.projectId, input.userId);
@@ -41,57 +43,47 @@ export async function startProjectCodeMode(
     throw new AppError("not_found", 404, "Project not found.");
   }
 
-  const run = await createRun({
-    kind: "research",
-    metadata: {
-      networkAccess: input.networkAccess ?? "none",
-      origin: "code-mode",
-      prompt: input.prompt,
-      ...(input.budgets ? { budgets: input.budgets } : {}),
-    },
+  await ensureCodeModeRun({
+    budgets: input.budgets,
+    networkAccess: input.networkAccess,
     projectId: input.projectId,
+    prompt: input.prompt,
+    runId: input.runId,
+    userId: input.userId,
   });
 
-  let workflowRunId: string | null = null;
-  try {
-    const wf = await start(projectCodeMode, [run.id]);
+  const existing = await getRunById(input.runId);
+  if (!existing) {
+    throw new AppError("not_found", 404, "Run not found.");
+  }
+  if (
+    existing.workflowRunId ||
+    TERMINAL_RUN_STATUSES.some((status) => status === existing.status)
+  ) {
+    return existing;
+  }
 
-    workflowRunId = wf.runId;
-    try {
-      return await setRunWorkflowRunId(run.id, wf.runId);
-    } catch (error) {
-      if (workflowRunId) {
-        try {
-          await getRun(workflowRunId).cancel();
-        } catch (cancelError) {
-          log.error("workflow_run_cancel_failed", {
-            err: cancelError,
-            runId: run.id,
-            workflowRunId,
-          });
-        }
-      }
-      throw error;
-    }
+  try {
+    const workflow = await start(projectCodeMode, [existing.id]);
+    await claimCodeModeWorkflow(existing.id, workflow.runId);
   } catch (error) {
-    try {
-      await updateRunStatus(run.id, "failed");
-    } catch (compensationError) {
-      log.error("run_start_compensation_failed", {
-        err: compensationError,
-        runId: run.id,
-      });
-    }
+    // `start()` can accept a queue message before its caller receives a handle.
+    // The queued workflow self-registers its generated ID as its first step, so
+    // an ambiguous caller error is recoverable through this canonical run row.
+    const recovered = await getRunById(existing.id);
+    if (recovered?.workflowRunId) return recovered;
     throw error;
   }
+
+  const started = await getRunById(existing.id);
+  if (!started) {
+    throw new AppError("not_found", 404, "Run not found.");
+  }
+  return started;
 }
 
 /**
  * Get the active Code Mode session run for a project.
- *
- * @remarks
- * This is a convenience helper for future UI improvements; it is not currently
- * used by the Route Handlers.
  *
  * @param runId - Run ID.
  * @param userId - User ID.
@@ -118,6 +110,26 @@ export async function getCodeModeRun(
   }
 
   return run;
+}
+
+/**
+ * Find the authenticated user's active Code Mode run for a project.
+ *
+ * @param projectId - Project UUID.
+ * @param userId - Authenticated user ID.
+ * @returns The active run, or `null` when no active run exists.
+ */
+export async function getActiveProjectCodeModeRun(
+  projectId: string,
+  userId: string,
+): Promise<RunDto | null> {
+  const project = await getProjectByIdForUser(projectId, userId);
+  if (!project) {
+    throw new AppError("not_found", 404, "Project not found.");
+  }
+
+  const runId = await getActiveCodeModeRunId(projectId, userId);
+  return runId ? await getCodeModeRun(runId, userId) : null;
 }
 
 /**

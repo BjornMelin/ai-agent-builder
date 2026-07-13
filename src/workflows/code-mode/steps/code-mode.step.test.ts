@@ -1,5 +1,5 @@
 import { createWritableCollector } from "@tests/utils/streams";
-import type { stepCountIs, Tool, UIMessageChunk } from "ai";
+import type { Tool, UIMessageChunk } from "ai";
 import { mockValues } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -14,20 +14,25 @@ type RunCommandResult = Readonly<{
 }>;
 
 const state = vi.hoisted(() => ({
-  compactToolResults: vi.fn(),
-  createCtxZipSandboxCodeMode: vi.fn(),
   detectGitHubRepoRuntimeKind: vi.fn(),
   envGithubToken: "gh_token",
+  finalizedJobStatus: null as string | null,
   getDb: vi.fn(),
   getDefaultChatModel: vi.fn(),
   isGitHubConfigured: vi.fn(),
   lastPrepareStepMessages: null as null | unknown[],
   lastSandboxRunResult: null as null | unknown,
+  lastToolsContext: null as null | Record<string, unknown>,
   listReposByProject: vi.fn(),
   loopShouldThrow: false,
   redactSandboxLog: vi.fn((value: string) => value),
   sandboxRunCombined: "ok",
   startSandboxJobSession: vi.fn(),
+  workflowStepId: "step_code_mode_1",
+}));
+
+vi.mock("workflow", () => ({
+  getStepMetadata: () => ({ stepId: state.workflowStepId }),
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -73,15 +78,6 @@ vi.mock("@/lib/sandbox/redaction.server", () => ({
   redactSandboxLog: (value: string) => state.redactSandboxLog(value),
 }));
 
-vi.mock("@/lib/sandbox/ctxzip-compactor.server", () => ({
-  compactToolResults: (...args: unknown[]) => state.compactToolResults(...args),
-}));
-
-vi.mock("@/lib/sandbox/ctxzip.server", () => ({
-  createCtxZipSandboxCodeMode: (...args: unknown[]) =>
-    state.createCtxZipSandboxCodeMode(...args),
-}));
-
 vi.mock("@/lib/ai/gateway.server", () => ({
   getDefaultChatModel: (...args: unknown[]) =>
     state.getDefaultChatModel(...args),
@@ -98,25 +94,52 @@ vi.mock("ai", async (importOriginal) => {
   class ToolLoopAgentMock {
     public constructor(
       private readonly settings: Readonly<{
-        onStepFinish?: (step: {
+        onStepEnd?: (step: {
           toolCalls: Array<{ toolName: string; input: unknown }>;
           toolResults: Array<{ toolName: string; output: unknown }>;
         }) => Promise<void>;
         prepareStep?: (input: {
           messages: unknown[];
         }) => Promise<{ messages: unknown[] }>;
-        stopWhen?: ReturnType<typeof stepCountIs>;
+        stopWhen?: unknown;
         tools: Record<string, Tool>;
+        toolsContext: Record<string, unknown>;
       }>,
-    ) {}
+    ) {
+      state.lastToolsContext = settings.toolsContext;
+    }
 
     public async stream(): Promise<{ textStream: AsyncIterable<string> }> {
-      // Exercise compaction path.
       const prepared = await this.settings.prepareStep?.({
-        messages: Array.from({ length: 12 }, (_, idx) => ({
-          content: `m${idx}`,
-          role: "user",
-        })),
+        messages: [
+          { content: "old request", role: "user" },
+          {
+            content: [
+              {
+                input: { path: "." },
+                toolCallId: "old_tool_call",
+                toolName: "sandbox_ls",
+                type: "tool-call",
+              },
+            ],
+            role: "assistant",
+          },
+          {
+            content: [
+              {
+                output: { type: "json", value: { stale: true } },
+                toolCallId: "old_tool_call",
+                toolName: "sandbox_ls",
+                type: "tool-result",
+              },
+            ],
+            role: "tool",
+          },
+          ...Array.from({ length: 10 }, (_, idx) => ({
+            content: `m${idx}`,
+            role: "user",
+          })),
+        ],
       });
       state.lastPrepareStepMessages = prepared?.messages ?? null;
 
@@ -134,7 +157,7 @@ vi.mock("ai", async (importOriginal) => {
               cmd: "  ls  ",
               cwd: "repo",
             },
-            { messages: [], toolCallId: "sandbox_ls_1" },
+            { context: {}, messages: [], toolCallId: "sandbox_run_1" },
           );
         } catch {
           // ignore
@@ -146,15 +169,29 @@ vi.mock("ai", async (importOriginal) => {
               cmd: "ls",
               cwd: "/etc",
             },
-            { messages: [], toolCallId: "sandbox_ls_2" },
+            { context: {}, messages: [], toolCallId: "sandbox_run_2" },
           );
         } catch {
           // ignore
         }
       }
 
-      // Exercise onStepFinish tool-call/result emission.
-      await this.settings.onStepFinish?.({
+      const explorationCalls = [
+        ["sandbox_ls", { path: "." }],
+        ["sandbox_cat", { path: "README.md" }],
+        ["sandbox_grep", { path: "src", pattern: "ToolLoopAgent" }],
+        ["sandbox_find", { maxDepth: 2, name: "*.ts", path: "src" }],
+      ] as const;
+      for (const [toolName, toolInput] of explorationCalls) {
+        await this.settings.tools[toolName]?.execute?.(toolInput, {
+          context: {},
+          messages: [],
+          toolCallId: `${toolName}_1`,
+        });
+      }
+
+      // Exercise onStepEnd tool-call/result emission.
+      await this.settings.onStepEnd?.({
         toolCalls: [
           { input: { path: "/vercel/sandbox" }, toolName: "sandbox_ls" },
           { input: "ok", toolName: "sandbox_find" },
@@ -185,10 +222,13 @@ beforeEach(() => {
   state.getDefaultChatModel.mockReturnValue({ kind: "model" });
   state.isGitHubConfigured.mockReturnValue(true);
   state.envGithubToken = "gh_token";
+  state.finalizedJobStatus = null;
   state.loopShouldThrow = false;
   state.lastPrepareStepMessages = null;
   state.lastSandboxRunResult = null;
+  state.lastToolsContext = null;
   state.sandboxRunCombined = "ok";
+  state.workflowStepId = "step_code_mode_1";
   state.listReposByProject.mockResolvedValue([
     {
       cloneUrl: "https://example.com/repo.git",
@@ -211,10 +251,6 @@ beforeEach(() => {
     },
     kind: "python",
   });
-  state.compactToolResults.mockImplementation(
-    async (messages: unknown[]) => messages,
-  );
-
   const runCommand = vi.fn(
     async (input: Record<string, unknown>): Promise<RunCommandResult> => {
       const onLog = input.onLog as
@@ -238,11 +274,17 @@ beforeEach(() => {
   );
 
   const session = {
-    finalize: vi.fn(async ({ exitCode }: { exitCode: number }) => ({
-      job: { id: "job_final", transcriptBlobRef: "blob_1" },
-      transcript: { truncated: false },
-      ...(exitCode === 0 ? {} : {}),
-    })),
+    finalize: vi.fn(
+      async ({ exitCode, status }: { exitCode: number; status: string }) => ({
+        job: {
+          id: "job_final",
+          status: state.finalizedJobStatus ?? status,
+          transcriptBlobRef: "blob_1",
+        },
+        transcript: { truncated: false },
+        ...(exitCode === 0 ? {} : {}),
+      }),
+    ),
     job: { id: "job_1" },
     runCommand,
     sandbox: {
@@ -253,21 +295,6 @@ beforeEach(() => {
   };
 
   state.startSandboxJobSession.mockResolvedValue(session);
-
-  state.createCtxZipSandboxCodeMode.mockImplementation(
-    async (_input: unknown) => {
-      return {
-        manager: {
-          cleanup: vi.fn(async () => {}),
-          getFileAdapter: () => ({ kind: "adapter" }),
-        },
-        tools: {
-          sandbox_cat: { execute: vi.fn() },
-          sandbox_ls: { execute: vi.fn() },
-        },
-      };
-    },
-  );
 
   state.getDb.mockReturnValue({
     query: {
@@ -281,7 +308,7 @@ beforeEach(() => {
             prompt: "Say hi",
           },
           projectId: "proj_1",
-          status: "pending",
+          status: "running",
         })),
       },
     },
@@ -289,6 +316,12 @@ beforeEach(() => {
 });
 
 describe("runCodeModeSession", () => {
+  it("reads the authoritative persisted run status", async () => {
+    const { getCodeModeRunStatus } = await import("./code-mode.step");
+
+    await expect(getCodeModeRunStatus("run_1")).resolves.toBe("running");
+  });
+
   it("throws not_found when the run is missing", async () => {
     state.getDb.mockReturnValueOnce({
       query: { runsTable: { findFirst: vi.fn(async () => null) } },
@@ -309,7 +342,7 @@ describe("runCodeModeSession", () => {
             id: "run_1",
             metadata: { prompt: "" },
             projectId: "proj_1",
-            status: "pending",
+            status: "running",
           })),
         },
       },
@@ -320,6 +353,57 @@ describe("runCodeModeSession", () => {
     await expect(
       runCodeModeSession({ runId: "run_1", workflowRunId: "wf_1", writable }),
     ).rejects.toMatchObject({ code: "bad_request", status: 400 });
+  });
+
+  it("does not provision a sandbox for a canceled run", async () => {
+    state.getDb.mockReturnValueOnce({
+      query: {
+        runsTable: {
+          findFirst: vi.fn(async () => ({
+            id: "run_1",
+            metadata: {
+              origin: "code-mode",
+              prompt: "Say hi",
+            },
+            projectId: "proj_1",
+            status: "canceled",
+          })),
+        },
+      },
+    });
+    const { runCodeModeSession } = await import("./code-mode.step");
+
+    const { writable } = createWritableCollector<UIMessageChunk>();
+    await expect(
+      runCodeModeSession({ runId: "run_1", workflowRunId: "wf_1", writable }),
+    ).rejects.toMatchObject({ code: "sandbox_job_canceled", status: 409 });
+    expect(state.startSandboxJobSession).not.toHaveBeenCalled();
+  });
+
+  it("does not provision a sandbox after cancellation is fenced", async () => {
+    state.getDb.mockReturnValueOnce({
+      query: {
+        runsTable: {
+          findFirst: vi.fn(async () => ({
+            cancelRequestedAt: new Date(0),
+            id: "run_1",
+            metadata: {
+              origin: "code-mode",
+              prompt: "Say hi",
+            },
+            projectId: "proj_1",
+            status: "running",
+          })),
+        },
+      },
+    });
+    const { runCodeModeSession } = await import("./code-mode.step");
+
+    const { writable } = createWritableCollector<UIMessageChunk>();
+    await expect(
+      runCodeModeSession({ runId: "run_1", workflowRunId: "wf_1", writable }),
+    ).rejects.toMatchObject({ code: "sandbox_job_canceled", status: 409 });
+    expect(state.startSandboxJobSession).not.toHaveBeenCalled();
   });
 
   it("runs the agent loop, emits stream events, and returns a summary", async () => {
@@ -339,16 +423,21 @@ describe("runCodeModeSession", () => {
       transcriptTruncated: false,
     });
     expect(res.assistantText).toContain("hello");
+    expect(state.lastToolsContext).toEqual({
+      "skills.load": { projectId: "proj_1" },
+      "skills.readFile": { projectId: "proj_1" },
+    });
 
     // Assert we picked the python policy/runtime when python markers exist.
     expect(state.startSandboxJobSession).toHaveBeenCalledWith(
       expect.objectContaining({
         networkPolicy: SANDBOX_NETWORK_POLICY_RESTRICTED_PYTHON_DEFAULT,
+        provisioningKey: "step_code_mode_1",
         runtime: "python3.13",
       }),
     );
 
-    // Stream events should include status + assistant deltas + exit.
+    // The session emits progress only; the outer workflow owns terminal state.
     type CodeModeDataChunk = Readonly<{
       type: "data-workflow";
       data: CodeModeStreamEvent;
@@ -368,7 +457,31 @@ describe("runCodeModeSession", () => {
     expect(dataChunks.some((c) => c.data.type === "assistant-delta")).toBe(
       true,
     );
-    expect(dataChunks.some((c) => c.data.type === "exit")).toBe(true);
+    expect(dataChunks.some((c) => c.data.type === "terminal")).toBe(false);
+  });
+
+  it("uses the durable Workflow step identity across sandbox retries", async () => {
+    const { runCodeModeSession } = await import("./code-mode.step");
+    const first = createWritableCollector<UIMessageChunk>();
+    const second = createWritableCollector<UIMessageChunk>();
+
+    await runCodeModeSession({
+      runId: "run_1",
+      workflowRunId: "wf_1",
+      writable: first.writable,
+    });
+    await runCodeModeSession({
+      runId: "run_1",
+      workflowRunId: "wf_1",
+      writable: second.writable,
+    });
+
+    expect(state.startSandboxJobSession).toHaveBeenCalledTimes(2);
+    expect(
+      state.startSandboxJobSession.mock.calls.map(
+        (call) => (call[0] as { provisioningKey: string }).provisioningKey,
+      ),
+    ).toEqual(["step_code_mode_1", "step_code_mode_1"]);
   });
 
   it("selects node policies when node is detected", async () => {
@@ -397,7 +510,7 @@ describe("runCodeModeSession", () => {
     );
   });
 
-  it("defaults to no network access, disables ctx-zip on failures, and uses drop-tool-results compaction", async () => {
+  it("defaults to no network access and prunes old tool payloads", async () => {
     state.getDb.mockReturnValueOnce({
       query: {
         runsTable: {
@@ -409,17 +522,16 @@ describe("runCodeModeSession", () => {
               prompt: "Hello",
             },
             projectId: "proj_1",
-            status: "pending",
+            status: "running",
           })),
         },
       },
     });
     state.listReposByProject.mockResolvedValueOnce([]);
     state.isGitHubConfigured.mockReturnValueOnce(false);
-    state.createCtxZipSandboxCodeMode.mockRejectedValueOnce(new Error("nope"));
 
     const { runCodeModeSession } = await import("./code-mode.step");
-    const { writable, writes } = createWritableCollector<UIMessageChunk>();
+    const { writable } = createWritableCollector<UIMessageChunk>();
     await runCodeModeSession({
       runId: "run_1",
       workflowRunId: "wf_1",
@@ -433,39 +545,12 @@ describe("runCodeModeSession", () => {
       }),
     );
 
-    expect(state.compactToolResults).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        strategy: "drop-tool-results",
-      }),
+    expect(JSON.stringify(state.lastPrepareStepMessages)).not.toContain(
+      "old_tool_call",
     );
-
-    const dataChunks = writes.filter(
-      (c) =>
-        c.type === "data-workflow" &&
-        typeof c.data === "object" &&
-        c.data !== null &&
-        "domain" in c.data &&
-        c.data.domain === "code-mode",
-    ) as Array<{
-      type: "data-workflow";
-      data: CodeModeStreamEvent;
-    }>;
-    expect(
-      dataChunks.some(
-        (c) =>
-          c.data.type === "status" &&
-          typeof c.data.message === "string" &&
-          c.data.message.includes("ctx-zip compaction disabled"),
-      ),
-    ).toBe(true);
   });
 
-  it("falls back to keep-last compaction when storage compaction throws", async () => {
-    state.compactToolResults.mockImplementationOnce(async () => {
-      throw new Error("compaction failed");
-    });
-
+  it("runs native exploration tools inside the sandbox workspace", async () => {
     const { runCodeModeSession } = await import("./code-mode.step");
     const { writable } = createWritableCollector<UIMessageChunk>();
     await runCodeModeSession({
@@ -474,10 +559,29 @@ describe("runCodeModeSession", () => {
       writable,
     });
 
-    // prepareStep uses boundary.count=8; when compaction fails and messages are long,
-    // it slices to keep the last N messages.
-    expect(state.lastPrepareStepMessages).not.toBeNull();
-    expect((state.lastPrepareStepMessages ?? []).length).toBe(8);
+    const session = await state.startSandboxJobSession.mock.results[0]?.value;
+    expect(session.runCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: ["/vercel/sandbox/README.md"],
+        cmd: "cat",
+        cwd: "/vercel/sandbox",
+        policy: "code_mode",
+      }),
+    );
+    expect(session.runCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: [
+          "/vercel/sandbox/src",
+          "-maxdepth",
+          "2",
+          "-type",
+          "f",
+          "-name",
+          "*.ts",
+        ],
+        cmd: "find",
+      }),
+    );
   });
 
   it("omits git auth credentials from the sandbox source when the GitHub token is missing", async () => {
@@ -515,5 +619,39 @@ describe("runCodeModeSession", () => {
     expect(session.finalize).toHaveBeenCalledWith(
       expect.objectContaining({ exitCode: 1, status: "failed" }),
     );
+  });
+
+  it("finalizes when setup fails after the sandbox is provisioned", async () => {
+    state.getDefaultChatModel.mockImplementationOnce(() => {
+      throw new Error("model setup failed");
+    });
+
+    const { runCodeModeSession } = await import("./code-mode.step");
+    const { writable } = createWritableCollector<UIMessageChunk>();
+
+    await expect(
+      runCodeModeSession({ runId: "run_1", workflowRunId: "wf_1", writable }),
+    ).rejects.toThrow(/model setup failed/i);
+
+    const session = await state.startSandboxJobSession.mock.results[0]?.value;
+    expect(session.finalize).toHaveBeenCalledTimes(1);
+    expect(session.finalize).toHaveBeenCalledWith({
+      exitCode: 1,
+      status: "failed",
+    });
+  });
+
+  it("rejects success when cancellation already owns the sandbox job", async () => {
+    state.finalizedJobStatus = "canceled";
+
+    const { runCodeModeSession } = await import("./code-mode.step");
+    const { writable } = createWritableCollector<UIMessageChunk>();
+
+    await expect(
+      runCodeModeSession({ runId: "run_1", workflowRunId: "wf_1", writable }),
+    ).rejects.toMatchObject({
+      code: "sandbox_job_canceled",
+      status: 409,
+    });
   });
 });

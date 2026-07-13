@@ -1,27 +1,27 @@
-import type { LanguageModelV3StreamPart } from "@ai-sdk/provider";
+import type { LanguageModelV4StreamPart } from "@ai-sdk/provider";
 import { simulateReadableStream } from "ai";
-import { MockEmbeddingModelV3, MockLanguageModelV3 } from "ai/test";
+import { MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
 
-type LanguageModelV3GenerateResult = Awaited<
-  ReturnType<NonNullable<MockLanguageModelV3["doGenerate"]>>
+type LanguageModelV4GenerateResult = Awaited<
+  ReturnType<MockLanguageModelV4["doGenerate"]>
 >;
 
-type EmbeddingModelV3EmbedResult = Awaited<
-  ReturnType<NonNullable<MockEmbeddingModelV3["doEmbed"]>>
+type EmbeddingModelV4EmbedResult = Awaited<
+  ReturnType<MockEmbeddingModelV4["doEmbed"]>
 >;
 
 /**
- * Create a deterministic V3 mock language model that always returns `text`.
+ * Create a deterministic V4 mock language model that always returns `text`.
  *
  * @remarks
  * Prefer using the AI SDK's official mock models (`ai/test`) in unit tests.
  *
  * @param text - The text content to return from `doGenerate`.
- * @returns A `MockLanguageModelV3` configured to return `text`.
+ * @returns A `MockLanguageModelV4` configured to return `text`.
  */
-export function createMockLanguageModelV3Text(
+export function createMockLanguageModelV4Text(
   text: string,
-): MockLanguageModelV3 {
+): MockLanguageModelV4 {
   const result = {
     content: [{ text, type: "text" }],
     finishReason: { raw: undefined, unified: "stop" },
@@ -39,27 +39,27 @@ export function createMockLanguageModelV3Text(
       },
     },
     warnings: [],
-  } satisfies LanguageModelV3GenerateResult;
+  } satisfies LanguageModelV4GenerateResult;
 
-  return new MockLanguageModelV3({
+  return new MockLanguageModelV4({
     doGenerate: async () => result,
   });
 }
 
 /**
- * Create a deterministic V3 mock language model that streams text parts.
+ * Create a deterministic V4 mock language model that streams text parts.
  *
  * @remarks
  * Prefer `simulateReadableStream` over hand-rolled async iterators so tests
  * match the AI SDK's streaming shape.
  *
  * @param chunks - Stream parts emitted by the model.
- * @returns A `MockLanguageModelV3` configured to stream `chunks`.
+ * @returns A `MockLanguageModelV4` configured to stream `chunks`.
  */
-export function createMockLanguageModelV3StreamText(
-  chunks: readonly LanguageModelV3StreamPart[],
-): MockLanguageModelV3 {
-  return new MockLanguageModelV3({
+export function createMockLanguageModelV4StreamText(
+  chunks: readonly LanguageModelV4StreamPart[],
+): MockLanguageModelV4 {
+  return new MockLanguageModelV4({
     doStream: async () => ({
       stream: simulateReadableStream({
         // Emit without delays to keep tests fast/deterministic.
@@ -72,27 +72,27 @@ export function createMockLanguageModelV3StreamText(
 }
 
 /**
- * Create a deterministic V3 mock embedding model for `embed`/`embedMany` tests.
+ * Create a deterministic V4 mock embedding model for `embed`/`embedMany` tests.
  *
  * @remarks
  * Defaults to an effectively unlimited `maxEmbeddingsPerCall` so `embedMany`
  * performs a single deterministic call.
  *
  * @param options - Optional overrides for embeddings and model identity.
- * @returns A `MockEmbeddingModelV3` configured for deterministic embeddings.
+ * @returns A `MockEmbeddingModelV4` configured for deterministic embeddings.
  */
-export function createMockEmbeddingModelV3(
+export function createMockEmbeddingModelV4(
   options?: Readonly<{
     embedForValues?: (values: readonly string[]) => number[][];
     modelId?: string;
   }>,
-): MockEmbeddingModelV3 {
+): MockEmbeddingModelV4 {
   const embedForValues =
     options?.embedForValues ??
     ((values: readonly string[]) =>
       values.map((value, idx) => [value.length, idx]));
 
-  return new MockEmbeddingModelV3({
+  return new MockEmbeddingModelV4({
     // Default to "no limit" so `embedMany` makes a single deterministic call.
     maxEmbeddingsPerCall: null,
     supportsParallelCalls: true,
@@ -101,6 +101,6 @@ export function createMockEmbeddingModelV3(
       ({
         embeddings: embedForValues(values),
         warnings: [],
-      }) satisfies EmbeddingModelV3EmbedResult,
+      }) satisfies EmbeddingModelV4EmbedResult,
   });
 }

@@ -1,8 +1,9 @@
 import "server-only";
 
-import type { ToolExecutionOptions, UIMessageChunk } from "ai";
-import { stepCountIs, ToolLoopAgent, tool } from "ai";
+import type { UIMessageChunk } from "ai";
+import { isStepCount, pruneMessages, ToolLoopAgent, tool } from "ai";
 import { eq } from "drizzle-orm";
+import { getStepMetadata } from "workflow";
 import { z } from "zod";
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
@@ -21,8 +22,6 @@ import {
   detectGitHubRepoRuntimeKind,
   type RepoRuntimeKind,
 } from "@/lib/repo/repo-kind.server";
-import type { VercelSandboxLike } from "@/lib/sandbox/ctxzip.server";
-import { compactToolResults } from "@/lib/sandbox/ctxzip-compactor.server";
 import {
   SANDBOX_NETWORK_POLICY_NONE,
   SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT,
@@ -36,7 +35,6 @@ import {
   createCodeModeStreamEvent,
 } from "@/workflows/_shared/workflow-stream-events";
 import { chatToolSkillMetadataSchema } from "@/workflows/chat/tool-context";
-import { enableCtxZipRuntime } from "@/workflows/code-mode/steps/code-mode/ctxzip-runtime";
 import {
   limitText,
   redactStreamPayload,
@@ -45,7 +43,6 @@ import {
 import {
   resolveSandboxCwd,
   resolveSandboxPath,
-  rewriteSandboxArgsForWorkspace,
   SANDBOX_WORKSPACE_ROOT,
 } from "@/workflows/code-mode/steps/code-mode/sandbox-paths";
 import { parseCodeModeRunMetadata } from "@/workflows/code-mode/steps/code-mode/session-metadata";
@@ -57,6 +54,31 @@ type CodeModeStepResult = Readonly<{
   transcriptBlobRef: string | null;
   transcriptTruncated: boolean;
 }>;
+
+type PersistedRunStatus = (typeof schema.runsTable.$inferSelect)["status"];
+
+/**
+ * Read the authoritative persisted status for a Code Mode run.
+ *
+ * @param runId - Durable run ID.
+ * @returns Persisted run status.
+ * @throws AppError - When the run no longer exists.
+ */
+export async function getCodeModeRunStatus(
+  runId: string,
+): Promise<PersistedRunStatus> {
+  "use step";
+
+  const db = getDb();
+  const row = await db.query.runsTable.findFirst({
+    columns: { status: true },
+    where: eq(schema.runsTable.id, runId),
+  });
+  if (!row) {
+    throw new AppError("not_found", 404, "Run not found.");
+  }
+  return row.status;
+}
 
 /**
  * Execute the Code Mode agent inside a Vercel Sandbox job and stream progress.
@@ -75,11 +97,31 @@ export async function runCodeModeSession(
 
   const db = getDb();
   const runRow = await db.query.runsTable.findFirst({
-    columns: { id: true, metadata: true, projectId: true, status: true },
+    columns: {
+      cancelRequestedAt: true,
+      id: true,
+      metadata: true,
+      projectId: true,
+      status: true,
+    },
     where: eq(schema.runsTable.id, input.runId),
   });
   if (!runRow) {
     throw new AppError("not_found", 404, "Run not found.");
+  }
+  if (runRow.cancelRequestedAt || runRow.status === "canceled") {
+    throw new AppError(
+      "sandbox_job_canceled",
+      409,
+      "Code Mode run cancellation was requested.",
+    );
+  }
+  if (runRow.status !== "running") {
+    throw new AppError(
+      "code_mode_run_not_active",
+      409,
+      `Code Mode run is ${runRow.status}.`,
+    );
   }
 
   const parsedMeta = parseCodeModeRunMetadata(runRow.metadata);
@@ -145,6 +187,7 @@ export async function runCodeModeSession(
           : SANDBOX_NETWORK_POLICY_RESTRICTED_DEFAULT
         : SANDBOX_NETWORK_POLICY_NONE;
 
+    const { stepId: provisioningKey } = getStepMetadata();
     const session = await startSandboxJobSession({
       jobType: "code_mode",
       metadata: {
@@ -164,6 +207,7 @@ export async function runCodeModeSession(
       },
       networkPolicy,
       projectId: runRow.projectId,
+      provisioningKey,
       runId: runRow.id,
       runtime: repoKind === "python" ? "python3.13" : "node24",
       ...(source ? { source } : {}),
@@ -171,255 +215,264 @@ export async function runCodeModeSession(
       vcpus: 2,
     });
 
-    await writeEvent({
-      message: `Sandbox job: ${session.job.id}`,
-      timestamp: nowTimestamp(),
-      type: "status",
-    });
-
-    const compactionSessionId = `code-mode:${input.runId}`;
-
-    const sandboxLike: VercelSandboxLike = {
-      runCommand: async ({ cmd, args }) => {
-        const safeCmd = cmd.trim();
-        const safeArgs = rewriteSandboxArgsForWorkspace(safeCmd, args ?? []);
-        const result = await session.runCommand({
-          args: safeArgs,
-          cmd: safeCmd,
-          cwd: SANDBOX_WORKSPACE_ROOT,
-          policy: "code_mode",
-        });
-        return {
-          exitCode: result.exitCode,
-          stderr: async () => result.transcript.stderr,
-          stdout: async () => result.transcript.stdout,
-        };
-      },
-      sandboxId: session.sandbox.sandboxId,
-      stop: async () => {},
-      writeFiles: async (files) => {
-        const rewritten = files.map((file) => ({
-          content: file.content,
-          path: resolveSandboxPath(file.path),
-        }));
-        await session.sandbox.writeFiles(rewritten);
-      },
-    };
-
-    const ctxZipRuntime = await enableCtxZipRuntime({
-      sandbox: sandboxLike,
-      sessionId: compactionSessionId,
-      writeStatus: writeEvent,
-    });
-    const ctxZipTools = ctxZipRuntime.ctxZipTools;
-    const compactionStorage = ctxZipRuntime.storage;
-
-    const sandboxRunTool = tool({
-      description:
-        "Run an allowlisted command inside the sandbox workspace. Prefer read-only inspection first. Avoid package managers and arbitrary downloads. Always keep cwd within /vercel/sandbox.",
-      async execute({ cmd, args, cwd }) {
-        const safeCmd = cmd.trim();
-        const safeArgs = args ?? [];
-        const resolvedCwd = resolveSandboxCwd(cwd);
-
-        await writeEvent({
-          input: {
-            args: redactToolCallArgs(safeArgs),
-            cmd: safeCmd,
-            ...(resolvedCwd ? { cwd: resolvedCwd } : {}),
-          },
-          timestamp: nowTimestamp(),
-          toolName: "sandbox_run",
-          type: "tool-call",
-        });
-
-        const result = await session.runCommand({
-          args: safeArgs,
-          cmd: safeCmd,
-          ...(resolvedCwd ? { cwd: resolvedCwd } : {}),
-          onLog: async (entry) => {
-            await writeEvent({
-              data: entry.data,
-              stream: entry.stream,
-              timestamp: nowTimestamp(),
-              type: "log",
-            });
-          },
-          policy: "code_mode",
-        });
-
-        await writeEvent({
-          output: { exitCode: result.exitCode },
-          timestamp: nowTimestamp(),
-          toolName: "sandbox_run",
-          type: "tool-result",
-        });
-
-        const combinedTail = limitText(result.transcript.combined, 50_000);
-        return {
-          exitCode: result.exitCode,
-          transcriptTail: redactSandboxLog(combinedTail),
-        };
-      },
-      inputSchema: z.strictObject({
-        args: z.array(z.string().min(1)).max(64).optional(),
-        cmd: z.string().min(1),
-        cwd: z.string().min(1).optional(),
-      }),
-    });
-
-    const codeModeCallOptionsSchema = z.strictObject({
-      projectId: z.string().min(1),
-      skills: z.array(chatToolSkillMetadataSchema),
-    });
-
-    type CodeModeCallOptions = Readonly<
-      z.output<typeof codeModeCallOptionsSchema>
-    >;
-
-    function parseCodeModeSkillContext(value: unknown): CodeModeCallOptions {
-      const parsed = codeModeCallOptionsSchema.safeParse(value);
-      if (!parsed.success) {
-        throw new AppError(
-          "bad_request",
-          400,
-          "Missing skill context for Code Mode.",
-          parsed.error,
-        );
-      }
-      return parsed.data;
-    }
-
-    const skillsLoadTool = tool({
-      description: "Load a skill to get specialized instructions.",
-      async execute(
-        { name }: Readonly<{ name: string }>,
-        options: ToolExecutionOptions,
-      ) {
-        const ctx = parseCodeModeSkillContext(options.experimental_context);
-        return await loadSkillForProject({ name, projectId: ctx.projectId });
-      },
-      inputSchema: z.strictObject({
-        name: z.string().min(1),
-      }),
-    });
-
-    const skillsReadFileTool = tool({
-      description:
-        "Read a file referenced by a repo-bundled skill. Path must be relative to the skill directory.",
-      async execute(
-        { name, path }: Readonly<{ name: string; path: string }>,
-        options: ToolExecutionOptions,
-      ) {
-        const ctx = parseCodeModeSkillContext(options.experimental_context);
-        return await readSkillFileForProject({
-          name,
-          path,
-          projectId: ctx.projectId,
-        });
-      },
-      inputSchema: z.strictObject({
-        name: z.string().min(1),
-        path: z.string().min(1),
-      }),
-    });
-
-    const agent = new ToolLoopAgent({
-      callOptionsSchema: codeModeCallOptionsSchema,
-      instructions: [
-        "You are Code Mode, an AI assistant operating inside a locked-down Vercel Sandbox VM.",
-        "You can run allowlisted commands via the sandbox_run tool, and you should be explicit about what you run and why.",
-        "Large tool outputs are automatically compacted to files in the sandbox. Use sandbox_ls/sandbox_cat/sandbox_grep/sandbox_find to retrieve referenced results on-demand.",
-        "Default to read-only inspection first (ls, rg, cat) before running heavier commands.",
-        "Do not run builds or installs in Code Mode. Use Implementation Runs for lint/typecheck/test/build workflows.",
-        "Never attempt to fetch secrets or exfiltrate data.",
-        "When you complete the task, summarize what you did and include command outputs when relevant.",
-      ].join("\n"),
-      maxOutputTokens: 2048,
-      model: getDefaultChatModel(),
-      onStepFinish: async (step) => {
-        // Best-effort: emit tool summaries without duplicating the sandbox_run stream.
-        for (const toolCall of step.toolCalls) {
-          if (toolCall.toolName === "sandbox_run") continue;
-          await writeEvent({
-            input: redactStreamPayload(toolCall.input),
-            timestamp: nowTimestamp(),
-            toolName: toolCall.toolName,
-            type: "tool-call",
-          });
-        }
-        for (const toolResult of step.toolResults) {
-          if (toolResult.toolName === "sandbox_run") continue;
-          await writeEvent({
-            output: redactStreamPayload(toolResult.output),
-            timestamp: nowTimestamp(),
-            toolName: toolResult.toolName,
-            type: "tool-result",
-          });
-        }
-      },
-      prepareCall: ({ options, ...settings }) => ({
-        ...settings,
-        experimental_context: options,
-        instructions: [
-          settings.instructions,
-          buildSkillsPrompt(options.skills),
-        ].join("\n\n"),
-      }),
-      prepareStep: async ({ messages }) => {
-        // Keep the agent loop within context budgets even with tool-heavy output.
-        const boundary = { count: 8, type: "keep-last" } as const;
-        let compacted: typeof messages;
-        if (compactionStorage) {
-          try {
-            compacted = await compactToolResults(messages, {
-              boundary,
-              sessionId: compactionSessionId,
-              storage: compactionStorage,
-              strategy: "write-tool-results-to-file",
-              toolResultSerializer: (value) =>
-                redactSandboxLog(JSON.stringify(value, null, 2)),
-            });
-          } catch {
-            // If compaction fails (storage issues, sandbox hiccups, etc.), prefer
-            // preserving tool results to avoid degrading correctness. We still
-            // cap history size so context does not grow unbounded.
-            compacted =
-              messages.length > boundary.count
-                ? messages.slice(messages.length - boundary.count)
-                : messages;
-          }
-        } else {
-          compacted = await compactToolResults(messages, {
-            boundary,
-            strategy: "drop-tool-results",
-          });
-        }
-        return { messages: compacted };
-      },
-      stopWhen: stepCountIs(maxSteps),
-      tools: {
-        ...ctxZipTools,
-        sandbox_run: sandboxRunTool,
-        "skills.load": skillsLoadTool,
-        "skills.readFile": skillsReadFileTool,
-      },
-    });
-
     let assistantText = "";
     const ASSISTANT_TEXT_LIMIT = 200_000;
     const ASSISTANT_TEXT_TRIM_THRESHOLD = 220_000;
-    let exitCode = 0;
-    let failure: unknown | null = null;
-
+    let executionFailed = false;
+    let failure: unknown;
+    let exitCode = 1;
+    let finalizationFailed = false;
+    let finalizationFailure: unknown;
     let finalizedJobId: string | null = null;
     let transcriptBlobRef: string | null = null;
     let transcriptTruncated = false;
 
     try {
+      await writeEvent({
+        message: `Sandbox job: ${session.job.id}`,
+        timestamp: nowTimestamp(),
+        type: "status",
+      });
+
+      const runExplorationCommand = async (
+        cmd: "cat" | "find" | "grep" | "ls",
+        args: readonly string[],
+      ) => {
+        const result = await session.runCommand({
+          args,
+          cmd,
+          cwd: SANDBOX_WORKSPACE_ROOT,
+          policy: "code_mode",
+        });
+        return {
+          exitCode: result.exitCode,
+          output: redactSandboxLog(
+            limitText(result.transcript.combined, 50_000),
+          ),
+        };
+      };
+
+      const sandboxLsTool = tool({
+        description: "List a path inside the sandbox workspace.",
+        async execute({ path }) {
+          return await runExplorationCommand("ls", [
+            "-la",
+            path ? resolveSandboxPath(path) : SANDBOX_WORKSPACE_ROOT,
+          ]);
+        },
+        inputSchema: z.strictObject({
+          path: z.string().min(1).optional(),
+        }),
+      });
+
+      const sandboxCatTool = tool({
+        description: "Read a text file inside the sandbox workspace.",
+        async execute({ path }) {
+          return await runExplorationCommand("cat", [resolveSandboxPath(path)]);
+        },
+        inputSchema: z.strictObject({
+          path: z.string().min(1),
+        }),
+      });
+
+      const sandboxGrepTool = tool({
+        description:
+          "Recursively search file contents inside the sandbox workspace.",
+        async execute({ path, pattern }) {
+          return await runExplorationCommand("grep", [
+            "-R",
+            "-n",
+            "-I",
+            "--exclude-dir=.git",
+            "--",
+            pattern,
+            path ? resolveSandboxPath(path) : SANDBOX_WORKSPACE_ROOT,
+          ]);
+        },
+        inputSchema: z.strictObject({
+          path: z.string().min(1).optional(),
+          pattern: z.string().min(1),
+        }),
+      });
+
+      const sandboxFindTool = tool({
+        description: "Find files by name inside the sandbox workspace.",
+        async execute({ maxDepth, name, path }) {
+          return await runExplorationCommand("find", [
+            path ? resolveSandboxPath(path) : SANDBOX_WORKSPACE_ROOT,
+            "-maxdepth",
+            String(maxDepth),
+            "-type",
+            "f",
+            ...(name ? ["-name", name] : []),
+          ]);
+        },
+        inputSchema: z.strictObject({
+          maxDepth: z.number().int().min(1).max(8).default(4),
+          name: z.string().min(1).optional(),
+          path: z.string().min(1).optional(),
+        }),
+      });
+
+      const sandboxRunTool = tool({
+        description:
+          "Run an allowlisted command inside the sandbox workspace. Prefer read-only inspection first. Avoid package managers and arbitrary downloads. Always keep cwd within /vercel/sandbox.",
+        async execute({ cmd, args, cwd }) {
+          const safeCmd = cmd.trim();
+          const safeArgs = args ?? [];
+          const resolvedCwd = resolveSandboxCwd(cwd);
+
+          await writeEvent({
+            input: {
+              args: redactToolCallArgs(safeArgs),
+              cmd: safeCmd,
+              ...(resolvedCwd ? { cwd: resolvedCwd } : {}),
+            },
+            timestamp: nowTimestamp(),
+            toolName: "sandbox_run",
+            type: "tool-call",
+          });
+
+          const result = await session.runCommand({
+            args: safeArgs,
+            cmd: safeCmd,
+            ...(resolvedCwd ? { cwd: resolvedCwd } : {}),
+            onLog: async (entry) => {
+              await writeEvent({
+                data: entry.data,
+                stream: entry.stream,
+                timestamp: nowTimestamp(),
+                type: "log",
+              });
+            },
+            policy: "code_mode",
+          });
+
+          await writeEvent({
+            output: { exitCode: result.exitCode },
+            timestamp: nowTimestamp(),
+            toolName: "sandbox_run",
+            type: "tool-result",
+          });
+
+          const combinedTail = limitText(result.transcript.combined, 50_000);
+          return {
+            exitCode: result.exitCode,
+            transcriptTail: redactSandboxLog(combinedTail),
+          };
+        },
+        inputSchema: z.strictObject({
+          args: z.array(z.string().min(1)).max(64).optional(),
+          cmd: z.string().min(1),
+          cwd: z.string().min(1).optional(),
+        }),
+      });
+
+      const codeModeCallOptionsSchema = z.strictObject({
+        skills: z.array(chatToolSkillMetadataSchema),
+      });
+
+      const skillToolContextSchema = z.strictObject({
+        projectId: z.string().min(1),
+      });
+
+      const skillsLoadTool = tool({
+        contextSchema: skillToolContextSchema,
+        description: "Load a skill to get specialized instructions.",
+        async execute({ name }, { context }) {
+          return await loadSkillForProject({
+            name,
+            projectId: context.projectId,
+          });
+        },
+        inputSchema: z.strictObject({
+          name: z.string().min(1),
+        }),
+      });
+
+      const skillsReadFileTool = tool({
+        contextSchema: skillToolContextSchema,
+        description:
+          "Read a file referenced by a repo-bundled skill. Path must be relative to the skill directory.",
+        async execute({ name, path }, { context }) {
+          return await readSkillFileForProject({
+            name,
+            path,
+            projectId: context.projectId,
+          });
+        },
+        inputSchema: z.strictObject({
+          name: z.string().min(1),
+          path: z.string().min(1),
+        }),
+      });
+
+      const agent = new ToolLoopAgent({
+        callOptionsSchema: codeModeCallOptionsSchema,
+        instructions: [
+          "You are Code Mode, an AI assistant operating inside a locked-down Vercel Sandbox VM.",
+          "You can run allowlisted commands via the sandbox_run tool, and you should be explicit about what you run and why.",
+          "Use sandbox_ls, sandbox_cat, sandbox_grep, and sandbox_find for focused read-only exploration before broader commands.",
+          "Default to read-only inspection first (ls, rg, cat) before running heavier commands.",
+          "Do not run builds or installs in Code Mode. Use Implementation Runs for lint/typecheck/test/build workflows.",
+          "Never attempt to fetch secrets or exfiltrate data.",
+          "When you complete the task, summarize what you did and include command outputs when relevant.",
+        ].join("\n"),
+        maxOutputTokens: 2048,
+        model: getDefaultChatModel(),
+        onStepEnd: async (step) => {
+          // Best-effort: emit tool summaries without duplicating the sandbox_run stream.
+          for (const toolCall of step.toolCalls) {
+            if (toolCall.toolName === "sandbox_run") continue;
+            await writeEvent({
+              input: redactStreamPayload(toolCall.input),
+              timestamp: nowTimestamp(),
+              toolName: toolCall.toolName,
+              type: "tool-call",
+            });
+          }
+          for (const toolResult of step.toolResults) {
+            if (toolResult.toolName === "sandbox_run") continue;
+            await writeEvent({
+              output: redactStreamPayload(toolResult.output),
+              timestamp: nowTimestamp(),
+              toolName: toolResult.toolName,
+              type: "tool-result",
+            });
+          }
+        },
+        prepareCall: ({ options, ...settings }) => ({
+          ...settings,
+          instructions: [
+            settings.instructions,
+            buildSkillsPrompt(options.skills),
+          ].join("\n\n"),
+        }),
+        prepareStep: ({ messages }) => ({
+          messages: pruneMessages({
+            messages,
+            reasoning: "before-last-message",
+            toolCalls: "before-last-8-messages",
+          }),
+        }),
+        stopWhen: isStepCount(maxSteps),
+        tools: {
+          sandbox_cat: sandboxCatTool,
+          sandbox_find: sandboxFindTool,
+          sandbox_grep: sandboxGrepTool,
+          sandbox_ls: sandboxLsTool,
+          sandbox_run: sandboxRunTool,
+          "skills.load": skillsLoadTool,
+          "skills.readFile": skillsReadFileTool,
+        },
+        toolsContext: {
+          "skills.load": { projectId: runRow.projectId },
+          "skills.readFile": { projectId: runRow.projectId },
+        },
+      });
+
       const stream = await agent.stream({
         options: {
-          projectId: runRow.projectId,
           skills: availableSkills,
         },
         prompt,
@@ -442,42 +495,56 @@ export async function runCodeModeSession(
           type: "assistant-delta",
         });
       }
+      exitCode = 0;
     } catch (err) {
-      exitCode = 1;
+      executionFailed = true;
       failure = err;
       const message = err instanceof Error ? err.message : "Code Mode failed.";
-      await writeEvent({
-        message,
-        timestamp: nowTimestamp(),
-        type: "status",
-      });
+      try {
+        await writeEvent({
+          message,
+          timestamp: nowTimestamp(),
+          type: "status",
+        });
+      } catch {
+        // The original session failure remains authoritative.
+      }
     } finally {
       try {
-        await ctxZipRuntime.cleanup();
-      } catch {
-        // Best effort only.
+        const finalizedStatus = exitCode === 0 ? "succeeded" : "failed";
+        const finalized = await session.finalize({
+          exitCode,
+          status: finalizedStatus,
+        });
+        if (finalized.job.status !== finalizedStatus) {
+          finalizationFailed = true;
+          finalizationFailure = new AppError(
+            finalized.job.status === "canceling" ||
+              finalized.job.status === "canceled"
+              ? "sandbox_job_canceled"
+              : "sandbox_job_not_active",
+            409,
+            `Sandbox job ended as ${finalized.job.status}.`,
+          );
+        } else {
+          finalizedJobId = finalized.job.id;
+          transcriptBlobRef = finalized.job.transcriptBlobRef;
+          transcriptTruncated = finalized.transcript.truncated;
+        }
+      } catch (err) {
+        finalizationFailed = true;
+        finalizationFailure = err;
       }
-
-      const finalized = await session.finalize({
-        exitCode,
-        status: exitCode === 0 ? "succeeded" : "failed",
-      });
-
-      finalizedJobId = finalized.job.id;
-      transcriptBlobRef = finalized.job.transcriptBlobRef;
-      transcriptTruncated = finalized.transcript.truncated;
-
-      await writeEvent({
-        exitCode,
-        timestamp: nowTimestamp(),
-        type: "exit",
-      });
     }
 
     // Ensure assistant text can't leak unredacted tokens (defense in depth).
     assistantText = redactSandboxLog(assistantText);
 
-    if (failure) {
+    if (finalizationFailed) {
+      throw finalizationFailure;
+    }
+
+    if (executionFailed) {
       throw failure;
     }
 

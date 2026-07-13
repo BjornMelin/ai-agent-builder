@@ -6,14 +6,31 @@ import { AppError } from "@/lib/core/errors";
 type FakeRunStepRow = Readonly<{ attempt: number; status: string }>;
 
 const state = vi.hoisted(() => ({
+  cancelRunSandboxes: vi.fn(),
+  completeRunCancellation: vi.fn(),
   db: null as unknown as DbClient,
+  requestRunCancellation: vi.fn(),
 }));
 
 vi.mock("@/db/client", () => ({
   getDb: () => state.db,
 }));
 
-import { beginRunStep, finishRunStep, markRunStepStatus } from "./persist.step";
+vi.mock("@/lib/data/runs.server", () => ({
+  completeRunCancellation: state.completeRunCancellation,
+  requestRunCancellation: state.requestRunCancellation,
+}));
+
+vi.mock("@/lib/sandbox/sandbox-cancellation.server", () => ({
+  cancelRunSandboxes: state.cancelRunSandboxes,
+}));
+
+import {
+  beginRunStep,
+  cancelRunAndSteps,
+  finishRunStep,
+  markRunStepStatus,
+} from "./persist.step";
 
 function createFakeDb(stepRow: FakeRunStepRow | null) {
   const where = vi.fn().mockResolvedValue(undefined);
@@ -37,8 +54,12 @@ function assertIsDate(value: unknown): asserts value is Date {
 
 describe("persist.step", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date(0));
+    state.requestRunCancellation.mockResolvedValue("requested");
+    state.cancelRunSandboxes.mockResolvedValue(undefined);
+    state.completeRunCancellation.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -220,6 +241,35 @@ describe("persist.step", () => {
       const payload = setArg as Record<string, unknown>;
       assertIsDate(payload.updatedAt);
       expect(payload.updatedAt.getTime()).toBe(0);
+    });
+  });
+
+  describe("cancelRunAndSteps", () => {
+    it("fences, drains sandboxes, then completes persistence", async () => {
+      const events: string[] = [];
+      state.requestRunCancellation.mockImplementationOnce(async () => {
+        events.push("fence");
+        return "requested";
+      });
+      state.cancelRunSandboxes.mockImplementationOnce(async () => {
+        events.push("sandboxes");
+      });
+      state.completeRunCancellation.mockImplementationOnce(async () => {
+        events.push("complete");
+      });
+
+      await cancelRunAndSteps("run_1");
+
+      expect(events).toEqual(["fence", "sandboxes", "complete"]);
+    });
+
+    it("repairs terminal-run sandbox leaks without rewriting terminal state", async () => {
+      state.requestRunCancellation.mockResolvedValueOnce("terminal");
+
+      await cancelRunAndSteps("run_1");
+
+      expect(state.cancelRunSandboxes).toHaveBeenCalledWith("run_1");
+      expect(state.completeRunCancellation).not.toHaveBeenCalled();
     });
   });
 });

@@ -13,7 +13,10 @@ import { budgets } from "@/lib/config/budgets.server";
 import { addAbortListener } from "@/lib/core/abort";
 import { AppError } from "@/lib/core/errors";
 import { sha256Hex } from "@/lib/core/sha256";
-import { createArtifactVersion } from "@/lib/data/artifacts.server";
+import {
+  createArtifactVersion,
+  getArtifactByIdempotencyKey,
+} from "@/lib/data/artifacts.server";
 
 const MAX_SOURCE_CONTEXT_CHARS = 6_000;
 
@@ -83,6 +86,7 @@ export async function createResearchReportArtifact(
     projectId: string;
     query: string;
     modelId: string;
+    idempotencyKey: string;
     runId?: string | null;
     maxExtractUrls?: number | undefined;
     abortSignal?: AbortSignal | undefined;
@@ -91,6 +95,33 @@ export async function createResearchReportArtifact(
   const query = input.query.trim();
   if (query.length === 0) {
     throw new AppError("bad_request", 400, "Query must be non-empty.");
+  }
+
+  const title = titleForQuery(query);
+  const logicalKey = logicalKeyForQuery(query);
+  const recovered = await getArtifactByIdempotencyKey(
+    input.projectId,
+    input.idempotencyKey,
+  );
+  if (recovered) {
+    if (
+      recovered.kind !== "RESEARCH_REPORT" ||
+      recovered.logicalKey !== logicalKey ||
+      recovered.runId !== (input.runId ?? null)
+    ) {
+      throw new AppError(
+        "conflict",
+        409,
+        "Research report idempotency key is bound to different input.",
+      );
+    }
+    return {
+      artifactId: recovered.id,
+      kind: recovered.kind,
+      logicalKey: recovered.logicalKey,
+      title,
+      version: recovered.version,
+    };
   }
 
   throwIfAborted(input.abortSignal);
@@ -159,7 +190,7 @@ export async function createResearchReportArtifact(
     })
     .join("\n\n---\n\n");
 
-  const system = [
+  const instructions = [
     "You are a research writer.",
     "",
     "Output requirements:",
@@ -204,9 +235,9 @@ export async function createResearchReportArtifact(
   try {
     const result = await generateText({
       abortSignal: generateController.signal,
+      instructions,
       model,
       prompt,
-      system,
     });
     text = result.text;
   } catch (error) {
@@ -230,12 +261,10 @@ export async function createResearchReportArtifact(
     for (const fn of cleanupFns) fn();
   }
 
-  const title = titleForQuery(query);
-  const logicalKey = logicalKeyForQuery(query);
-
   const artifact = await createArtifactVersion({
     citations,
     content: { format: "markdown", markdown: text, query, sources, title },
+    idempotencyKey: input.idempotencyKey,
     kind: "RESEARCH_REPORT",
     logicalKey,
     projectId: input.projectId,

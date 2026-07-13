@@ -252,21 +252,46 @@ describe("runs DAL", () => {
     ]);
   });
 
-  it("cancelRun throws when missing, skips terminal runs, and cancels otherwise", async () => {
-    const { cancelRun } = await import("@/lib/data/runs.server");
+  it("requests cancellation idempotently and recognizes terminal runs", async () => {
+    const { requestRunCancellation } = await import("@/lib/data/runs.server");
 
+    state.updateReturning.mockResolvedValueOnce([{ id: "run_1" }]);
+    await expect(requestRunCancellation("run_1")).resolves.toBe("requested");
+
+    state.updateReturning.mockResolvedValueOnce([]);
+    state.findFirst.mockResolvedValueOnce({
+      cancelRequestedAt: new Date(0),
+      status: "running",
+    });
+    await expect(requestRunCancellation("run_1")).resolves.toBe(
+      "already_requested",
+    );
+
+    state.updateReturning.mockResolvedValueOnce([]);
+    state.findFirst.mockResolvedValueOnce({
+      cancelRequestedAt: null,
+      status: "succeeded",
+    });
+    await expect(requestRunCancellation("run_1")).resolves.toBe("terminal");
+  });
+
+  it("requestRunCancellation throws when the run is missing", async () => {
+    state.updateReturning.mockResolvedValueOnce([]);
     state.findFirst.mockResolvedValueOnce(null);
-    await expect(cancelRun("run_missing")).rejects.toMatchObject({
+    const { requestRunCancellation } = await import("@/lib/data/runs.server");
+
+    await expect(requestRunCancellation("run_missing")).rejects.toMatchObject({
       code: "not_found",
       status: 404,
     } satisfies Partial<AppError>);
+  });
 
-    state.findFirst.mockResolvedValueOnce({ status: "succeeded" });
-    await expect(cancelRun("run_terminal")).resolves.toBeUndefined();
-    expect(state.cancelRunAndStepsTx).not.toHaveBeenCalled();
+  it("delegates fenced cancellation completion to the transaction helper", async () => {
+    const { completeRunCancellation } = await import("@/lib/data/runs.server");
 
-    state.findFirst.mockResolvedValueOnce({ status: "running" });
-    await expect(cancelRun("run_running")).resolves.toBeUndefined();
+    await expect(
+      completeRunCancellation("run_running"),
+    ).resolves.toBeUndefined();
     expect(state.cancelRunAndStepsTx).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ runId: "run_running" }),

@@ -1,106 +1,52 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import type { DbClient } from "@/db/client";
-import * as schema from "@/db/schema";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-  db: null as unknown as DbClient,
+  claimChatWorkflow: vi.fn(),
+  transitionChatThreadState: vi.fn(),
 }));
 
-vi.mock("@/db/client", () => ({
-  getDb: () => state.db,
+vi.mock("@/lib/data/chat-start.server", () => ({
+  claimChatWorkflow: state.claimChatWorkflow,
 }));
 
-import { touchChatThreadState } from "./chat-thread-state.step";
+vi.mock("@/lib/data/chat-thread-state.server", () => ({
+  transitionChatThreadState: state.transitionChatThreadState,
+}));
 
-function createFakeDb() {
-  const onConflictDoUpdate = vi.fn().mockResolvedValue(undefined);
-  const values = vi.fn().mockReturnValue({ onConflictDoUpdate });
-  const insert = vi.fn().mockReturnValue({ values });
+import {
+  registerChatWorkflowStep,
+  transitionChatThreadStateStep,
+} from "./chat-thread-state.step";
 
-  const db = { insert };
-  return { db, insert, onConflictDoUpdate, values };
-}
-
-function assertIsDate(value: unknown): asserts value is Date {
-  expect(value).toBeInstanceOf(Date);
-}
-
-describe("chat-thread-state.step", () => {
+describe("chat-thread-state steps", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(0));
+    vi.clearAllMocks();
+    state.claimChatWorkflow.mockResolvedValue(true);
+    state.transitionChatThreadState.mockResolvedValue({
+      changed: true,
+      id: "thread_1",
+      status: "waiting",
+      updatedAt: new Date("2026-07-13T00:00:00.000Z"),
+    });
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
+  it("registers exactly one workflow owner for the route-persisted thread", async () => {
+    await expect(registerChatWorkflowStep("thread_1", "run_1")).resolves.toBe(
+      true,
+    );
+
+    expect(state.claimChatWorkflow).toHaveBeenCalledWith("thread_1", "run_1");
   });
 
-  it("upserts chat thread state with terminal metadata when endedAt is provided", async () => {
-    const { db, insert, onConflictDoUpdate, values } = createFakeDb();
-    state.db = db as unknown as DbClient;
-
-    await touchChatThreadState({
-      endedAt: new Date(1_000),
-      mode: "chat-assistant",
-      projectId: "project_1",
-      status: "failed",
-      title: "Thread title",
-      workflowRunId: "wf_1",
-    });
-
-    expect(insert).toHaveBeenCalledWith(schema.chatThreadsTable);
-    expect(values).toHaveBeenCalledTimes(1);
-
-    const valuesArg = values.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect(valuesArg).toMatchObject({
-      endedAt: new Date(1_000),
-      mode: "chat-assistant",
-      projectId: "project_1",
-      status: "failed",
-      title: "Thread title",
-      workflowRunId: "wf_1",
-    });
-    assertIsDate(valuesArg.lastActivityAt);
-    assertIsDate(valuesArg.updatedAt);
-    expect(valuesArg.lastActivityAt.getTime()).toBe(0);
-    expect(valuesArg.updatedAt.getTime()).toBe(0);
-
-    expect(onConflictDoUpdate).toHaveBeenCalledTimes(1);
-    const conflictArg = onConflictDoUpdate.mock.calls[0]?.[0] as {
-      set: Record<string, unknown>;
-      target: unknown;
+  it("delegates lifecycle changes to the terminal-monotonic transition owner", async () => {
+    const input = {
+      endedAt: new Date("2026-07-13T00:01:00.000Z"),
+      status: "succeeded" as const,
+      workflowRunId: "run_1",
     };
-    expect(conflictArg.target).toBe(schema.chatThreadsTable.workflowRunId);
-    expect(conflictArg.set).toMatchObject({
-      endedAt: new Date(1_000),
-      mode: "chat-assistant",
-      projectId: "project_1",
-      status: "failed",
-      title: "Thread title",
-    });
-    assertIsDate(conflictArg.set.lastActivityAt);
-    assertIsDate(conflictArg.set.updatedAt);
-  });
 
-  it("omits endedAt when the thread remains active", async () => {
-    const { db, onConflictDoUpdate, values } = createFakeDb();
-    state.db = db as unknown as DbClient;
+    await transitionChatThreadStateStep(input);
 
-    await touchChatThreadState({
-      mode: "chat-assistant",
-      projectId: "project_1",
-      status: "running",
-      title: "Thread title",
-      workflowRunId: "wf_1",
-    });
-
-    const valuesArg = values.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect("endedAt" in valuesArg).toBe(false);
-
-    const conflictArg = onConflictDoUpdate.mock.calls[0]?.[0] as {
-      set: Record<string, unknown>;
-    };
-    expect("endedAt" in conflictArg.set).toBe(false);
+    expect(state.transitionChatThreadState).toHaveBeenCalledWith(input);
   });
 });

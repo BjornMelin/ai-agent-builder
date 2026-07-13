@@ -3,6 +3,9 @@ import { z } from "zod";
 /** Current schema version for workflow stream payloads. */
 export const WORKFLOW_STREAM_SCHEMA_VERSION = 2 as const;
 
+/** Authenticated stream response header carrying the persisted Code Mode run status. */
+export const CODE_MODE_RUN_STATUS_HEADER = "x-code-mode-run-status";
+
 const runKindSchema = z.enum(["research", "implementation"]);
 const runStatusSchema = z.enum([
   "pending",
@@ -23,6 +26,13 @@ const runStepKindSchema = z.enum([
 ]);
 const logStreamSchema = z.enum(["stdout", "stderr"]);
 const workflowStreamVersionSchema = z.literal(WORKFLOW_STREAM_SCHEMA_VERSION);
+
+/** Terminal statuses accepted by the Code Mode stream protocol. */
+export const codeModeTerminalStatusSchema = z.enum([
+  "succeeded",
+  "failed",
+  "canceled",
+]);
 
 const filePartSchema = z.strictObject({
   filename: z.string().min(1).optional(),
@@ -89,6 +99,65 @@ export const chatUserMessageMarkerSchema = z.strictObject({
 });
 
 /**
+ * Lifecycle markers emitted by multi-turn chat workflows.
+ *
+ * @remarks
+ * These markers are the durable client protocol for distinguishing active
+ * generation from the interval where the workflow is awaiting a follow-up.
+ */
+export const chatSessionStatusSchema = z.strictObject({
+  domain: z.literal("chat"),
+  status: z.enum(["running", "waiting"]),
+  timestamp: z.number().int().nonnegative(),
+  type: z.literal("session-status"),
+  version: workflowStreamVersionSchema,
+});
+
+/** Durable admission outcome for a queued chat follow-up delivery. */
+export const chatFollowUpDispositionSchema = z.strictObject({
+  domain: z.literal("chat"),
+  messageId: z.string().min(1),
+  outcome: z.enum(["duplicate", "rejected"]),
+  reason: z.enum([
+    "already_committed",
+    "not_waiting",
+    "payload_mismatch",
+    "stale_delivery",
+  ]),
+  timestamp: z.number().int().nonnegative(),
+  type: z.literal("follow-up-disposition"),
+  version: workflowStreamVersionSchema,
+});
+
+/** Replay-safe envelope for one assistant UI stream chunk. */
+export const chatAssistantStreamChunkSchema = z.strictObject({
+  assistantMessageId: z.string().min(1),
+  chunk: z.record(z.string(), z.unknown()),
+  domain: z.literal("chat"),
+  sequence: z.number().int().nonnegative(),
+  type: z.literal("assistant-stream-chunk"),
+  version: workflowStreamVersionSchema,
+});
+
+/** Authoritative terminal status emitted only after chat-thread persistence. */
+export const chatTerminalStatusSchema = z.strictObject({
+  domain: z.literal("chat"),
+  status: z.enum(["succeeded", "failed", "canceled"]),
+  timestamp: z.number().int().nonnegative(),
+  type: z.literal("terminal"),
+  version: workflowStreamVersionSchema,
+});
+
+/** Structured events emitted by chat workflows. */
+export const chatStreamEventSchema = z.discriminatedUnion("type", [
+  chatUserMessageMarkerSchema,
+  chatSessionStatusSchema,
+  chatFollowUpDispositionSchema,
+  chatAssistantStreamChunkSchema,
+  chatTerminalStatusSchema,
+]);
+
+/**
  * Structured events emitted by Code Mode workflows.
  */
 export const codeModeStreamEventSchema = z.discriminatedUnion("type", [
@@ -132,9 +201,9 @@ export const codeModeStreamEventSchema = z.discriminatedUnion("type", [
   }),
   z.strictObject({
     domain: z.literal("code-mode"),
-    exitCode: z.number().int(),
+    status: codeModeTerminalStatusSchema,
     timestamp: z.number().int().nonnegative(),
-    type: z.literal("exit"),
+    type: z.literal("terminal"),
     version: workflowStreamVersionSchema,
   }),
 ]);
@@ -144,7 +213,7 @@ export const codeModeStreamEventSchema = z.discriminatedUnion("type", [
  */
 export const workflowStreamEventSchema = z.union([
   runStreamEventSchema,
-  chatUserMessageMarkerSchema,
+  chatStreamEventSchema,
   codeModeStreamEventSchema,
 ]);
 
@@ -152,6 +221,20 @@ export const workflowStreamEventSchema = z.union([
 export type RunStreamEvent = z.infer<typeof runStreamEventSchema>;
 /** Chat marker event type emitted by workflows. */
 export type ChatUserMessageMarker = z.infer<typeof chatUserMessageMarkerSchema>;
+/** Chat lifecycle status event type emitted by workflows. */
+export type ChatSessionStatus = z.infer<typeof chatSessionStatusSchema>;
+/** Durable outcome of workflow-side follow-up admission. */
+export type ChatFollowUpDisposition = z.infer<
+  typeof chatFollowUpDispositionSchema
+>;
+/** Replay-safe assistant UI stream chunk. */
+export type ChatAssistantStreamChunk = z.infer<
+  typeof chatAssistantStreamChunkSchema
+>;
+/** Authoritative terminal chat event emitted after persistence. */
+export type ChatTerminalStatus = z.infer<typeof chatTerminalStatusSchema>;
+/** Any structured chat event emitted by workflows. */
+export type ChatStreamEvent = z.infer<typeof chatStreamEventSchema>;
 /** Code Mode stream event type emitted by workflows. */
 export type CodeModeStreamEvent = z.infer<typeof codeModeStreamEventSchema>;
 /** Any workflow stream event type emitted by workflows. */
@@ -165,6 +248,16 @@ type WithoutEnvelope<T> = T extends { domain: string; version: number }
 export type RunStreamEventInput = WithoutEnvelope<RunStreamEvent>;
 /** Chat marker input shape accepted by writers before envelope fields are added. */
 export type ChatUserMessageMarkerInput = WithoutEnvelope<ChatUserMessageMarker>;
+/** Chat lifecycle event input accepted before envelope fields are added. */
+export type ChatSessionStatusInput = WithoutEnvelope<ChatSessionStatus>;
+/** Follow-up disposition input accepted before envelope fields are added. */
+export type ChatFollowUpDispositionInput =
+  WithoutEnvelope<ChatFollowUpDisposition>;
+/** Assistant stream chunk input accepted before envelope fields are added. */
+export type ChatAssistantStreamChunkInput =
+  WithoutEnvelope<ChatAssistantStreamChunk>;
+/** Terminal chat event input accepted before envelope fields are added. */
+export type ChatTerminalStatusInput = WithoutEnvelope<ChatTerminalStatus>;
 /** Code Mode event input shape accepted by writers before envelope fields are added. */
 export type CodeModeStreamEventInput = WithoutEnvelope<CodeModeStreamEvent>;
 
@@ -193,6 +286,70 @@ export function createRunStreamEvent(
 export function createChatUserMessageMarker(
   event: ChatUserMessageMarkerInput,
 ): ChatUserMessageMarker {
+  return {
+    ...event,
+    domain: "chat",
+    version: WORKFLOW_STREAM_SCHEMA_VERSION,
+  };
+}
+
+/**
+ * Attach envelope fields required for chat lifecycle events.
+ *
+ * @param event - Chat lifecycle payload without envelope fields.
+ * @returns Envelope-complete chat lifecycle event.
+ */
+export function createChatSessionStatus(
+  event: ChatSessionStatusInput,
+): ChatSessionStatus {
+  return {
+    ...event,
+    domain: "chat",
+    version: WORKFLOW_STREAM_SCHEMA_VERSION,
+  };
+}
+
+/**
+ * Attach envelope fields required for chat follow-up disposition events.
+ *
+ * @param event - Follow-up disposition payload without envelope fields.
+ * @returns Envelope-complete follow-up disposition event.
+ */
+export function createChatFollowUpDisposition(
+  event: ChatFollowUpDispositionInput,
+): ChatFollowUpDisposition {
+  return {
+    ...event,
+    domain: "chat",
+    version: WORKFLOW_STREAM_SCHEMA_VERSION,
+  };
+}
+
+/**
+ * Attach envelope fields to one replay-safe assistant stream chunk.
+ *
+ * @param event - Assistant stream chunk without envelope fields.
+ * @returns Envelope-complete assistant stream chunk.
+ */
+export function createChatAssistantStreamChunk(
+  event: ChatAssistantStreamChunkInput,
+): ChatAssistantStreamChunk {
+  return {
+    ...event,
+    domain: "chat",
+    version: WORKFLOW_STREAM_SCHEMA_VERSION,
+  };
+}
+
+/**
+ * Attach envelope fields required for authoritative chat terminal events.
+ *
+ * @param event - Terminal chat payload without envelope fields.
+ * @returns Envelope-complete terminal chat event.
+ */
+export function createChatTerminalStatus(
+  event: ChatTerminalStatusInput,
+): ChatTerminalStatus {
   return {
     ...event,
     domain: "chat",

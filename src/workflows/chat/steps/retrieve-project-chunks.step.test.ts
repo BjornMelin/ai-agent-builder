@@ -18,7 +18,7 @@ beforeEach(() => {
 });
 
 describe("retrieveProjectChunksStep", () => {
-  it("rejects when project context is missing", async () => {
+  it("rejects malformed project context", async () => {
     const { retrieveProjectChunksStep } = await import(
       "@/workflows/chat/steps/retrieve-project-chunks.step"
     );
@@ -26,7 +26,7 @@ describe("retrieveProjectChunksStep", () => {
     await expect(
       retrieveProjectChunksStep(
         { query: "x" },
-        makeToolOptions({ ctx: undefined }),
+        makeToolOptions({ ctx: { projectId: "" } }),
       ),
     ).rejects.toMatchObject({
       code: "bad_request",
@@ -36,7 +36,7 @@ describe("retrieveProjectChunksStep", () => {
     expect(state.retrieveProjectChunks).not.toHaveBeenCalled();
   });
 
-  it("calls retrieveProjectChunks using projectId from experimental_context", async () => {
+  it("calls retrieveProjectChunks using projectId from tool context", async () => {
     const { retrieveProjectChunksStep } = await import(
       "@/workflows/chat/steps/retrieve-project-chunks.step"
     );

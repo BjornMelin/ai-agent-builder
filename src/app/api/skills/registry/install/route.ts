@@ -1,5 +1,6 @@
+import { start } from "workflow/api";
+import { getWorld } from "workflow/runtime";
 import { z } from "zod";
-
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
@@ -7,11 +8,6 @@ import { recordProjectSkillRegistryInstall } from "@/lib/data/project-skill-regi
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
-import {
-  cancelRun,
-  getWorld,
-  start,
-} from "@/workflows/_shared/workflow-runtime.server";
 import { installProjectSkillFromRegistry } from "@/workflows/skills-registry/project-skill-registry.workflow";
 
 const bodySchema = z.strictObject({
@@ -68,7 +64,7 @@ export async function POST(req: Request): Promise<Response> {
       });
     } catch (err) {
       // Prevent orphaned runs that can't be status-polled due to ownership enforcement.
-      await cancelRun(world, run.runId).catch(() => undefined);
+      await run.cancel().catch(() => undefined);
       throw err;
     }
 

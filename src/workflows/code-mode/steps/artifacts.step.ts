@@ -1,7 +1,7 @@
 import "server-only";
 
 import { enqueueArtifactIndexing } from "@/lib/artifacts/enqueue-indexing.server";
-import { createArtifactVersion } from "@/lib/data/artifacts.server";
+import { createArtifactVersionOnce } from "@/lib/data/artifacts.server";
 
 /**
  * Create a Code Mode summary artifact and enqueue indexing.
@@ -41,7 +41,7 @@ export async function createCodeModeSummaryArtifact(
     input.assistantText.trim().length > 0 ? input.assistantText : "(empty)",
   ].join("\n");
 
-  const artifact = await createArtifactVersion({
+  const artifact = await createArtifactVersionOnce({
     content: {
       format: "markdown",
       markdown,

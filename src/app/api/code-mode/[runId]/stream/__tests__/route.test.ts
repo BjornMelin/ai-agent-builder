@@ -32,6 +32,7 @@ beforeEach(() => {
   state.requireAppUserApi.mockResolvedValue({ id: "user" });
   state.getCodeModeRun.mockResolvedValue({
     id: "run_1",
+    status: "running",
     workflowRunId: "wf_1",
   });
 
@@ -72,6 +73,7 @@ describe("GET /api/code-mode/:runId/stream", () => {
     const GET = await loadRoute();
     state.getCodeModeRun.mockResolvedValueOnce({
       id: "run_1",
+      status: "running",
       workflowRunId: null,
     });
 
@@ -97,6 +99,7 @@ describe("GET /api/code-mode/:runId/stream", () => {
     expect(state.getRun).toHaveBeenCalledWith("wf_1");
     expect(state.getReadable).toHaveBeenCalledWith({ startIndex: 2 });
     expect(res.headers.get("content-type")).toBe("text/event-stream");
+    expect(res.headers.get("x-code-mode-run-status")).toBe("running");
     expect(res.headers.get("x-vercel-ai-ui-message-stream")).toBe("v1");
 
     await expect(res.text()).resolves.toContain("data: [DONE]");

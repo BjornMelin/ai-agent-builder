@@ -1,12 +1,35 @@
-import { createUIMessageStreamResponse } from "ai";
+import { createUIMessageStreamResponse, type UIMessageChunk } from "ai";
+import { getRun } from "workflow/api";
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { getChatThreadByWorkflowRunId } from "@/lib/data/chat.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { jsonError } from "@/lib/next/responses";
-import { getRun } from "@/workflows/_shared/workflow-runtime.server";
+import { createChatTerminalStatus } from "@/workflows/_shared/workflow-stream-events";
 
 const START_INDEX_PATTERN = /^\d+$/;
+
+function terminalReconciliationStream(
+  status: "canceled" | "failed" | "succeeded",
+): ReadableStream<UIMessageChunk> {
+  return new ReadableStream<UIMessageChunk>({
+    start(controller) {
+      controller.enqueue({
+        data: createChatTerminalStatus({
+          status,
+          timestamp: Date.now(),
+          type: "terminal",
+        }),
+        type: "data-workflow",
+      });
+      controller.enqueue({
+        finishReason: status === "failed" ? "error" : "stop",
+        type: "finish",
+      });
+      controller.close();
+    },
+  });
+}
 
 const parseStartIndex = (startIndexRaw: string | null) => {
   if (startIndexRaw === null) {
@@ -69,7 +92,27 @@ export async function GET(
       ...(startIndex === undefined ? {} : { startIndex }),
     });
 
-    return createUIMessageStreamResponse({ stream });
+    const terminalStatus =
+      thread.status === "canceled" ||
+      thread.status === "failed" ||
+      thread.status === "succeeded"
+        ? thread.status
+        : null;
+    const requestedIndex = startIndex ?? 0;
+    if (terminalStatus) {
+      const tailIndex = await stream.getTailIndex();
+      if (requestedIndex > tailIndex) {
+        return createUIMessageStreamResponse({
+          headers: { "x-chat-thread-status": terminalStatus },
+          stream: terminalReconciliationStream(terminalStatus),
+        });
+      }
+    }
+
+    return createUIMessageStreamResponse({
+      headers: { "x-chat-thread-status": thread.status },
+      stream,
+    });
   } catch (err) {
     return jsonError(err);
   }

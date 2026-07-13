@@ -1,11 +1,10 @@
+import { getRun } from "workflow/api";
 import { z } from "zod";
-
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { assertProjectOwnsRegistryInstallRun } from "@/lib/data/project-skill-registry-installs.server";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
-import { getRun } from "@/workflows/_shared/workflow-runtime.server";
 
 const querySchema = z.strictObject({
   projectId: z.string().min(1),

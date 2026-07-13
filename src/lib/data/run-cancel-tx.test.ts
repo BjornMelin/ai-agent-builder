@@ -3,14 +3,24 @@ import { describe, expect, it, vi } from "vitest";
 import type { DbClient } from "@/db/client";
 import { cancelRunAndStepsTx } from "@/lib/data/run-cancel-tx";
 
-function createFakeTx(status: string | null) {
+function createFakeTx(
+  status: string | null,
+  cancelRequestedAt: Date | null = status &&
+  status !== "canceled" &&
+  status !== "failed" &&
+  status !== "succeeded"
+    ? new Date(0)
+    : null,
+) {
   const where = vi.fn().mockResolvedValue(undefined);
   const set = vi.fn().mockReturnValue({ where });
   const update = vi.fn().mockReturnValue({ set });
 
   const findFirst = vi
     .fn()
-    .mockResolvedValue(status === null ? null : ({ status } as unknown));
+    .mockResolvedValue(
+      status === null ? null : ({ cancelRequestedAt, status } as unknown),
+    );
 
   const tx = {
     query: {
@@ -80,6 +90,21 @@ describe("cancelRunAndStepsTx", () => {
     expect(update).toHaveBeenCalledTimes(2);
     expect(set).toHaveBeenCalledTimes(2);
     expect(where).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects completion before the durable cancellation fence exists", async () => {
+    const { tx, update } = createFakeTx("running", null);
+
+    await expect(
+      cancelRunAndStepsTx(tx as unknown as DbClient, {
+        now: new Date(0),
+        runId: "run_1",
+      }),
+    ).rejects.toMatchObject({
+      code: "run_cancellation_not_requested",
+      status: 409,
+    });
+    expect(update).not.toHaveBeenCalled();
   });
 
   it("does nothing when run is canceled", async () => {

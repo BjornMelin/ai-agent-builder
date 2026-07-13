@@ -7,7 +7,6 @@ import {
 } from "@/lib/ai/tools/web-extract.server";
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
-import { parseChatToolContext } from "@/workflows/chat/tool-context";
 
 const inputSchema = z.object({
   maxChars: z
@@ -26,15 +25,13 @@ const inputSchema = z.object({
  * SPEC-0007 defines Firecrawl integration with SSRF validation and caching.
  *
  * @param input - Tool input.
- * @param options - Tool execution options (includes experimental_context).
+ * @param options - Tool execution options.
  * @returns Extracted page content.
  * @throws AppError - With code "bad_request" (400) for invalid input.
- * @throws AppError - With code "bad_request" (400) for missing project context.
- * @throws AppError - With code "conflict" (409) when budget is exceeded.
  */
 export async function webExtractStep(
   input: Readonly<{ url: string; maxChars?: number | undefined }>,
-  options: ToolExecutionOptions,
+  options: ToolExecutionOptions<undefined>,
 ): Promise<WebExtractResult> {
   "use step";
 
@@ -47,27 +44,6 @@ export async function webExtractStep(
       parsed.error,
     );
   }
-
-  let ctx: ReturnType<typeof parseChatToolContext>;
-  try {
-    ctx = parseChatToolContext(options.experimental_context);
-  } catch (error) {
-    throw new AppError(
-      "bad_request",
-      400,
-      "Missing project context for web extract.",
-      error,
-    );
-  }
-
-  if (ctx.toolBudget.webExtractCalls >= budgets.maxWebExtractCallsPerTurn) {
-    throw new AppError(
-      "conflict",
-      409,
-      "Web extract budget exceeded for this turn.",
-    );
-  }
-  ctx.toolBudget.webExtractCalls += 1;
 
   return extractWebPage({
     abortSignal: options.abortSignal,

@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
  * Architecture and library-doc mode (Context7-enabled).
  *
  * @see docs/architecture/spec/SPEC-0006-agent-registry-orchestration-patterns.md
- * @see docs/architecture/adr/ADR-0012-mcp-dynamic-tools-context7-via-mcp-dynamictool.md
+ * @see docs/architecture/adr/ADR-0012-mcp-context7-mode-scoped-tools.md
  */
 export const architectMode: AgentMode = {
   allowedTools: [

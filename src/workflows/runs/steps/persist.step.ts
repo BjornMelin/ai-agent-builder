@@ -1,11 +1,15 @@
 import "server-only";
 
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq, isNull, notInArray } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
-import { cancelRunAndStepsTx } from "@/lib/data/run-cancel-tx";
+import {
+  completeRunCancellation,
+  requestRunCancellation,
+} from "@/lib/data/runs.server";
+import { cancelRunSandboxes } from "@/lib/sandbox/sandbox-cancellation.server";
 
 type RunKind = "research" | "implementation";
 type RunStatus =
@@ -74,6 +78,7 @@ export async function markRunRunning(runId: string): Promise<void> {
     .where(
       and(
         eq(schema.runsTable.id, runId),
+        isNull(schema.runsTable.cancelRequestedAt),
         notInArray(schema.runsTable.status, [...TERMINAL_STATUSES]),
       ),
     );
@@ -95,6 +100,7 @@ export async function markRunWaiting(runId: string): Promise<void> {
     .where(
       and(
         eq(schema.runsTable.id, runId),
+        isNull(schema.runsTable.cancelRequestedAt),
         notInArray(schema.runsTable.status, [...TERMINAL_STATUSES]),
       ),
     );
@@ -116,6 +122,7 @@ export async function markRunBlocked(runId: string): Promise<void> {
     .where(
       and(
         eq(schema.runsTable.id, runId),
+        isNull(schema.runsTable.cancelRequestedAt),
         notInArray(schema.runsTable.status, [...TERMINAL_STATUSES]),
       ),
     );
@@ -344,6 +351,7 @@ export async function markRunTerminal(
     .where(
       and(
         eq(schema.runsTable.id, runId),
+        isNull(schema.runsTable.cancelRequestedAt),
         notInArray(schema.runsTable.status, [...TERMINAL_STATUSES]),
       ),
     );
@@ -353,18 +361,18 @@ export async function markRunTerminal(
  * Cancel a run and mark any non-terminal steps as canceled.
  *
  * @remarks
- * This is the canonical cancellation persistence used by workflow code to avoid
- * terminal-status races (e.g., cancellation being misreported as a failure).
+ * This is the canonical cancellation sequence used by workflow code: persist
+ * the run fence, confirm all run-owned sandboxes stopped, then terminalize the
+ * run and its non-terminal steps.
  *
  * @param runId - Durable run ID.
  */
 export async function cancelRunAndSteps(runId: string): Promise<void> {
   "use step";
 
-  const db = getDb();
-  const now = new Date();
-
-  await db.transaction(async (tx) => {
-    await cancelRunAndStepsTx(tx, { now, runId });
-  });
+  const state = await requestRunCancellation(runId);
+  await cancelRunSandboxes(runId);
+  if (state !== "terminal") {
+    await completeRunCancellation(runId);
+  }
 }

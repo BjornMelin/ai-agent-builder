@@ -1,21 +1,20 @@
 import type { ToolExecutionOptions } from "ai";
-import { z } from "zod";
 
 import {
   type RetrievalHit,
   retrieveProjectChunks,
 } from "@/lib/ai/tools/retrieval.server";
 import { AppError } from "@/lib/core/errors";
-
-const contextSchema = z.object({
-  projectId: z.string().min(1),
-});
+import {
+  type ProjectToolContext,
+  projectToolContextSchema,
+} from "@/workflows/chat/tool-context";
 
 /**
  * Retrieve relevant project chunks for retrieval-augmented generation.
  *
  * @remarks
- * `projectId` is provided via `experimental_context` to avoid requiring the model
+ * `projectId` is provided via typed tool context to avoid requiring the model
  * to send it (it is user/session-scoped, not model-scoped).
  * @param input - Retrieval input.
  * @param options - Tool execution options.
@@ -24,11 +23,11 @@ const contextSchema = z.object({
  */
 export async function retrieveProjectChunksStep(
   input: Readonly<{ query: string; topK?: number | undefined }>,
-  options: ToolExecutionOptions,
+  options: ToolExecutionOptions<ProjectToolContext>,
 ): Promise<readonly RetrievalHit[]> {
   "use step";
 
-  const parsedContext = contextSchema.safeParse(options.experimental_context);
+  const parsedContext = projectToolContextSchema.safeParse(options.context);
   if (!parsedContext.success) {
     throw new AppError(
       "bad_request",

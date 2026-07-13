@@ -1,30 +1,31 @@
-import { installImplementationRunHarness } from "@tests/utils/implementation-run-harness";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const harness = installImplementationRunHarness();
-const { state } = harness;
+const state = vi.hoisted(() => ({
+  stopOwnedSandboxById: vi.fn(),
+}));
+
+vi.mock("@/lib/sandbox/sandbox-cancellation.server", () => ({
+  stopOwnedSandboxById: state.stopOwnedSandboxById,
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  harness.reset();
+  state.stopOwnedSandboxById.mockResolvedValue(undefined);
 });
 
 describe("stopImplementationSandbox", () => {
-  it("swallows sandbox lookup errors", async () => {
-    state.getVercelSandbox.mockRejectedValueOnce(new Error("missing"));
+  it("durably confirms the run-owned sandbox stopped", async () => {
     const { stopImplementationSandbox } = await import("./stop-sandbox.step");
-    await expect(
-      stopImplementationSandbox("sb_missing"),
-    ).resolves.toBeUndefined();
+
+    await expect(stopImplementationSandbox("sb_1")).resolves.toBeUndefined();
+    expect(state.stopOwnedSandboxById).toHaveBeenCalledWith("sb_1");
   });
 
-  it("best-effort stops the sandbox and swallows stop errors", async () => {
-    state.getVercelSandbox.mockResolvedValueOnce({
-      stop: vi.fn(async () => {
-        throw new Error("already stopped");
-      }),
-    });
+  it("rejects when durable stop confirmation fails", async () => {
+    const stopError = new Error("stop unconfirmed");
+    state.stopOwnedSandboxById.mockRejectedValueOnce(stopError);
     const { stopImplementationSandbox } = await import("./stop-sandbox.step");
-    await expect(stopImplementationSandbox("sb_1")).resolves.toBeUndefined();
+
+    await expect(stopImplementationSandbox("sb_1")).rejects.toBe(stopError);
   });
 });

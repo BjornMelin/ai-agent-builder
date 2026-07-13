@@ -23,9 +23,9 @@ export type ScriptedSandboxSession = Readonly<{
   runCommand: (
     input: Readonly<Record<string, unknown>>,
   ) => Promise<ScriptedCommandResult>;
+  stop: () => Promise<void>;
   sandbox: Readonly<{
     sandboxId: string;
-    stop: () => Promise<void>;
     writeFiles: (
       files: readonly Readonly<{ content: Buffer; path: string }>[],
     ) => Promise<void>;
@@ -122,8 +122,8 @@ export function makeScriptedSession(
     runCommand,
     sandbox: {
       sandboxId: "sb_1",
-      stop: vi.fn(async () => {}),
       writeFiles: vi.fn(async () => {}),
     },
+    stop: vi.fn(async () => {}),
   };
 }

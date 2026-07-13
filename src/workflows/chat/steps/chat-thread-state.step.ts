@@ -1,54 +1,44 @@
-import { getDb } from "@/db/client";
-import * as schema from "@/db/schema";
 import type { ChatThreadStatus } from "@/lib/chat/thread-status";
-import { maybeWrapDbNotMigrated } from "@/lib/db/postgres-errors";
-
-type TouchInput = Readonly<{
-  projectId: string;
-  mode: string;
-  status: ChatThreadStatus;
-  title: string;
-  workflowRunId: string;
-  endedAt?: Date | null;
-}>;
+import { claimChatWorkflow } from "@/lib/data/chat-start.server";
+import {
+  type ChatThreadTransitionResult,
+  transitionChatThreadState,
+} from "@/lib/data/chat-thread-state.server";
 
 /**
- * Persist chat thread lifecycle state (status/activity/end).
+ * Claim the route-persisted chat start intent before any workflow side effect.
  *
  * @remarks
  * This is a workflow step because DB writes must not occur in `"use workflow"`
  * orchestrator functions.
  *
- * @param input - Update payload.
- * @throws AppError - With code "db_not_migrated" when the database schema is missing.
+ * @param threadId - Client-known canonical thread UUID.
+ * @param workflowRunId - Native Workflow execution ID.
+ * @returns Whether this Workflow owns the chat thread.
  */
-export async function touchChatThreadState(input: TouchInput): Promise<void> {
+export async function registerChatWorkflowStep(
+  threadId: string,
+  workflowRunId: string,
+): Promise<boolean> {
   "use step";
 
-  const db = getDb();
-  const now = new Date();
-  const stateUpdate = {
-    ...(input.endedAt === undefined ? {} : { endedAt: input.endedAt }),
-    lastActivityAt: now,
-    mode: input.mode,
-    projectId: input.projectId,
-    status: input.status,
-    title: input.title,
-    updatedAt: now,
-  };
+  return await claimChatWorkflow(threadId, workflowRunId);
+}
 
-  try {
-    await db
-      .insert(schema.chatThreadsTable)
-      .values({
-        ...stateUpdate,
-        workflowRunId: input.workflowRunId,
-      })
-      .onConflictDoUpdate({
-        set: stateUpdate,
-        target: schema.chatThreadsTable.workflowRunId,
-      });
-  } catch (error) {
-    throw maybeWrapDbNotMigrated(error);
-  }
+/**
+ * Apply the canonical terminal-monotonic lifecycle transition as a workflow step.
+ *
+ * @param input - Workflow run and requested lifecycle state.
+ * @returns Authoritative persisted state after compare-and-swap.
+ */
+export async function transitionChatThreadStateStep(
+  input: Readonly<{
+    endedAt?: Date | null;
+    status: ChatThreadStatus;
+    workflowRunId: string;
+  }>,
+): Promise<ChatThreadTransitionResult> {
+  "use step";
+
+  return await transitionChatThreadState(input);
 }

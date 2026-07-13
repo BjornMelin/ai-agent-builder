@@ -152,6 +152,7 @@ export const fileChunksTable = pgTable(
 export const runsTable = pgTable(
   "runs",
   {
+    cancelRequestedAt: timestamp("cancel_requested_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -234,6 +235,7 @@ export const artifactsTable = pgTable(
       .notNull()
       .defaultNow(),
     id: uuid("id").primaryKey().defaultRandom(),
+    idempotencyKey: varchar("idempotency_key", { length: 256 }),
     kind: varchar("kind", { length: 64 }).notNull(),
     logicalKey: varchar("logical_key", { length: 256 }).notNull(),
     projectId: uuid("project_id")
@@ -256,6 +258,10 @@ export const artifactsTable = pgTable(
       t.kind,
       t.logicalKey,
       t.version,
+    ),
+    uniqueIndex("artifacts_project_id_idempotency_key_unique").on(
+      t.projectId,
+      t.idempotencyKey,
     ),
   ],
 );
@@ -577,9 +583,21 @@ export const sandboxJobsTable = pgTable(
     projectId: uuid("project_id")
       .notNull()
       .references(() => projectsTable.id, { onDelete: "cascade" }),
+    provisioningClaimedAt: timestamp("provisioning_claimed_at", {
+      withTimezone: true,
+    }),
+    provisioningExpiresAt: timestamp("provisioning_expires_at", {
+      withTimezone: true,
+    }),
+    provisioningKey: varchar("provisioning_key", { length: 256 }),
     runId: uuid("run_id")
       .notNull()
       .references(() => runsTable.id, { onDelete: "cascade" }),
+    sandboxId: varchar("sandbox_id", { length: 128 }),
+    sandboxStopClaimedAt: timestamp("sandbox_stop_claimed_at", {
+      withTimezone: true,
+    }),
+    sandboxStoppedAt: timestamp("sandbox_stopped_at", { withTimezone: true }),
     startedAt: timestamp("started_at", { withTimezone: true }),
     status: varchar("status", { length: 32 }).notNull(),
     stepId: uuid("step_id").references(() => runStepsTable.id, {
@@ -590,7 +608,14 @@ export const sandboxJobsTable = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("sandbox_jobs_run_id_job_type_idx").on(t.runId, t.jobType)],
+  (t) => [
+    index("sandbox_jobs_run_id_job_type_idx").on(t.runId, t.jobType),
+    index("sandbox_jobs_run_id_sandbox_id_idx").on(t.runId, t.sandboxId),
+    uniqueIndex("sandbox_jobs_run_id_provisioning_key_unique").on(
+      t.runId,
+      t.provisioningKey,
+    ),
+  ],
 );
 
 /**

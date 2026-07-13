@@ -1,4 +1,5 @@
 import type { ToolExecutionOptions } from "ai";
+import { getStepMetadata } from "workflow";
 import { z } from "zod";
 import { getAgentMode } from "@/lib/ai/agents/registry";
 import { budgets } from "@/lib/config/budgets.server";
@@ -7,7 +8,10 @@ import {
   createResearchReportArtifact,
   type ResearchReportResult,
 } from "@/lib/research/research-report.server";
-import { parseChatToolContext } from "@/workflows/chat/tool-context";
+import {
+  type ResearchToolContext,
+  researchToolContextSchema,
+} from "@/workflows/chat/tool-context";
 
 const inputSchema = z.object({
   query: z.string().min(1),
@@ -17,13 +21,13 @@ const inputSchema = z.object({
  * Create a citation-backed research report artifact.
  *
  * @param input - Tool input.
- * @param options - Tool execution options (includes experimental_context.projectId).
+ * @param options - Tool execution options containing immutable project scope.
  * @returns Artifact metadata for the created report.
- * @throws AppError - When input/context is invalid or tool budgets are exceeded.
+ * @throws AppError - When input or context is invalid.
  */
 export async function createResearchReportStep(
   input: Readonly<{ query: string }>,
-  options: ToolExecutionOptions,
+  options: ToolExecutionOptions<ResearchToolContext>,
 ): Promise<ResearchReportResult> {
   "use step";
 
@@ -37,46 +41,26 @@ export async function createResearchReportStep(
     );
   }
 
-  let ctx: ReturnType<typeof parseChatToolContext>;
-  try {
-    ctx = parseChatToolContext(options.experimental_context);
-  } catch (error) {
+  const context = researchToolContextSchema.safeParse(options.context);
+  if (!context.success) {
     throw new AppError(
       "bad_request",
       400,
       "Missing project context for research report.",
-      error,
+      context.error,
     );
   }
 
-  if (ctx.toolBudget.webSearchCalls >= budgets.maxWebSearchCallsPerTurn) {
-    throw new AppError(
-      "conflict",
-      409,
-      "Web search budget exceeded for this turn.",
-    );
-  }
-
-  const remainingExtracts =
-    budgets.maxWebExtractCallsPerTurn - ctx.toolBudget.webExtractCalls;
-  if (remainingExtracts <= 0) {
-    throw new AppError(
-      "conflict",
-      409,
-      "Web extract budget exceeded for this turn.",
-    );
-  }
-  const maxExtractUrls = Math.min(3, remainingExtracts);
-  ctx.toolBudget.webSearchCalls += 1;
-  ctx.toolBudget.webExtractCalls += maxExtractUrls;
-
-  const mode = getAgentMode(ctx.modeId);
+  const maxExtractUrls = Math.min(3, budgets.maxWebExtractCallsPerTurn);
+  const mode = getAgentMode(context.data.modeId);
+  const { stepId } = getStepMetadata();
 
   return createResearchReportArtifact({
     abortSignal: options.abortSignal,
+    idempotencyKey: stepId,
     maxExtractUrls,
     modelId: mode.defaultModel,
-    projectId: ctx.projectId,
+    projectId: context.data.projectId,
     query: parsed.data.query,
   });
 }

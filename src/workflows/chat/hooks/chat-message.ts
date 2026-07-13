@@ -13,11 +13,12 @@ const filePartSchema = z.object({
 });
 
 const chatMessageSchema = z
-  .object({
+  .strictObject({
     files: z.array(filePartSchema).min(1).optional(),
     message: z.string().trim().min(1).optional(),
-    messageId: z.string().min(1),
+    messageId: z.string().min(1).max(128),
     schemaVersion: z.literal(2),
+    waitingSince: z.string().min(1),
   })
   .superRefine((value, ctx) => {
     if (!value.message && !value.files) {
@@ -25,6 +26,13 @@ const chatMessageSchema = z
         code: "custom",
         message: "Provide either message or files.",
         path: ["message"],
+      });
+    }
+    if (value.messageId.startsWith("assistant:")) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Message ID uses a reserved server namespace.",
+        path: ["messageId"],
       });
     }
   });

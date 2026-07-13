@@ -1,23 +1,14 @@
+import { type FlexibleSchema, safeValidateTypes } from "@ai-sdk/provider-utils";
 import { describe, expect, it } from "vitest";
 
 import { budgets } from "@/lib/config/budgets.server";
 import { chatTools } from "@/workflows/chat/tools";
 
-type ValidationResult =
-  | Readonly<{ success: true; value: unknown }>
-  | Readonly<{ success: false; error: unknown }>;
-
 async function validate(
-  schema: unknown,
+  schema: FlexibleSchema<unknown>,
   value: unknown,
-): Promise<ValidationResult> {
-  const s = schema as {
-    validate?: (value: unknown) => ValidationResult | Promise<ValidationResult>;
-  };
-  if (!s.validate) {
-    throw new Error("Expected schema.validate to be defined.");
-  }
-  return await s.validate(value);
+): ReturnType<typeof safeValidateTypes> {
+  return safeValidateTypes({ schema, value });
 }
 
 describe("chatTools", () => {

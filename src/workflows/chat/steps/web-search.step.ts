@@ -7,7 +7,6 @@ import {
 } from "@/lib/ai/tools/web-search.server";
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
-import { parseChatToolContext } from "@/workflows/chat/tool-context";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -29,7 +28,7 @@ const inputSchema = z.object({
  * Web search tool step (Exa).
  *
  * @param input - Tool input.
- * @param options - Tool execution options (includes experimental_context).
+ * @param options - Tool execution options.
  * @returns Web search response.
  */
 export async function webSearchStep(
@@ -41,7 +40,7 @@ export async function webSearchStep(
     startPublishedDate?: string | undefined;
     endPublishedDate?: string | undefined;
   }>,
-  options: ToolExecutionOptions,
+  options: ToolExecutionOptions<undefined>,
 ): Promise<WebSearchResponse> {
   "use step";
 
@@ -54,27 +53,6 @@ export async function webSearchStep(
       parsed.error,
     );
   }
-
-  let ctx: ReturnType<typeof parseChatToolContext>;
-  try {
-    ctx = parseChatToolContext(options.experimental_context);
-  } catch (error) {
-    throw new AppError(
-      "bad_request",
-      400,
-      "Missing project context for web search.",
-      error,
-    );
-  }
-
-  if (ctx.toolBudget.webSearchCalls >= budgets.maxWebSearchCallsPerTurn) {
-    throw new AppError(
-      "conflict",
-      409,
-      "Web search budget exceeded for this turn.",
-    );
-  }
-  ctx.toolBudget.webSearchCalls += 1;
 
   return searchWeb({
     abortSignal: options.abortSignal,

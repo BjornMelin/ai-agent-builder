@@ -52,9 +52,9 @@ describe("codeModeStreamEventSchema", () => {
       },
       {
         domain: "code-mode",
-        exitCode: 0,
+        status: "succeeded",
         timestamp: 6,
-        type: "exit",
+        type: "terminal",
         version: 2,
       },
     ] as const;

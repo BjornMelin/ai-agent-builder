@@ -6,6 +6,10 @@ import { z } from "zod";
 
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
+import {
+  type PersistableChatMessage,
+  toChatMessageInsertValues,
+} from "@/lib/chat/persisted-message";
 import type { ChatThreadStatus } from "@/lib/chat/thread-status";
 import { AppError } from "@/lib/core/errors";
 import { getProjectByIdForUser } from "@/lib/data/projects.server";
@@ -52,77 +56,6 @@ async function assertProjectAccess(projectId: string, userId: string) {
   if (!project) {
     throw new AppError("not_found", 404, "Project not found.");
   }
-}
-
-/**
- * Ensure a chat thread exists for a Workflow DevKit run id.
- *
- * @remarks
- * Idempotent: inserts on first call and returns the existing row on retries.
- *
- * @param input - Thread creation inputs.
- * @returns Chat thread DTO.
- * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
- * @throws AppError - With code "db_insert_failed" (500) when the thread cannot be created or found.
- */
-export async function ensureChatThreadForWorkflowRun(
-  input: Readonly<{
-    projectId: string;
-    title: string;
-    workflowRunId: string;
-    mode: string;
-  }>,
-): Promise<ChatThreadDto> {
-  const db = getDb();
-  const now = new Date();
-
-  let row: ChatThreadRow | undefined;
-  try {
-    [row] = await db
-      .insert(schema.chatThreadsTable)
-      .values({
-        lastActivityAt: now,
-        mode: input.mode,
-        projectId: input.projectId,
-        status: "running",
-        title: input.title,
-        updatedAt: now,
-        workflowRunId: input.workflowRunId,
-      })
-      .onConflictDoNothing({ target: schema.chatThreadsTable.workflowRunId })
-      .returning();
-  } catch (error) {
-    throw maybeWrapDbNotMigrated(
-      error,
-      "Database is not migrated. Run migrations and try again.",
-    );
-  }
-
-  if (row) {
-    return toChatThreadDto(row);
-  }
-
-  let existing: ChatThreadRow | undefined;
-  try {
-    existing = await db.query.chatThreadsTable.findFirst({
-      where: eq(schema.chatThreadsTable.workflowRunId, input.workflowRunId),
-    });
-  } catch (error) {
-    throw maybeWrapDbNotMigrated(
-      error,
-      "Database is not migrated. Run migrations and try again.",
-    );
-  }
-
-  if (!existing) {
-    throw new AppError(
-      "db_insert_failed",
-      500,
-      "Failed to create chat thread.",
-    );
-  }
-
-  return toChatThreadDto(existing);
 }
 
 /**
@@ -265,19 +198,6 @@ function toChatMessageDto(row: ChatMessageRow): ChatMessageDto {
   };
 }
 
-function extractTextContent(message: PersistedUiMessage): string {
-  const parts = message.parts;
-  const texts: string[] = [];
-  for (const part of parts) {
-    if (!part || typeof part !== "object") continue;
-    const maybe = part as { type?: unknown; text?: unknown };
-    if (maybe.type === "text" && typeof maybe.text === "string") {
-      texts.push(maybe.text);
-    }
-  }
-  return texts.join("");
-}
-
 /**
  * Append one or more UI messages to a chat thread (idempotent by messageUid).
  *
@@ -293,17 +213,10 @@ export async function appendChatMessages(
   if (input.messages.length === 0) return;
 
   const db = getDb();
-  const values = input.messages.map((m) => {
-    const textContent = extractTextContent(m);
-    return {
-      content: textContent,
-      messageUid: m.id,
-      role: m.role,
-      textContent: textContent.length > 0 ? textContent : null,
-      threadId: input.threadId,
-      uiMessage: m,
-    };
-  });
+  const values = toChatMessageInsertValues(
+    input.messages as readonly PersistableChatMessage[],
+    input.threadId,
+  );
 
   try {
     await db
@@ -356,43 +269,3 @@ export const listChatMessagesByThreadId = cache(
     }
   },
 );
-
-/**
- * Update a chat thread by workflow run id.
- *
- * @param workflowRunId - Workflow DevKit run id.
- * @param input - Partial update fields.
- * @throws AppError - With code "db_not_migrated" (500) when the database schema is missing.
- */
-export async function updateChatThreadByWorkflowRunId(
-  workflowRunId: string,
-  input: Readonly<{
-    endedAt?: Date | null;
-    lastActivityAt?: Date;
-    status?: ChatThreadStatus;
-    title?: string;
-  }>,
-): Promise<void> {
-  const db = getDb();
-  const next = {
-    ...(input.endedAt === undefined ? {} : { endedAt: input.endedAt }),
-    ...(input.lastActivityAt === undefined
-      ? {}
-      : { lastActivityAt: input.lastActivityAt }),
-    ...(input.status === undefined ? {} : { status: input.status }),
-    ...(input.title === undefined ? {} : { title: input.title }),
-    updatedAt: new Date(),
-  } satisfies Partial<ChatThreadRow>;
-
-  try {
-    await db
-      .update(schema.chatThreadsTable)
-      .set(next)
-      .where(eq(schema.chatThreadsTable.workflowRunId, workflowRunId));
-  } catch (error) {
-    throw maybeWrapDbNotMigrated(
-      error,
-      "Database is not migrated. Run migrations and try again.",
-    );
-  }
-}

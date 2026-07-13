@@ -35,6 +35,7 @@ export async function createVercelSandbox(
     vcpus?: number;
     ports?: number[];
     networkPolicy?: NetworkPolicy;
+    signal?: AbortSignal;
   }>,
 ): Promise<Sandbox> {
   const sandboxEnv = env.sandbox;
@@ -48,6 +49,7 @@ export async function createVercelSandbox(
       ...(input.source === undefined ? {} : { source: input.source }),
       resources: { vcpus: input.vcpus ?? 2 },
       runtime: input.runtime ?? "node24",
+      ...(input.signal === undefined ? {} : { signal: input.signal }),
       timeout: input.timeoutMs,
     });
     return sandbox;
@@ -70,6 +72,7 @@ export async function createVercelSandbox(
     projectId: sandboxEnv.projectId,
     resources: { vcpus: input.vcpus ?? 2 },
     runtime: input.runtime ?? "node24",
+    ...(input.signal === undefined ? {} : { signal: input.signal }),
     teamId: sandboxEnv.teamId,
     timeout: input.timeoutMs,
     token: sandboxEnv.token,
@@ -81,13 +84,20 @@ export async function createVercelSandbox(
  * Retrieve an existing sandbox by ID.
  *
  * @param sandboxId - Sandbox ID.
+ * @param options - Optional cancellation signal for the provider lookup.
  * @returns Sandbox instance.
  */
-export async function getVercelSandbox(sandboxId: string): Promise<Sandbox> {
+export async function getVercelSandbox(
+  sandboxId: string,
+  options: Readonly<{ signal?: AbortSignal }> = {},
+): Promise<Sandbox> {
   const sandboxEnv = env.sandbox;
 
   if (sandboxEnv.auth === "oidc") {
-    return await Sandbox.get({ sandboxId });
+    return await Sandbox.get({
+      sandboxId,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    });
   }
 
   if (!sandboxEnv.teamId) {
@@ -101,6 +111,7 @@ export async function getVercelSandbox(sandboxId: string): Promise<Sandbox> {
   return await Sandbox.get({
     projectId: sandboxEnv.projectId,
     sandboxId,
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
     teamId: sandboxEnv.teamId,
     token: sandboxEnv.token,
   });
