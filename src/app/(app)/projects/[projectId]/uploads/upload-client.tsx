@@ -14,7 +14,13 @@ import { uploadProjectFilesFromFiles } from "@/lib/uploads/upload-files.client";
  * @param props - Upload props containing the destination `projectId`.
  * @returns The upload form.
  */
-export function UploadClient(props: Readonly<{ projectId: string }>) {
+export function UploadClient(
+  props: Readonly<{
+    canUpload: boolean;
+    projectId: string;
+    unavailableReason?: string;
+  }>,
+) {
   const router = useRouter();
   const [files, setFiles] = useState<FileList | null>(null);
   const [inputKey, setInputKey] = useState(0);
@@ -29,10 +35,13 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
   const fileInputId = "uploads-file-input";
   const statusMessageId = "uploads-status-message";
   const errorMessageId = "uploads-error-message";
+  const unavailableReasonId = "uploads-unavailable-reason";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    if (!props.canUpload) return;
 
     if (!files || files.length === 0) {
       setError("Select at least one file.");
@@ -75,11 +84,14 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
           aria-describedby={
             error
               ? `${fileHelpId} ${statusMessageId} ${errorMessageId}`
-              : `${fileHelpId} ${statusMessageId}`
+              : `${fileHelpId} ${statusMessageId}${
+                  props.unavailableReason ? ` ${unavailableReasonId}` : ""
+                }`
           }
           aria-invalid={status === "error"}
           id={fileInputId}
           key={inputKey}
+          disabled={!props.canUpload || status === "uploading"}
           multiple
           name="file"
           onChange={(e) => setFiles(e.currentTarget.files)}
@@ -95,6 +107,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
         <div className="flex items-center gap-2">
           <Switch
             checked={asyncIngest}
+            disabled={!props.canUpload || status === "uploading"}
             id={ingestToggleId}
             onCheckedChange={setAsyncIngest}
           />
@@ -106,7 +119,7 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
         <Button
           aria-busy={status === "uploading"}
           className="min-w-24"
-          disabled={status === "uploading"}
+          disabled={!props.canUpload || status === "uploading"}
           type="submit"
         >
           {status === "uploading" ? (
@@ -118,6 +131,12 @@ export function UploadClient(props: Readonly<{ projectId: string }>) {
           <span>Upload</span>
         </Button>
       </div>
+
+      {props.unavailableReason ? (
+        <p className="text-muted-foreground text-sm" id={unavailableReasonId}>
+          {props.unavailableReason}
+        </p>
+      ) : null}
 
       <output aria-live="polite" className="sr-only" id={statusMessageId}>
         {status === "uploading"

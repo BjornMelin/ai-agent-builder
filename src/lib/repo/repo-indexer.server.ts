@@ -6,6 +6,7 @@ import { embedTexts } from "@/lib/ai/embeddings.server";
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
 import { sha256Hex } from "@/lib/core/sha256";
+import { withActiveProjectLease } from "@/lib/projects/project-lifecycle-lease.server";
 import {
   getVectorIndex,
   projectRepoNamespace,
@@ -283,7 +284,9 @@ export async function indexRepoFromSandbox(
   const vector = getVectorIndex().namespace(namespace);
 
   // Delete existing repo index (latest-only replacement).
-  await vector.delete({ prefix });
+  await withActiveProjectLease({ projectId: input.projectId }, async () => {
+    await vector.delete({ prefix });
+  });
 
   let totalBytes = 0;
   let filesIndexed = 0;
@@ -317,26 +320,28 @@ export async function indexRepoFromSandbox(
       throw new AppError("embed_failed", 500, "Embedding batch size mismatch.");
     }
 
-    await vector.upsert(
-      pendingRecords.map((rec, idx) => {
-        const meta: VectorMetadata = {
-          commitSha,
-          path: rec.path,
-          projectId: input.projectId,
-          repoId: input.repoId,
-          snippet: rec.snippet,
-          type: "code",
-          ...(rec.language === undefined ? {} : { language: rec.language }),
-        };
+    const records = pendingRecords.map((rec, idx) => {
+      const meta: VectorMetadata = {
+        commitSha,
+        path: rec.path,
+        projectId: input.projectId,
+        repoId: input.repoId,
+        snippet: rec.snippet,
+        type: "code",
+        ...(rec.language === undefined ? {} : { language: rec.language }),
+      };
 
-        return {
-          data: pendingTexts[idx] ?? "",
-          id: rec.id,
-          metadata: meta,
-          vector: embeddings[idx] as number[],
-        };
-      }),
-    );
+      return {
+        data: pendingTexts[idx] ?? "",
+        id: rec.id,
+        metadata: meta,
+        vector: embeddings[idx] as number[],
+      };
+    });
+
+    await withActiveProjectLease({ projectId: input.projectId }, async () => {
+      await vector.upsert(records);
+    });
 
     pendingTexts.length = 0;
     pendingRecords.length = 0;

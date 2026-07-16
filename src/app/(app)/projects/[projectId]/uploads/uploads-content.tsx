@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { UploadClient } from "@/app/(app)/projects/[projectId]/uploads/upload-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,9 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { requireAppUser } from "@/lib/auth/require-app-user";
 import { listProjectFiles } from "@/lib/data/files.server";
+import { getProjectByIdForUser } from "@/lib/data/projects.server";
 
 function formatBytes(
   bytes: number,
@@ -39,8 +42,13 @@ export async function UploadsContent(
   }>,
 ) {
   const { projectId } = props;
-
-  const files = await listProjectFiles(projectId, { limit: 50 });
+  const user = await requireAppUser();
+  const [project, files] = await Promise.all([
+    getProjectByIdForUser(projectId, user.id),
+    listProjectFiles(projectId, { limit: 50 }),
+  ]);
+  if (!project) notFound();
+  const canUpload = project.status === "active";
   const fileSizeFormatter = new Intl.NumberFormat(undefined, {
     maximumFractionDigits: 1,
     minimumFractionDigits: 1,
@@ -53,7 +61,18 @@ export async function UploadsContent(
           <CardTitle>Upload files</CardTitle>
         </CardHeader>
         <CardContent>
-          <UploadClient projectId={projectId} />
+          <UploadClient
+            canUpload={canUpload}
+            projectId={projectId}
+            {...(!canUpload
+              ? {
+                  unavailableReason:
+                    project.status === "deleting"
+                      ? "Deletion is pending; uploads are locked."
+                      : "Restore this project in Settings before uploading files.",
+                }
+              : {})}
+          />
         </CardContent>
       </Card>
 

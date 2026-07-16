@@ -3,7 +3,7 @@ import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 import { cacheLife, cacheTag, revalidateTag } from "next/cache";
 
-import { getDb } from "@/db/client";
+import { type DbClient, getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { tagReposIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
@@ -75,6 +75,7 @@ export async function listReposByProject(
  * This is idempotent per `(projectId, provider, owner, name)`.
  *
  * @param input - Repo connection metadata.
+ * @param db - Database client, including a lifecycle transaction when supplied.
  * @returns Upserted repo DTO.
  */
 export async function upsertRepoConnection(
@@ -87,8 +88,8 @@ export async function upsertRepoConnection(
     htmlUrl: string;
     defaultBranch: string;
   }>,
+  db: DbClient = getDb(),
 ): Promise<RepoDto> {
-  const db = getDb();
   const now = new Date();
 
   try {

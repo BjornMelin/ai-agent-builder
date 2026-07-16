@@ -14,6 +14,8 @@ vi.mock("@/lib/auth/require-app-user-api.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
+  getActiveProjectByIdForUser: (...args: unknown[]) =>
+    state.getProjectByIdForUser(...args),
   getProjectByIdForUser: (...args: unknown[]) =>
     state.getProjectByIdForUser(...args),
 }));

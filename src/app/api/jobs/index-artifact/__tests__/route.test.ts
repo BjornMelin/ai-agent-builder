@@ -91,4 +91,35 @@ describe("POST /api/jobs/index-artifact", () => {
     expect(state.indexArtifactVersion).toHaveBeenCalledTimes(1);
     expect(state.indexArtifactVersion).toHaveBeenCalledWith(payload);
   });
+
+  it.each([
+    "not_found",
+    "project_not_active",
+    "project_not_found",
+  ])("acknowledges a stale job after %s", async (code) => {
+    const POST = await loadRoute();
+    const { AppError } = await import("@/lib/core/errors");
+    state.indexArtifactVersion.mockRejectedValueOnce(
+      new AppError(code, code === "project_not_active" ? 409 : 404, "stale"),
+    );
+
+    const res = await POST(
+      new Request("http://localhost/api/jobs/index-artifact", {
+        body: JSON.stringify({
+          artifactId: "art_1",
+          kind: "PRD",
+          logicalKey: "PRD",
+          projectId: "proj_1",
+          version: 1,
+        }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      ok: true,
+      skipped: "project_inactive",
+    });
+  });
 });

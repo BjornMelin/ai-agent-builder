@@ -14,6 +14,7 @@ const input = {
   projectId: "project_1",
   threadId: "00000000-0000-4000-8000-000000000001",
   title: "hello",
+  userId: "user_1",
 };
 
 function threadRow(
@@ -52,6 +53,7 @@ function createIntentDb(options?: {
   }));
   let insertCount = 0;
   const tx = {
+    execute: vi.fn().mockResolvedValue(undefined),
     insert: vi.fn(() => {
       insertCount += 1;
       return { values: insertCount === 1 ? threadValues : messageValues };
@@ -67,6 +69,9 @@ function createIntentDb(options?: {
       },
       chatThreadsTable: {
         findFirst: vi.fn().mockResolvedValue(row),
+      },
+      projectsTable: {
+        findFirst: vi.fn().mockResolvedValue({ status: "active" }),
       },
     },
   };

@@ -5,7 +5,7 @@ import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
 import { recordProjectSkillRegistryInstall } from "@/lib/data/project-skill-registry-installs.server";
-import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import { getActiveProjectByIdForUser } from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { installProjectSkillFromRegistry } from "@/workflows/skills-registry/project-skill-registry.workflow";
@@ -37,7 +37,7 @@ export async function POST(req: Request): Promise<Response> {
     projectId = body.projectId;
     registryId = body.registryId;
 
-    const project = await getProjectByIdForUser(body.projectId, user.id);
+    const project = await getActiveProjectByIdForUser(body.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }

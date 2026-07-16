@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
   error: vi.fn(),
   findProjectSkillByNameUncached: vi.fn(),
   findProjectSkillByRegistryId: vi.fn(),
+  leaseDb: {},
   putProjectSkillBundleBlob: vi.fn(),
   resolveRegistrySkillFromRepoZip: vi.fn(),
   updateProjectSkillById: vi.fn(),
@@ -49,6 +50,13 @@ vi.mock("@/lib/skills-registry/skill-bundle-blob.server", () => ({
 vi.mock("@/lib/skills-registry/zip-skill-resolver.server", () => ({
   resolveRegistrySkillFromRepoZip: (...args: unknown[]) =>
     state.resolveRegistrySkillFromRepoZip(...args),
+}));
+
+vi.mock("@/lib/projects/project-lifecycle-lease.server", () => ({
+  withActiveProjectLease: async (
+    _input: unknown,
+    work: (db: unknown) => Promise<unknown>,
+  ) => await work(state.leaseDb),
 }));
 
 async function loadModule() {
@@ -147,6 +155,7 @@ describe("installProjectSkillFromRegistryStep", () => {
           name: "Find Skills",
           projectId: "proj_1",
         }),
+        state.leaseDb,
       );
     });
 

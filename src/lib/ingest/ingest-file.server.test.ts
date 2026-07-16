@@ -46,28 +46,29 @@ vi.mock("@/lib/upstash/vector.server", () => ({
   projectChunksNamespace: (projectId: string) => `project:${projectId}:chunks`,
 }));
 
+vi.mock("@/lib/projects/project-lifecycle-lease.server", () => ({
+  withActiveProjectLease: async (
+    _input: unknown,
+    work: (db: DbClient) => Promise<unknown>,
+  ) => await work(state.getDb()),
+}));
+
 function createFakeDb() {
-  const tx = {
+  const db = {
     delete: vi
       .fn()
       .mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
     insert: vi
       .fn()
       .mockReturnValue({ values: vi.fn().mockResolvedValue(undefined) }),
-  } as unknown as DbClient;
-
-  const db = {
-    delete: vi
-      .fn()
-      .mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
     transaction: vi
       .fn()
       .mockImplementation(async (cb: (tx: DbClient) => Promise<unknown>) => {
-        await cb(tx);
+        await cb(db as unknown as DbClient);
       }),
   };
 
-  return { db, tx };
+  return db as unknown as DbClient;
 }
 
 beforeEach(() => {
@@ -81,7 +82,7 @@ beforeEach(() => {
     upsert: state.vectorUpsert,
   });
 
-  const { db } = createFakeDb();
+  const db = createFakeDb();
   state.getDb.mockReturnValue(db);
 
   state.extractDocument.mockResolvedValue({
@@ -192,7 +193,7 @@ describe("ingestFile", () => {
   });
 
   it("cleans up vectors and DB rows when vector upsert fails", async () => {
-    const { db } = createFakeDb();
+    const db = createFakeDb();
     state.getDb.mockReturnValue(db);
 
     const chunks: readonly FakeChunk[] = [

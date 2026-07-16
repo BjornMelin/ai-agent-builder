@@ -25,7 +25,13 @@ function createEnsureDb(
     }>;
   }>,
 ) {
-  const lock = vi.fn().mockResolvedValue([{ id: input.projectId }]);
+  const lock = vi.fn().mockResolvedValue([
+    {
+      id: input.projectId,
+      ownerUserId: input.userId,
+      status: "active",
+    },
+  ]);
   const activeLimit = vi
     .fn()
     .mockResolvedValue(options?.activeId ? [{ id: options.activeId }] : []);
@@ -43,6 +49,7 @@ function createEnsureDb(
   });
   const values = vi.fn().mockResolvedValue(undefined);
   const tx = {
+    execute: vi.fn().mockResolvedValue(undefined),
     insert: vi.fn(() => ({ values })),
     query: {
       runsTable: {

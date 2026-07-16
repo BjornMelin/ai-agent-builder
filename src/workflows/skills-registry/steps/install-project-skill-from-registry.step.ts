@@ -18,6 +18,7 @@ import {
   upsertProjectSkill,
 } from "@/lib/data/project-skills.server";
 import { env } from "@/lib/env";
+import { withActiveProjectLease } from "@/lib/projects/project-lifecycle-lease.server";
 import { downloadGithubRepoZip } from "@/lib/skills-registry/github-archive.server";
 import { parseSkillsRegistrySkillId } from "@/lib/skills-registry/registry-id.server";
 import {
@@ -103,99 +104,107 @@ export async function installProjectSkillFromRegistryStep(
     throw new AppError("bad_request", 400, "Skill name too long.");
   }
 
-  let existing = await findProjectSkillByRegistryId(
-    parsedInput.data.projectId,
-    ref.id,
-  );
-  const collision = await findProjectSkillByNameUncached(
-    parsedInput.data.projectId,
-    resolvedNameTrimmed,
-  );
-  const collisionRegistryId = collision
-    ? (getProjectSkillRegistryRef(collision.metadata)?.id ?? null)
-    : null;
-  if (
-    collision &&
-    collision.id !== existing?.id &&
-    collisionRegistryId !== ref.id
-  ) {
-    throw new AppError("conflict", 409, "Skill name already exists.");
-  }
-  if (!existing && collisionRegistryId === ref.id) {
-    existing = collision;
-  }
+  return await withActiveProjectLease(
+    { projectId: parsedInput.data.projectId },
+    async (db) => {
+      let existing = await findProjectSkillByRegistryId(
+        parsedInput.data.projectId,
+        ref.id,
+        db,
+      );
+      const collision = await findProjectSkillByNameUncached(
+        parsedInput.data.projectId,
+        resolvedNameTrimmed,
+        db,
+      );
+      const collisionRegistryId = collision
+        ? (getProjectSkillRegistryRef(collision.metadata)?.id ?? null)
+        : null;
+      if (
+        collision &&
+        collision.id !== existing?.id &&
+        collisionRegistryId !== ref.id
+      ) {
+        throw new AppError("conflict", 409, "Skill name already exists.");
+      }
+      if (!existing && collisionRegistryId === ref.id) existing = collision;
 
-  const previousBundle = existing
-    ? getProjectSkillBundleRef(existing.metadata)
-    : null;
-
-  const blobPath = getProjectSkillBundleBlobPath({
-    projectId: parsedInput.data.projectId,
-    skillName: toSafeBlobSegment(ref.id, MAX_BLOB_SEGMENT_CHARS),
-  });
-
-  const bundleBlobPathname = await putProjectSkillBundleBlob({
-    blobPath,
-    bytes: resolved.bundle.bytes,
-  });
-
-  const metadata = {
-    bundle: {
-      blobPath: bundleBlobPathname,
-      fileCount: resolved.bundle.fileCount,
-      format: "zip-v1" as const,
-      sizeBytes: resolved.bundle.sizeBytes,
-    },
-    registry: {
-      id: ref.id,
-      skillId: ref.skillId,
-      source: ref.source,
-    },
-  } satisfies Record<string, unknown>;
-
-  const skill = existing
-    ? await updateProjectSkillById({
-        content: resolved.content,
-        description: resolved.description,
-        metadata,
-        name: resolvedNameTrimmed,
+      const previousBundle = existing
+        ? getProjectSkillBundleRef(existing.metadata)
+        : null;
+      const blobPath = getProjectSkillBundleBlobPath({
         projectId: parsedInput.data.projectId,
-        skillId: existing.id,
-      })
-    : await upsertProjectSkill({
-        content: resolved.content,
-        description: resolved.description,
-        metadata,
-        name: resolvedNameTrimmed,
-        projectId: parsedInput.data.projectId,
+        skillName: toSafeBlobSegment(ref.id, MAX_BLOB_SEGMENT_CHARS),
       });
-
-  if (
-    previousBundle?.blobPath &&
-    previousBundle.blobPath !== bundleBlobPathname
-  ) {
-    try {
-      await del(previousBundle.blobPath, { token: env.blob.readWriteToken });
-    } catch (error) {
-      // Best-effort cleanup: orphaned bundles are acceptable and can be
-      // garbage-collected separately if needed.
-      log.error("project_skill_bundle_delete_failed", {
-        err: error,
-        previousBlobPath: previousBundle.blobPath,
-        projectId: parsedInput.data.projectId,
-        registryId: ref.id,
-        skillName: resolvedNameTrimmed,
+      const bundleBlobPathname = await putProjectSkillBundleBlob({
+        blobPath,
+        bytes: resolved.bundle.bytes,
       });
-    }
-  }
+      const metadata = {
+        bundle: {
+          blobPath: bundleBlobPathname,
+          fileCount: resolved.bundle.fileCount,
+          format: "zip-v1" as const,
+          sizeBytes: resolved.bundle.sizeBytes,
+        },
+        registry: {
+          id: ref.id,
+          skillId: ref.skillId,
+          source: ref.source,
+        },
+      } satisfies Record<string, unknown>;
 
-  return {
-    skill: {
-      content: skill.content,
-      description: skill.description,
-      id: skill.id,
-      name: skill.name,
-      updatedAt: skill.updatedAt,
+      const skill = existing
+        ? await updateProjectSkillById(
+            {
+              content: resolved.content,
+              description: resolved.description,
+              metadata,
+              name: resolvedNameTrimmed,
+              projectId: parsedInput.data.projectId,
+              skillId: existing.id,
+            },
+            db,
+          )
+        : await upsertProjectSkill(
+            {
+              content: resolved.content,
+              description: resolved.description,
+              metadata,
+              name: resolvedNameTrimmed,
+              projectId: parsedInput.data.projectId,
+            },
+            db,
+          );
+
+      if (
+        previousBundle?.blobPath &&
+        previousBundle.blobPath !== bundleBlobPathname
+      ) {
+        try {
+          await del(previousBundle.blobPath, {
+            token: env.blob.readWriteToken,
+          });
+        } catch (error) {
+          log.error("project_skill_bundle_delete_failed", {
+            err: error,
+            previousBlobPath: previousBundle.blobPath,
+            projectId: parsedInput.data.projectId,
+            registryId: ref.id,
+            skillName: resolvedNameTrimmed,
+          });
+        }
+      }
+
+      return {
+        skill: {
+          content: skill.content,
+          description: skill.description,
+          id: skill.id,
+          name: skill.name,
+          updatedAt: skill.updatedAt,
+        },
+      };
     },
-  };
+  );
 }

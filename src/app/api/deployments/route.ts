@@ -6,9 +6,13 @@ import {
   createDeploymentRecord,
   listDeploymentsByProject,
 } from "@/lib/data/deployments.server";
-import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import {
+  getActiveProjectByIdForUser,
+  getProjectByIdForUser,
+} from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonCreated, jsonError, jsonOk } from "@/lib/next/responses";
+import { withActiveProjectLease } from "@/lib/projects/project-lifecycle-lease.server";
 
 const listQuerySchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(500).optional(),
@@ -88,7 +92,7 @@ export async function POST(req: Request) {
     const bodyPromise = parseJsonBody(req, createBodySchema);
     const [user, body] = await Promise.all([authPromise, bodyPromise]);
 
-    const project = await getProjectByIdForUser(body.projectId, user.id);
+    const project = await getActiveProjectByIdForUser(body.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }
@@ -99,24 +103,31 @@ export async function POST(req: Request) {
       throw new AppError("bad_request", 400, "Invalid startedAt/endedAt.");
     }
 
-    const deployment = await createDeploymentRecord({
-      ...(body.deploymentUrl === undefined
-        ? {}
-        : { deploymentUrl: body.deploymentUrl }),
-      ...(endedAt === undefined ? {} : { endedAt }),
-      ...(body.metadata === undefined ? {} : { metadata: body.metadata }),
-      projectId: project.id,
-      ...(body.provider === undefined ? {} : { provider: body.provider }),
-      ...(body.runId === undefined ? {} : { runId: body.runId }),
-      ...(startedAt === undefined ? {} : { startedAt }),
-      status: body.status,
-      ...(body.vercelDeploymentId === undefined
-        ? {}
-        : { vercelDeploymentId: body.vercelDeploymentId }),
-      ...(body.vercelProjectId === undefined
-        ? {}
-        : { vercelProjectId: body.vercelProjectId }),
-    });
+    const deployment = await withActiveProjectLease(
+      { projectId: project.id, userId: user.id },
+      (db) =>
+        createDeploymentRecord(
+          {
+            ...(body.deploymentUrl === undefined
+              ? {}
+              : { deploymentUrl: body.deploymentUrl }),
+            ...(endedAt === undefined ? {} : { endedAt }),
+            ...(body.metadata === undefined ? {} : { metadata: body.metadata }),
+            projectId: project.id,
+            ...(body.provider === undefined ? {} : { provider: body.provider }),
+            ...(body.runId === undefined ? {} : { runId: body.runId }),
+            ...(startedAt === undefined ? {} : { startedAt }),
+            status: body.status,
+            ...(body.vercelDeploymentId === undefined
+              ? {}
+              : { vercelDeploymentId: body.vercelDeploymentId }),
+            ...(body.vercelProjectId === undefined
+              ? {}
+              : { vercelProjectId: body.vercelProjectId }),
+          },
+          db,
+        ),
+    );
 
     return jsonCreated({ deployment });
   } catch (err) {

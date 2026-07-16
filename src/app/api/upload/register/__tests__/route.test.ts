@@ -30,6 +30,7 @@ const state = vi.hoisted(() => ({
   getProjectByIdForUser: vi.fn(),
   getProjectFileBySha256: vi.fn(),
   ingestFile: vi.fn(),
+  leaseDb: {},
   publishJSON: vi.fn(),
   requireAppUserApi: vi.fn(),
   revalidateTag: vi.fn(),
@@ -58,6 +59,7 @@ vi.mock("@/lib/data/files.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
+  getActiveProjectByIdForUser: state.getProjectByIdForUser,
   getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
@@ -67,6 +69,13 @@ vi.mock("@/lib/env", () => ({
 
 vi.mock("@/lib/ingest/ingest-file.server", () => ({
   ingestFile: state.ingestFile,
+}));
+
+vi.mock("@/lib/projects/project-lifecycle-lease.server", () => ({
+  withActiveProjectLease: async (
+    _input: unknown,
+    work: (db: unknown) => Promise<unknown>,
+  ) => await work(state.leaseDb),
 }));
 
 vi.mock("@/lib/upstash/qstash.server", () => ({

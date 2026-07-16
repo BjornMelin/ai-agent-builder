@@ -37,6 +37,7 @@ export async function ProjectsContent(
     id: project.id,
     name: project.name,
     slug: project.slug,
+    status: project.status,
   }));
 
   return (

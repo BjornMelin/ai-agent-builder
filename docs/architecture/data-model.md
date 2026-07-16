@@ -62,8 +62,39 @@ Project workspace root. Ownership is per authenticated app user.
 - `owner_user_id` (Neon Auth user id; required)
 - `name`
 - `slug`
-- `status`
+- `status` (`active`, `archived`, or `deleting`)
 - `created_at`, `updated_at`
+
+Project lifecycle mutations require an exact `owner_user_id` match. Archived
+projects retain their data and can be restored but cannot start new work.
+Deletion atomically claims the project as `deleting`; that state is non-writable,
+irreversible, and retryable. Cleanup removes every Blob under
+`projects/{projectId}/`, every Vector namespace under `project:{projectId}:`, and
+project retrieval-cache keys before the database cascade. The final Blob sweep
+cannot begin while a durable `project_upload_grants` row is unexpired, so a
+direct-upload capability issued before the deletion claim cannot create a late,
+untracked object. `infra_resources` and `deployments` intentionally retain their
+original `project_id` without a foreign key, so provider handles and non-secret
+provenance survive as detached operational tombstones. Project deletion does
+not decommission those external resources; operators use the retained records
+for later provider cleanup.
+
+### `project_upload_grants`
+
+Short-lived, signed Vercel Blob client-upload capabilities.
+
+- `id` (embedded in the signed completion payload)
+- `project_id`
+- `pathname`
+- `expires_at`
+- `completed_at` (nullable)
+- `created_at`
+
+Grant creation shares the active-project advisory lock. Completion marks an
+active-project grant settled; completion for an archived/deleting project
+deletes the Blob before removing the grant. Deletion remains retryable while a
+grant is live, prunes completed/expired grants, then performs a fresh prefix
+sweep before the relational cascade.
 
 ### `project_skills`
 
@@ -123,6 +154,9 @@ Records explicit user approvals for side-effectful actions.
 
 Stores non-secret resource identity + metadata.
 
+`project_id` is a durable provenance key rather than a foreign key, allowing the
+record to survive deletion of the owning app project.
+
 - `id`
 - `project_id`
 - `run_id` (optional; which run created/updated it)
@@ -134,6 +168,9 @@ Stores non-secret resource identity + metadata.
 - `created_at`, `updated_at`
 
 ### `deployments`
+
+`project_id` is a durable provenance key rather than a foreign key, allowing the
+record to survive deletion of the owning app project.
 
 - `id`
 - `project_id`

@@ -21,6 +21,7 @@ vi.mock("@/lib/data/chat.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
+  getActiveProjectByIdForUser: state.getProjectByIdForUser,
   getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 

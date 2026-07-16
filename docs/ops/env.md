@@ -136,12 +136,14 @@ App-level access control (cost control):
   ([Upstash Redis REST API](https://upstash.com/docs/redis/features/restapi))
 - `UPSTASH_REDIS_REST_TOKEN` (required for `env.upstash`)
   ([Upstash Redis REST API](https://upstash.com/docs/redis/features/restapi))
-  - Used by: caching, rate limiting, tool-call budgets.
+  - Used by: caching, rate limiting, tool-call budgets, and project retrieval
+    cache purge during permanent deletion.
 - `UPSTASH_VECTOR_REST_URL` (required for `env.upstash`)
   ([Upstash Vector REST API](https://upstash.com/docs/vector/features/metadata))
 - `UPSTASH_VECTOR_REST_TOKEN` (required for `env.upstash`)
   ([Upstash Vector REST API](https://upstash.com/docs/vector/features/metadata))
-  - Used by: semantic search index (uploads + artifacts).
+  - Used by: semantic search indexes and complete project-namespace cleanup
+    during permanent deletion.
 
 #### Redis client usage
 
@@ -207,7 +209,8 @@ export const POST = verifyQstashSignatureAppRouter(async (req) => {
 ### Vercel Blob
 
 - `BLOB_READ_WRITE_TOKEN` (required for `env.blob`)
-  - Token for reading/writing blobs (uploads)
+  - Token for reading/writing blobs (uploads) and prefix-complete project
+    deletion. Permanent deletion remains disabled when it is unavailable.
     ([Vercel Blob SDK](https://vercel.com/docs/storage/vercel-blob/using-blob-sdk)).
 
 ### Web research
@@ -297,7 +300,7 @@ Recommended Vector index settings:
 | `AI_GATEWAY_BASE_URL` | Required | Required | Required | Must use `https://ai-gateway.vercel.sh/v3/ai` |
 | `AI_GATEWAY_CHAT_MODEL` | Recommended | Recommended | Recommended | Default: `xai/grok-4.1-fast-reasoning` |
 | `AI_GATEWAY_EMBEDDING_MODEL` | Recommended | Recommended | Recommended | Default: `alibaba/qwen3-embedding-4b` |
-| `BLOB_READ_WRITE_TOKEN` | Required | Required | Required | Blob uploads |
+| `BLOB_READ_WRITE_TOKEN` | Required | Required | Required | Blob uploads, signed completion callbacks, and project deletion cleanup |
 | `EXA_API_KEY` | Required | Required | Required | Web research |
 | `FIRECRAWL_API_KEY` | Required | Required | Required | Web research |
 | `CONTEXT7_API_KEY` | Required | Required | Required | MCP/Context7 transport |

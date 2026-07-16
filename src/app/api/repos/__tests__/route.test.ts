@@ -4,6 +4,7 @@ const state = vi.hoisted(() => ({
   fetchGitHubRepoInfo: vi.fn(),
   getProjectByIdForUser: vi.fn(),
   isGitHubConfigured: vi.fn(),
+  leaseDb: {},
   listReposByProject: vi.fn(),
   requireAppUserApi: vi.fn(),
   upsertRepoConnection: vi.fn(),
@@ -14,6 +15,8 @@ vi.mock("@/lib/auth/require-app-user-api.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
+  getActiveProjectByIdForUser: (...args: unknown[]) =>
+    state.getProjectByIdForUser(...args),
   getProjectByIdForUser: (...args: unknown[]) =>
     state.getProjectByIdForUser(...args),
 }));
@@ -28,6 +31,13 @@ vi.mock("@/lib/repo/github.client.server", () => ({
   fetchGitHubRepoInfo: (...args: unknown[]) =>
     state.fetchGitHubRepoInfo(...args),
   isGitHubConfigured: (...args: unknown[]) => state.isGitHubConfigured(...args),
+}));
+
+vi.mock("@/lib/projects/project-lifecycle-lease.server", () => ({
+  withActiveProjectLease: async (
+    _input: unknown,
+    work: (db: unknown) => Promise<unknown>,
+  ) => await work(state.leaseDb),
 }));
 
 async function loadRoute() {
@@ -156,6 +166,7 @@ describe("POST /api/repos", () => {
         defaultBranch: "main",
         htmlUrl: "https://example.com/repo",
       }),
+      state.leaseDb,
     );
   });
 });

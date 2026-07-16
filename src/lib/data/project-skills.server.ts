@@ -3,7 +3,7 @@ import "server-only";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { cacheLife, cacheTag, revalidateTag } from "next/cache";
 
-import { getDb } from "@/db/client";
+import { type DbClient, getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { tagProjectSkillsIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
@@ -127,6 +127,7 @@ export async function getProjectSkillByName(
  *
  * @param projectId - Project ID.
  * @param registryId - Canonical registry identifier (`owner/repo/skillId`).
+ * @param db - Database client, including a lifecycle transaction when supplied.
  * @returns Matching skill or null.
  * @throws AppError - With code `"bad_request"` when `registryId` is empty.
  * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
@@ -134,13 +135,13 @@ export async function getProjectSkillByName(
 export async function findProjectSkillByRegistryId(
   projectId: string,
   registryId: string,
+  db: DbClient = getDb(),
 ): Promise<ProjectSkillDto | null> {
   const registryIdTrimmed = registryId.trim();
   if (!registryIdTrimmed) {
     throw new AppError("bad_request", 400, "Invalid registry id.");
   }
 
-  const db = getDb();
   try {
     const row = await db.query.projectSkillsTable.findFirst({
       where: and(
@@ -162,6 +163,7 @@ export async function findProjectSkillByRegistryId(
  *
  * @param projectId - Project ID.
  * @param name - Skill name.
+ * @param db - Database client, including a lifecycle transaction when supplied.
  * @returns Matching skill or null.
  * @throws AppError - With code `"bad_request"` when `name` is empty or exceeds 128 characters.
  * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
@@ -169,8 +171,8 @@ export async function findProjectSkillByRegistryId(
 export async function findProjectSkillByNameUncached(
   projectId: string,
   name: string,
+  db: DbClient = getDb(),
 ): Promise<ProjectSkillDto | null> {
-  const db = getDb();
   try {
     const nameNorm = normalizeSkillName(name);
     const row = await db.query.projectSkillsTable.findFirst({
@@ -217,9 +219,36 @@ export async function getProjectSkillById(
 }
 
 /**
+ * Find a project skill by id without Cache Components.
+ *
+ * @param projectId - Project ID.
+ * @param skillId - Skill ID.
+ * @param db - Database client, including a lifecycle transaction when supplied.
+ * @returns Matching skill or null.
+ */
+export async function findProjectSkillByIdUncached(
+  projectId: string,
+  skillId: string,
+  db: DbClient = getDb(),
+): Promise<ProjectSkillDto | null> {
+  try {
+    const row = await db.query.projectSkillsTable.findFirst({
+      where: and(
+        eq(schema.projectSkillsTable.projectId, projectId),
+        eq(schema.projectSkillsTable.id, skillId),
+      ),
+    });
+    return row ? toProjectSkillDto(row) : null;
+  } catch (err) {
+    throw maybeWrapDbNotMigrated(err);
+  }
+}
+
+/**
  * Create or update a project skill (idempotent per projectId+name).
  *
  * @param input - Skill metadata and content.
+ * @param db - Database client, including a lifecycle transaction when supplied.
  * @returns Upserted skill.
  * @throws AppError - With code `"bad_request"` when `input.name` is empty or exceeds 128 characters.
  * @throws AppError - With code `"db_update_failed"` when the update returned no row.
@@ -234,8 +263,8 @@ export async function upsertProjectSkill(
     content: string;
     metadata?: Record<string, unknown>;
   }>,
+  db: DbClient = getDb(),
 ): Promise<ProjectSkillDto> {
-  const db = getDb();
   const now = new Date();
   const nameTrimmed = sanitizeSkillName(input.name);
   const nameNorm = nameTrimmed.toLowerCase();
@@ -310,6 +339,7 @@ export async function upsertProjectSkill(
  * drive updates even if the skill name changes.
  *
  * @param input - Update payload.
+ * @param db - Database client, including a lifecycle transaction when supplied.
  * @returns Updated skill.
  * @throws AppError - With code `"bad_request"` when `input.name` is empty or exceeds 128 characters.
  * @throws AppError - With code `"not_found"` when the skill does not exist.
@@ -326,8 +356,8 @@ export async function updateProjectSkillById(
     content: string;
     metadata?: Record<string, unknown>;
   }>,
+  db: DbClient = getDb(),
 ): Promise<ProjectSkillDto> {
-  const db = getDb();
   const now = new Date();
   const nameTrimmed = sanitizeSkillName(input.name);
   const nameNorm = nameTrimmed.toLowerCase();
@@ -388,15 +418,15 @@ export async function updateProjectSkillById(
  * Delete a project skill by id.
  *
  * @param input - Delete input.
+ * @param db - Database client, including a lifecycle transaction when supplied.
  * @returns Ok result.
  * @throws AppError - With code `"not_found"` when the skill does not exist.
  * @throws AppError - With code `"db_not_migrated"` when the database schema is missing/out-of-date.
  */
 export async function deleteProjectSkill(
   input: Readonly<{ projectId: string; skillId: string }>,
+  db: DbClient = getDb(),
 ): Promise<Readonly<{ ok: true }>> {
-  const db = getDb();
-
   try {
     const row = await db.query.projectSkillsTable.findFirst({
       where: and(

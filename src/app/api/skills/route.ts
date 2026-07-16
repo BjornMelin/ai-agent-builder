@@ -7,14 +7,19 @@ import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
 import {
   deleteProjectSkill,
+  findProjectSkillByIdUncached,
   getProjectSkillById,
   listProjectSkillsByProject,
   upsertProjectSkill,
 } from "@/lib/data/project-skills.server";
-import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import {
+  getActiveProjectByIdForUser,
+  getProjectByIdForUser,
+} from "@/lib/data/projects.server";
 import { env } from "@/lib/env";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonCreated, jsonError, jsonOk } from "@/lib/next/responses";
+import { withActiveProjectLease } from "@/lib/projects/project-lifecycle-lease.server";
 
 const listQuerySchema = z.strictObject({
   projectId: z.string().min(1),
@@ -134,7 +139,7 @@ export async function POST(req: Request) {
     projectId = body.projectId;
     skillName = body.name;
 
-    const project = await getProjectByIdForUser(body.projectId, user.id);
+    const project = await getActiveProjectByIdForUser(body.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }
@@ -144,16 +149,23 @@ export async function POST(req: Request) {
       userId: user.id,
     });
 
-    const skill = await upsertProjectSkill({
-      content: buildSkillMarkdown({
-        body: body.body,
-        description: body.description,
-        name: body.name,
-      }),
-      description: body.description,
-      name: body.name,
-      projectId: project.id,
-    });
+    const skill = await withActiveProjectLease(
+      { projectId: project.id, userId: user.id },
+      (db) =>
+        upsertProjectSkill(
+          {
+            content: buildSkillMarkdown({
+              body: body.body,
+              description: body.description,
+              name: body.name,
+            }),
+            description: body.description,
+            name: body.name,
+            projectId: project.id,
+          },
+          db,
+        ),
+    );
 
     const publicSkill = {
       content: skill.content,
@@ -202,7 +214,7 @@ export async function DELETE(req: Request) {
     projectId = body.projectId;
     skillId = body.skillId;
 
-    const project = await getProjectByIdForUser(body.projectId, user.id);
+    const project = await getActiveProjectByIdForUser(body.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }
@@ -213,24 +225,36 @@ export async function DELETE(req: Request) {
       userId: user.id,
     });
 
-    const skill = await getProjectSkillById(project.id, body.skillId);
-    if (skill) {
-      const bundle = getProjectSkillBundleRef(skill.metadata);
-      if (bundle?.blobPath) {
-        try {
-          await del(bundle.blobPath, { token: env.blob.readWriteToken });
-        } catch (error) {
-          // Best-effort cleanup: blob deletion failures should not block DB deletion.
-          log.error("project_skill_bundle_delete_failed", {
-            err: error,
-            projectId: project.id,
-            skillId: body.skillId,
-          });
+    await withActiveProjectLease(
+      { projectId: project.id, userId: user.id },
+      async (db) => {
+        const skill = await findProjectSkillByIdUncached(
+          project.id,
+          body.skillId,
+          db,
+        );
+        if (skill) {
+          const bundle = getProjectSkillBundleRef(skill.metadata);
+          if (bundle?.blobPath) {
+            try {
+              await del(bundle.blobPath, { token: env.blob.readWriteToken });
+            } catch (error) {
+              // Best-effort cleanup: blob deletion failures should not block DB deletion.
+              log.error("project_skill_bundle_delete_failed", {
+                err: error,
+                projectId: project.id,
+                skillId: body.skillId,
+              });
+            }
+          }
         }
-      }
-    }
 
-    await deleteProjectSkill({ projectId: project.id, skillId: body.skillId });
+        await deleteProjectSkill(
+          { projectId: project.id, skillId: body.skillId },
+          db,
+        );
+      },
+    );
     log.info("project_skill_delete_succeeded", {
       projectId: project.id,
       skillId: body.skillId,

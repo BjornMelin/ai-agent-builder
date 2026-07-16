@@ -409,6 +409,7 @@ describe("POST /api/chat", () => {
       projectId: "proj_1",
       threadId,
       title: "follow up",
+      userId: "user",
     });
     expect(state.claimChatWorkflow).toHaveBeenCalledWith(threadId, "run_123");
   });

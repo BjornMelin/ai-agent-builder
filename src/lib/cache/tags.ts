@@ -111,6 +111,25 @@ export function tagInfraResourcesIndex(projectId: string): string {
 }
 
 /**
+ * Return every cache tag whose value can contain project-owned data.
+ *
+ * @param projectId - Project identifier.
+ * @returns All project-scoped cache tags.
+ */
+export function projectCacheTags(projectId: string): readonly string[] {
+  return [
+    tagProject(projectId),
+    tagArtifactsIndex(projectId),
+    tagUploadsIndex(projectId),
+    tagReposIndex(projectId),
+    tagProjectSkillsIndex(projectId),
+    tagApprovalsIndex(projectId),
+    tagDeploymentsIndex(projectId),
+    tagInfraResourcesIndex(projectId),
+  ];
+}
+
+/**
  * Cache tag for the local model catalog JSON.
  *
  * @returns Stable cache tag.

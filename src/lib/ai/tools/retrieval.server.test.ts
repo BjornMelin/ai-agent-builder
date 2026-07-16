@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
   getRedis: vi.fn(),
   vectorNamespace: vi.fn(),
   vectorQuery: vi.fn(),
+  withActiveProjectLease: vi.fn(),
 }));
 
 vi.mock("@/lib/ai/embeddings.server", () => ({
@@ -28,6 +29,10 @@ vi.mock("@/lib/upstash/vector.server", () => ({
   projectChunksNamespace: (projectId: string) => `project:${projectId}:chunks`,
 }));
 
+vi.mock("@/lib/projects/project-lifecycle-lease.server", () => ({
+  withActiveProjectLease: state.withActiveProjectLease,
+}));
+
 async function loadModule() {
   vi.resetModules();
   return import("@/lib/ai/tools/retrieval.server");
@@ -39,6 +44,9 @@ beforeEach(() => {
   state.embedText.mockResolvedValue([0.1, 0.2, 0.3]);
   state.vectorQuery.mockResolvedValue([]);
   state.vectorNamespace.mockReturnValue({ query: state.vectorQuery });
+  state.withActiveProjectLease.mockImplementation(
+    async (_input: unknown, work: () => Promise<unknown>) => await work(),
+  );
 
   state.getRedis.mockImplementation(() => {
     throw new Error("Redis not configured");
@@ -141,6 +149,47 @@ describe("retrieveProjectChunks", () => {
       },
     ]);
     expect(redis.setex).toHaveBeenCalled();
+    expect(state.withActiveProjectLease).toHaveBeenCalledWith(
+      { projectId },
+      expect.any(Function),
+    );
+  });
+
+  it("does not repopulate deleted project snippets when deletion wins the lifecycle lock", async () => {
+    const redis = {
+      get: vi.fn(async () => null),
+      setex: vi.fn(async () => {}),
+    };
+    state.getRedis.mockReturnValueOnce(redis);
+    state.withActiveProjectLease.mockRejectedValueOnce(
+      Object.assign(new Error("Project is deleting."), {
+        code: "project_not_active",
+        status: 409,
+      }),
+    );
+
+    const projectId = "11111111-1111-4111-8111-111111111111";
+    state.vectorQuery.mockResolvedValueOnce([
+      {
+        id: "hit_1",
+        metadata: {
+          chunkIndex: 1,
+          fileId: "file_1",
+          projectId,
+          snippet: "must not be cached",
+          type: "chunk",
+        },
+        score: 0.99,
+      },
+    ] satisfies readonly VectorQueryResult[]);
+
+    const { retrieveProjectChunks } = await loadModule();
+    await expect(
+      retrieveProjectChunks({ projectId, q: "hi", topK: 2 }),
+    ).resolves.toHaveLength(1);
+
+    expect(state.withActiveProjectLease).toHaveBeenCalledOnce();
+    expect(redis.setex).not.toHaveBeenCalled();
   });
 });
 

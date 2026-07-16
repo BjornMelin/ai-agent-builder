@@ -4,6 +4,7 @@ import { embedText } from "@/lib/ai/embeddings.server";
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
 import { sha256Hex } from "@/lib/core/sha256";
+import { withActiveProjectLease } from "@/lib/projects/project-lifecycle-lease.server";
 import { getRedis } from "@/lib/upstash/redis.server";
 import {
   getVectorIndex,
@@ -66,7 +67,7 @@ function cacheKey(
     q: input.q.trim().toLowerCase(),
     topK: input.topK,
   });
-  return `cache:retrieval:${sha256Hex(payload)}`;
+  return `cache:retrieval:project:${input.projectId}:chunks:${sha256Hex(payload)}`;
 }
 
 function cacheKeyArtifacts(
@@ -78,7 +79,52 @@ function cacheKeyArtifacts(
     topK: input.topK,
     type: "artifact",
   });
-  return `cache:retrieval:artifacts:${sha256Hex(payload)}`;
+  return `cache:retrieval:project:${input.projectId}:artifacts:${sha256Hex(payload)}`;
+}
+
+async function writeProjectRetrievalCache(
+  input: Readonly<{
+    key: string;
+    projectId: string;
+    redis: ReturnType<typeof getRedis>;
+    value: readonly ArtifactRetrievalHit[] | readonly RetrievalHit[];
+  }>,
+): Promise<void> {
+  // The project lease is the final-write fence shared with deletion. If this
+  // write wins the lock, deletion purges it afterwards; if deletion wins, the
+  // inactive project check prevents deleted snippets from being repopulated.
+  // Retrieval caching remains best-effort, so lifecycle/Redis failures never
+  // turn a successful vector query into a failed user request.
+  await withActiveProjectLease({ projectId: input.projectId }, async () => {
+    await input.redis.setex(
+      input.key,
+      budgets.toolCacheTtlSeconds,
+      input.value,
+    );
+  }).catch(() => {
+    // Silently ignore cache write failures.
+  });
+}
+
+/**
+ * Remove every Redis retrieval-cache entry owned by a project.
+ *
+ * @param projectId - Project whose retrieval keys must be removed.
+ */
+export async function purgeProjectRetrievalCache(
+  projectId: string,
+): Promise<void> {
+  const redis = getRedis();
+  const pattern = `cache:retrieval:project:${projectId}:*`;
+  let cursor = "0";
+  do {
+    const [nextCursor, keys] = await redis.scan(cursor, {
+      count: 200,
+      match: pattern,
+    });
+    if (keys.length > 0) await redis.del(...keys);
+    cursor = nextCursor;
+  } while (cursor !== "0");
 }
 
 /**
@@ -147,9 +193,11 @@ export async function retrieveProjectChunks(
   });
 
   if (redis) {
-    // Cache write is best-effort; don't fail the request if Redis is unavailable.
-    await redis.setex(key, budgets.toolCacheTtlSeconds, hits).catch(() => {
-      // Silently ignore cache write failures.
+    await writeProjectRetrievalCache({
+      key,
+      projectId: input.projectId,
+      redis,
+      value: hits,
     });
   }
 
@@ -298,8 +346,11 @@ export async function retrieveProjectArtifacts(
     .slice(0, topK);
 
   if (redis) {
-    await redis.setex(key, budgets.toolCacheTtlSeconds, hits).catch(() => {
-      // Ignore cache write failures.
+    await writeProjectRetrievalCache({
+      key,
+      projectId: input.projectId,
+      redis,
+      value: hits,
     });
   }
 
