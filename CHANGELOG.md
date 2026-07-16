@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.15](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.14...ai-agent-builder-v0.1.15) (2026-07-16)
+
+
+### Features
+
+* **projects:** complete safe lifecycle management ([85fa569](https://github.com/BjornMelin/ai-agent-builder/commit/85fa569fe87cb40fd2bc3c87407e681e5901a636))
+* **projects:** complete safe lifecycle management ([63d0d63](https://github.com/BjornMelin/ai-agent-builder/commit/63d0d63dfbcc4286847d30aecf3f6fa08b86e6b4))
+
 ## [0.1.14](https://github.com/BjornMelin/ai-agent-builder/compare/ai-agent-builder-v0.1.13...ai-agent-builder-v0.1.14) (2026-07-13)
 
 
