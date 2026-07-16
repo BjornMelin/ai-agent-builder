@@ -87,6 +87,35 @@ export const projectsTable = pgTable(
 );
 
 /**
+ * Short-lived Vercel Blob client-upload capabilities issued for a project.
+ *
+ * Deletion keeps the project tombstone until every grant has completed or
+ * expired, then performs its final prefix sweep. This prevents a client token
+ * issued before the deletion claim from creating an untracked late Blob.
+ */
+export const projectUploadGrantsTable = pgTable(
+  "project_upload_grants",
+  {
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    id: uuid("id").primaryKey().defaultRandom(),
+    pathname: text("pathname").notNull(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projectsTable.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    index("project_upload_grants_project_id_expires_at_idx").on(
+      t.projectId,
+      t.expiresAt,
+    ),
+  ],
+);
+
+/**
  * Uploaded files belonging to a project (originals).
  */
 export const projectFilesTable = pgTable(
@@ -514,9 +543,9 @@ export const deploymentsTable = pgTable(
       .$type<Record<string, unknown>>()
       .notNull()
       .default({}),
-    projectId: uuid("project_id")
-      .notNull()
-      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    // Intentionally not a foreign key: provider provenance survives project
+    // deletion as a detached operational tombstone for later decommissioning.
+    projectId: uuid("project_id").notNull(),
     provider: providerEnum("provider").notNull().default("vercel"),
     runId: uuid("run_id").references(() => runsTable.id, {
       onDelete: "set null",
@@ -547,9 +576,9 @@ export const infraResourcesTable = pgTable(
       .$type<Record<string, unknown>>()
       .notNull()
       .default({}),
-    projectId: uuid("project_id")
-      .notNull()
-      .references(() => projectsTable.id, { onDelete: "cascade" }),
+    // Intentionally not a foreign key: provider provenance survives project
+    // deletion as a detached operational tombstone for later decommissioning.
+    projectId: uuid("project_id").notNull(),
     provider: providerEnum("provider").notNull(),
     region: text("region"),
     resourceType: varchar("resource_type", { length: 128 }).notNull(),
@@ -629,7 +658,21 @@ export const projectsRelations = relations(projectsTable, ({ many }) => ({
   runs: many(runsTable),
   skillRegistryInstalls: many(projectSkillRegistryInstallsTable),
   skills: many(projectSkillsTable),
+  uploadGrants: many(projectUploadGrantsTable),
 }));
+
+/**
+ * Client-upload grant relations for Drizzle query helpers.
+ */
+export const projectUploadGrantsRelations = relations(
+  projectUploadGrantsTable,
+  ({ one }) => ({
+    project: one(projectsTable, {
+      fields: [projectUploadGrantsTable.projectId],
+      references: [projectsTable.id],
+    }),
+  }),
+);
 
 /**
  * Project file relations for Drizzle query helpers.

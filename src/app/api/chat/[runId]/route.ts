@@ -4,7 +4,10 @@ import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
 import { getChatThreadByWorkflowRunId } from "@/lib/data/chat.server";
 import { inspectChatFollowUp } from "@/lib/data/chat-follow-up.server";
-import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import {
+  getActiveProjectByIdForUser,
+  getProjectByIdForUser,
+} from "@/lib/data/projects.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { allowedUploadMimeTypeSet } from "@/lib/uploads/allowed-mime-types";
@@ -115,7 +118,10 @@ export async function POST(
       throw new AppError("not_found", 404, "Chat session not found.");
     }
 
-    const project = await getProjectByIdForUser(thread.projectId, user.id);
+    const project = await getActiveProjectByIdForUser(
+      thread.projectId,
+      user.id,
+    );
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }

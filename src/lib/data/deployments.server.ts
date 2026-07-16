@@ -3,7 +3,7 @@ import "server-only";
 import { and, desc, eq } from "drizzle-orm";
 import { cacheLife, cacheTag, revalidateTag } from "next/cache";
 
-import { getDb } from "@/db/client";
+import { type DbClient, getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { tagDeploymentsIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
@@ -90,6 +90,7 @@ export async function listDeploymentsByProject(
  * Create a deployment record (non-secret metadata only).
  *
  * @param input - Deployment identity and status.
+ * @param db - Database client, including a lifecycle transaction when supplied.
  * @returns Created deployment DTO.
  */
 export async function createDeploymentRecord(
@@ -105,8 +106,8 @@ export async function createDeploymentRecord(
     startedAt?: Date | null;
     endedAt?: Date | null;
   }>,
+  db: DbClient = getDb(),
 ): Promise<DeploymentDto> {
-  const db = getDb();
   const now = new Date();
 
   try {

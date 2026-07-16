@@ -77,13 +77,27 @@ export async function ensureCodeModeRun(
   const db = getDb();
 
   await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${input.projectId}, 0))`,
+    );
     const [project] = await tx
-      .select({ id: schema.projectsTable.id })
+      .select({
+        id: schema.projectsTable.id,
+        ownerUserId: schema.projectsTable.ownerUserId,
+        status: schema.projectsTable.status,
+      })
       .from(schema.projectsTable)
       .where(eq(schema.projectsTable.id, input.projectId))
       .for("update");
-    if (!project) {
+    if (!project || project.ownerUserId !== input.userId) {
       throw new AppError("not_found", 404, "Project not found.");
+    }
+    if (project.status !== "active") {
+      throw new AppError(
+        "project_not_active",
+        409,
+        "Restore the project before starting new work.",
+      );
     }
 
     const existing = await tx.query.runsTable.findFirst({

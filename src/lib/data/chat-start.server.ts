@@ -1,7 +1,7 @@
 import "server-only";
 
 import { isDeepStrictEqual } from "node:util";
-import { and, eq, isNull, notInArray } from "drizzle-orm";
+import { and, eq, isNull, notInArray, sql } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
@@ -32,6 +32,7 @@ type ChatStartIntent = Readonly<{
   projectId: string;
   threadId: string;
   title: string;
+  userId: string;
 }>;
 
 function toStartState(
@@ -86,6 +87,26 @@ export async function ensureChatStartIntent(
 
   try {
     return await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${input.projectId}, 0))`,
+      );
+      const project = await tx.query.projectsTable.findFirst({
+        columns: { status: true },
+        where: and(
+          eq(schema.projectsTable.id, input.projectId),
+          eq(schema.projectsTable.ownerUserId, input.userId),
+        ),
+      });
+      if (!project) {
+        throw new AppError("project_not_found", 404, "Project not found.");
+      }
+      if (project.status !== "active") {
+        throw new AppError(
+          "project_not_active",
+          409,
+          "Restore the project before starting new work.",
+        );
+      }
       const now = new Date();
       const [created] = await tx
         .insert(schema.chatThreadsTable)

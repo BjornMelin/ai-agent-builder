@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ export type ConfirmDialogProps = Readonly<{
    * Optional description shown under the title.
    */
   description?: string;
+  /** Optional confirmation controls rendered between the description and error. */
+  children?: ReactNode;
   /**
    * Optional error message shown inside the dialog.
    *
@@ -84,6 +86,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
     onOpenChange,
     title,
     description,
+    children,
     dialogError,
     confirmLabel = "Confirm",
     cancelLabel = "Cancel",
@@ -111,48 +114,55 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
           ) : null}
         </DialogHeader>
 
-        {dialogError ? (
-          <p className="text-destructive text-sm" role="alert">
-            {dialogError}
-          </p>
-        ) : null}
+        <form
+          className="contents"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!canConfirm) return;
+            setIsConfirming(true);
+            try {
+              await onConfirm();
+              onOpenChange(false);
+            } catch {
+              // Keep dialog open on failure.
+            } finally {
+              setIsConfirming(false);
+            }
+          }}
+        >
+          {children}
 
-        <DialogFooter>
-          <Button
-            disabled={isConfirming}
-            onClick={() => onOpenChange(false)}
-            type="button"
-            variant="outline"
-          >
-            {cancelLabel}
-          </Button>
-          <Button
-            aria-busy={isConfirming || undefined}
-            disabled={!canConfirm}
-            onClick={async () => {
-              if (!canConfirm) return;
-              setIsConfirming(true);
-              try {
-                await onConfirm();
-                onOpenChange(false);
-              } catch {
-                // Keep dialog open on failure.
-              } finally {
-                setIsConfirming(false);
-              }
-            }}
-            type="button"
-            variant={confirmVariant}
-          >
-            {isConfirming ? (
-              <span
-                aria-hidden="true"
-                className="mr-2 size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
-              />
-            ) : null}
-            {confirmLabel}
-          </Button>
-        </DialogFooter>
+          {dialogError ? (
+            <p className="text-destructive text-sm" role="alert">
+              {dialogError}
+            </p>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              disabled={isConfirming}
+              onClick={() => onOpenChange(false)}
+              type="button"
+              variant="outline"
+            >
+              {cancelLabel}
+            </Button>
+            <Button
+              aria-busy={isConfirming || undefined}
+              disabled={!canConfirm}
+              type="submit"
+              variant={confirmVariant}
+            >
+              {isConfirming ? (
+                <span
+                  aria-hidden="true"
+                  className="mr-2 size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin motion-reduce:animate-none"
+                />
+              ) : null}
+              {confirmLabel}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

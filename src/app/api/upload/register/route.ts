@@ -14,11 +14,12 @@ import {
   type ProjectFileDto,
   upsertProjectFile,
 } from "@/lib/data/files.server";
-import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import { getActiveProjectByIdForUser } from "@/lib/data/projects.server";
 import { env } from "@/lib/env";
 import { ingestFile } from "@/lib/ingest/ingest-file.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
+import { withActiveProjectLease } from "@/lib/projects/project-lifecycle-lease.server";
 import { allowedUploadMimeTypeSet } from "@/lib/uploads/allowed-mime-types";
 import { sanitizeFilename } from "@/lib/uploads/filename";
 import { parseTrustedProjectUploadBlobUrl } from "@/lib/uploads/trusted-blob-url.server";
@@ -159,7 +160,10 @@ export async function POST(
     const bodyPromise = parseJsonBody(req, bodySchema);
     const [user, parsed] = await Promise.all([authPromise, bodyPromise]);
 
-    const project = await getProjectByIdForUser(parsed.projectId, user.id);
+    const project = await getActiveProjectByIdForUser(
+      parsed.projectId,
+      user.id,
+    );
     if (!project) {
       throw new AppError("not_found", 404, "Project not found.");
     }
@@ -265,14 +269,21 @@ export async function POST(
 
         const safeName = sanitizeFilename(blob.originalName);
         didMutateFilesIndex = true;
-        const dbFile = await upsertProjectFile({
-          mimeType: contentType,
-          name: safeName,
-          projectId: parsed.projectId,
-          sha256,
-          sizeBytes: bytes.byteLength,
-          storageKey: blob.url,
-        });
+        const dbFile = await withActiveProjectLease(
+          { projectId: parsed.projectId, userId: user.id },
+          (db) =>
+            upsertProjectFile(
+              {
+                mimeType: contentType,
+                name: safeName,
+                projectId: parsed.projectId,
+                sha256,
+                sizeBytes: bytes.byteLength,
+                storageKey: blob.url,
+              },
+              db,
+            ),
+        );
 
         // Concurrency safety: if another task registered the same sha256 first,
         // ensure we return the canonical DB row and clean up our extra blob.

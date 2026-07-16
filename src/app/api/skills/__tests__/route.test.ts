@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   del: vi.fn(),
   deleteProjectSkill: vi.fn(),
+  findProjectSkillByIdUncached: vi.fn(),
   getProjectByIdForUser: vi.fn(),
   getProjectSkillById: vi.fn(),
+  leaseDb: {},
   listProjectSkillsByProject: vi.fn(),
   requireAppUserApi: vi.fn(),
   upsertProjectSkill: vi.fn(),
@@ -20,17 +22,28 @@ vi.mock("@/lib/auth/require-app-user-api.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
+  getActiveProjectByIdForUser: (...args: unknown[]) =>
+    state.getProjectByIdForUser(...args),
   getProjectByIdForUser: (...args: unknown[]) =>
     state.getProjectByIdForUser(...args),
 }));
 
 vi.mock("@/lib/data/project-skills.server", () => ({
   deleteProjectSkill: (...args: unknown[]) => state.deleteProjectSkill(...args),
+  findProjectSkillByIdUncached: (...args: unknown[]) =>
+    state.findProjectSkillByIdUncached(...args),
   getProjectSkillById: (...args: unknown[]) =>
     state.getProjectSkillById(...args),
   listProjectSkillsByProject: (...args: unknown[]) =>
     state.listProjectSkillsByProject(...args),
   upsertProjectSkill: (...args: unknown[]) => state.upsertProjectSkill(...args),
+}));
+
+vi.mock("@/lib/projects/project-lifecycle-lease.server", () => ({
+  withActiveProjectLease: async (
+    _input: unknown,
+    work: (db: unknown) => Promise<unknown>,
+  ) => await work(state.leaseDb),
 }));
 
 async function loadRoute() {
@@ -56,6 +69,7 @@ beforeEach(() => {
     updatedAt: new Date(0).toISOString(),
   });
   state.getProjectSkillById.mockResolvedValue(null);
+  state.findProjectSkillByIdUncached.mockResolvedValue(null);
   state.deleteProjectSkill.mockResolvedValue({ ok: true });
   state.del.mockResolvedValue(undefined);
 });
@@ -182,6 +196,7 @@ describe("POST /api/skills", () => {
         name: "My Skill",
         projectId: "proj_1",
       }),
+      state.leaseDb,
     );
   });
 });
@@ -220,16 +235,16 @@ describe("DELETE /api/skills", () => {
       }),
     );
     expect(res.status).toBe(200);
-    expect(state.deleteProjectSkill).toHaveBeenCalledWith({
-      projectId: "proj_1",
-      skillId: "skill_1",
-    });
+    expect(state.deleteProjectSkill).toHaveBeenCalledWith(
+      { projectId: "proj_1", skillId: "skill_1" },
+      state.leaseDb,
+    );
   });
 
   it("best-effort deletes the bundle blob when deleting a bundled skill", async () => {
     await withEnv({ BLOB_READ_WRITE_TOKEN: "rw_token" }, async () => {
       const { DELETE } = await loadRoute();
-      state.getProjectSkillById.mockResolvedValueOnce({
+      state.findProjectSkillByIdUncached.mockResolvedValueOnce({
         content: "---\nname: skills\ndescription: x\n---\n",
         createdAt: new Date(0).toISOString(),
         description: "x",

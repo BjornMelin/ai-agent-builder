@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   createDeploymentRecord: vi.fn(),
   getProjectByIdForUser: vi.fn(),
+  leaseDb: {},
   listDeploymentsByProject: vi.fn(),
   requireAppUserApi: vi.fn(),
 }));
@@ -17,7 +18,15 @@ vi.mock("@/lib/data/deployments.server", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
+  getActiveProjectByIdForUser: state.getProjectByIdForUser,
   getProjectByIdForUser: state.getProjectByIdForUser,
+}));
+
+vi.mock("@/lib/projects/project-lifecycle-lease.server", () => ({
+  withActiveProjectLease: async (
+    _input: unknown,
+    work: (db: unknown) => Promise<unknown>,
+  ) => await work(state.leaseDb),
 }));
 
 async function loadRoute() {
@@ -163,6 +172,7 @@ describe("POST /api/deployments", () => {
         runId: "run_1",
         status: "created",
       }),
+      state.leaseDb,
     );
     await expect(res.json()).resolves.toMatchObject({
       deployment: { id: "dep_1" },

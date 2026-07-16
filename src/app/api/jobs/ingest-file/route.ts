@@ -77,6 +77,14 @@ export const POST = verifyQstashSignatureAppRouter(async (req: Request) => {
 
     return jsonOk(result);
   } catch (err) {
+    if (
+      err instanceof AppError &&
+      ["not_found", "project_not_active", "project_not_found"].includes(
+        err.code,
+      )
+    ) {
+      return jsonOk({ ok: true, skipped: "project_inactive" });
+    }
     return jsonError(err);
   }
 });

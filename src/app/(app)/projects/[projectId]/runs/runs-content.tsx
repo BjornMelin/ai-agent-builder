@@ -44,6 +44,7 @@ export async function RunsContent(
   }
 
   const runs = await listRunsByProject(project.id, { limit: 50 });
+  const canStartRuns = project.status === "active";
 
   return (
     <Card>
@@ -51,7 +52,18 @@ export async function RunsContent(
         <CardTitle>Runs</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <RunControlsClient projectId={project.id} />
+        <RunControlsClient
+          canStart={canStartRuns}
+          projectId={project.id}
+          {...(!canStartRuns
+            ? {
+                unavailableReason:
+                  project.status === "deleting"
+                    ? "Deletion is pending; new runs are locked."
+                    : "Restore this project in Settings before starting a run.",
+              }
+            : {})}
+        />
 
         {runs.length === 0 ? (
           <Empty className="min-h-[180px] rounded-xl border">

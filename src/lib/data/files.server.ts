@@ -3,7 +3,7 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import { cacheLife, cacheTag } from "next/cache";
 
-import { getDb } from "@/db/client";
+import { type DbClient, getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { tagUploadsIndex } from "@/lib/cache/tags";
 import { AppError } from "@/lib/core/errors";
@@ -41,6 +41,7 @@ function toProjectFileDto(row: FileRow): ProjectFileDto {
  * Create (or upsert) a project file record idempotently by `(projectId, sha256)`.
  *
  * @param input - File metadata including projectId, name, mimeType, sha256 hash, size, and storage URL.
+ * @param db - Database client, including a lifecycle transaction when supplied.
  * @returns File DTO.
  * @throws AppError - With code "db_insert_failed" if the database operation fails.
  */
@@ -53,9 +54,8 @@ export async function upsertProjectFile(
     sizeBytes: number;
     storageKey: string;
   }>,
+  db: DbClient = getDb(),
 ): Promise<ProjectFileDto> {
-  const db = getDb();
-
   const [row] = await db
     .insert(schema.projectFilesTable)
     .values({

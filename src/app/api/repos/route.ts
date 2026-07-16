@@ -2,13 +2,17 @@ import { z } from "zod";
 
 import { requireAppUserApi } from "@/lib/auth/require-app-user-api.server";
 import { AppError } from "@/lib/core/errors";
-import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import {
+  getActiveProjectByIdForUser,
+  getProjectByIdForUser,
+} from "@/lib/data/projects.server";
 import {
   listReposByProject,
   upsertRepoConnection,
 } from "@/lib/data/repos.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonCreated, jsonError, jsonOk } from "@/lib/next/responses";
+import { withActiveProjectLease } from "@/lib/projects/project-lifecycle-lease.server";
 import {
   fetchGitHubRepoInfo,
   isGitHubConfigured,
@@ -76,7 +80,7 @@ export async function POST(req: Request) {
     const bodyPromise = parseJsonBody(req, connectRepoSchema);
     const [user, body] = await Promise.all([authPromise, bodyPromise]);
 
-    const project = await getProjectByIdForUser(body.projectId, user.id);
+    const project = await getActiveProjectByIdForUser(body.projectId, user.id);
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }
@@ -118,15 +122,22 @@ export async function POST(req: Request) {
       };
     }
 
-    const repo = await upsertRepoConnection({
-      cloneUrl: repoInfo.cloneUrl,
-      defaultBranch: repoInfo.defaultBranch,
-      htmlUrl: repoInfo.htmlUrl,
-      name: repoInfo.name,
-      owner: repoInfo.owner,
-      projectId: project.id,
-      provider: body.provider,
-    });
+    const repo = await withActiveProjectLease(
+      { projectId: project.id, userId: user.id },
+      (db) =>
+        upsertRepoConnection(
+          {
+            cloneUrl: repoInfo.cloneUrl,
+            defaultBranch: repoInfo.defaultBranch,
+            htmlUrl: repoInfo.htmlUrl,
+            name: repoInfo.name,
+            owner: repoInfo.owner,
+            projectId: project.id,
+            provider: body.provider,
+          },
+          db,
+        ),
+    );
 
     return jsonCreated({ repo });
   } catch (err) {

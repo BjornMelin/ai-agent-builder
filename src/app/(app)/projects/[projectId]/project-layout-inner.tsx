@@ -35,7 +35,11 @@ export async function ProjectLayoutInner(
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-1.5">
             <Badge className="rounded-full" variant="secondary">
-              Project Workspace
+              {project.status === "deleting"
+                ? "Deletion pending"
+                : project.status === "archived"
+                  ? "Archived workspace"
+                  : "Project workspace"}
             </Badge>
             <h1 className="font-semibold text-2xl tracking-tight md:text-3xl">
               {project.name}
@@ -50,6 +54,23 @@ export async function ProjectLayoutInner(
           </Link>
         </div>
       </header>
+
+      {project.status !== "active" ? (
+        <div
+          className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm"
+          role="status"
+        >
+          {project.status === "deleting"
+            ? "Deletion is pending. This workspace is read-only while cleanup remains retryable."
+            : "This workspace is archived and read-only. Restore it in Settings to start new work."}{" "}
+          <Link
+            className="font-medium underline underline-offset-4"
+            href={`/projects/${encodeURIComponent(project.id)}/settings`}
+          >
+            Open settings
+          </Link>
+        </div>
+      ) : null}
 
       <ProjectNavClient projectId={project.id} />
       <Separator />

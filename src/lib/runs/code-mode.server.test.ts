@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
 vi.mock("workflow/api", () => ({ start: state.start }));
 
 vi.mock("@/lib/data/projects.server", () => ({
+  getOwnedProjectByIdForUser: state.getProjectByIdForUser,
   getProjectByIdForUser: state.getProjectByIdForUser,
 }));
 
@@ -62,13 +63,15 @@ beforeEach(() => {
 
 describe("startProjectCodeMode", () => {
   it("throws not_found before creating a run when project is inaccessible", async () => {
-    state.getProjectByIdForUser.mockResolvedValueOnce(null);
+    state.ensureCodeModeRun.mockRejectedValueOnce(
+      Object.assign(new Error("Project not found."), { code: "not_found" }),
+    );
 
     await expect(startProjectCodeMode(startInput)).rejects.toMatchObject({
       code: "not_found",
     });
 
-    expect(state.ensureCodeModeRun).not.toHaveBeenCalled();
+    expect(state.ensureCodeModeRun).toHaveBeenCalledOnce();
     expect(state.start).not.toHaveBeenCalled();
   });
 

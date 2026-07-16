@@ -6,6 +6,7 @@ import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
 import { sha256Hex } from "@/lib/core/sha256";
 import { getArtifactById } from "@/lib/data/artifacts.server";
+import { withActiveProjectLease } from "@/lib/projects/project-lifecycle-lease.server";
 import {
   getVectorIndex,
   projectArtifactsNamespace,
@@ -141,12 +142,12 @@ export async function indexArtifactVersion(
   const vector = getVectorIndex().namespace(namespace);
   const chunkIdPrefix = `${baseId}:`;
 
-  // Cleanup first so shrinking chunk sets never leave stale vectors behind.
-  await vector.delete({ prefix: chunkIdPrefix });
-
   const markdown = getMarkdownContent(artifact.content);
   if (!markdown) {
     // Only markdown artifacts are indexed for retrieval today.
+    await withActiveProjectLease({ projectId: artifact.projectId }, () =>
+      vector.delete({ prefix: chunkIdPrefix }),
+    );
     return;
   }
 
@@ -169,27 +170,32 @@ export async function indexArtifactVersion(
     );
   }
 
-  await vector.upsert(
-    chunks.map((c, idx) => {
-      const meta: VectorMetadata = {
-        artifactId: artifact.id,
-        artifactKey: artifact.logicalKey,
-        artifactKind: artifact.kind,
-        artifactVersion: artifact.version,
-        // Extra fields for UI/search convenience (allowed via VectorDict).
-        chunkIndex: c.chunkIndex,
-        projectId: artifact.projectId,
-        snippet: c.snippet,
-        title: markdown.title,
-        type: "artifact",
-      };
+  await withActiveProjectLease({ projectId: artifact.projectId }, async () => {
+    // Cleanup and replacement share one lifecycle lease, so deletion cannot
+    // interleave with a partially replaced namespace.
+    await vector.delete({ prefix: chunkIdPrefix });
+    await vector.upsert(
+      chunks.map((c, idx) => {
+        const meta: VectorMetadata = {
+          artifactId: artifact.id,
+          artifactKey: artifact.logicalKey,
+          artifactKind: artifact.kind,
+          artifactVersion: artifact.version,
+          // Extra fields for UI/search convenience (allowed via VectorDict).
+          chunkIndex: c.chunkIndex,
+          projectId: artifact.projectId,
+          snippet: c.snippet,
+          title: markdown.title,
+          type: "artifact",
+        };
 
-      return {
-        data: c.text,
-        id: c.id,
-        metadata: meta,
-        vector: embeddings[idx],
-      };
-    }),
-  );
+        return {
+          data: c.text,
+          id: c.id,
+          metadata: meta,
+          vector: embeddings[idx],
+        };
+      }),
+    );
+  });
 }

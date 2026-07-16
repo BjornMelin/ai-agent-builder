@@ -4,6 +4,7 @@ const state = vi.hoisted(() => ({
   embedTexts: vi.fn(),
   vectorDelete: vi.fn(),
   vectorUpsert: vi.fn(),
+  withActiveProjectLease: vi.fn(),
 }));
 
 vi.mock("@/lib/ai/embeddings.server", () => ({
@@ -21,12 +22,19 @@ vi.mock("@/lib/upstash/vector.server", () => ({
     `project:${projectId}:repo:${repoId}`,
 }));
 
+vi.mock("@/lib/projects/project-lifecycle-lease.server", () => ({
+  withActiveProjectLease: state.withActiveProjectLease,
+}));
+
 describe("indexRepoFromSandbox", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     state.embedTexts.mockImplementation(async (inputs: readonly string[]) => {
       return inputs.map(() => [0, 0, 0]);
     });
+    state.withActiveProjectLease.mockImplementation(
+      async (_input: unknown, work: () => Promise<unknown>) => await work(),
+    );
   });
 
   it("indexes bounded repo content and deletes by prefix", async () => {
@@ -100,6 +108,17 @@ describe("indexRepoFromSandbox", () => {
 
     expect(state.vectorDelete).toHaveBeenCalledWith({ prefix: "repo:repo_1:" });
     expect(state.vectorUpsert).toHaveBeenCalled();
+    expect(state.withActiveProjectLease).toHaveBeenCalledTimes(2);
+    expect(state.withActiveProjectLease).toHaveBeenNthCalledWith(
+      1,
+      { projectId: "proj_1" },
+      expect.any(Function),
+    );
+    expect(state.withActiveProjectLease).toHaveBeenNthCalledWith(
+      2,
+      { projectId: "proj_1" },
+      expect.any(Function),
+    );
 
     const upsertPayload = state.vectorUpsert.mock.calls[0]?.[0] as unknown[];
     expect(upsertPayload.length).toBeGreaterThan(0);

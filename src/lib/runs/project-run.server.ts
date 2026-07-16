@@ -3,7 +3,7 @@ import "server-only";
 import { getRun, start } from "workflow/api";
 import { AppError } from "@/lib/core/errors";
 import { log } from "@/lib/core/log";
-import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import { getOwnedProjectByIdForUser } from "@/lib/data/projects.server";
 import {
   completeRunCancellation,
   createRun,
@@ -14,6 +14,7 @@ import {
   setRunWorkflowRunId,
   updateRunStatus,
 } from "@/lib/data/runs.server";
+import { withActiveProjectLease } from "@/lib/projects/project-lifecycle-lease.server";
 import { cancelRunSandboxes } from "@/lib/sandbox/sandbox-cancellation.server";
 import { projectRun } from "@/workflows/runs/project-run.workflow";
 
@@ -51,16 +52,18 @@ export async function startProjectRun(
     metadata?: Record<string, unknown>;
   }>,
 ): Promise<RunDto> {
-  const project = await getProjectByIdForUser(input.projectId, input.userId);
-  if (!project) {
-    throw new AppError("not_found", 404, "Project not found.");
-  }
-
-  const run = await createRun({
-    kind: input.kind,
-    projectId: input.projectId,
-    ...(input.metadata != null ? { metadata: input.metadata } : {}),
-  });
+  const run = await withActiveProjectLease(
+    { projectId: input.projectId, userId: input.userId },
+    (db) =>
+      createRun(
+        {
+          kind: input.kind,
+          projectId: input.projectId,
+          ...(input.metadata != null ? { metadata: input.metadata } : {}),
+        },
+        db,
+      ),
+  );
 
   let workflowRunId: string | null = null;
   try {
@@ -158,7 +161,7 @@ export async function cancelProjectRun(
     throw new AppError("not_found", 404, "Run not found.");
   }
 
-  const project = await getProjectByIdForUser(run.projectId, userId);
+  const project = await getOwnedProjectByIdForUser(run.projectId, userId);
   if (!project) {
     throw new AppError("not_found", 404, "Run not found.");
   }

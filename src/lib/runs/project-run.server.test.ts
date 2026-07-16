@@ -28,7 +28,15 @@ vi.mock("@/lib/core/log", () => ({
 }));
 
 vi.mock("@/lib/data/projects.server", () => ({
+  getOwnedProjectByIdForUser: state.getProjectByIdForUser,
   getProjectByIdForUser: state.getProjectByIdForUser,
+}));
+
+vi.mock("@/lib/projects/project-lifecycle-lease.server", () => ({
+  withActiveProjectLease: async (
+    _input: unknown,
+    work: () => Promise<unknown>,
+  ) => await work(),
 }));
 
 vi.mock("@/lib/data/runs.server", () => ({

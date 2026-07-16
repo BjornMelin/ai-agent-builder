@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, eq, isNull, notInArray } from "drizzle-orm";
 import { cache } from "react";
-import { getDb } from "@/db/client";
+import { type DbClient, getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { AppError } from "@/lib/core/errors";
 import { cancelRunAndStepsTx } from "@/lib/data/run-cancel-tx";
@@ -95,6 +95,7 @@ function toRunStepDto(row: RunStepRow): RunStepDto {
  * Create a new run for a project.
  *
  * @param input - Run creation inputs.
+ * @param db - Database client, including a lifecycle transaction when supplied.
  * @returns Created run DTO.
  * @throws AppError - With code "db_insert_failed" (500) when run creation fails.
  */
@@ -104,8 +105,8 @@ export async function createRun(
     kind: RunDto["kind"];
     metadata?: Record<string, unknown>;
   }>,
+  db: DbClient = getDb(),
 ): Promise<RunDto> {
-  const db = getDb();
   const [row] = await db
     .insert(schema.runsTable)
     .values({

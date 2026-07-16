@@ -7,7 +7,10 @@ import {
   getApprovalById,
   listPendingApprovals,
 } from "@/lib/data/approvals.server";
-import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import {
+  getActiveProjectByIdForUser,
+  getProjectByIdForUser,
+} from "@/lib/data/projects.server";
 import { getRunById } from "@/lib/data/runs.server";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
@@ -85,7 +88,10 @@ export async function POST(req: Request) {
       throw new AppError("not_found", 404, "Approval not found.");
     }
 
-    const project = await getProjectByIdForUser(existing.projectId, user.id);
+    const project = await getActiveProjectByIdForUser(
+      existing.projectId,
+      user.id,
+    );
     if (!project) {
       throw new AppError("forbidden", 403, "Forbidden.");
     }

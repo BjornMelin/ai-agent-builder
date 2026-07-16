@@ -116,6 +116,7 @@ export async function POST(req: Request): Promise<Response> {
       projectId: parsed.projectId,
       threadId,
       title,
+      userId: user.id,
     });
     if (intent.workflowRunId) {
       return streamChatRun(threadId, intent.workflowRunId);

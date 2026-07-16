@@ -40,6 +40,13 @@ vi.mock("@/lib/upstash/vector.server", () => ({
     `project:${projectId}:artifacts`,
 }));
 
+vi.mock("@/lib/projects/project-lifecycle-lease.server", () => ({
+  withActiveProjectLease: async (
+    _input: unknown,
+    work: () => Promise<unknown>,
+  ) => await work(),
+}));
+
 async function loadModule() {
   vi.resetModules();
   return import("@/lib/artifacts/index-artifact.server");

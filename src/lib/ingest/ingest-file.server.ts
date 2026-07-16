@@ -2,13 +2,13 @@ import "server-only";
 
 import { eq } from "drizzle-orm";
 
-import { getDb } from "@/db/client";
 import * as schema from "@/db/schema";
 import { embedTexts } from "@/lib/ai/embeddings.server";
 import { budgets } from "@/lib/config/budgets.server";
 import { AppError } from "@/lib/core/errors";
 import { chunkDocument } from "@/lib/ingest/chunk/chunk-document.server";
 import { extractDocument } from "@/lib/ingest/extract/extract-document.server";
+import { withActiveProjectLease } from "@/lib/projects/project-lifecycle-lease.server";
 import {
   getVectorIndex,
   projectChunksNamespace,
@@ -71,17 +71,16 @@ export async function ingestFile(
     throw new AppError("embed_failed", 500, "Embedding batch size mismatch.");
   }
 
-  const db = getDb();
   const vector = getVectorIndex().namespace(
     projectChunksNamespace(input.projectId),
   );
 
-  await db.transaction(async (tx) => {
-    await tx
+  await withActiveProjectLease({ projectId: input.projectId }, async (db) => {
+    await db
       .delete(schema.fileChunksTable)
       .where(eq(schema.fileChunksTable.fileId, input.fileId));
 
-    await tx.insert(schema.fileChunksTable).values(
+    await db.insert(schema.fileChunksTable).values(
       chunks.map((c) => ({
         chunkIndex: c.chunkIndex,
         content: c.content,
@@ -93,39 +92,36 @@ export async function ingestFile(
         tokenCount: c.tokenCount ?? null,
       })),
     );
-  });
 
-  // Ensure stale vectors are removed (e.g., extraction version changes).
-  try {
-    await vector.delete({ prefix: `${input.fileId}:` });
-
-    await vector.upsert(
-      chunks.map((c, idx) => ({
-        id: c.id,
-        metadata: {
-          chunkId: c.id,
-          chunkIndex: c.chunkIndex,
-          fileId: input.fileId,
-          projectId: input.projectId,
-          snippet: c.content.slice(0, 280),
-          type: "chunk",
-          ...(c.pageStart === undefined ? {} : { pageStart: c.pageStart }),
-          ...(c.pageEnd === undefined ? {} : { pageEnd: c.pageEnd }),
-        } satisfies VectorMetadata,
-        vector: embeddings[idx] as number[],
-      })),
-    );
-  } catch (error) {
+    // Ensure stale vectors are removed (e.g., extraction version changes).
     try {
       await vector.delete({ prefix: `${input.fileId}:` });
-    } catch {
-      // Best-effort cleanup; preserve original failure.
+
+      await vector.upsert(
+        chunks.map((c, idx) => ({
+          id: c.id,
+          metadata: {
+            chunkId: c.id,
+            chunkIndex: c.chunkIndex,
+            fileId: input.fileId,
+            projectId: input.projectId,
+            snippet: c.content.slice(0, 280),
+            type: "chunk",
+            ...(c.pageStart === undefined ? {} : { pageStart: c.pageStart }),
+            ...(c.pageEnd === undefined ? {} : { pageEnd: c.pageEnd }),
+          } satisfies VectorMetadata,
+          vector: embeddings[idx] as number[],
+        })),
+      );
+    } catch (error) {
+      try {
+        await vector.delete({ prefix: `${input.fileId}:` });
+      } catch {
+        // Best-effort cleanup; preserve original failure.
+      }
+      throw error;
     }
-    await db
-      .delete(schema.fileChunksTable)
-      .where(eq(schema.fileChunksTable.fileId, input.fileId));
-    throw error;
-  }
+  });
 
   return { chunksIndexed: chunks.length, fileId: input.fileId };
 }

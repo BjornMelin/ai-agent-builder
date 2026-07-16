@@ -1,11 +1,11 @@
 ---
 spec: SPEC-0020
 title: Project workspace and search UX
-version: 0.2.1
-date: 2026-02-06
+version: 0.3.2
+date: 2026-07-16
 owners: ["Bjorn Melin"]
 status: Implemented
-related_requirements: ["FR-002", "FR-019", "FR-020", "NFR-008", "IR-002", "IR-005"]
+related_requirements: ["FR-002", "FR-019", "FR-020", "NFR-007", "NFR-008", "IR-002", "IR-005"]
 related_adrs: ["ADR-0011", "ADR-0004", "ADR-0013", "ADR-0020"]
 notes:
   "Defines the user-facing workspace information architecture and search behavior."
@@ -76,6 +76,44 @@ Requirement IDs are defined in [docs/specs/requirements.md](/docs/specs/requirem
 - **IR-005:** Vector search via Upstash Vector (prefer HYBRID indexes when
   provisioning).
 
+### Project lifecycle
+
+- Project metadata mutations, archive/restore, and deletion require an exact
+  authenticated owner match. The temporary `legacy-unowned` read path is not a
+  mutation capability.
+- `active`, `archived`, and `deleting` are the supported project states.
+  Archiving is reversible, retains all project data, and prevents new work.
+  `deleting` is an irreversible, non-writable cleanup fence that remains
+  retryable until every owned external resource and relational row is gone.
+- Permanent deletion requires the project to be archived and the user to type
+  its exact slug.
+- Deletion is refused while a run or chat is pending/running/waiting/blocked,
+  while a sandbox job is pending/running/canceling, or while a job still owns
+  a sandbox that has not been stopped.
+- The archived-to-deleting transition uses a project-scoped Postgres advisory
+  lock. Resource producers acquire the same active-project lease for their
+  commit, so deletion either observes their durable work or rejects it after
+  claiming the fence. Queued ingestion, artifact, and skill-install work skips
+  commits for inactive projects.
+- `infra_resources` and `deployments` records survive project deletion as
+  detached operational tombstones. Deletion never decommissions live Neon,
+  Upstash, or Vercel resources, and the confirmation UI warns when retained
+  provider cleanup records exist.
+- The deletion order is every Vercel Blob object under the exact
+  `projects/{projectId}/` prefix, every Upstash Vector namespace under the exact
+  `project:{projectId}:` prefix, project-scoped Redis retrieval-cache entries,
+  then the project row. Database references are retained as a cleanup
+  cross-check, while prefix discovery covers unregistered uploads, orphaned
+  namespaces, and future resource kinds. The final database delete cascades to
+  project-owned relational rows.
+- Client upload tokens expire after five minutes. Their signed completion
+  callback shares the lifecycle lock and removes a completed Blob if deletion
+  already won the fence. Every token has a durable upload-grant row committed
+  before issuance. Deletion remains pending while a grant is unexpired, then
+  prunes settled grants and performs a fresh Blob prefix sweep before the
+  project cascade. A missed finite-retry callback therefore cannot leave a
+  permanent late-upload orphan.
+
 ## Constraints
 
 - Search must always respect access control boundaries:
@@ -135,6 +173,8 @@ Per project, provide consistent tabs:
 
 7. **Settings**
 
+   - name and slug editing
+   - archive, restore, and guarded permanent deletion
    - project settings and guardrail controls
 
 Search must support:
@@ -199,6 +239,12 @@ Accessibility and UX:
   navigation and ensures consistent deep-linkable URLs.
 - `src/app/(app)/projects/[projectId]/*/page.tsx`: tab pages (uploads/chat/runs/
   artifacts/implementation).
+- `src/app/(app)/projects/[projectId]/settings/actions.ts`: exact-owner project
+  metadata and lifecycle mutations.
+- `src/lib/projects/delete-project.server.ts`: retry-safe external cleanup and
+  final relational deletion orchestration.
+- `src/lib/projects/project-lifecycle-lease.server.ts`: canonical active-project
+  commit lease shared by work producers and the deletion claim.
 - `src/app/(app)/projects/[projectId]/artifacts/page.tsx`: list latest artifacts.
 - `src/app/(app)/projects/[projectId]/artifacts/[artifactId]/page.tsx`: artifact
   detail page (render markdown + citations + version links).
@@ -223,6 +269,11 @@ Accessibility and UX:
 ## Acceptance criteria
 
 - A user can create, open, edit, archive, and delete projects.
+- Archived projects remain readable and can be restored.
+- Permanent deletion requires typed confirmation, rejects active work, removes
+  every project-prefixed Blob and Vector namespace, purges retrieval caches, and
+  only then cascades project-owned relational records. Managed provider records
+  and cleanup handles remain detached for later decommissioning.
 - The project workspace has stable, deep-linkable tabs with consistent URL
   structure.
 - Global search returns scoped results across projects.
@@ -233,16 +284,25 @@ Accessibility and UX:
 
 ## Testing
 
-- Unit tests: result merging, ranking, and filter logic.
+- Unit tests: result merging, ranking, filter logic, exact-owner lifecycle
+  mutations, advisory-lock leases, deletion guards, prefix pagination, orphaned
+  resource discovery, and external-cleanup order.
 - Integration tests: search route handler enforces scoping and returns stable
   deep links.
-- E2E tests: create project → upload → search → navigate to result.
+- Required preview E2E release check: create project → rename → upload → search
+  → navigate → archive → restore → archive → typed-confirm deletion. Run it only
+  with configured database, Blob, Vector, Redis, and test-auth credentials; the
+  unconfigured local checkout must not substitute placeholder secrets or a
+  relational-only deletion path.
 
 ## Operational notes
 
 - Track search latency and error rates (see SPEC-0010).
 - Treat “missing provenance” (result without deep link) as a bug; it breaks
   traceability.
+- Keep deletion disabled when Blob or Vector credentials are unavailable. Do
+  not delete the relational row as a workaround; restore the integration and
+  retry instead.
 - When using IR-005 (Upstash Vector HYBRID indexes), upserts must include both
   dense and sparse vectors or the operation fails (see
   [Upstash Vector Hybrid Indexes](https://upstash.com/docs/vector/features/hybridindexes)).
@@ -276,3 +336,6 @@ Accessibility and UX:
 - **0.1.1 (2026-02-03)**: Linked to SPEC-0021 as the cross-cutting finalization spec.
 - **0.2.0 (2026-02-06)**: Implemented global search page, shared search UI patterns, and expanded `/api/search` contract (`scope/types/limit/cursor`) covering projects/uploads/chunks/artifacts/runs.
 - **0.2.1 (2026-02-06)**: Implemented ownership-scoped search enforcement, strict Zod query validation bounds, and server-side Upstash rate limiting for `/api/search`.
+- **0.3.0 (2026-07-16)**: Implemented exact-owner edit/archive/restore, typed-confirm deletion guards, Blob and Vector cleanup, cascading relational deletion, cache invalidation, and lifecycle UI/tests.
+- **0.3.1 (2026-07-16)**: Added the irreversible deletion fence, shared active-project leases, prefix-complete Blob/Vector discovery, Redis cache purge, detached provider-provenance tombstones, short-lived upload tokens, and retry-safe deletion UX.
+- **0.3.2 (2026-07-16)**: Added durable client-upload grants, deletion quiescence, and final prefix sweeping so finite Blob callback retries cannot orphan late uploads.

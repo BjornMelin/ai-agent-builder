@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { indexArtifactVersion } from "@/lib/artifacts/index-artifact.server";
+import { AppError } from "@/lib/core/errors";
 import { parseJsonBody } from "@/lib/next/parse-json-body.server";
 import { jsonError, jsonOk } from "@/lib/next/responses";
 import { verifyQstashSignatureAppRouter } from "@/lib/upstash/qstash.server";
@@ -30,6 +31,14 @@ export const POST = verifyQstashSignatureAppRouter(async (req: Request) => {
     await indexArtifactVersion(parsed);
     return jsonOk({ ok: true });
   } catch (err) {
+    if (
+      err instanceof AppError &&
+      ["not_found", "project_not_active", "project_not_found"].includes(
+        err.code,
+      )
+    ) {
+      return jsonOk({ ok: true, skipped: "project_inactive" });
+    }
     return jsonError(err);
   }
 });

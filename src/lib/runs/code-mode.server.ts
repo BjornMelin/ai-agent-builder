@@ -2,7 +2,7 @@ import "server-only";
 
 import { start } from "workflow/api";
 import { AppError } from "@/lib/core/errors";
-import { getProjectByIdForUser } from "@/lib/data/projects.server";
+import { getOwnedProjectByIdForUser } from "@/lib/data/projects.server";
 import { getRunById, type RunDto } from "@/lib/data/runs.server";
 import {
   claimCodeModeWorkflow,
@@ -38,11 +38,6 @@ export async function startProjectCodeMode(
     runId: string;
   }>,
 ): Promise<RunDto> {
-  const project = await getProjectByIdForUser(input.projectId, input.userId);
-  if (!project) {
-    throw new AppError("not_found", 404, "Project not found.");
-  }
-
   await ensureCodeModeRun({
     budgets: input.budgets,
     networkAccess: input.networkAccess,
@@ -99,7 +94,7 @@ export async function getCodeModeRun(
     throw new AppError("not_found", 404, "Run not found.");
   }
 
-  const project = await getProjectByIdForUser(run.projectId, userId);
+  const project = await getOwnedProjectByIdForUser(run.projectId, userId);
   if (!project) {
     throw new AppError("forbidden", 403, "Forbidden.");
   }
@@ -123,7 +118,7 @@ export async function getActiveProjectCodeModeRun(
   projectId: string,
   userId: string,
 ): Promise<RunDto | null> {
-  const project = await getProjectByIdForUser(projectId, userId);
+  const project = await getOwnedProjectByIdForUser(projectId, userId);
   if (!project) {
     throw new AppError("not_found", 404, "Project not found.");
   }

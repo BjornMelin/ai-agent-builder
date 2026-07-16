@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
 import type { ProjectFileDto } from "@/lib/data/files.server";
 import type { IngestFileResult } from "@/lib/ingest/ingest-file.server";
 
@@ -111,7 +110,7 @@ describe("POST /api/jobs/ingest-file", () => {
     });
   });
 
-  it("rejects when the file is missing or mismatched", async () => {
+  it("acknowledges a stale job when the file was deleted", async () => {
     const POST = await loadRoute();
     state.getProjectFileById.mockResolvedValueOnce(null);
 
@@ -122,9 +121,10 @@ describe("POST /api/jobs/ingest-file", () => {
       }),
     );
 
-    expect(res.status).toBe(404);
-    await expect(res.json()).resolves.toMatchObject({
-      error: { code: "not_found" },
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      ok: true,
+      skipped: "project_inactive",
     });
   });
 
@@ -330,5 +330,39 @@ describe("POST /api/jobs/ingest-file", () => {
       expect.stringContaining(":uploads:index:"),
       "max",
     );
+  });
+
+  it.each([
+    "project_not_active",
+    "project_not_found",
+  ])("acknowledges a stale job after %s", async (code) => {
+    const POST = await loadRoute();
+    const { AppError } = await import("@/lib/core/errors");
+    const bytes = new Uint8Array([1, 2, 3]);
+    const crypto = await import("node:crypto");
+    const digest = crypto.createHash("sha256").update(bytes).digest("hex");
+    state.getProjectFileById.mockResolvedValueOnce({
+      ...baseFile,
+      sha256: digest,
+    });
+    globalThis.fetch = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(bytes, { status: 200 }));
+    state.ingestFile.mockRejectedValueOnce(
+      new AppError(code, code === "project_not_found" ? 404 : 409, "stale"),
+    );
+
+    const res = await POST(
+      new Request("http://localhost/api/jobs/ingest-file", {
+        body: JSON.stringify({ fileId, projectId }),
+        method: "POST",
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      ok: true,
+      skipped: "project_inactive",
+    });
   });
 });

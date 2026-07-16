@@ -4,6 +4,9 @@ import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 
+import { Badge } from "@/components/ui/badge";
+import type { ProjectStatus } from "@/lib/data/projects.server";
+
 /**
  * A single project row rendered in the projects list.
  */
@@ -11,6 +14,7 @@ export type ProjectListItem = Readonly<{
   id: string;
   name: string;
   slug: string | null;
+  status: ProjectStatus;
 }>;
 
 const ITEM_GAP_PX = 8; // matches `gap-2`
@@ -21,6 +25,12 @@ const useHydrated = () =>
     () => true,
     () => false,
   );
+
+function projectStatusLabel(status: ProjectStatus): string | null {
+  if (status === "archived") return "Archived";
+  if (status === "deleting") return "Deletion pending";
+  return null;
+}
 
 /**
  * Virtualized project list for the `/projects` page.
@@ -62,9 +72,16 @@ export function ProjectsListClient(
                   {project.slug ?? ""}
                 </p>
               </div>
-              <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">
-                Open
-              </span>
+              <div className="flex items-center gap-2">
+                {projectStatusLabel(project.status) ? (
+                  <Badge variant="outline">
+                    {projectStatusLabel(project.status)}
+                  </Badge>
+                ) : null}
+                <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">
+                  Open
+                </span>
+              </div>
             </Link>
           </li>
         ))}
@@ -100,9 +117,16 @@ export function ProjectsListClient(
                   {project.slug ?? ""}
                 </p>
               </div>
-              <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">
-                Open
-              </span>
+              <div className="flex items-center gap-2">
+                {projectStatusLabel(project.status) ? (
+                  <Badge variant="outline">
+                    {projectStatusLabel(project.status)}
+                  </Badge>
+                ) : null}
+                <span className="text-muted-foreground text-sm transition-colors group-hover:text-foreground">
+                  Open
+                </span>
+              </div>
             </Link>
           </li>
         );

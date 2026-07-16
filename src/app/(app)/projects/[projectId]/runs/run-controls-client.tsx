@@ -14,20 +14,38 @@ import { Button } from "@/components/ui/button";
  * @param props - Control props.
  * @returns Run control UI.
  */
-export function RunControlsClient(props: Readonly<{ projectId: string }>) {
+export function RunControlsClient(
+  props: Readonly<{
+    canStart: boolean;
+    projectId: string;
+    unavailableReason?: string;
+  }>,
+) {
   const [submittedKind, setSubmittedKind] = useState<string | null>(null);
   const [state, formAction, isPending] = useActionState(
     startRunAction,
     startRunInitialState,
   );
   const errorId = `runs-start-error-${props.projectId}`;
+  const unavailableReasonId = `runs-start-unavailable-${props.projectId}`;
 
   return (
     <form
       action={formAction}
-      aria-describedby={state.status === "error" ? errorId : undefined}
+      aria-describedby={
+        [
+          state.status === "error" ? errorId : null,
+          props.unavailableReason ? unavailableReasonId : null,
+        ]
+          .filter(Boolean)
+          .join(" ") || undefined
+      }
       className="space-y-3"
       onSubmit={(e) => {
+        if (!props.canStart) {
+          e.preventDefault();
+          return;
+        }
         const submitter = (e.nativeEvent as SubmitEvent)
           .submitter as HTMLButtonElement | null;
         setSubmittedKind(submitter?.getAttribute("value") ?? null);
@@ -44,7 +62,7 @@ export function RunControlsClient(props: Readonly<{ projectId: string }>) {
       <div className="flex flex-wrap items-center gap-2.5">
         <Button
           aria-busy={isPending && submittedKind === "research"}
-          disabled={isPending}
+          disabled={isPending || !props.canStart}
           name="kind"
           type="submit"
           value="research"
@@ -62,7 +80,7 @@ export function RunControlsClient(props: Readonly<{ projectId: string }>) {
 
         <Button
           aria-busy={isPending && submittedKind === "implementation"}
-          disabled={isPending}
+          disabled={isPending || !props.canStart}
           name="kind"
           type="submit"
           value="implementation"
@@ -82,6 +100,11 @@ export function RunControlsClient(props: Readonly<{ projectId: string }>) {
         <p className="text-muted-foreground text-sm">
           Runs are durable workflows backed by Workflow DevKit.
         </p>
+        {props.unavailableReason ? (
+          <p className="text-muted-foreground text-sm" id={unavailableReasonId}>
+            {props.unavailableReason}
+          </p>
+        ) : null}
       </div>
     </form>
   );
